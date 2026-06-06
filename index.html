@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Queen Cassy Food Cart</title>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" type="text/css" href="css/login.css?">
+
+  <!-- Materialize -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link type="text/css" href="./css/materialize.min.css" rel="stylesheet">
+  <script type="text/javascript" src="./js/materialize.min.js"></script>
+  <!-- Manifest -->
+  <link rel="manifest" href="./manifest.json">
+
+</head>
+
+<body>
+  <main>
+    <div class="login-wrapper">
+      <div class="card login-card z-depth-3">
+
+        <!--LOGO-->
+        <img src="./assets/queencassy.jpg" alt="Logo" class="logo">
+
+        <div class="title">Welcome</div>
+        <div class="subtitle">Please Log in To Continue</div>
+
+        <!-- FORM -->
+        <div class="input-field">
+          <i class="material-icons prefix">person</i>
+          <input id="username" type="text" placeholder="Username or Email" autocomplete="username">
+        </div>
+
+        <div class="input-field">
+          <i class="material-icons prefix">lock</i>
+          <input id="password" type="password" placeholder="Password">
+          <label for="password">Password</label>
+          <span class="material-icons toggle-password" onclick="togglePassword()">visibility</span>
+        </div>
+
+        <p class="remember-me">
+          <label>
+            <input type="checkbox" />
+            <span>Remember Me</span>
+          </label>
+        </p>
+
+        <button type="button" class="btn btn-login waves-effect waves-light">
+          Log In
+        </button>
+
+
+        <button id="installBtn" class="btn btn-install waves-effect waves-light">Install App</button>
+
+      </div>
+    </div>
+  </main>
+</body>
+<script src="./js/login.js"></script>
+<script src="./js/app.js"></script>
+<script src="./js/install.js"></script>
+<script src="./admin/refresh.js"></script>
+
+<!--FIREBASE-->
+<script type="module">
+   import { auth, db } from "./frontfirebase.js";
+  import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  document.querySelector(".btn-login").addEventListener("click", async (e) => {
+    e.preventDefault();
+    const username = document.getElementById("username").value.toLowerCase().trim();
+    const password = document.getElementById("password").value;
+
+    const q = query(collection(db, "users"), where("username", "==", username));
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      const userDoc = snapshot.docs[0].data();
+      const email = userDoc.email;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log("Login Success:", userCredential);
+
+        const role = userDoc.role.toLowerCase();
+        if (role === "admin") {
+          window.location.href = "./admin/adminpanel.html";
+        } else if (["siomai", "pares"].includes(role)) {
+          window.location.href = "./employee/userpanel.html";
+        }
+      } catch (error) {
+        alert("Invalid Password");
+        console.error(error);
+      }
+    } else {
+      alert("Username not Found");
+      console.log("No match for:", username);
+    }
+  });
+</script>
+
+</html>

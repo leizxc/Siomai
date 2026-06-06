@@ -1,0 +1,314 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    background: #f8f9fc;
+    color: #333;
+    overflow-x: hidden;
+}
+
+.container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* override Materialize default link & icon colors */
+.material-icons {
+    color: #333 !important;
+}
+
+/* sidebar links */
+.sidebar a,
+.sidebar .nav li a,
+.sidebar .nav li.active a,
+.sidebar .nav li:hover a,
+.sidebar .nav li a:visited,
+.sidebar .nav li a:focus {
+    color: #333 !important;
+    text-decoration: none;
+}
+
+/* sidebar */
+.mobile-header {
+    display: none;
+}
+
+.overlay {
+    display: none;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 240px;
+    background: #fff;
+    border-right: 1px solid #e0e0e0;
+    padding: 20px;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+/* logo and role */
+.sidebar .logo {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #8c1414;
+}
+
+.sidebar .role {
+    font-size: 1.4rem;
+    color: #777;
+    margin-bottom: 20px;
+}
+
+/* navigation */
+.sidebar .nav {
+    list-style: none;
+}
+
+.sidebar .nav li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.sidebar .nav li i {
+    font-size: 22px;
+    color: #333 !important;
+}
+
+.sidebar .nav li.active,
+.sidebar .nav li:hover {
+    background: #f0f0f0;
+}
+
+/* main content */
+.main {
+    margin-left: 240px;
+    padding: 25px;
+    min-height: 100vh;
+    overflow-y: auto;
+    width: calc(100% - 240px);
+}
+
+/* cards */
+.card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* text styles */
+.subtitle {
+    color: #777;
+    font-size: 0.9rem;
+}
+
+.value {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.date {
+    font-size: 0.85rem;
+    color: #999;
+}
+/*Inventory Design */
+.modal .input-field {
+    margin-bottom: 20px;
+}
+
+.edit-btn,
+.delete-btn {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.edit-btn{
+    background-color: #2196f3;
+    color: #fff;
+}
+
+.edit-btn:hover {
+    background-color: #1976d2;
+    transform: scale(1.05);
+}
+
+.delete-btn{
+    margin-top: 10px;
+    background-color: #f44336;
+    color: #fff;
+}
+
+.delete-btn:hover {
+    background-color: #d32f2f;
+    transform: scale(1.05);
+}
+
+
+/* MOBILE RESPONSIVE */
+
+@media (max-width: 768px) {
+
+    .container {
+        display: block;
+    }
+
+    .main {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 12px 8px;           /* Reduced side padding */
+    }
+
+    .mobile-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        padding: 12px 8px;
+        margin-bottom: 12px;
+        box-shadow: 0 2px 5px rgba(0,0,0,.1);
+    }
+
+    #menu-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    #menu-toggle i {
+        font-size: 30px;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -260px;
+        width: 250px;
+        height: 100vh;
+        background: #fff;
+        z-index: 1000;
+        transition: 0.3s ease;
+        box-shadow: 0 0 10px rgba(0,0,0,.2);
+        padding: 20px;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    .overlay {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,.4);
+        opacity: 0;
+        visibility: hidden;
+        z-index: 999;
+    }
+
+    .overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Cards - Full width with minimal side space */
+    .card {
+        margin-left: 0;
+        margin-right: 0;
+        margin-bottom: 16px;
+        padding: 16px 14px;        /* Slightly reduced padding */
+        border-radius: 12px;
+    }
+
+    /* Header */
+    .header h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    /* Tables - Mobile friendly */
+    .inventory-card,
+    .records-card {
+        overflow: visible;
+    }
+
+    .inventory-card thead,
+    .records-card thead {
+        display: none;
+    }
+
+    .inventory-card table,
+    .records-card table,
+    .inventory-card tbody,
+    .records-card tbody,
+    .inventory-card tr,
+    .records-card tr,
+    .inventory-card td,
+    .records-card td {
+        display: block;
+        width: 100%;
+    }
+
+    .inventory-card tr,
+    .records-card tr {
+        background: #fff;
+        margin-bottom: 14px;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        padding: 12px;
+    }
+
+    .inventory-card td,
+    .records-card td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        border-bottom: 1px solid #eee;
+        font-size: 14.5px;
+    }
+
+    .inventory-card td:last-child,
+    .records-card td:last-child {
+        border-bottom: none;
+    }
+
+    .inventory-card td::before,
+    .records-card td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #444;
+    }
+}
+
+/* Landscape */
+@media (max-width: 1024px) and (orientation: landscape) {
+    .main {
+        padding: 10px 8px;
+    }
+
+    .card {
+        padding: 14px;
+        margin-bottom: 12px;
+    }
+}

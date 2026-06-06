@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel Queen Cassy Food Cart</title>
+
+  <link rel="stylesheet" type="text/css" href="../css/admin.css">
+
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <!-- Materialize -->
+  <link type="text/css" href="../css/materialize.min.css" rel="stylesheet">
+  <script type="text/javascript" src="../js/materialize.min.js"></script>
+</head>
+
+<body>
+  <main class="main">
+
+    <header class="header">
+      <h1>Expenses Record</h1>
+      <p>Track Daily and Monthly Expenses</p>
+    </header>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <input type="date" id="filter-date">
+
+      <select id="filter-category">
+        <option value="all">All Categories</option>
+        <option value="Siomai">Siomai</option>
+        <option value="Drinks">Drinks</option>
+        <option value="Condiments">Condiments</option>
+        <option value="Utilities">Utilities</option>
+      </select>
+
+      <button type="button" class="btn-add waves-effect waves-light btn">Add Expense</button>
+    </div>
+
+    <!-- SUMMARY -->
+    <section class="summary">
+      <div class="card">
+        <h3 id="total-today">₱0.00</h3>
+        <p>Total Expenses (Today)</p>
+      </div>
+
+      <div class="card">
+        <h3 id="total-month">₱0.00</h3>
+        <p>Total Expenses (This Month)</p>
+      </div>
+
+      <div class="card">
+        <h3 id="avg-daily">₱0.00</h3>
+        <p>Average Daily Expense</p>
+      </div>
+    </section>
+
+    <!-- TABLE -->
+    <section class="table-section">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Amount (₱)</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody id="expenses-table-body">
+          <!-- Firestore data will be injected here -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ADD EXPENSE MODAL -->
+    <div class="modal" id="modal-expenses">
+      <div class="modal-content">
+        <h4 id="modal-title">Add Expense</h4>
+
+        <div class="input-field">
+          <input type="date" id="expenses-date">
+          <label for="expenses-date">Date</label>
+        </div>
+
+        <div class="input-field">
+          <select id="expenses-category">
+            <option value="" disabled selected>Choose Category</option>
+            <option value="Siomai">Siomai</option>
+            <option value="Drinks">Drinks</option>
+            <option value="Condiments">Condiments</option>
+            <option value="Utilities">Utilities</option>
+          </select>
+          <label>Category</label>
+        </div>
+
+        <div class="input-field">
+          <input type="text" id="expenses-description" placeholder="Description">
+        </div>
+
+        <div class="input-field">
+          <input type="text" id="expenses-amount" placeholder="Amount">
+        </div>
+
+        <div class="input-field">
+          <select id="expenses-status">
+            <option value="" disabled selected>Choose Status</option>
+            <option value="Paid">Paid</option>
+            <option value="Pending">Pending</option>
+          </select>
+          <label>Status</label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="save-expense" class="waves-effect waves-green btn">Save Expense</button>
+      </div>
+    </div>
+
+    <!-- EDIT EXPENSE MODAL -->
+    <div class="modal" id="modal-edit">
+      <div class="modal-content">
+        <h4>Edit Expense</h4>
+
+        <div class="input-field">
+          <input type="date" id="edit-expenses-date">
+          <label for="edit-expenses-date">Date</label>
+        </div>
+
+        <div class="input-field">
+          <select id="edit-expenses-category">
+            <option value="" disabled selected>Choose Category</option>
+            <option value="Siomai">Siomai</option>
+            <option value="Drinks">Drinks</option>
+            <option value="Condiments">Condiments</option>
+            <option value="Utilities">Utilities</option>
+          </select>
+          <label>Category</label>
+        </div>
+
+        <div class="input-field">
+          <input type="text" id="edit-expenses-description" placeholder="Description">
+        </div>
+
+        <div class="input-field">
+          <input type="text" id="edit-expenses-amount" placeholder="Amount">
+        </div>
+
+        <div class="input-field">
+          <select id="edit-expenses-status">
+            <option value="" disabled selected>Choose Status</option>
+            <option value="Paid">Paid</option>
+            <option value="Pending">Pending</option>
+          </select>
+          <label>Status</label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="edit-save" class="waves-effect waves-light btn blue">Update Expense</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="../js/functionalnav.js"></script>
+  <script src="../admin/refresh.js"></script>
+  <script type="module">
+    import { initExpensesModal } from "../js/addExpensesbtn.js";
+    initExpensesModal();
+  </script>
+</body>
+</html>
