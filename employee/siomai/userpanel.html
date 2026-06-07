@@ -103,7 +103,12 @@
     </main>
   </div>
 
-  <script src="../../js/navemployee.js"></script>
-  <script src="../../admin/refresh.js"></script>
+<script src="../../admin/refresh.js"></script>
+<script type="module" src="../../js/navemployee.js"></script>
+<script type="module" src="../../BackEnd/js/firebase.js"></script>
+<script type="module">
+  import { initPOS } from "../../../js/employee.js";
+  initPOS();
+</script>
 </body>
 </html>

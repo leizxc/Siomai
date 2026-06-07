@@ -49,7 +49,7 @@ function loadSection(page) {
 
         case "userpanel.html":
           try {
-            const posModule = await import("");
+            const posModule = await import("../BackEnd/js/employee.js");
             if (typeof posModule.initPOS === "function") {
               posModule.initPOS();
             }
