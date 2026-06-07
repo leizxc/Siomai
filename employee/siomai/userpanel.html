@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Panel - Queen Cassy Food Cart</title>
+  <link rel="stylesheet" type="text/css" href="../../css/employee.css">
+
+  <!-- Materialize -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link type="text/css" href="../../css/materialize.min.css" rel="stylesheet">
+  <script type="text/javascript" src="../../js/materialize.min.js"></script>
+
+  <!-- Manifest -->
+  <link rel="manifest" href="../../manifest.json">
+</head>
+
+<body>
+  <div class="container">
+    <!-- Side Bar -->
+    <aside class="sidebar">
+      <h2 class="logo">Queen Casy</h2>
+      <p class="role">Employee</p>
+
+      <ul class="nav">
+       <li><a href="../../employee/siomai/userpanel.html"><i class="material-icons">shopping_cart</i>Point of Sale</a></li>
+        <li><a href="#" onclick="loadSection('./stock.html', this)"><i class="material-icons">inventory</i>Inventory</a></li>
+        <li><a href="#" onclick="loadSection('./qouta.html', this)"><i class="material-icons">bar_chart</i>Income Per Cart</a></li>
+        <li><a href="#" onclick="loadSection('./sales.html', this)"><i class="material-icons">payments</i>Expenses Records</a></li>
+        <li><a href="../../index.html"><i class="material-icons">logout</i>Logout</a></li>
+      </ul>
+    </aside>
+
+    <div class="overlay"></div>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="mobile-header">
+            <button id="menu-toggle">
+            <i class="material-icons">menu</i>
+            </button>
+      </div>
+
+      <!-- Content container -->
+      <div id="content">
+        <!-- POS HEADER -->
+        <section class="card pos-card">
+          <div class="card-header">
+            <i class="material-icons">shopping_cart</i>
+            <h3>Point of Sale</h3>
+          </div>
+          <p class="subtitle">Select items and process transactions</p>
+        </section>
+
+        <!-- PRODUCT LIST -->
+        <section class="card products-card">
+          <h4>Available Products</h4>
+          <div class="product-grid">
+            <div class="product-card">
+              <h5>Siomai</h5>
+              <p>₱6.00 / piece</p>
+              <button class="btn add-btn">Add</button>
+            </div>
+
+            <div class="product-card">
+              <h5>Siomai Rice</h5>
+              <p>₱50.00</p>
+              <button class="btn add-btn">Add</button>
+            </div>
+
+            <div class="product-card">
+              <h5>Drinks</h5>
+              <p>₱15.00</p>
+              <button class="btn add-btn">Add</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CART SECTION -->
+        <section class="card cart-card">
+          <h4>Cart</h4>
+          <table id="cartTable">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Firestore data will render here -->
+            </tbody>
+          </table>
+          <div class="cart-summary">
+            <p><strong>Grand Total:</strong> ₱<span id="grandTotal">0</span></p>
+            <button id="checkoutBtn" class="btn green">Checkout</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="../../js/navemployee.js"></script>
+  <script src="../../admin/refresh.js"></script>
+</body>
+</html>
