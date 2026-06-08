@@ -1,8 +1,9 @@
 {
+  "version": 2,
   "builds": [
-    { "src": "Thesis-clean/index.html", "use": "@vercel/static" }
+    { "src": "index.html", "use": "@vercel/static" }
   ],
   "routes": [
-    { "src": "/(.*)", "dest": "Thesis-clean/$1" }
+    { "src": "/(.*)", "dest": "/" }
   ]
 }
