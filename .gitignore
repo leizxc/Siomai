@@ -11,3 +11,7 @@ BackEnd/*.key
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Firebase configs
+BackEnd/js/firebase.js
+frontfirebase.js
