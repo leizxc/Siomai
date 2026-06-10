@@ -299,7 +299,62 @@ body {
         font-weight: 600;
         color: #444;
     }
+
+    /* ✅ Product Table Responsive */
+    .product-list-card thead {
+        display: none;
+    }
+
+    .product-list-card table,
+    .product-list-card tbody,
+    .product-list-card tr,
+    .product-list-card td {
+        display: block;
+        width: 100%;
+    }
+
+    .product-list-card tr {
+        background: #fff;
+        margin-bottom: 14px;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        padding: 12px;
+    }
+
+    .product-list-card td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        border-bottom: 1px solid #eee;
+        font-size: 14.5px;
+    }
+
+    .product-list-card td:last-child {
+        border-bottom: none;
+        justify-content: flex-end;
+        gap: 4px; /* maliit na pagitan lang sa edit at delete */
+    }
+
+    .product-list-card td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #444;
+    }
+
+    /* Compact buttons for mobile */
+    .product-list-card .btn {
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 13px;
+    }
+
+    .product-list-card .edit-btn,
+    .product-list-card .delete-btn {
+        margin-top: 0;
+    }
 }
+
 
 /* Landscape */
 @media (max-width: 1024px) and (orientation: landscape) {

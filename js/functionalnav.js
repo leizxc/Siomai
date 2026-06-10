@@ -36,6 +36,26 @@ function loadSection(page) {
                     }
                     break;
 
+                case "product.html":
+                    try {
+                        // Import Add Product logic
+                        const addproducts = await import("../js/addproductbtn.js");
+                        if (typeof addproducts.initProductModal === "function") {
+                            addproducts.initProductModal();
+                        }
+
+                        // Import Firestore load logic
+                        const productModule = await import("../BackEnd/js/adminAddProduct.js");
+                        if (typeof productModule.loadProducts === "function") {
+                            productModule.loadProducts();
+                        }
+
+                    } catch (err) {
+                        console.error("Product Init Error:", err);
+                    }
+                    break;
+
+
                 case "expenses.html":
                     try {
                         const addbtnModule = await import("../js/addExpensesbtn.js");

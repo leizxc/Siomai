@@ -9,7 +9,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { app } from "./firebase.js";
+import { app } from "../../BackEnd/js/firebase.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -123,7 +123,7 @@ async function addOrder(orderItems) {
     items: orderItems,
     employee: user ? user.uid : "guest",
     created_at: serverTimestamp(),
-    status: "pending"
+    status: "paid"
   });
 
   for (const item of orderItems) {

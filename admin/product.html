@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Queen Cassy Food Cart</title>
+  <link rel="stylesheet" type="text/css" href="../css/admin.css">
+
+  <!-- Materialize -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link type="text/css" href="../css/materialize.min.css" rel="stylesheet">
+  <script type="text/javascript" src="../js/materialize.min.js"></script>
+
+  <!-- Manifest -->
+  <link rel="manifest" href="../manifest.json">
+</head>
+
+<body>
+  <div class="container">
+    <main class="main">
+      <!-- Add Product Form -->
+      <section class="card add-product-card">
+        <h4>Add Product Sales</h4>
+        <form id="addProductForm">
+         <div class="input-field">
+            <select id="productRole">
+                <option value="" disabled selected>Choose Role</option>
+                <option value="siomai">Siomai</option>
+                <option value="pares">Pares</option>
+            </select>
+            <label for="productRole">Employee Role</label>
+         </div>
+
+         <!--Employee Selection-->
+         <div class="input-field">
+            <select id="productEmployee" required>
+                <option value="" disabled selected>Choose Employee</option>
+                <!--DITO PAPASOK YUNG MGA NASA FIREBASE-->
+            </select>
+            <label for="productEmployee">Assigned Employee</label>
+         </div>
+
+         <!--PRODUCTS INPUTS(INITIALLY DISABLED SINCE PARA MAGANDA TIGNAN KAILANGAN MUNA MAMILI SA ROLE AND EMPLOYEE)-->
+         <div class="input-field">
+            <input type="text" id="productName" disabled required>
+            <label for="productName">Product Name</label>
+         </div>
+
+         <div class="input-field">
+            <input type="number" id="productPrice" step="1.00" disabled required>
+            <label for="productPrice">Product Price</label>
+         </div>
+
+         <div class="input-field">
+            <input type="number" id="productStock" disabled required>
+            <label for="productStock">Product Stock</label>
+         </div>
+         
+         <button type="submit" class="btn green" disabled id="addProductBtn">Add Product</button>
+        </form>
+      </section>
+
+      <!-- Product List Table -->
+      <section class="card product-list-card">
+        <h4>Product List</h4>
+
+        <!---FILTER BY EMPLOYEE-->
+        <div class="input-field">
+            <select id="filterEmployee">
+                <option value="" disabled selected>Choose Employee</option>
+                <!--Dito papasok yung mga name ng employee para makita ano yung naka assign sakanila na product-->
+            </select>
+            <label for="filterEmployee">Select Employee</label>
+        </div>
+        <table id="productTable">
+          <thead>
+            <tr>
+              <th>Product Name</th>
+              <th>Product Price</th>
+              <th>Product Stock</th>
+              <th>Role</th>
+              <th>Employee</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <!-- Update Product Modal -->
+      <div id="updateProductModal" class="modal">
+        <div class="modal-content">
+          <h4>Update Product</h4>
+          <form id="updateProductForm">
+            <input type="hidden" id="updateProductId">
+
+            <div class="input-field">
+              <input type="text" id="updateProductName" required>
+              <label for="updateProductName">Product Name</label>
+            </div>
+
+            <div class="input-field">
+              <input type="number" id="updateProductPrice" step="0.01" required>
+              <label for="updateProductPrice">Product Price</label>
+            </div>
+
+            <div class="input-field">
+              <input type="number" id="updateProductStock" required>
+              <label for="updateProductStock">Product Stock</label>
+            </div>
+
+            <button type="button" id="update-save" class="btn blue">Save Changes</button>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-close btn red">Close</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- JS modules -->
+    <script src="../admin/refresh.js"></script>
+  <script src="../js/functionalnav.js"></script>
+  <script type="module" src="../BackEnd/js/firebase.js"></script>
+  <script type="module" src="../js/addproductbtn.js"></script>
+  <script type="module" src="../BackEnd/js/adminAddProduct.js"></script>
+</body>
+</html>
