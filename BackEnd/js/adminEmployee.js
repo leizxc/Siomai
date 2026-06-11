@@ -15,9 +15,7 @@ import {
 
 import {
   getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  deleteUser
+  createUserWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const auth = getAuth();
@@ -114,6 +112,15 @@ export function loadEmployees() {
 // Add employee securely with Firebase Auth
 export async function addEmployee(fname, lname, email, role, password) {
   try {
+    // 0. Check muna kung existing na ang email sa users collection
+    const q = query(collection(db, "users"), where("email", "==", email));
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      alert("Email already exists!");
+      return;
+    }
+
     // 1. Create account in Firebase Authentication
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCredential.user.uid;
@@ -173,7 +180,12 @@ export async function deleteEmployee(id) {
       });
 
       // 3. Delete sa Firebase Authentication (via backend)
-      await fetch("http://localhost:4000/deleteAuthUser", {
+      if (!uid) {
+        alert("No UID found for this employee. Cannot delete Auth account.");
+        return;
+      }
+
+        await fetch("http://localhost:4000/deleteAuthUser", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
