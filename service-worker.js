@@ -1,4 +1,4 @@
-const staticCacheName = 'site-static-v1';
+const staticCacheName = 'site-static-v2';
 const dynamicCache = 'site-dynamic-v1';
 
 const asset = [
@@ -12,6 +12,7 @@ const asset = [
   './admin/adminpanel.html',   
   './css/admin.css',
   './admin/refresh.js',
+  './frontfirebase.js',
   './employee/siomai/userpanel.html',
   'https://fonts.googleapis.com/icon?family=Material+Icons',
   'https://fonts.gstatic.com/s/materialicons/v47/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2'
