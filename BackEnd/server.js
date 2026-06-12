@@ -24,7 +24,6 @@ try {
   console.error("Firebase Admin Initialization Failed:", error);
 }
 
-// Express App
 const app = express();
 
 app.use(cors({
@@ -35,40 +34,29 @@ app.use(cors({
 
 app.use(express.json());
 
-// Serve static files from public folder
-app.use(express.static(path.join(__dirname, "public")));
+// ✅ Serve static files from BackEnd/public folder (absolute path)
+app.use(express.static(path.join(__dirname, "BackEnd", "public")));
 
-// Root route → serve index.html
+// ✅ Root route → serve index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "BackEnd", "public", "index.html"));
 });
 
 // Delete Firebase Auth User
 app.post("/deleteAuthUser", async (req, res) => {
   try {
-    console.log("Request Body:", req.body);
     const { uid } = req.body;
-
     if (!uid) {
-      return res.status(400).json({
-        success: false,
-        error: "UID is required"
-      });
+      return res.status(400).json({ success: false, error: "UID is required" });
     }
 
     await admin.auth().deleteUser(uid);
     console.log(`Deleted Auth User: ${uid}`);
 
-    return res.status(200).json({
-      success: true,
-      message: "User deleted successfully"
-    });
+    return res.status(200).json({ success: true, message: "User deleted successfully" });
   } catch (error) {
     console.error("Delete Auth Error:", error);
-    return res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -83,14 +71,10 @@ app.get("/testFirebase", async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Start Server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
