@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
-const path = require("path"); // ➕ para sa static path
+const path = require("path");
 
 // Firebase Admin Setup
 let serviceAccount;
@@ -28,26 +28,25 @@ try {
 const app = express();
 
 app.use(cors({
-  origin: true, // allow all origins for development
+  origin: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
 app.use(express.json());
 
-// ➕ Serve static files from public folder
+// Serve static files from public folder
 app.use(express.static(path.join(__dirname, "public")));
 
-// Health Check
+// Root route → serve index.html
 app.get("/", (req, res) => {
-  res.send("Backend Server Running");
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // Delete Firebase Auth User
 app.post("/deleteAuthUser", async (req, res) => {
   try {
     console.log("Request Body:", req.body);
-
     const { uid } = req.body;
 
     if (!uid) {
@@ -58,17 +57,14 @@ app.post("/deleteAuthUser", async (req, res) => {
     }
 
     await admin.auth().deleteUser(uid);
-
     console.log(`Deleted Auth User: ${uid}`);
 
     return res.status(200).json({
       success: true,
       message: "User deleted successfully"
     });
-
   } catch (error) {
     console.error("Delete Auth Error:", error);
-
     return res.status(500).json({
       success: false,
       error: error.message
@@ -80,7 +76,6 @@ app.post("/deleteAuthUser", async (req, res) => {
 app.get("/testFirebase", async (req, res) => {
   try {
     const users = await admin.auth().listUsers(1);
-
     res.status(200).json({
       success: true,
       message: "Firebase Admin Connected",
@@ -88,7 +83,6 @@ app.get("/testFirebase", async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-
     res.status(500).json({
       success: false,
       error: error.message
@@ -98,7 +92,6 @@ app.get("/testFirebase", async (req, res) => {
 
 // Start Server
 const PORT = process.env.PORT || 4000;
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
