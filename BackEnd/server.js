@@ -3,7 +3,6 @@ const cors = require("cors");
 const admin = require("firebase-admin");
 const path = require("path");
 
-// Firebase Admin Setup
 let serviceAccount;
 
 try {
@@ -34,12 +33,12 @@ app.use(cors({
 
 app.use(express.json());
 
-// ✅ Serve static files from BackEnd/public folder (absolute path)
-app.use(express.static(path.join(__dirname, "BackEnd", "public")));
+// Serve static files from BackEnd/public folder
+app.use(express.static(path.join(__dirname, "public")));
 
-// ✅ Root route → serve index.html
+// Root route → serve index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "BackEnd", "public", "index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // Delete Firebase Auth User
