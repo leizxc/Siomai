@@ -1,5 +1,5 @@
 // expensesADDbtn.js
-import { addExpense } from "../BackEnd/js/adminExpenses.js";
+import { addExpense } from "/js/adminExpenses.js";
 
 export function initExpensesModal() {
   const modalElem = document.getElementById("modal-expenses");

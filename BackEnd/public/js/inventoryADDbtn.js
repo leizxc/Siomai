@@ -1,5 +1,5 @@
 // inventoryADDbtn.js
-import { addProduct } from "../BackEnd/js/adminBE.js";
+import { addProduct } from "/js/adminBE.js";
 
 ///testing kung makikita agad sa devtool/
 export function initInventoryModal() {

@@ -7,15 +7,15 @@
   <title>Queen Cassy Food Cart</title>
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" type="text/css" href="css/login.css?">
+  <link rel="stylesheet" type="text/css" href="/css/login.css">
 
   <!-- Materialize -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link type="text/css" href="./css/materialize.min.css" rel="stylesheet">
-  <script type="text/javascript" src="./js/materialize.min.js"></script>
-  <!-- Manifest -->
-  <link rel="manifest" href="./manifest.json">
+  <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
+  <script type="text/javascript" src="/js/materialize.min.js"></script>
 
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json">
 </head>
 
 <body>
@@ -24,7 +24,7 @@
       <div class="card login-card z-depth-3">
 
         <!--LOGO-->
-        <img src="./assets/queencassy.jpg" alt="Logo" class="logo">
+        <img src="/assets/queencassy.jpg" alt="Logo" class="logo">
 
         <div class="title">Welcome</div>
         <div class="subtitle">Please Log in To Continue</div>
@@ -53,21 +53,22 @@
           Log In
         </button>
 
-
         <button id="installBtn" class="btn btn-install waves-effect waves-light">Install App</button>
 
       </div>
     </div>
   </main>
 </body>
-<script src="./js/login.js"></script>
-<script src="./js/app.js"></script>
-<script src="./js/install.js"></script>
-<script src="./admin/refresh.js"></script>
 
-<!--FIREBASE-->
+<!-- JS Files -->
+<script src="/js/login.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/install.js"></script>
+<script src="/js/refresh.js"></script>
+
+<!-- FIREBASE -->
 <script type="module">
-  import { auth, db } from "./js/frontfirebase.js";
+  import { auth, db } from "/frontfirebase.js";
   import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -89,11 +90,11 @@
 
         const role = userDoc.role.toLowerCase();
         if (role === "admin") {
-          window.location.href = "./admin/adminpanel.html";
+          window.location.href = "/admin/adminpanel.html";
         } else if (role === "siomai") {
-          window.location.href = "./employee/pares/userpanel.html";
-        }else if (role === "pares"){
-          window.location.href = "./employee/siomai/userpanel.html";
+          window.location.href = "/employee/siomai/userpanel.html";
+        } else if (role === "pares") {
+          window.location.href = "/employee/pares/userpanel.html";
         }
       } catch (error) {
         alert("Invalid Password");

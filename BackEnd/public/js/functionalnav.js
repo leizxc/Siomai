@@ -1,9 +1,7 @@
 function loadSection(page) {
-
     fetch(page)
         .then(response => response.text())
         .then(async data => {
-
             const main = document.getElementById('content');
             main.innerHTML = data;
 
@@ -16,21 +14,17 @@ function loadSection(page) {
 
             // PAGE INITIALIZERS
             switch (page) {
-
                 case "inventory.html":
                     try {
-                        const addbtnModule = await import("../js/inventoryADDbtn.js");
-
+                        const addbtnModule = await import("/js/inventoryADDbtn.js");
                         if (typeof addbtnModule.initInventoryModal === "function") {
                             addbtnModule.initInventoryModal();
                         }
 
-                        const inventoryModule = await import("../BackEnd/js/adminBE.js");
-
+                        const inventoryModule = await import("/js/adminBE.js");
                         if (typeof inventoryModule.loadInventory === "function") {
                             inventoryModule.loadInventory();
                         }
-
                     } catch (err) {
                         console.error("Inventory Init Error:", err);
                     }
@@ -38,38 +32,31 @@ function loadSection(page) {
 
                 case "product.html":
                     try {
-                        // Import Add Product logic
-                        const addproducts = await import("../js/addproductbtn.js");
+                        const addproducts = await import("/js/addproductbtn.js");
                         if (typeof addproducts.initProductModal === "function") {
                             addproducts.initProductModal();
                         }
 
-                        // Import Firestore load logic
-                        const productModule = await import("../BackEnd/js/adminAddProduct.js");
+                        const productModule = await import("/js/adminAddProduct.js");
                         if (typeof productModule.loadProducts === "function") {
                             productModule.loadProducts();
                         }
-
                     } catch (err) {
                         console.error("Product Init Error:", err);
                     }
                     break;
 
-
                 case "expenses.html":
                     try {
-                        const addbtnModule = await import("../js/addExpensesbtn.js");
-
+                        const addbtnModule = await import("/js/addExpensesbtn.js");
                         if (typeof addbtnModule.initExpensesModal === "function") {
                             addbtnModule.initExpensesModal();
                         }
 
-                        const expensesModule = await import("../BackEnd/js/adminExpenses.js");
-
+                        const expensesModule = await import("/js/adminExpenses.js");
                         if (typeof expensesModule.loadExpenses === "function") {
                             expensesModule.loadExpenses();
                         }
-
                     } catch (err) {
                         console.error("Expenses Init Error:", err);
                     }
@@ -77,18 +64,15 @@ function loadSection(page) {
 
                 case "EmployeeManagement.html":
                     try {
-                        const employeeModule = await import("../js/addemployeebtn.js");
-
+                        const employeeModule = await import("/js/addemployeebtn.js");
                         if (typeof employeeModule.initEmployee === "function") {
                             employeeModule.initEmployee();
                         }
 
-                        const addemployeeModule = await import("../BackEnd/js/adminEmployee.js");
-
+                        const addemployeeModule = await import("/js/adminEmployee.js");
                         if (typeof addemployeeModule.loadEmployees === "function") {
                             addemployeeModule.loadEmployees();
                         }
-
                     } catch (err) {
                         console.error("Employee Init Error:", err);
                     }
@@ -96,25 +80,20 @@ function loadSection(page) {
 
                 case "EmployeeMonitoring.html":
                     try {
-
+                        // future monitoring logic
                     } catch (err) {
                         console.error("Monitoring Init Error:", err);
                     }
                     break;
             }
-
         })
         .catch(err => console.error('Error Loading Section:', err));
 
     // Highlight nav
     const navItems = document.querySelectorAll('.nav li');
-
-    navItems.forEach(item => {
-        item.classList.remove('active');
-    });
+    navItems.forEach(item => item.classList.remove('active'));
 
     const link = document.querySelector(`.nav a[onclick*="${page}"]`);
-
     if (link) {
         link.parentElement.classList.add('active');
     }
@@ -149,10 +128,7 @@ if (overlay) {
 
 // LANDSCAPE FIX
 function handleOrientation() {
-
-    const isLandscape =
-        window.matchMedia("(orientation: landscape)").matches;
-
+    const isLandscape = window.matchMedia("(orientation: landscape)").matches;
     if (isLandscape && window.innerWidth <= 1024) {
         sidebar?.classList.remove('active');
         overlay?.classList.remove('active');

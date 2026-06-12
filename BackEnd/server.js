@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const admin = require("firebase-admin");
+const path = require("path"); // ➕ para sa static path
 
 // Firebase Admin Setup
 let serviceAccount;
@@ -33,6 +34,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// ➕ Serve static files from public folder
+app.use(express.static(path.join(__dirname, "public")));
 
 // Health Check
 app.get("/", (req, res) => {

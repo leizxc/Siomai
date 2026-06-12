@@ -1,4 +1,4 @@
-import { db } from "../BackEnd/js/firebase.js";
+import { db } from "/js/firebase.js";
 import { collection, getDocs, addDoc, query, where } 
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 

@@ -11,7 +11,7 @@ const asset = [
   './js/install.js',
   './admin/adminpanel.html',   
   './css/admin.css',
-  './admin/refresh.js',
+  './js/refresh.js',
   './frontfirebase.js',
   './employee/siomai/userpanel.html',
   'https://fonts.googleapis.com/icon?family=Material+Icons',

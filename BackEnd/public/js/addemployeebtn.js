@@ -1,4 +1,4 @@
-import { addEmployee, loadEmployees } from "../BackEnd/js/adminEmployee.js";
+import { addEmployee, loadEmployees } from "/js/adminEmployee.js";
 
 const form = document.getElementById("employeeForm");
 form.addEventListener("submit", async (e) => {
