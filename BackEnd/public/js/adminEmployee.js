@@ -117,7 +117,7 @@ export async function addEmployee(fname, lname, email, role, password) {
     const snapshot = await getDocs(q);
 
     if (!snapshot.empty) {
-      alert("Email already exists!");
+      M.toast({ html: "Email already exists!", classes: "red rounded" });
       return;
     }
 
@@ -144,10 +144,10 @@ export async function addEmployee(fname, lname, email, role, password) {
       created_at: serverTimestamp()
     });
 
-    alert("Employee added successfully!");
+    M.toast({ html: "Employee added successfully!", classes: "green rounded" });
   } catch (error) {
     console.error("Error adding employee:", error);
-    alert("Failed to add employee.");
+    M.toast({ html: "Failed to add employee.", classes: "red rounded" });
   }
 }
 
@@ -165,7 +165,7 @@ export async function deleteEmployee(id) {
 
       // Prevent deleting admin
       if (role === "admin") {
-        alert("Admin accounts cannot be deleted.");
+        M.toast({ html: "Admin accounts cannot be deleted.", classes: "red rounded" });
         return;
       }
 
@@ -181,24 +181,29 @@ export async function deleteEmployee(id) {
 
       // 3. Delete sa Firebase Authentication (via backend)
       if (!uid) {
-        alert("No UID found for this employee. Cannot delete Auth account.");
+        M.toast({ html: "No UID found for this employee. Cannot delete Auth account.", classes: "red rounded" });
         return;
       }
 
-        await fetch("http://localhost:4000/deleteAuthUser", {
+      const API_BASE = window.location.origin;
+      const res = await fetch(`${API_BASE}/deleteAuthUser`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ uid })
       });
 
-      alert("Employee deleted successfully!");
+      const result = await res.json();
+
+      if (result.success) {
+        M.toast({ html: result.message, classes: "green rounded" });
+      } else {
+        M.toast({ html: `Error: ${result.error}`, classes: "red rounded" });
+      }
     } else {
-      alert("Employee not found.");
+      M.toast({ html: "Employee not found.", classes: "red rounded" });
     }
   } catch (error) {
     console.error("Error deleting employee:", error);
-    alert("Failed to delete employee.");
+    M.toast({ html: "Failed to delete employee.", classes: "red rounded" });
   }
 }
