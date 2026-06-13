@@ -63,12 +63,12 @@ export function loadExpenses() {
       // Render table row
       tbody.innerHTML += `
         <tr data-id="${docSnap.id}">
-          <td>${expenseDate}</td>
-          <td>${data.category}</td>
-          <td>${data.description}</td>
-          <td>₱${amount.toFixed(2)}</td>
-          <td>${data.status}</td>
-          <td>
+          <td data-label="Date">${expenseDate}</td>
+          <td data-label="Category">${data.category}</td>
+          <td data-label="Description">${data.description}</td>
+          <td data-label="Amount">₱${amount.toFixed(2)}</td>
+          <td data-label="Status">${data.status}</td>
+          <td data-label="Action">
             <button class="edit-btn waves-effect waves-light btn blue" data-id="${docSnap.id}">
               <i class="material-icons">edit</i>
             </button>

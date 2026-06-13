@@ -65,7 +65,7 @@ export async function initProductModal() {
       const employeeId = employeeSelect.value;
 
       if (!name || isNaN(price) || isNaN(stock) || !role || !employeeId) {
-        M.toast({ html: "⚠️ Please fill out all fields correctly." });
+        M.toast({ html: " Please fill out all fields correctly.", classes: "red rounded"});
         return;
       }
 
@@ -77,13 +77,13 @@ export async function initProductModal() {
           role,
           employeeId
         });
-        M.toast({ html: "✅ Product added successfully!" });
+        M.toast({ html: "Product added successfully!" , classes: "green rounded" });
         form.reset();
         toggleInputs(); // disable again after reset
         M.FormSelect.init(document.querySelectorAll("select"));
       } catch (err) {
         console.error("Error adding product:", err);
-        M.toast({ html: "❌ Failed to add product." });
+        M.toast({ html: "Failed to add product." , classes: "red rounded"});
       }
     });
   }

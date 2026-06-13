@@ -20,35 +20,47 @@ import {
 
 const auth = getAuth();
 
-// Load employees list
-export function loadEmployees() {
+// Load employees list with username from users collection
+export async function loadEmployees() {
   const tbody = document.querySelector("#employeeTable tbody");
+  tbody.innerHTML = "";
 
+  //  Get all users first to map email → username
+  const usersSnap = await getDocs(collection(db, "users"));
+  const usersMap = {};
+  usersSnap.forEach((docSnap) => {
+    const data = docSnap.data();
+    usersMap[data.email] = data.username;
+  });
+
+  //  Real-time listener for employees
   onSnapshot(collection(db, "employees"), (querySnapshot) => {
     tbody.innerHTML = "";
 
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
+      const username = usersMap[data.email] || "—"; // fallback kung wala
 
-      tbody.innerHTML += `
-        <tr data-id="${docSnap.id}">
-          <td>${data.fname}</td>
-          <td>${data.lname}</td>
-          <td>${data.email}</td>
-          <td>${data.role}</td>
-          <td>
-            <button class="edit-btn btn blue" data-id="${docSnap.id}">
-              <i class="material-icons">edit</i>
-            </button>
-            <button class="delete-btn btn red" data-id="${docSnap.id}">
-              <i class="material-icons">delete</i>
-            </button>
-          </td>
-        </tr>
-      `;
+     tbody.innerHTML += `
+  <tr data-id="${docSnap.id}">
+    <td data-label="First Name">${data.fname}</td>
+    <td data-label="Last Name">${data.lname}</td>
+    <td data-label="Email">${data.email}</td>
+    <td data-label="Username">${username}</td>
+    <td data-label="Role">${data.role}</td>
+    <td data-label="Action">
+      <button class="edit-btn btn blue" data-id="${docSnap.id}">
+        <i class="material-icons">edit</i>
+      </button>
+      <button class="delete-btn btn red" data-id="${docSnap.id}">
+        <i class="material-icons">delete</i>
+      </button>
+    </td>
+  </tr>
+`;
     });
 
-    // Delete logic
+    //  Delete logic
     document.querySelectorAll(".delete-btn").forEach((btn) => {
       btn.onclick = async (e) => {
         const id = e.target.closest("button").dataset.id;
@@ -56,19 +68,17 @@ export function loadEmployees() {
       };
     });
 
-    // Edit logic
+    //  Edit logic
     document.querySelectorAll(".edit-btn").forEach((btn) => {
       btn.onclick = (e) => {
         const id = e.target.closest("button").dataset.id;
         const row = e.target.closest("tr");
 
-        // Fill modal fields
         document.getElementById("edit-fname").value = row.children[0].textContent;
         document.getElementById("edit-lname").value = row.children[1].textContent;
         document.getElementById("edit-email").value = row.children[2].textContent;
-        document.getElementById("edit-role").value = row.children[3].textContent;
+        document.getElementById("edit-role").value = row.children[4].textContent;
 
-        // Refresh Materialize UI
         M.updateTextFields();
         M.FormSelect.init(document.querySelectorAll("select"));
 
@@ -83,7 +93,6 @@ export function loadEmployees() {
           const newEmail = document.getElementById("edit-email").value;
           const newRole = document.getElementById("edit-role").value;
 
-          // 1. Update employees collection
           await updateDoc(doc(db, "employees", id), {
             fname: newFname,
             lname: newLname,
@@ -92,7 +101,6 @@ export function loadEmployees() {
             last_updated: serverTimestamp()
           });
 
-          // 2. Update users collection (find by email)
           const q = query(collection(db, "users"), where("email", "==", newEmail));
           const snapshot = await getDocs(q);
           snapshot.forEach(async (docSnap) => {
@@ -109,10 +117,9 @@ export function loadEmployees() {
   });
 }
 
-// Add employee securely with Firebase Auth
+//  Add employee securely with Firebase Auth
 export async function addEmployee(fname, lname, email, role, password) {
   try {
-    // 0. Check muna kung existing na ang email sa users collection
     const q = query(collection(db, "users"), where("email", "==", email));
     const snapshot = await getDocs(q);
 
@@ -121,11 +128,9 @@ export async function addEmployee(fname, lname, email, role, password) {
       return;
     }
 
-    // 1. Create account in Firebase Authentication
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const uid = userCredential.user.uid;
 
-    // 2. Save employee profile in Firestore (employees)
     await addDoc(collection(db, "employees"), {
       uid,
       fname,
@@ -135,7 +140,6 @@ export async function addEmployee(fname, lname, email, role, password) {
       created_at: serverTimestamp()
     });
 
-    // 3. Also save login info in users collection
     await addDoc(collection(db, "users"), {
       username: email.split("@")[0].toLowerCase().trim(),
       email,
@@ -163,23 +167,19 @@ export async function deleteEmployee(id) {
       const email = employeeData.email;
       const role = employeeData.role?.toLowerCase();
 
-      // Prevent deleting admin
       if (role === "admin") {
         M.toast({ html: "Admin accounts cannot be deleted.", classes: "red rounded" });
         return;
       }
 
-      // 1. Delete sa employees collection
       await deleteDoc(employeeRef);
 
-      // 2. Delete sa users collection
       const q = query(collection(db, "users"), where("email", "==", email));
       const snapshot = await getDocs(q);
       snapshot.forEach(async (docSnap) => {
         await deleteDoc(doc(db, "users", docSnap.id));
       });
 
-      // 3. Delete sa Firebase Authentication (via backend)
       if (!uid) {
         M.toast({ html: "No UID found for this employee. Cannot delete Auth account.", classes: "red rounded" });
         return;

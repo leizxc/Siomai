@@ -1,5 +1,5 @@
 // adminBE.js
-import { db } from "./firebase.js";
+import { db } from "/js/firebase.js";
 import {
   collection,
   addDoc,
@@ -37,14 +37,14 @@ export function loadInventory() {
       // Render table row
       tbody.innerHTML += `
         <tr data-packs="${data.packs_quantity || 0}">
-          <td>${data.product_name}</td>
-          <td>${data.category}</td>
-          <td>${data.packs_quantity}</td>
-          <td>${data.stock_quantity}</td>
-          <td>₱${data.unit_price.toFixed(2)}</td>
-          <td>₱${data.total_value.toFixed(2)}</td>
-          <td>${status}</td>
-          <td>
+          <td data-label="Product Name">${data.product_name}</td>
+          <td data-label="Category">${data.category}</td>
+          <td data-label="Packs">${data.packs_quantity}</td>
+          <td data-label="Stock">${data.stock_quantity}</td>
+          <td data-label="Unit Price">₱${data.unit_price.toFixed(2)}</td>
+          <td data-label="Total Value">₱${data.total_value.toFixed(2)}</td>
+          <td data-label="Status">${status}</td>
+          <td data-label="Action">
             <button class="edit-btn waves-effect waves-light btn blue" data-id="${docSnap.id}">
               <i class="material-icons">edit</i>
             </button>
@@ -112,7 +112,6 @@ export function loadInventory() {
             total_value: newTotalValue,
             last_updated: serverTimestamp()
           });
-
           modalInstance.close();
         };
       };

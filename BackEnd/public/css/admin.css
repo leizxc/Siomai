@@ -104,7 +104,7 @@ body {
 .card {
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     padding: 20px;
     margin-bottom: 20px;
 }
@@ -124,6 +124,7 @@ body {
     font-size: 0.85rem;
     color: #999;
 }
+
 /*Inventory Design */
 .modal .input-field {
     margin-bottom: 20px;
@@ -140,7 +141,7 @@ body {
     transition: all 0.3s ease;
 }
 
-.edit-btn{
+.edit-btn {
     background-color: #2196f3;
     color: #fff;
 }
@@ -150,7 +151,7 @@ body {
     transform: scale(1.05);
 }
 
-.delete-btn{
+.delete-btn {
     margin-top: 10px;
     background-color: #f44336;
     color: #fff;
@@ -159,6 +160,19 @@ body {
 .delete-btn:hover {
     background-color: #d32f2f;
     transform: scale(1.05);
+}
+
+/* Center icons perfectly sa loob ng Materialize buttons */
+.btn i.material-icons {
+  vertical-align: middle;
+  line-height: 1;       /* pantay sa text baseline */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-section {
+  margin-bottom: 24px; /* space sa ilalim ng form bago sumunod na card */
 }
 
 
@@ -173,7 +187,8 @@ body {
     .main {
         margin-left: 0 !important;
         width: 100% !important;
-        padding: 12px 8px;           /* Reduced side padding */
+        padding: 12px 8px;
+        /* Reduced side padding */
     }
 
     .mobile-header {
@@ -183,7 +198,7 @@ body {
         background: #fff;
         padding: 12px 8px;
         margin-bottom: 12px;
-        box-shadow: 0 2px 5px rgba(0,0,0,.1);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, .1);
     }
 
     #menu-toggle {
@@ -205,7 +220,7 @@ body {
         background: #fff;
         z-index: 1000;
         transition: 0.3s ease;
-        box-shadow: 0 0 10px rgba(0,0,0,.2);
+        box-shadow: 0 0 10px rgba(0, 0, 0, .2);
         padding: 20px;
     }
 
@@ -220,7 +235,7 @@ body {
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0,0,0,.4);
+        background: rgba(0, 0, 0, .4);
         opacity: 0;
         visibility: hidden;
         z-index: 999;
@@ -236,7 +251,8 @@ body {
         margin-left: 0;
         margin-right: 0;
         margin-bottom: 16px;
-        padding: 16px 14px;        /* Slightly reduced padding */
+        padding: 16px 14px;
+        /* Slightly reduced padding */
         border-radius: 12px;
     }
 
@@ -274,7 +290,7 @@ body {
         background: #fff;
         margin-bottom: 14px;
         border-radius: 12px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         padding: 12px;
     }
 
@@ -291,6 +307,19 @@ body {
     .inventory-card td:last-child,
     .records-card td:last-child {
         border-bottom: none;
+        display: flex;
+        justify-content: flex-end;
+        /* align sa kanan */
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Align edit and delete buttons side by side */
+    .inventory-card td:last-child .edit-btn,
+    .inventory-card td:last-child .delete-btn {
+        margin-top: 0;
+        display: inline-flex;
+        align-items: center;
     }
 
     .inventory-card td::before,
@@ -300,7 +329,7 @@ body {
         color: #444;
     }
 
-    /* ✅ Product Table Responsive */
+    /*  Product Table Responsive */
     .product-list-card thead {
         display: none;
     }
@@ -317,7 +346,7 @@ body {
         background: #fff;
         margin-bottom: 14px;
         border-radius: 12px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         padding: 12px;
     }
 
@@ -333,7 +362,8 @@ body {
     .product-list-card td:last-child {
         border-bottom: none;
         justify-content: flex-end;
-        gap: 4px; /* maliit na pagitan lang sa edit at delete */
+        gap: 4px;
+        /* maliit na pagitan lang sa edit at delete */
     }
 
     .product-list-card td::before {
@@ -353,6 +383,114 @@ body {
     .product-list-card .delete-btn {
         margin-top: 0;
     }
+
+    /*expenses */
+    .expenses-card thead {
+    display: none;
+  }
+
+  .expenses-card table,
+  .expenses-card tbody,
+  .expenses-card tr,
+  .expenses-card td {
+    display: block;
+    width: 100%;
+  }
+
+  .expenses-card tr {
+    background: #fff;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    padding: 12px;
+  }
+
+  .expenses-card td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 14.5px;
+  }
+
+  .expenses-card td:last-child {
+    border-bottom: none;
+    justify-content: flex-end;
+    gap: 4px; /* maliit na pagitan lang sa edit at delete */
+  }
+
+  .expenses-card td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #444;
+  }
+
+  /* Compact buttons for mobile */
+  .expenses-card .btn {
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  .expenses-card .edit-btn,
+  .expenses-card .delete-btn {
+    margin-top: 0;
+  }
+
+  /*employee table*/
+  .employee-card thead {
+    display: none;
+  }
+
+  .employee-card table,
+  .employee-card tbody,
+  .employee-card tr,
+  .employee-card td {
+    display: block;
+    width: 100%;
+  }
+
+  .employee-card tr {
+    background: #fff;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    padding: 12px;
+  }
+
+  .employee-card td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 14.5px;
+  }
+
+  .employee-card td:last-child {
+    border-bottom: none;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .employee-card td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #444;
+  }
+
+  /* Compact buttons for mobile */
+  .employee-card .btn {
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  .employee-card .edit-btn,
+  .employee-card .delete-btn {
+    margin-top: 0;
+  }
 }
 
 

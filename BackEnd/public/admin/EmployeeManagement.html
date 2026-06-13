@@ -2,20 +2,20 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel Queen Cassy Food Cart</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel Queen Cassy Food Cart</title>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" type="text/css" href="/css/admin.css">
 
-    <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
+  <!-- Materialize -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
+  <script type="text/javascript" src="/js/materialize.min.js"></script>
 
-    <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json">
 </head>
 
 <body>
@@ -62,19 +62,20 @@
     </section>
 
     <!-- Employee List -->
-    <section class="table-section">
+    <section class="table-section employee-card">
       <table id="employeeTable" class="highlight centered">
         <thead>
           <tr>
             <th>First Name</th>
             <th>Last Name</th>
             <th>Email</th>
+            <th>Username</th>
             <th>Role</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          <!-- Firestore data will render here -->
+          <!-- Firestore data will render here with data-label attributes -->
         </tbody>
       </table>
     </section>
@@ -125,5 +126,4 @@
     initEmployee();
   </script>
 </body>
-
 </html>
