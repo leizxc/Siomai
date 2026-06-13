@@ -37,7 +37,7 @@ function loadSection(page) {
                             addproducts.initProductModal();
                         }
 
-                        const productModule = await import("/js/adminAddProduct.js");
+                        const productModule = await import("/js/adminaddproduct.js");
                         if (typeof productModule.loadProducts === "function") {
                             productModule.loadProducts();
                         }
