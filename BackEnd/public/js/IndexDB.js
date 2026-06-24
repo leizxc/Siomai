@@ -1,0 +1,165 @@
+// Import Firestore helpers at db mula sa firebase.js
+import { getDocs, collection, addDoc } 
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { db } from "./firebase.js"; // adjust path depende sa folder structure
+
+// 🔐 Hash function
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// 🗄️ Open or create IndexedDB
+function openOfflineDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("OfflineDB", 1);
+
+    request.onupgradeneeded = (event) => {
+      const dbLocal = event.target.result;
+
+      // Users store
+      if (!dbLocal.objectStoreNames.contains("users")) {
+        const usersStore = dbLocal.createObjectStore("users", { keyPath: "username" });
+        usersStore.createIndex("role", "role", { unique: false });
+      }
+
+      // Orders store
+      if (!dbLocal.objectStoreNames.contains("orders")) {
+        const ordersStore = dbLocal.createObjectStore("orders", { keyPath: "id", autoIncrement: true });
+        ordersStore.createIndex("status", "status", { unique: false });
+      }
+    };
+
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onerror = (event) => reject("IndexedDB error: " + event.target.errorCode);
+  });
+}
+
+// 💾 Save user to IndexedDB (with toast feedback)
+async function saveUserOffline(user) {
+  const dbLocal = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = dbLocal.transaction("users", "readwrite");
+    tx.objectStore("users").put(user);
+
+    tx.oncomplete = () => {
+      M.toast({ html: 'User saved offline', classes: 'green-toast' });
+      resolve(true);
+    };
+    tx.onerror = () => reject("Failed to save user offline");
+  });
+}
+
+// 🔍 Get user from IndexedDB (normalize username)
+async function getUserOffline(username) {
+  const dbLocal = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = dbLocal.transaction("users", "readonly");
+    const req = tx.objectStore("users").get(username.toLowerCase().trim());
+
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject("User lookup failed");
+  });
+}
+
+// 🧩 Offline login check (with user-not-found feedback)
+async function offlineLogin(username, password) {
+  const user = await getUserOffline(username);
+  if (!user) {
+    M.toast({ html: 'User not found offline', classes: 'red-toast' });
+    return;
+  }
+
+  const inputHash = await hashPassword(password);
+  if (user.passwordHash === inputHash) {
+    redirectByRole(user.role);
+    M.toast({ html: 'Offline login success', classes: 'blue-toast' });
+  } else {
+    M.toast({ html: 'Invalid offline credentials', classes: 'red-toast' });
+  }
+}
+
+// 🚦 Redirect by role
+function redirectByRole(role) {
+  const lowerRole = role.toLowerCase();
+  if (lowerRole === "admin") {
+    window.location.href = "/admin/adminpanel.html";
+  } else if (lowerRole === "siomai") {
+    window.location.href = "/employee/siomai/userpanel.html";
+  } else if (lowerRole === "pares") {
+    window.location.href = "/employee/pares/userpanel.html";
+  }
+}
+
+// 🔄 Sync users from Firebase to IndexedDB
+async function syncUsersFromFirebase() {
+  try {
+    const dbLocal = await openOfflineDB();
+    const snapshot = await getDocs(collection(db, "users"));
+
+    const tx = dbLocal.transaction("users", "readwrite");
+    const store = tx.objectStore("users");
+
+    snapshot.forEach((docSnap) => {
+      const userData = docSnap.data();
+      if (userData.username && userData.passwordHash && userData.role) {
+        store.put({
+          username: userData.username.toLowerCase().trim(),
+          passwordHash: userData.passwordHash,
+          role: userData.role.toLowerCase()
+        });
+      }
+    });
+
+    await new Promise((resolve) => (tx.oncomplete = resolve));
+    console.log("✅ Users synced to offline DB");
+    M.toast({ html: 'Users synced offline', classes: 'green-toast' });
+  } catch (err) {
+    console.error("❌ Sync failed:", err);
+    M.toast({ html: 'Failed to sync users', classes: 'red-toast' });
+  }
+}
+
+// 🧾 Save orders offline
+async function saveOrderOffline(orderData) {
+  const dbLocal = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = dbLocal.transaction("orders", "readwrite");
+    tx.objectStore("orders").put({ ...orderData, status: "pending" });
+
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject("Failed to save order offline");
+  });
+}
+
+// 🌐 Auto-sync orders when online
+window.addEventListener("online", async () => {
+  const dbLocal = await openOfflineDB();
+  const req = dbLocal.transaction("orders", "readonly").objectStore("orders").getAll();
+
+  req.onsuccess = async () => {
+    const orders = req.result.filter(o => o.status === "pending");
+
+    for (const order of orders) {
+      await addDoc(collection(db, "orders"), order);
+
+      const txUpdate = dbLocal.transaction("orders", "readwrite");
+      txUpdate.objectStore("orders").put({ ...order, status: "synced" });
+    }
+
+    M.toast({ html: 'Offline orders synced', classes: 'blue-toast' });
+  };
+});
+
+// 📤 Export functions para magamit sa ibang modules
+export { syncUsersFromFirebase, offlineLogin, saveUserOffline, saveOrderOffline };
+
+// 🧰 Gawin available sa console ng devtool sa Chrome
+window.openOfflineDB = openOfflineDB;
+window.syncUsersFromFirebase = syncUsersFromFirebase;
+window.offlineLogin = offlineLogin;
+window.hashPassword = hashPassword;
+window.getUserOffline = getUserOffline;

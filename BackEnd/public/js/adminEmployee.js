@@ -117,6 +117,16 @@ export async function loadEmployees() {
   });
 }
 
+//hash password
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+
 //  Add employee securely with Firebase Auth
 export async function addEmployee(fname, lname, email, role, password) {
   try {
@@ -139,12 +149,13 @@ export async function addEmployee(fname, lname, email, role, password) {
       role,
       created_at: serverTimestamp()
     });
-
+    const hashvalue = await hashPassword(password);
     await addDoc(collection(db, "users"), {
       username: email.split("@")[0].toLowerCase().trim(),
       email,
       role,
       status: "active",
+      passwordHash: hashvalue, // store hashed password
       created_at: serverTimestamp()
     });
 

@@ -72,6 +72,40 @@ export async function loadProducts() {
                     await deleteDoc(doc(db, "products", id));
                 };
             });
+            //edit logic
+            document.querySelectorAll(".edit-btn").forEach((btn) => {
+                btn.onclick = (e) =>{
+                    const id = e.target.closest("button").dataset.id;
+                    const row = e.target.closest("tr");
+
+                    document.getElementById("edit-name").value = row.children[0].textContent;
+                    document.getElementById("edit-price").value = row.children[1].textContent.replace("₱", "");
+                    document.getElementById("edit-stock").value = row.children[2].textContent;
+                    
+                    M.updateTextFields();
+                    M.FormSelect.init(document.querySelectorAll("select"));
+                    
+                    const modalElem = document.getElementById("modal-edit-product");
+                    const modalInstance = M.Modal.init(modalElem);
+                    modalInstance.open();
+                    
+
+                    const saveBtn = document.getElementById("edit-save");
+                    saveBtn.onclick = async () => {
+                        const newName = document.getElementById("edit-name").value;
+                        const newPrice = parseFloat(document.getElementById("edit-price").value);
+                        const newStock = parseInt(document.getElementById("edit-stock").value);
+
+                        await updateDoc(doc(db, "products", id), {
+                            name: newName,
+                            price: newPrice,
+                            stock: newStock
+                        });
+                        modalInstance.close();
+                    }
+                }
+            });
+            
         });
     }
 

@@ -91,32 +91,30 @@
       </section>
 
       <!-- Update Product Modal -->
-      <div id="updateProductModal" class="modal">
+      <div id="modal-edit-product" class="modal">
         <div class="modal-content">
           <h4>Update Product</h4>
           <form id="updateProductForm">
             <input type="hidden" id="updateProductId">
 
             <div class="input-field">
-              <input type="text" id="updateProductName" required>
-              <label for="updateProductName">Product Name</label>
+              <input type="text" id="edit-name" required>
+              <label for="edit-name">Product Name</label>
             </div>
 
             <div class="input-field">
-              <input type="number" id="updateProductPrice" step="0.01" required>
-              <label for="updateProductPrice">Product Price</label>
+              <input type="number" id="edit-price" step="0.01" required>
+              <label for="edit-price">Product Price</label>
             </div>
 
             <div class="input-field">
-              <input type="number" id="updateProductStock" required>
-              <label for="updateProductStock">Product Stock</label>
+              <input type="number" id="edit-stock" required>
+              <label for="edit-stock">Product Stock</label>
             </div>
-
-            <button type="button" id="update-save" class="btn blue">Save Changes</button>
+            <div class="modal-footer">
+            <button type="button" id="edit-save" class="btn blue">Save Changes</button>
+            </div>
           </form>
-        </div>
-        <div class="modal-footer">
-          <button class="modal-close btn red">Close</button>
         </div>
       </div>
     </main>

@@ -19,104 +19,105 @@
 </head>
 
 <body>
-  <main class="main">
-    <header class="header">
-      <h1>Employee Management</h1>
-      <p>Manage Account and Roles of Employees</p>
-    </header>
+  <div class="container">
+    <main class="main">
+      <header class="header">
+        <h1>Employee Management</h1>
+        <p>Manage Account and Roles of Employees</p>
+      </header>
 
-    <!-- Create Employee Form -->
-    <section class="form-section">
-      <form id="employeeForm">
-        <div class="input-field">
-          <input type="text" id="fname" required>
-          <label for="fname">First Name</label>
+      <!-- Create Employee Form -->
+      <section class="form-section">
+        <form id="employeeForm">
+          <div class="input-field">
+            <input type="text" id="fname" required>
+            <label for="fname">First Name</label>
+          </div>
+
+          <div class="input-field">
+            <input type="text" id="lname" required>
+            <label for="lname">Last Name</label>
+          </div>
+
+          <div class="input-field">
+            <input type="email" id="email" required>
+            <label for="email">Email</label>
+          </div>
+
+          <div class="input-field">
+            <input type="password" id="password" required>
+            <label for="password">Password</label>
+          </div>
+
+          <div class="input-field">
+            <select id="role">
+              <option value="" disabled selected>Choose Role</option>
+              <option value="siomai">Seller of Siomai</option>
+              <option value="pares">Seller of Pares</option>
+            </select>
+            <label for="role">Role</label>
+          </div>
+
+          <button type="submit" class="waves-effect waves-green btn">Add Employee</button>
+        </form>
+      </section>
+
+      <!-- Employee List -->
+      <section class="card table-section employee-card">
+        <h4>Employee List</h4>
+        <table id="employeeTable" class="highlight centered">
+          <thead>
+            <tr>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Firestore data will render here with data-label attributes -->
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Edit Employee Modal -->
+      <div id="modal-edit-employee" class="modal">
+        <div class="modal-content">
+          <h4>Edit Employee</h4>
+
+          <div class="input-field">
+            <input type="text" id="edit-fname">
+            <label for="edit-fname">First Name</label>
+          </div>
+
+          <div class="input-field">
+            <input type="text" id="edit-lname">
+            <label for="edit-lname">Last Name</label>
+          </div>
+
+          <div class="input-field">
+            <input type="email" id="edit-email">
+            <label for="edit-email">Email</label>
+          </div>
+
+          <div class="input-field">
+            <select id="edit-role">
+              <option value="" disabled selected>Choose Role</option>
+              <option value="siomai">Seller of Siomai</option>
+              <option value="pares">Seller of Pares</option>
+            </select>
+            <label for="edit-role">Role</label>
+          </div>
         </div>
 
-        <div class="input-field">
-          <input type="text" id="lname" required>
-          <label for="lname">Last Name</label>
-        </div>
-
-        <div class="input-field">
-          <input type="email" id="email" required>
-          <label for="email">Email</label>
-        </div>
-
-        <div class="input-field">
-          <input type="password" id="password" required>
-          <label for="password">Password</label>
-        </div>
-
-        <div class="input-field">
-          <select id="role">
-            <option value="" disabled selected>Choose Role</option>
-            <option value="siomai">Seller of Siomai</option>
-            <option value="pares">Seller of Pares</option>
-          </select>
-          <label for="role">Role</label>
-        </div>
-
-        <button type="submit" class="waves-effect waves-green btn">Add Employee</button>
-      </form>
-    </section>
-
-    <!-- Employee List -->
-    <section class="table-section employee-card">
-      <table id="employeeTable" class="highlight centered">
-        <thead>
-          <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Email</th>
-            <th>Username</th>
-            <th>Role</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Firestore data will render here with data-label attributes -->
-        </tbody>
-      </table>
-    </section>
-
-    <!-- Edit Employee Modal -->
-    <div id="modal-edit-employee" class="modal">
-      <div class="modal-content">
-        <h4>Edit Employee</h4>
-
-        <div class="input-field">
-          <input type="text" id="edit-fname">
-          <label for="edit-fname">First Name</label>
-        </div>
-
-        <div class="input-field">
-          <input type="text" id="edit-lname">
-          <label for="edit-lname">Last Name</label>
-        </div>
-
-        <div class="input-field">
-          <input type="email" id="edit-email">
-          <label for="edit-email">Email</label>
-        </div>
-
-        <div class="input-field">
-          <select id="edit-role">
-            <option value="" disabled selected>Choose Role</option>
-            <option value="siomai">Seller of Siomai</option>
-            <option value="pares">Seller of Pares</option>
-          </select>
-          <label for="edit-role">Role</label>
+        <div class="modal-footer">
+          <button id="edit-save" class="waves-effect waves-light btn blue">save Update Employee</button>
         </div>
       </div>
-
-      <div class="modal-footer">
-        <button id="edit-save" class="waves-effect waves-light btn blue">
-          <i class="material-icons left">save</i>Update Employee
-        </button>
-      </div>
-    </div>
-  </main>
+    </main>
+  </div>
 
   <!-- Scripts -->
   <script src="/js/functionalnav.js"></script>
@@ -126,4 +127,5 @@
     initEmployee();
   </script>
 </body>
+
 </html>

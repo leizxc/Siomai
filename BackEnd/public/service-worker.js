@@ -1,5 +1,5 @@
-const staticCacheName = 'site-static-v1';
-const dynamicCache = 'site-dynamic-v1';
+const staticCacheName = 'site-static-v2';
+const dynamicCache = 'site-dynamic-v2';
 
 const asset = [
   './index.html',
@@ -12,6 +12,9 @@ const asset = [
   './admin/adminpanel.html',   
   './css/admin.css',
   './js/refresh.js',
+  './js/IndexDB.js',
+  './js/frontfirebase.js',
+  './js/firebase.js',
   './employee/siomai/userpanel.html',
   'https://fonts.googleapis.com/icon?family=Material+Icons',
   'https://fonts.gstatic.com/s/materialicons/v47/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2'
@@ -50,6 +53,7 @@ self.addEventListener('fetch', evt => {
         if (evt.request.method === "GET") {
           return caches.open(dynamicCache).then(cache => {
             cache.put(evt.request, fetchRes.clone());
+            limitCacheSize(dynamicCache, 50);//apply limiter
             return fetchRes;
           });
         } else {
@@ -59,3 +63,14 @@ self.addEventListener('fetch', evt => {
     })
   );
 });
+
+//cache size limiter
+const limitCacheSize = (name, size) => {
+  caches.open(name).then(cache => {
+    cache.keys().then(keys => {
+      if (keys.length > size){
+        cache.delete(keys[0]).then(limitCacheSize(name, size));
+      }
+    });
+  });
+};

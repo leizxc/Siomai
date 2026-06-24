@@ -62,21 +62,30 @@
 
 <!-- JS Files -->
 <script src="/js/login.js"></script>
-<script src="/js/app.js"></script>
+<script type="module" src="/js/app.js"></script>
 <script src="/js/install.js"></script>
 <script src="/js/refresh.js"></script>
-
+<script type="module" src="/js/IndexDB.js"></script>
 <!-- FIREBASE -->
 <script type="module">
   import { auth, db } from "/js/frontfirebase.js";
   import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { syncUsersFromFirebase, offlineLogin } from "/js/IndexDB.js";
+
 
   document.querySelector(".btn-login").addEventListener("click", async (e) => {
     e.preventDefault();
     const username = document.getElementById("username").value.toLowerCase().trim();
     const password = document.getElementById("password").value;
+    //offline fallback 
+     if (!navigator.onLine) {
+    console.log("Offline mode detected");
+    await offlineLogin(username, password);
+    return;
+  }
 
+    //online login(firebase)
     const q = query(collection(db, "users"), where("username", "==", username));
     const snapshot = await getDocs(q);
 
@@ -97,11 +106,11 @@
           window.location.href = "/employee/pares/userpanel.html";
         }
       } catch (error) {
-        alert("Invalid Password");
+       M.toast({html: 'Invalid password', classes: 'red-toast', displayLength:4000});
         console.error(error);
       }
     } else {
-      alert("Username not Found");
+      M.toast({html:'Username not found',classes:'red-toast',displayLength:4000});
       console.log("No match for:", username);
     }
   });
