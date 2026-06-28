@@ -2,20 +2,20 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel Queen Cassy Food Cart</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Queen Cassy Food Cart</title>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" type="text/css" href="/css/admin.css">
 
-    <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
+  <!-- Materialize -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
+  <script type="text/javascript" src="/js/materialize.min.js"></script>
 
-    <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json">
 </head>
 
 <body>
@@ -25,41 +25,42 @@
       <section class="card add-product-card">
         <h4>Add Product Sales</h4>
         <form id="addProductForm">
-         <div class="input-field">
-            <select id="productRole">
-                <option value="" disabled selected>Choose Role</option>
-                <option value="siomai">Siomai</option>
-                <option value="pares">Pares</option>
+          <!-- Role Selection -->
+          <div class="input-field">
+            <select id="productRole" required>
+              <option value="" disabled selected>Choose Role</option>
+              <option value="siomai">Siomai</option>
+              <option value="pares">Pares</option>
             </select>
             <label for="productRole">Employee Role</label>
-         </div>
+          </div>
 
-         <!--Employee Selection-->
-         <div class="input-field">
-            <select id="productEmployee" required>
-                <option value="" disabled selected>Choose Employee</option>
-                <!--DITO PAPASOK YUNG MGA NASA FIREBASE-->
+          <!-- Employee Selection -->
+          <div class="input-field">
+            <select id="productEmployee">
+              <option value="" selected>All Employees (Shared)</option>
+              <!-- Dito papasok yung mga nasa Firestore -->
             </select>
-            <label for="productEmployee">Assigned Employee</label>
-         </div>
+            <label for="productEmployee">Assign to Specific Employee</label>
+          </div>
 
-         <!--PRODUCTS INPUTS(INITIALLY DISABLED SINCE PARA MAGANDA TIGNAN KAILANGAN MUNA MAMILI SA ROLE AND EMPLOYEE)-->
-         <div class="input-field">
-            <input type="text" id="productName" disabled required>
+          <!-- Product Inputs -->
+          <div class="input-field">
+            <input type="text" id="productName" required>
             <label for="productName">Product Name</label>
-         </div>
+          </div>
 
-         <div class="input-field">
-            <input type="number" id="productPrice" step="1.00" disabled required>
+          <div class="input-field">
+            <input type="number" id="productPrice" step="0.01" required>
             <label for="productPrice">Product Price</label>
-         </div>
+          </div>
 
-         <div class="input-field">
-            <input type="number" id="productStock" disabled required>
+          <div class="input-field">
+            <input type="number" id="productStock" required>
             <label for="productStock">Product Stock</label>
-         </div>
-         
-         <button type="submit" class="btn green" disabled id="addProductBtn">Add Product</button>
+          </div>
+
+          <button type="submit" class="btn green" disabled id="addProductBtn">Add Product</button>
         </form>
       </section>
 
@@ -67,20 +68,22 @@
       <section class="card product-list-card">
         <h4>Product List</h4>
 
-        <!---FILTER BY EMPLOYEE-->
+        <!-- Filter by Role -->
         <div class="input-field">
-            <select id="filterEmployee">
-                <option value="" disabled selected>Choose Employee</option>
-                <!--Dito papasok yung mga name ng employee para makita ano yung naka assign sakanila na product-->
-            </select>
-            <label for="filterEmployee">Select Employee</label>
+          <select id="filterRole">
+            <option value="" selected>All Roles</option>
+            <option value="siomai">Siomai</option>
+            <option value="pares">Pares</option>
+          </select>
+          <label for="filterRole">Filter by Role</label>
         </div>
+
         <table id="productTable">
           <thead>
             <tr>
               <th>Product Name</th>
-              <th>Product Price</th>
-              <th>Product Stock</th>
+              <th>Price</th>
+              <th>Stock</th>
               <th>Role</th>
               <th>Employee</th>
               <th>Action</th>
@@ -111,8 +114,9 @@
               <input type="number" id="edit-stock" required>
               <label for="edit-stock">Product Stock</label>
             </div>
+
             <div class="modal-footer">
-            <button type="button" id="edit-save" class="btn blue">Save Changes</button>
+              <button type="button" id="edit-save" class="btn blue">Save Changes</button>
             </div>
           </form>
         </div>
@@ -121,7 +125,7 @@
   </div>
 
   <!-- JS modules -->
-    <script src="/js/refresh.js"></script>
+  <script src="/js/refresh.js"></script>
   <script src="/js/functionalnav.js"></script>
   <script type="module" src="/js/firebase.js"></script>
   <script type="module" src="/js/addproductbtn.js"></script>

@@ -1,35 +1,52 @@
-const staticCacheName = 'site-static-v2';
-const dynamicCache = 'site-dynamic-v2';
+const staticCacheName = 'site-static-v5';
+const dynamicCache = 'site-dynamic-v5';
 
-const asset = [
-  './index.html',
-  './js/app.js',
-  './js/materialize.min.js',
-  './css/login.css',
-  './css/materialize.min.css',
-  './assets/queencassy.jpg',
-  './js/install.js',
-  './admin/adminpanel.html',   
-  './css/admin.css',
-  './js/refresh.js',
-  './js/IndexDB.js',
-  './js/frontfirebase.js',
-  './js/firebase.js',
+const assets = [
+'./index.html',
+  './manifest.json',
+  './admin/adminpanel.html',
   './employee/siomai/userpanel.html',
+
+  // CSS
+  './css/login.css',
+  './css/admin.css',
+  './css/materialize.min.css',
+
+  // JS
+  './js/app.js',
+  './js/install.js',
+  './js/refresh.js',
+  './js/materialize.min.js',
+  './js/firebase.js',
+  './js/frontfirebase.js',
+  './js/IndexDB.js',
+  './js/navemployee.js',
+  './js/empoleyee.js',
+
+  // Images
+  './assets/queencassy.jpg',
+
+  // External fonts
   'https://fonts.googleapis.com/icon?family=Material+Icons',
   'https://fonts.gstatic.com/s/materialicons/v47/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2'
 ];
-
 
 //install service worker
 self.addEventListener('install', evt => {
   evt.waitUntil(
     caches.open(staticCacheName).then(cache => {
       console.log('Caching shell assets');
-      return cache.addAll(asset);
+      return cache.addAll(assets);
     })
   );
 });
+
+//CleanUp Cache
+async function CleanupCache() {
+  const keys = await caches.keys()
+  const keysToDelete = keys.filter(key => key != staticCacheName);
+  return Promise.all(keysToDelete.map(key => caches.delete(key)));
+}
 
 //activate event
 self.addEventListener('activate', evt => {
@@ -49,17 +66,31 @@ self.addEventListener('fetch', evt => {
   evt.respondWith(
     caches.match(evt.request).then(cacheRes => {
       return cacheRes || fetch(evt.request).then(fetchRes => {
-        // cache only GET requests
         if (evt.request.method === "GET") {
           return caches.open(dynamicCache).then(cache => {
             cache.put(evt.request, fetchRes.clone());
-            limitCacheSize(dynamicCache, 50);//apply limiter
+            limitCacheSize(dynamicCache, 50);
             return fetchRes;
           });
         } else {
-          return fetchRes; // skip caching for POST, PUT, DELETE
+          return fetchRes;
         }
-      }).catch(() => cacheRes); // fallback kapag failed ang fetch
+      }).catch(() => {
+        //  fallback kapag walang cache at offline
+        if (evt.request.url.endsWith('.html')) {
+          return caches.match('./index.html');
+        }
+        if (evt.request.url.endsWith('.js')) {
+          return new Response('// offline js', { headers: { 'Content-Type': 'application/javascript' } });
+        }
+        if (evt.request.url.endsWith('.css')) {
+          return new Response('/* offline css */', { headers: { 'Content-Type': 'text/css' } });
+        }
+        if (evt.request.url.endsWith('.png') || evt.request.url.endsWith('.jpg') || evt.request.url.endsWith('.ico')) {
+          return caches.match('./assets/queencassy.jpg');
+        }
+        return new Response('Offline content unavailable', { status: 200, headers: { 'Content-Type': 'text/plain' } });
+      });
     })
   );
 });

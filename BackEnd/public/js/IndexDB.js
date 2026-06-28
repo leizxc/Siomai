@@ -3,7 +3,7 @@ import { getDocs, collection, addDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase.js"; // adjust path depende sa folder structure
 
-// 🔐 Hash function
+//  Hash function
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
@@ -12,10 +12,10 @@ async function hashPassword(password) {
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-// 🗄️ Open or create IndexedDB
+//  Open or create IndexedDB
 function openOfflineDB() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open("OfflineDB", 1);
+    const request = indexedDB.open("OfflineDB", 2);
 
     request.onupgradeneeded = (event) => {
       const dbLocal = event.target.result;
@@ -31,6 +31,12 @@ function openOfflineDB() {
         const ordersStore = dbLocal.createObjectStore("orders", { keyPath: "id", autoIncrement: true });
         ordersStore.createIndex("status", "status", { unique: false });
       }
+      
+      //product store
+      if(!dbLocal.objectStoreNames.contains("products")){
+        const productStore = dbLocal.createObjectStore("products",{keyPath:"id"});
+        productStore.createIndex("employeeId", "employeeId", {unique: false});
+      }
     };
 
     request.onsuccess = (event) => resolve(event.target.result);
@@ -38,7 +44,7 @@ function openOfflineDB() {
   });
 }
 
-// 💾 Save user to IndexedDB (with toast feedback)
+//  Save user to IndexedDB (with toast feedback)
 async function saveUserOffline(user) {
   const dbLocal = await openOfflineDB();
   return new Promise((resolve, reject) => {
@@ -53,7 +59,7 @@ async function saveUserOffline(user) {
   });
 }
 
-// 🔍 Get user from IndexedDB (normalize username)
+//  Get user from IndexedDB (normalize username)
 async function getUserOffline(username) {
   const dbLocal = await openOfflineDB();
   return new Promise((resolve, reject) => {
@@ -65,7 +71,7 @@ async function getUserOffline(username) {
   });
 }
 
-// 🧩 Offline login check (with user-not-found feedback)
+//  Offline login check (with user-not-found feedback)
 async function offlineLogin(username, password) {
   const user = await getUserOffline(username);
   if (!user) {
@@ -82,7 +88,7 @@ async function offlineLogin(username, password) {
   }
 }
 
-// 🚦 Redirect by role
+//  Redirect by role
 function redirectByRole(role) {
   const lowerRole = role.toLowerCase();
   if (lowerRole === "admin") {
@@ -94,7 +100,7 @@ function redirectByRole(role) {
   }
 }
 
-// 🔄 Sync users from Firebase to IndexedDB
+//  Sync users from Firebase to IndexedDB
 async function syncUsersFromFirebase() {
   try {
     const dbLocal = await openOfflineDB();
@@ -123,7 +129,37 @@ async function syncUsersFromFirebase() {
   }
 }
 
-// 🧾 Save orders offline
+//SyncproductFromFirebase
+async function SyncProductFromFirebase(){
+  try {
+    const dbLocal = await openOfflineDB();
+    const snapshot = await getDocs(collection(db, "products"));
+
+    const tx = dbLocal.transaction("products", "readwrite");
+    const store = tx.objectStore("products");
+
+    snapshot.forEach((docSnap) => {
+      const productData = docSnap.data();
+      store.put({
+        id: docSnap.id,
+        name: productData.name,
+        price: productData.price,
+        stock: productData.stock,
+        role: productData.role,
+        employeeId: productData.employeeId
+      });
+    });
+
+    await new Promise((resolve) => (tx.oncomplete = resolve));
+    console.log("✅ Products synced to offline DB");
+    M.toast({html:'Products synced oflline', classes: 'green-toast'});
+  }catch(err){
+    console.error("❌ Product sync failed:", err);
+    M.toast({html:'Failed to sync products', classes: 'red-toast'});
+  }
+}
+
+// Save orders offline
 async function saveOrderOffline(orderData) {
   const dbLocal = await openOfflineDB();
   return new Promise((resolve, reject) => {
@@ -135,7 +171,7 @@ async function saveOrderOffline(orderData) {
   });
 }
 
-// 🌐 Auto-sync orders when online
+// Auto-sync orders when online
 window.addEventListener("online", async () => {
   const dbLocal = await openOfflineDB();
   const req = dbLocal.transaction("orders", "readonly").objectStore("orders").getAll();
@@ -154,10 +190,55 @@ window.addEventListener("online", async () => {
   };
 });
 
-// 📤 Export functions para magamit sa ibang modules
-export { syncUsersFromFirebase, offlineLogin, saveUserOffline, saveOrderOffline };
+//render table of products 
+async function loadProductsOffline(employeeId = "") {
+  const dbLocal = await openOfflineDB();
+  const tx = dbLocal.transaction("products", "readonly");
+  const store = tx.objectStore("products");
+  const req = store.getAll();
 
-// 🧰 Gawin available sa console ng devtool sa Chrome
+  req.onsuccess = () => {
+    let products = req.result;
+    if (employeeId) {
+      products = products.filter(p => p.employeeId === employeeId);
+    }
+    renderProductsForEmployee(products); // use the correct renderer
+  };
+}
+
+async function renderProductsForEmployee(products) {
+  const productGrid = document.querySelector(".product-grid");
+  productGrid.innerHTML = "";
+
+  products.forEach(data => {
+    const card = document.createElement("div");
+    card.classList.add("product-card");
+    card.innerHTML = `
+      <h5>${data.name}</h5>
+      <p>₱${data.price}</p>
+      <button class="btn add-btn"
+        data-id="${data.id}"
+        data-name="${data.name}"
+        data-price="${data.price}"
+        data-stock="${data.stock}">
+        Add
+      </button>
+    `;
+    productGrid.appendChild(card);
+  });
+}
+//Export functions para magamit sa ibang modules
+export { 
+  syncUsersFromFirebase, 
+  offlineLogin, 
+  saveUserOffline, 
+  saveOrderOffline,
+  SyncProductFromFirebase,   
+  loadProductsOffline,       
+  renderProductsForEmployee 
+};
+
+// Gawin available sa console ng devtool sa Chrome
 window.openOfflineDB = openOfflineDB;
 window.syncUsersFromFirebase = syncUsersFromFirebase;
 window.offlineLogin = offlineLogin;

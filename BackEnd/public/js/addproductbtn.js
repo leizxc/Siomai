@@ -1,5 +1,5 @@
 import { db } from "/js/firebase.js";
-import { collection, getDocs, addDoc, query, where } 
+import { collection, getDocs, addDoc, query, where }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 export async function initProductModal() {
@@ -20,15 +20,16 @@ export async function initProductModal() {
   function toggleInputs() {
     const role = roleSelect.value;
     const employee = employeeSelect.value;
-    const enable = role && employee;
+    const enable = !!role;
     inputs.forEach(el => el.disabled = !enable);
   }
 
   //  Populate employee dropdown based on selected role
   async function loadEmployeesByRole(selectedRole) {
+    const employeeSelect = document.getElementById("productEmployee");
     employeeSelect.innerHTML = `
-      <option value="" disabled selected>Choose Employee</option>
-    `;
+    <option value="" selected>All ${selectedRole} Employees (Shared)</option>
+  `;
     const q = query(collection(db, "employees"), where("role", "==", selectedRole));
     const snap = await getDocs(q);
 
@@ -36,7 +37,7 @@ export async function initProductModal() {
       const data = docSnap.data();
       const option = document.createElement("option");
       option.value = docSnap.id;
-      option.textContent = `${data.fname} ${data.lname} (${data.role})`;
+      option.textContent = `${data.fname} ${data.lname}`;
       employeeSelect.appendChild(option);
     });
 
@@ -62,13 +63,13 @@ export async function initProductModal() {
       const price = parseFloat(document.getElementById("productPrice").value);
       const stock = parseInt(document.getElementById("productStock").value);
       const role = roleSelect.value;
-      const employeeId = employeeSelect.value;
+      const employeeId = employeeSelect.value || null;
 
-      if (!name || isNaN(price) || isNaN(stock) || !role || !employeeId) {
-        M.toast({ html: " Please fill out all fields correctly.", classes: "red rounded"});
+      if (!name || isNaN(price) || isNaN(stock) || !role) {
+        M.toast({ html: "⚠️ Please fill out all fields correctly.", classes: "red rounded" });
         return;
       }
-
+      
       try {
         await addDoc(collection(db, "products"), {
           name,
@@ -77,13 +78,13 @@ export async function initProductModal() {
           role,
           employeeId
         });
-        M.toast({ html: "Product added successfully!" , classes: "green rounded" });
+        M.toast({ html: "Product added successfully!", classes: "green rounded" });
         form.reset();
         toggleInputs(); // disable again after reset
         M.FormSelect.init(document.querySelectorAll("select"));
       } catch (err) {
         console.error("Error adding product:", err);
-        M.toast({ html: "Failed to add product." , classes: "red rounded"});
+        M.toast({ html: "Failed to add product.", classes: "red rounded" });
       }
     });
   }

@@ -71,8 +71,15 @@
   import { auth, db } from "/js/frontfirebase.js";
   import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { syncUsersFromFirebase, offlineLogin } from "/js/IndexDB.js";
+ import { syncUsersFromFirebase, offlineLogin, SyncProductFromFirebase } from "/js/IndexDB.js";
 
+  // auto-sync users and products once online
+  window.addEventListener("load", async () => {
+    if (navigator.onLine) {
+      await syncUsersFromFirebase();
+      await SyncProductFromFirebase();
+    }
+  });
 
   document.querySelector(".btn-login").addEventListener("click", async (e) => {
     e.preventDefault();

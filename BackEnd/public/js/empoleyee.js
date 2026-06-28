@@ -10,6 +10,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app } from "/js/firebase.js";
+import { loadProductsOffline } from "./IndexDB.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -18,6 +19,15 @@ let cart = [];
 
 // INIT POS
 export async function initPOS() {
+  const user = auth.currentUser;
+  const currentEmployeeId = user ? user.uid : null;
+
+   if (!navigator.onLine) {
+    console.log("Offline mode: loading from IndexedDB");
+    await loadProductsOffline(currentEmployeeId);
+    setupCartEvents();
+    return;
+   }
   await loadProducts();
   setupCartEvents();
 }
