@@ -1,5 +1,5 @@
 // Import Firestore helpers at db mula sa firebase.js
-import { getDocs, collection, addDoc } 
+import { getDocs, collection, addDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase.js"; // adjust path depende sa folder structure
 
@@ -31,11 +31,11 @@ function openOfflineDB() {
         const ordersStore = dbLocal.createObjectStore("orders", { keyPath: "id", autoIncrement: true });
         ordersStore.createIndex("status", "status", { unique: false });
       }
-      
+
       //product store
-      if(!dbLocal.objectStoreNames.contains("products")){
-        const productStore = dbLocal.createObjectStore("products",{keyPath:"id"});
-        productStore.createIndex("employeeId", "employeeId", {unique: false});
+      if (!dbLocal.objectStoreNames.contains("products")) {
+        const productStore = dbLocal.createObjectStore("products", { keyPath: "id" });
+        productStore.createIndex("employeeId", "employeeId", { unique: false });
       }
     };
 
@@ -122,15 +122,15 @@ async function syncUsersFromFirebase() {
 
     await new Promise((resolve) => (tx.oncomplete = resolve));
     console.log("✅ Users synced to offline DB");
-    M.toast({ html: 'Users synced offline', classes: 'green-toast' });
+    M.toast({ html: 'Users synced offline', classes: 'green rounded', displayLength: 4000 });
   } catch (err) {
     console.error("❌ Sync failed:", err);
-    M.toast({ html: 'Failed to sync users', classes: 'red-toast' });
+    M.toast({ html: 'Failed to sync users', classes: 'red rounded', displayLength: 4000 });
   }
 }
 
 //SyncproductFromFirebase
-async function SyncProductFromFirebase(){
+async function SyncProductFromFirebase() {
   try {
     const dbLocal = await openOfflineDB();
     const snapshot = await getDocs(collection(db, "products"));
@@ -152,10 +152,12 @@ async function SyncProductFromFirebase(){
 
     await new Promise((resolve) => (tx.oncomplete = resolve));
     console.log("✅ Products synced to offline DB");
-    M.toast({html:'Products synced oflline', classes: 'green-toast'});
-  }catch(err){
+    setTimeout(() => {
+      M.toast({ html: 'Products synced offline', classes: 'green rounded', displayLength: 4000 });
+    }, 3200); // lalabas pagkatapos ng una
+  } catch (err) {
     console.error("❌ Product sync failed:", err);
-    M.toast({html:'Failed to sync products', classes: 'red-toast'});
+    M.toast({ html: 'Failed to sync products', classes: 'red rounded' });
   }
 }
 
@@ -228,14 +230,14 @@ async function renderProductsForEmployee(products) {
   });
 }
 //Export functions para magamit sa ibang modules
-export { 
-  syncUsersFromFirebase, 
-  offlineLogin, 
-  saveUserOffline, 
+export {
+  syncUsersFromFirebase,
+  offlineLogin,
+  saveUserOffline,
   saveOrderOffline,
-  SyncProductFromFirebase,   
-  loadProductsOffline,       
-  renderProductsForEmployee 
+  SyncProductFromFirebase,
+  loadProductsOffline,
+  renderProductsForEmployee
 };
 
 // Gawin available sa console ng devtool sa Chrome

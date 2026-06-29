@@ -182,34 +182,42 @@ body {
   font-weight: 600 !important;
   text-transform: none !important;
 }
-/* toast */
-.toast{
+/* Base style para lahat ng toast */
+.toast {
   position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  z-index: 9999 !important;
-  min-width: 250px;
-  text-align: center;
-}
-
-/* Big red toast fixed at very top */
-.toast.red-toast {
-  background-color: #f44336 !important; /* bright red */
-  color: #fff !important;
-  font-size: 22px;          /* mas malaki ang text */
-  font-weight: 700;
-  min-width: 350px;         /* mas malapad */
-  text-align: center;
-  border-radius: 8px;
-  position: fixed !important;
-  top: 0 !important;        /* sagad sa pinaka-taas */
+  top: 0 !important;              /* sagad sa pinaka-taas */
   left: 50% !important;
   transform: translateX(-50%) !important;
   z-index: 9999 !important;
-  padding: 18px 24px;       /* dagdag space sa loob */
+  border-radius: 8px;
+  min-width: 350px;
+  text-align: center;
+  padding: 16px 24px;
 }
 
+/* Red toast (error) */
+.toast.red-toast {
+  background-color: #f44336 !important;
+  color: #fff !important;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* Green toast (success) */
+.toast.green-toast {
+  background-color: #4caf50 !important;
+  color: #fff !important;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Blue toast (info) */
+.toast.blue-toast {
+  background-color: #2196f3 !important;
+  color: #fff !important;
+  font-size: 20px;
+  font-weight: 600;
+}
 
 @media (max-width: 768px) {
   .login-wrapper {
