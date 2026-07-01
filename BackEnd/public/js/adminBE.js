@@ -7,7 +7,8 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Load inventory data with realtime listener
@@ -139,4 +140,61 @@ export async function addProduct(productName, category, packsQty, unitPrice) {
 // Delete product
 export async function deleteProduct(id) {
   await deleteDoc(doc(db, "inventory", id));
+}
+
+//add new categories
+export async function adddCategory(name) {
+  await addDoc(collection(db, "categoriesINV"), { name });
+  M.toast({ html: "Category added!", classes: "green rounded" });
+}
+
+// Load categories with realtime listener
+export function loadCategories() {
+  const selects = document.querySelectorAll("#filter-category, #product-category, #edit-category");
+
+  onSnapshot(collection(db, "categoriesINV"), (snapshot) => {
+    selects.forEach(sel => {
+      if (sel.id === "filter-category") {
+        sel.innerHTML = `<option value="all">All Categories</option>`;
+      } else {
+        sel.innerHTML = `<option value="" disabled selected>Choose Category</option>`;
+      }
+
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const option = document.createElement("option");
+        option.value = data.name;
+        option.textContent = data.name;
+        sel.appendChild(option);
+      });
+    });
+
+    M.FormSelect.init(selects);
+  });
+}
+
+
+//hook sa add category modal
+document.getElementById("btn-add-categories").onclick = () => {
+  const modalElem = document.getElementById("modal-add-category");
+  const modalInstance = M.Modal.init(modalElem);
+  modalInstance.open();
+};
+
+document.getElementById("save-category").onclick = async () => {
+  const nameInput = document.getElementById("new-category-name");
+  const name = nameInput.value.trim()
+  if (!name) {
+    M.toast({ html: "Please enter a Category name", classes: "red rounded" });
+    return;
+  }
+  await adddCategory(name);
+  loadCategories();
+  //clear input 
+  nameInput.value = ""
+
+  // close modal
+  const modalElem = document.getElementById("modal-add-category");
+  const modalInstance = M.Modal.getInstance(modalElem);
+  modalInstance.close();
 }

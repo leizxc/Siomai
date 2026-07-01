@@ -25,6 +25,9 @@ function loadSection(page) {
                         if (typeof inventoryModule.loadInventory === "function") {
                             inventoryModule.loadInventory();
                         }
+                        if (typeof inventoryModule.loadCategories === "function"){
+                            inventoryModule.loadCategories();
+                        }
                     } catch (err) {
                         console.error("Inventory Init Error:", err);
                     }

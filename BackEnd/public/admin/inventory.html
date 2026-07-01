@@ -26,7 +26,33 @@
         <p>Product List and Stocks</p>
       </header>
 
+          <!-- FILTERS -->
+    <div class="filters">
+      <input type="date" id="filter-date">
+
+      <select id="filter-category">
+        <option value="all">All Categories</option>
+      </select>
       <button id="btn-add" class="waves-effect waves-light btn">Add Product</button>
+      <button id="btn-add-categories" class="waves-effect waves-light btn">Add Categories</button>
+    </div>
+
+    <!--ADD categories-->
+    <div id="modal-add-category" class="modal">
+      <div class="modal-content">
+        <h4>Add Categories</h4>
+        
+        <div class="input-field">
+          <input type="text" placeholder="Add new Categories" id="new-category-name">
+        </div>
+
+        <div class="modal-footer">
+          <button id="save-category" class="waves-effect waves-green btn">Save new Categories</button>
+        </div>
+
+      </div>
+    </div>    
+
 
       <!-- ADD PRODUCT MODAL -->
       <div id="modal-add" class="modal">
@@ -38,7 +64,6 @@
           <div class="input-field">
             <select id="product-category">
               <option value="" disabled selected>Choose Category</option>
-              <option value="Siomai">Siomai</option>
             </select>
             <label>Category</label>
           </div>
@@ -127,8 +152,9 @@
   <script src="/js/functionalnav.js"></script>
   <script type="module" src="/js/firebase.js"></script>
   <script type="module">
-    import { loadInventory } from "/js/adminBE.js";
+    import { loadInventory, loadCategories } from "/js/adminBE.js";
     loadInventory();
+    loadCategories();
   </script>
 
 </html>
