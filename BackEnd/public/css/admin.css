@@ -212,6 +212,30 @@ body {
   font-weight: 600;
 }
 
+/* modal */
+/* Make modals fully responsive and centered */
+.modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 90% !important;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto !important;
+  border-radius: 8px;
+}
+
+/* Allow dropdowns and dynamic fields to expand properly */
+.modal-content {
+  overflow-y: visible !important;
+  padding: 20px;
+}
+
+/* Fix body overflow when modal opens */
+body.modal-open {
+  overflow: hidden;
+}
 
 /* MOBILE RESPONSIVE */
 
@@ -221,6 +245,11 @@ body {
         display: block;
     }
 
+    .modal{
+        width: 95% !important;
+        height: auto !important;
+    }
+    
     .main {
         margin-left: 0 !important;
         width: 100% !important;

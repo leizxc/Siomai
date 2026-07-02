@@ -2,20 +2,20 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel Queen Cassy Food Cart</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel Queen Cassy Food Cart</title>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" type="text/css" href="/css/admin.css">
 
-    <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
+  <!-- Materialize -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
+  <script type="text/javascript" src="/js/materialize.min.js"></script>
 
-    <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
+  <!-- Manifest -->
+  <link rel="manifest" href="/manifest.json">
 </head>
 
 <body>
@@ -26,32 +26,45 @@
         <p>Product List and Stocks</p>
       </header>
 
-          <!-- FILTERS -->
-    <div class="filters">
-      <input type="date" id="filter-date">
+      <!-- FILTERS -->
+      <div class="filters">
+        <input type="date" id="filter-date">
 
-      <select id="filter-category">
-        <option value="all">All Categories</option>
-      </select>
-      <button id="btn-add" class="waves-effect waves-light btn">Add Product</button>
-      <button id="btn-add-categories" class="waves-effect waves-light btn">Add Categories</button>
-    </div>
-
-    <!--ADD categories-->
-    <div id="modal-add-category" class="modal">
-      <div class="modal-content">
-        <h4>Add Categories</h4>
-        
-        <div class="input-field">
-          <input type="text" placeholder="Add new Categories" id="new-category-name">
-        </div>
-
-        <div class="modal-footer">
-          <button id="save-category" class="waves-effect waves-green btn">Save new Categories</button>
-        </div>
-
+        <select id="filter-category">
+          <option value="all">All Categories</option>
+        </select>
+        <button id="btn-add" class="waves-effect waves-light btn">Add Product</button>
+        <button id="btn-add-categories" class="waves-effect waves-light btn">Add Categories</button>
       </div>
-    </div>    
+
+      <!--ADD categories-->
+      <div id="modal-add-category" class="modal">
+        <div class="modal-content">
+          <h4>Add Categories</h4>
+
+          <div class="input-field">
+            <input type="text" placeholder="Add new Categories" id="new-category-name">
+          </div>
+
+          <div class="input-field">
+            <select id="new-category-unit">
+              <option value="" disabled selected>Choose unit</option>\
+              <option value="pack">pack</option>
+              <option value="kg">Kilogram</option>
+            </select>
+            <label for="new-category-unit">Unit Type</label>
+          </div>
+
+          <div class="input-field" id="pieces-per-pack-field" style="display: none;">
+            <input type="number" id="pieces-per-pack" placeholder="Pieces per Pack">
+          </div>
+
+          <div class="modal-footer">
+            <button id="save-category" class="waves-effect waves-green btn">Save new Categories</button>
+          </div>
+
+        </div>
+      </div>
 
 
       <!-- ADD PRODUCT MODAL -->
@@ -69,10 +82,12 @@
           </div>
           <div class="input-field">
             <input id="product-packs" type="number" placeholder="Number of Packs">
+            <label for="product-packs"> </label>
           </div>
           <div class="input-field">
             <input id="product-price" type="number" placeholder="Unit Price">
           </div>
+          
         </div>
         <div class="modal-footer">
           <button id="save-product" class="waves-effect waves-green btn">Save Product</button>
