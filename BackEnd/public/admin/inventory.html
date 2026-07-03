@@ -29,12 +29,13 @@
       <!-- FILTERS -->
       <div class="filters">
         <input type="date" id="filter-date">
-
+      <div class="category-filter">
         <select id="filter-category">
           <option value="all">All Categories</option>
         </select>
         <button id="btn-add" class="waves-effect waves-light btn">Add Product</button>
         <button id="btn-add-categories" class="waves-effect waves-light btn">Add Categories</button>
+      </div>
       </div>
 
       <!--ADD categories-->
@@ -128,7 +129,7 @@
         </div>
         <div class="card">
           <h3 id="total-stocks">0</h3>
-          <p>Total Pieces</p>
+          <p id="stocks-label">Total Pieces</p>
         </div>
         <div class="card">
           <h3 id="total-value">₱0.00</h3>

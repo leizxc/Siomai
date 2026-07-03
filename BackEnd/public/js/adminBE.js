@@ -15,7 +15,7 @@ import {
 export function loadInventory() {
   const tbody = document.getElementById("inventory-table-body");
 
-  onSnapshot(collection(db, "inventory"), (querySnapshot) => {
+  onSnapshot(collection(db, "inventory"), async (querySnapshot) => {
     tbody.innerHTML = "";
 
     let totalProducts = 0;
@@ -80,7 +80,7 @@ export function loadInventory() {
 
       // Render row dynamically
       tbody.innerHTML += `
-  <tr>
+  <tr data-category-id="${docSnap.data().category_id}">
     <td data-label="Product Name">${data.product_name}</td>
     <td data-label="Category">${data.category}</td>
     <td data-label="Quantity">${data.quantity} ${data.unit_type}</td>
@@ -100,9 +100,32 @@ export function loadInventory() {
 `;
     });
 
+    //for summary card of total quantity
+    let totalLabel1 = "Total Stocks"
+    let totalDisplay1 = totalStocks;
+
+    //if a specific category is selected, adjust label based on its unit type
+    if(selectedCategory !== "all"){
+      const categoryDoc = await getDoc(doc(db,"categoriesINV", selectedCategory)); 
+      const unitType = categoryDoc.data().unit_type;
+
+      if (unitType === "pack"){
+        totalLabel1 = "Total Pieces";
+        totalDisplay1 = `${totalStocks} pcs`
+      }else if (unitType === "kg"){
+        totalLabel1 = "Total Weight";
+        const pounds1 = (totalStocks * 2.2).toFixed(2);
+        totalDisplay1 = `${pounds1} lb`;
+      }  else {
+        totalLabel1 = "Total Quantity";
+        totalDisplay1 = totalStocks;
+      }
+    }
+
     // Update summary cards
     document.getElementById("total-products").textContent = totalProducts;
-    document.getElementById("total-stocks").textContent = totalStocks;
+    document.getElementById("stocks-label").textContent = totalLabel1;
+    document.getElementById("total-stocks").textContent = totalDisplay1;
     document.getElementById("total-value").textContent = `₱${totalValue.toFixed(2)}`;
     document.getElementById("total-categories").textContent = categories.size;
 
@@ -116,55 +139,59 @@ export function loadInventory() {
 
     // Edit button logic
     document.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.onclick = async (e) => {
-        const id = e.target.closest("button").dataset.id;
-        const row = e.target.closest("tr");
+  btn.onclick = async (e) => {
+    const id = e.target.closest("button").dataset.id;
+    const row = e.target.closest("tr");
 
-        document.getElementById("edit-name").value = row.children[0].textContent;
-        document.getElementById("edit-category").value = row.children[1].textContent;
-        document.getElementById("edit-packs").value = row.children[2].textContent;
-        document.getElementById("edit-price").value = row.children[4].textContent.replace("₱", "");
+    document.getElementById("edit-name").value = row.children[0].textContent;
+    document.getElementById("edit-category").value = row.dataset.categoryId; // ✅ doc ID
+    document.getElementById("edit-packs").value = row.children[2].textContent.replace(/\D/g, "");
+    document.getElementById("edit-price").value = row.children[4].textContent.replace("₱", "");
 
-        M.FormSelect.init(document.querySelectorAll("select"));
+    M.FormSelect.init(document.querySelectorAll("select"));
 
-        const modalElem = document.getElementById("modal-edit");
-        const modalInstance = M.Modal.init(modalElem);
-        modalInstance.open();
+    const modalElem = document.getElementById("modal-edit");
+    const modalInstance = M.Modal.init(modalElem);
+    modalInstance.open();
 
-        const saveBtn = document.getElementById("edit-save");
-        saveBtn.onclick = async () => {
-          const newName = document.getElementById("edit-name").value.trim();
-          const newCategory = document.getElementById("edit-category").value;
-          const newQuantity = parseFloat(document.getElementById("edit-packs").value);
-          const newPrice = parseFloat(document.getElementById("edit-price").value);
+    const saveBtn = document.getElementById("edit-save");
+    saveBtn.onclick = async () => {
+      const newName = document.getElementById("edit-name").value.trim();
+      const newCategoryId = document.getElementById("edit-category").value; // ✅ doc ID
+      const newQuantity = parseFloat(document.getElementById("edit-packs").value);
+      const newPrice = parseFloat(document.getElementById("edit-price").value);
 
-          const categoryDoc = await getDoc(doc(db, "categoriesINV", newCategory));
-          const unitType = categoryDoc.data().unit_type;
-          const piecesPerPack = categoryDoc.data().pieces_per_pack || 1;
+      const categoryDoc = await getDoc(doc(db, "categoriesINV", newCategoryId));
+      const categoryData = categoryDoc.data();
+      const unitType = categoryData.unit_type;
+      const piecesPerPack = categoryData.pieces_per_pack || 1;
 
-          let newStock = unitType === "pack" ? newQuantity * piecesPerPack : newQuantity;
-          const newTotalValue = newStock * newPrice;
+      let newStock = unitType === "pack" ? newQuantity * piecesPerPack : newQuantity;
+      const newTotalValue = newStock * newPrice;
 
-          await updateDoc(doc(db, "inventory", id), {
-            product_name: newName,
-            category: newCategory,
-            unit_type: unitType,
-            quantity: newQuantity,
-            stock_quantity: newStock,
-            unit_price: newPrice,
-            total_value: newTotalValue,
-            last_updated: serverTimestamp()
-          });
-          modalInstance.close();
-        };
-      };
-    });
+      await updateDoc(doc(db, "inventory", id), {
+        product_name: newName,
+        category_id: newCategoryId,       //  store doc ID
+        category: categoryData.name,      //  store readable name
+        unit_type: unitType,
+        quantity: newQuantity,
+        stock_quantity: newStock,
+        unit_price: newPrice,
+        total_value: newTotalValue,
+        last_updated: serverTimestamp()
+      });
+      M.toast({ html: "Product updated successfully!", classes: "green rounded" });
+      modalInstance.close();
+    };
+  };
+});
   });
 }
 
 // Add new product
 export async function addProduct(productName, categoryId, quantity, unitPrice) {
   const categoryDoc = await getDoc(doc(db, "categoriesINV", categoryId));
+  const categoryData = categoryDoc.data();
   const unitType = categoryDoc.data().unit_type;
   const piecesPerPack = categoryDoc.data().pieces_per_pack || 1;
 
@@ -184,9 +211,10 @@ export async function addProduct(productName, categoryId, quantity, unitPrice) {
   }
 
 
-  await addDoc(collection(db, "inventory"), {
+    await addDoc(collection(db, "inventory"), {
     product_name: productName,
-    category: categoryDoc.data().name,
+    category_id: categoryId,        // Firestore doc ID
+    category: categoryData.name,    // readable name
     unit_type: unitType,
     quantity: quantity,
     stock_quantity: stockQty,
@@ -199,6 +227,7 @@ export async function addProduct(productName, categoryId, quantity, unitPrice) {
 // Delete product
 export async function deleteProduct(id) {
   await deleteDoc(doc(db, "inventory", id));
+  M.toast({ html: "Product deleted successfully!", classes: "red rounded" });
 }
 
 // ==================== CATEGORIES ==================== //
@@ -254,6 +283,7 @@ document.getElementById("save-category").onclick = async () => {
   await addDoc(collection(db, "categoriesINV"), categoryData);
   M.toast({ html: "Category added!", classes: "green rounded" });
 
+  
   document.getElementById("new-category-name").value = "";
   document.getElementById("new-category-unit").value = "";
   document.getElementById("pieces-per-pack").value = "";
