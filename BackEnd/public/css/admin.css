@@ -45,15 +45,30 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 240px;
-    background: #fff;
-    border-right: 1px solid #e0e0e0;
-    padding: 20px;
+    width: 260px;
+    background: #ffffff;
+    border-right: 1px solid #e2e8f0;
+    padding: 24px 20px;
     height: 100vh;
     overflow-y: auto;
+    z-index: 100;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
 }
 
 /* logo and role */
+.logo{
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: #8c1414;
+    margin-bottom: 6px;
+}
+
+.role {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin-bottom: 32px;
+}
+
 .sidebar .logo {
     font-size: 2rem;
     font-weight: 600;
@@ -67,6 +82,27 @@ body {
 }
 
 /* navigation */
+.nav {
+    list-style: none;
+}
+
+.nav li {
+    margin-bottom: 4px;
+}
+
+.nav li a {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 400;
+    transition: all 0.2s ease;
+}
+
+
+
 .sidebar .nav {
     list-style: none;
 }
@@ -237,18 +273,95 @@ body.modal-open {
   overflow: hidden;
 }
 
+.filters {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* Date Filter */
+#filter-date {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: white;
+  box-sizing: border-box;
+}
+
+/* Category Filter */
 .category-filter {
   display: flex;
   align-items: center;
-  gap: 10px;              /* pagitan ng buttons */
+  gap: 8px;
+  width: 100%;
+  margin: 12px 0 15px 0;
 }
 
 .category-filter select {
-  flex: 1;                /* para di maipit ang dropdown */
+  flex: 1;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: white;
+  min-width: 0;
 }
 
-.category-filter .btn {
-  margin: 0;              /* alisin default margin */
+#delete-category-btn {
+  height: 48px;
+  width: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 50%;           /* circle look */
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+#delete-category-btn i {
+  font-size: 1.8rem;
+  color: #f44336;
+}
+
+/* Hover effect */
+#delete-category-btn:hover {
+  background: rgba(244, 67, 54, 0.15) !important;
+}
+
+/* Disabled / After Cancel */
+#delete-category-btn:disabled,
+#delete-category-btn[disabled] {
+  background: transparent !important;
+  opacity: 0.65;
+}
+
+#delete-category-btn:disabled i {
+  color: #f44336;
+}
+
+/* Add Buttons */
+.add-buttons {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.add-buttons .btn {
+  flex: 1;
+  height: 48px;
+  line-height: 46px;
+  padding: 0 12px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 
@@ -256,14 +369,33 @@ body.modal-open {
 
 @media (max-width: 768px) {
 
+    /*delete button for category in inv */
+
     .container {
         display: block;
     }
 
-     .category-filter {
-    flex-direction: column;
-    align-items: stretch;
+   #filter-date,
+  .category-filter select {
+    height: 46px;
   }
+
+  #delete-category-btn {
+    height: 44px;
+    width: 44px;
+  }
+
+  #delete-category-btn i {
+    font-size: 1.65rem;
+  }
+
+  .add-buttons .btn {
+    height: 46px;
+    line-height: 44px;
+    font-size: 0.88rem;
+    padding: 0 10px;
+  }
+
 
     .modal{
         width: 95% !important;
@@ -297,17 +429,22 @@ body.modal-open {
         font-size: 30px;
     }
 
+    .sidebar .logo,
+    .sidebar .role {
+        text-align: center;
+    }
+
     .sidebar {
         position: fixed;
         top: 0;
-        left: -260px;
-        width: 250px;
+        left: -240px;
+        width: 220px;
         height: 100vh;
         background: #fff;
         z-index: 1000;
         transition: 0.3s ease;
         box-shadow: 0 0 10px rgba(0, 0, 0, .2);
-        padding: 20px;
+        padding: 2px;
     }
 
     .sidebar.active {
@@ -578,7 +715,6 @@ body.modal-open {
     margin-top: 0;
   }
 
-  
 }
 
 

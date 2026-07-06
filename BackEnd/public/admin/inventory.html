@@ -28,15 +28,25 @@
 
       <!-- FILTERS -->
       <div class="filters">
-        <input type="date" id="filter-date">
-      <div class="category-filter">
-        <select id="filter-category">
-          <option value="all">All Categories</option>
-        </select>
-        <button id="btn-add" class="waves-effect waves-light btn">Add Product</button>
-        <button id="btn-add-categories" class="waves-effect waves-light btn">Add Categories</button>
-      </div>
-      </div>
+  <input type="date" id="filter-date">
+
+  <!-- Category Filter Row -->
+  <div class="category-filter">
+    <select id="filter-category">
+      <option value="all">All Categories</option>
+    </select>
+
+    <button id="delete-category-btn" class="btn-flat" disabled title="Delete Category">
+      <i class="material-icons red-text">close</i>
+    </button>
+  </div>
+
+  <!-- Add Buttons - Dito na sila sa baba -->
+  <div class="add-buttons">
+    <button id="btn-add" class="waves-effect waves-light btn">ADD PRODUCT</button>
+    <button id="btn-add-categories" class="waves-effect waves-light btn">ADD CATEGORIES</button>
+  </div>
+</div>
 
       <!--ADD categories-->
       <div id="modal-add-category" class="modal">

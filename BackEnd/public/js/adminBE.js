@@ -8,7 +8,10 @@ import {
   doc,
   serverTimestamp,
   onSnapshot,
-  getDoc
+  getDoc,
+  getDocs,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ==================== INVENTORY ==================== //
@@ -49,7 +52,7 @@ export function loadInventory() {
 
       const status = data.stock_quantity <= 50 ? "Low Stock" : "Available";
 
-      // ✅ Dynamic display for quantity and total pieces
+      //  Dynamic display for quantity and total pieces
       const displayQty =
         data.unit_type === "pack"
           ? `${data.quantity} packs`
@@ -144,7 +147,7 @@ export function loadInventory() {
     const row = e.target.closest("tr");
 
     document.getElementById("edit-name").value = row.children[0].textContent;
-    document.getElementById("edit-category").value = row.dataset.categoryId; // ✅ doc ID
+    document.getElementById("edit-category").value = row.dataset.categoryId; //  doc ID
     document.getElementById("edit-packs").value = row.children[2].textContent.replace(/\D/g, "");
     document.getElementById("edit-price").value = row.children[4].textContent.replace("₱", "");
 
@@ -157,7 +160,7 @@ export function loadInventory() {
     const saveBtn = document.getElementById("edit-save");
     saveBtn.onclick = async () => {
       const newName = document.getElementById("edit-name").value.trim();
-      const newCategoryId = document.getElementById("edit-category").value; // ✅ doc ID
+      const newCategoryId = document.getElementById("edit-category").value; //  doc ID
       const newQuantity = parseFloat(document.getElementById("edit-packs").value);
       const newPrice = parseFloat(document.getElementById("edit-price").value);
 
@@ -187,6 +190,32 @@ export function loadInventory() {
 });
   });
 }
+
+//delete category
+export async function deleteCategory(categoryId){
+  if (!categoryId || categoryId == "all"){
+    M.toast({html:"Please select a category", classes: "red rounded"});
+    return;
+  }
+
+  // check kung ginagamit pa 
+  const q = query(collection(db,"inventory"), where ("category_id", "==", categoryId));
+
+  const result = await getDocs(q);
+
+  if(!result.empty){
+    M.toast({html:"Cannot Delete. This Category still contains products.", classes:"red rounded"});
+    return;
+  }
+
+  if (!confirm("Delete this category")) return;
+
+  await deleteDoc(doc(db,"categoriesINV", categoryId));
+
+  M.toast({html:"Category Deleted", classes:"green rounded"});
+}
+
+//
 
 // Add new product
 export async function addProduct(productName, categoryId, quantity, unitPrice) {
@@ -302,9 +331,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // filter triggers
-document.getElementById("filter-category").addEventListener("change", () => {
-  loadInventory();
-});
 document.getElementById("filter-date").addEventListener("change", () => {
   loadInventory();
 });
@@ -359,3 +385,23 @@ document.getElementById("product-category").addEventListener("change", async (e)
   //refresh label position
   M.updateTextFields();
 })
+
+//button para sa delete category
+const filter = document.getElementById("filter-category");
+const deleteBtn = document.getElementById("delete-category-btn");
+
+if (filter && deleteBtn) {
+  // Initial state
+  deleteBtn.disabled = filter.value === "all";
+
+  // Remove old handler para hindi dumoble
+  filter.onchange = () => {
+    deleteBtn.disabled = filter.value === "all";
+    loadInventory();
+  };
+
+  deleteBtn.onclick = async () => {
+    if (filter.value === "all") return;
+    await deleteCategory(filter.value);
+  };
+}
