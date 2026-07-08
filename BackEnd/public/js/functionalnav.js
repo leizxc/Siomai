@@ -5,6 +5,21 @@ function loadSection(page) {
             const main = document.getElementById('content');
             main.innerHTML = data;
 
+            const title = document.getElementById("mobile-title");
+
+            const pageTitles = {
+                "dashboard.html": "Dashboard",
+                "inventory.html": "Inventory",
+                "product.html": "Products Assign",
+                "expenses.html": "Expenses Records",
+                "EmployeeManagement.html": "Employees Management",
+                "EmployeeMonitoring.html": "Employee Monitoring"
+            };
+
+            if (title) {
+                title.textContent = pageTitles[page] || "Administrator";
+            }
+
             // Initialize Materialize Components
             const selects = document.querySelectorAll('select');
             M.FormSelect.init(selects);
@@ -25,7 +40,7 @@ function loadSection(page) {
                         if (typeof inventoryModule.loadInventory === "function") {
                             inventoryModule.loadInventory();
                         }
-                        if (typeof inventoryModule.loadCategories === "function"){
+                        if (typeof inventoryModule.loadCategories === "function") {
                             inventoryModule.loadCategories();
                         }
                     } catch (err) {

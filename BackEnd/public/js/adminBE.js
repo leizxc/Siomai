@@ -29,21 +29,33 @@ export function loadInventory() {
     const selectedCategory = document.getElementById("filter-category").value;
     const selectedDate = document.getElementById("filter-date").value;
 
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
+querySnapshot.forEach((docSnap) => {
+  const data = docSnap.data();
 
-      // Filter by category
-      if (selectedCategory !== "all") {
-        const selectedOption = document.querySelector(`#filter-category option[value="${selectedCategory}"]`);
-        const selectedName = selectedOption ? selectedOption.textContent : "";
-        if (data.category !== selectedName) return;
-      }
+  if (selectedCategory !== "all") {
+    const selectedOption = document.querySelector(
+      `#filter-category option[value="${selectedCategory}"]`
+    );
 
-      // Filter by date
-      if (selectedDate) {
-        const docDate = data.last_updated?.toDate().toISOString().split("T")[0];
-        if (docDate !== selectedDate) return;
-      }
+    const selectedName = selectedOption
+      ? selectedOption.textContent
+      : "";
+
+    if (data.category !== selectedName) return;
+  }
+
+  if (selectedDate) {
+    if (!data.created_at) return;
+
+    const docDate = data.created_at
+      .toDate()
+      .toISOString()
+      .split("T")[0];
+
+    if (docDate !== selectedDate) return;
+  }
+
+  // Kapag pasado sa filter, saka lang magre-render
 
       totalProducts++;
       totalStocks += data.stock_quantity;
@@ -81,6 +93,14 @@ export function loadInventory() {
         totalDisplay = `${data.stock_quantity}`;
       }
 
+      const dateAdded = data.created_at
+        ? data.created_at.toDate().toLocaleDateString("en-PH",{
+          year: "numeric",
+          month:"short",
+          day:"numeric"
+        })
+        : "-";
+
       // Render row dynamically
       tbody.innerHTML += `
   <tr data-category-id="${docSnap.data().category_id}">
@@ -90,6 +110,7 @@ export function loadInventory() {
     <td data-label="${totalLabel}">${totalDisplay}</td>
     <td data-label="Unit Price">₱${data.unit_price.toFixed(2)}</td>
     <td data-label="Total Value">₱${data.total_value.toFixed(2)}</td>
+     <td data-label="Date">${dateAdded}</td> 
     <td data-label="Status">${status}</td>
     <td data-label="Action">
       <button class="edit-btn btn blue" data-id="${docSnap.id}">
@@ -249,6 +270,7 @@ export async function addProduct(productName, categoryId, quantity, unitPrice) {
     stock_quantity: stockQty,
     unit_price: unitPrice,
     total_value: totalValue,
+    created_at: serverTimestamp(),
     last_updated: serverTimestamp()
   });
 }

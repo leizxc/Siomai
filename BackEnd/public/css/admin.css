@@ -12,8 +12,11 @@ body {
 }
 
 .container {
-    display: flex;
-    min-height: 100vh;
+    width:100% !important;
+    max-width:none !important;
+    margin:0 !important;
+    display:flex;
+    min-height:100vh;
 }
 
 /* override Materialize default link & icon colors */
@@ -129,11 +132,18 @@ body {
 
 /* main content */
 .main {
-    margin-left: 240px;
-    padding: 25px;
-    min-height: 100vh;
-    overflow-y: auto;
-    width: calc(100% - 240px);
+    margin-left:260px;
+    width:calc(100% - 260px);
+    min-height:100vh;
+    padding:25px 45px 40px;
+    overflow-y:auto;
+}
+
+#content{
+    width:100%;
+    max-width:none;      /* tanggal limit */
+    margin:0;
+    padding:0 20px;      /* konting allowance sa gilid */
 }
 
 /* cards */
@@ -144,6 +154,8 @@ body {
     padding: 20px;
     margin-bottom: 20px;
 }
+
+
 
 /* text styles */
 .subtitle {
@@ -273,95 +285,193 @@ body.modal-open {
   overflow: hidden;
 }
 
-.filters {
-  width: 100%;
-  margin-bottom: 20px;
+.filter-card{
+
+    width:100%;
+
+    padding:35px;
+
+    border-radius:18px;
+
+    background:#fff;
+
+    box-shadow:0 4px 18px rgba(0,0,0,.08);
+
+    margin:35px 0;
+
 }
 
-/* Date Filter */
-#filter-date {
-  width: 100%;
-  height: 48px;
-  padding: 0 14px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  background-color: white;
-  box-sizing: border-box;
+.filters{
+        display:grid;
+    grid-template-columns:1fr;
+    gap:30px;
 }
 
-/* Category Filter */
-.category-filter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  margin: 12px 0 15px 0;
+.filter-group{
+    width:100%;
 }
 
-.category-filter select {
-  flex: 1;
-  height: 48px;
-  padding: 0 14px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  background-color: white;
-  min-width: 0;
+.filter-group label{
+    display:block;
+    font-size:15px;
+    font-weight:600;
+    color:#555;
+    margin-bottom:8px;
 }
 
-#delete-category-btn {
-  height: 48px;
-  width: 48px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent !important;
-  border: none !important;
-  border-radius: 50%;           /* circle look */
-  transition: all 0.2s ease;
-  padding: 0;
+.filter-group input{
+    width:100%;
 }
 
-#delete-category-btn i {
-  font-size: 1.8rem;
-  color: #f44336;
+.category-row{
+    display:grid;
+    grid-template-columns:1fr 55px;
+    gap:15px;
+    align-items:end;
 }
 
-/* Hover effect */
-#delete-category-btn:hover {
-  background: rgba(244, 67, 54, 0.15) !important;
+.category-row .select-wrapper{
+    flex:1;
 }
 
-/* Disabled / After Cancel */
-#delete-category-btn:disabled,
-#delete-category-btn[disabled] {
-  background: transparent !important;
-  opacity: 0.65;
+#delete-category-btn{
+    width:55px;
+    height:55px;
+    border-radius:12px;
+    border:1px solid #ddd;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#fff;
+    transition:.25s;
 }
 
-#delete-category-btn:disabled i {
-  color: #f44336;
+#delete-category-btn:hover{
+
+    background:#f44336;
+
 }
 
-/* Add Buttons */
-.add-buttons {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  margin-top: 10px;
+#delete-category-btn:hover i{
+
+    color:white !important;
+
 }
 
-.add-buttons .btn {
-  flex: 1;
-  height: 48px;
-  line-height: 46px;
-  padding: 0 12px;
-  font-size: 0.95rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.add-buttons{
+
+     display:flex;
+
+    gap:18px;
+
+    margin-top:35px;
+
+}
+
+.add-buttons .btn{
+
+    min-width:210px;
+
+    height:52px;
+
+    border-radius:12px;
+
+    font-size:15px;
+
+    font-weight:600;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:-10px 0 35px;
+    padding:10px 0 20px;
+    border-bottom:1px solid #e5e7eb;
+}
+
+.header h1{
+    font-size:3rem;
+    font-weight:500;
+    margin:0;
+    color:#111827;
+    line-height:1.1;
+}
+
+.header p{
+    margin-top:10px;
+    font-size:1.15rem;
+    color:#6b7280;
+}
+
+/* SUMMARY */
+.summary {
+  display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+    gap:22px;
+
+    margin:35px 0;
+
+}
+
+.summary .card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 140px;
+    margin: 0;
+}
+
+.summary .card h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.summary .card p {
+    margin: 0;
+    color: #777;
+    font-size: 15px;
+}
+
+.inventory-card{
+    width:100%;
+    background:#fff;
+    border-radius:18px;
+    padding:28px;
+    box-shadow:0 4px 18px rgba(0,0,0,.08);
+}
+
+.inventory-card table{
+
+    width:100%;
+    border-collapse:collapse;
+
+}
+
+.inventory-card th{
+
+    font-weight:700;
+
+    padding:16px;
+
+}
+
+.inventory-card td{
+
+    padding:18px 16px;
+
 }
 
 
@@ -369,33 +479,64 @@ body.modal-open {
 
 @media (max-width: 768px) {
 
+    .summary{
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+
+.summary .card{
+    min-height:120px;
+}
+
+.summary .card h3{
+    font-size:1.6rem;
+}
     /*delete button for category in inv */
 
     .container {
         display: block;
     }
 
-   #filter-date,
-  .category-filter select {
-    height: 46px;
-  }
+ .filters{
+    display:block;
+}
 
-  #delete-category-btn {
-    height: 44px;
-    width: 44px;
-  }
+.filters input{
+    width:100%;
+}
 
-  #delete-category-btn i {
-    font-size: 1.65rem;
-  }
+.category-filter{
+    width:100%;
+    margin-top:10px;
+}
 
-  .add-buttons .btn {
-    height: 46px;
-    line-height: 44px;
-    font-size: 0.88rem;
-    padding: 0 10px;
-  }
+.add-buttons{
+    width:100%;
+    margin-top:15px;
+    display:flex;
+    flex-direction:column;
+}
 
+.add-buttons .btn{
+    width:100%;
+}
+.category-row{
+
+    flex-direction:row;
+
+}
+
+.add-buttons{
+
+    flex-direction:column;
+
+}
+
+.add-buttons .btn{
+
+    width:100%;
+
+}
 
     .modal{
         width: 95% !important;
@@ -405,7 +546,7 @@ body.modal-open {
     .main {
         margin-left: 0 !important;
         width: 100% !important;
-        padding: 12px 8px;
+        padding: 1px;
         /* Reduced side padding */
     }
 
@@ -427,6 +568,14 @@ body.modal-open {
 
     #menu-toggle i {
         font-size: 30px;
+    }
+
+    #mobile-title{
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 400;
+        color:#111827;
+        line-height: 1;
     }
 
     .sidebar .logo,
@@ -480,9 +629,15 @@ body.modal-open {
     }
 
     /* Header */
+    .header{
+        display: none;
+    }
     .header h1 {
-        font-size: 1.5rem;
-        font-weight: 600;
+        display: none;
+    }
+
+    .header p {
+        display: none;
     }
 
     /* Tables - Mobile friendly */

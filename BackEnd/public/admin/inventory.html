@@ -1,51 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel Queen Cassy Food Cart</title>
-
-  <!-- Custom CSS -->
-  <link rel="stylesheet" type="text/css" href="/css/admin.css">
-
-  <!-- Materialize -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
-  <script type="text/javascript" src="/js/materialize.min.js"></script>
-
-  <!-- Manifest -->
-  <link rel="manifest" href="/manifest.json">
-</head>
-
-<body>
-  <div class="container">
-    <main class="main">
       <header class="header">
-        <h1>Inventory (Products)</h1>
+        <h1>Inventory (Storage)</h1>
         <p>Product List and Stocks</p>
       </header>
 
       <!-- FILTERS -->
-      <div class="filters">
-  <input type="date" id="filter-date">
+<div class="card filter-card">
+ <div class="filters">
 
-  <!-- Category Filter Row -->
-  <div class="category-filter">
-    <select id="filter-category">
-      <option value="all">All Categories</option>
-    </select>
+    <div class="filter-group">
+        <label>Date</label>
 
-    <button id="delete-category-btn" class="btn-flat" disabled title="Delete Category">
-      <i class="material-icons red-text">close</i>
+        <input type="date" id="filter-date">
+    </div>
+
+    <div class="filter-group">
+        <label>Category</label>
+
+        <div class="category-row">
+
+            <select id="filter-category">
+                <option value="all">All Categories</option>
+            </select>
+
+            <button
+                id="delete-category-btn"
+                class="btn-flat"
+                disabled
+                title="Delete Category">
+
+                <i class="material-icons">close</i>
+
+            </button>
+
+        </div>
+    </div>
+
+  </div>
+
+<div class="add-buttons">
+
+    <button id="btn-add" class="btn waves-effect waves-light">
+        <i class="material-icons left">add</i>
+        Add Product
     </button>
-  </div>
 
-  <!-- Add Buttons - Dito na sila sa baba -->
-  <div class="add-buttons">
-    <button id="btn-add" class="waves-effect waves-light btn">ADD PRODUCT</button>
-    <button id="btn-add-categories" class="waves-effect waves-light btn">ADD CATEGORIES</button>
-  </div>
+    <button id="btn-add-categories" class="btn waves-effect waves-light">
+        <i class="material-icons left">category</i>
+        Add Category
+    </button>
+
 </div>
 
       <!--ADD categories-->
@@ -76,6 +79,7 @@
 
         </div>
       </div>
+</div>
 
 
       <!-- ADD PRODUCT MODAL -->
@@ -162,6 +166,7 @@
               <th>Total Pieces</th>
               <th>Unit Price</th>
               <th>Total Value</th>
+              <th>Date Added</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
@@ -171,8 +176,6 @@
           </tbody>
         </table>
       </section>
-    </main>
-  </div>
 
   <script src="/js/refresh.js"></script>
   <script src="/js/functionalnav.js"></script>
@@ -182,5 +185,3 @@
     loadInventory();
     loadCategories();
   </script>
-
-</html>
