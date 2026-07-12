@@ -197,9 +197,19 @@ export async function deleteEmployee(id) {
       }
 
       const API_BASE = window.location.origin;
+      const idToken = await auth.currentUser?.getIdToken();
+
+      if (!idToken) {
+        M.toast({ html: "Your session has expired. Please sign in again.", classes: "red rounded" });
+        return;
+      }
+
       const res = await fetch(`${API_BASE}/deleteAuthUser`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${idToken}`,
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ uid })
       });
 

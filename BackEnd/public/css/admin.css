@@ -143,7 +143,6 @@ body {
     width:100%;
     max-width:none;      /* tanggal limit */
     margin:0;
-    padding:0 20px;      /* konting allowance sa gilid */
 }
 
 /* cards */
@@ -474,6 +473,79 @@ body.modal-open {
 
 }
 
+/* desktop */
+  .modal{
+        width:620px !important;
+        border-radius:14px;
+    }
+
+    /* Bawasan ang space sa loob */
+    .modal-content{
+        padding:20px 24px 4px !important;
+    }
+
+    /* Alisin ang malaking pagitan ng rows */
+    .modal .row{
+        margin-bottom:0 !important;
+    }
+
+    /* Ilapit ang bawat input */
+    .modal .input-field{
+        margin-bottom:8px !important;
+    }
+
+    /* Huling input wala nang margin */
+    .modal .input-field:last-child{
+        margin-bottom:0 !important;
+    }
+
+    /* Ilapit ang footer sa last input */
+    .modal-footer{
+        margin-top:0 !important;
+        border-top:none !important;
+        display:flex;
+        justify-content:flex-end;
+        align-items:center;
+        gap:10px;
+    }
+
+    .modal-footer .btn{
+        margin:0 !important;
+    }
+
+    .inventory-card td:last-child{
+    display: flex;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.inventory-card td:last-child .btn{
+    width: 46px;
+    height: 40px;
+    min-width: 46px;
+    padding: 0 !important;
+
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    margin: 0 !important;
+    border-radius: 6px;
+    line-height: 40px;
+}
+
+.inventory-card td:last-child .btn i{
+    margin: 0 !important;
+    font-size: 18px;
+    line-height: 1;
+}
+
+/* para pantay ang dalawang button */
+.inventory-card td:last-child .blue,
+.inventory-card td:last-child .red{
+    vertical-align: middle;
+}
+
 
 /* MOBILE RESPONSIVE */
 
@@ -538,17 +610,11 @@ body.modal-open {
 
 }
 
-    .modal{
-        width: 95% !important;
-        height: auto !important;
-    }
-    
-    .main {
-        margin-left: 0 !important;
-        width: 100% !important;
-        padding: 1px;
-        /* Reduced side padding */
-    }
+    .main{
+    margin-left:0 !important;
+    width:100% !important;
+    padding:0 !important;
+}
 
     .mobile-header {
         display: flex;
@@ -641,6 +707,18 @@ body.modal-open {
     }
 
     /* Tables - Mobile friendly */
+    .table-container{
+    width:calc(100% + 32px);
+    margin:20px -16px 0;
+    padding:16px;
+    border-radius:0;
+    box-shadow:none;
+}
+
+.table-container table{
+    width:100%;
+}
+
     .inventory-card,
     .records-card {
         overflow: visible;
@@ -871,7 +949,6 @@ body.modal-open {
   }
 
 }
-
 
 /* Landscape */
 @media (max-width: 1024px) and (orientation: landscape) {

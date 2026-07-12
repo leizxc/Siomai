@@ -74,6 +74,7 @@
           </div>
 
           <div class="modal-footer">
+            <button type="button" class="modal-close btn-flat">Cancel</button>
             <button id="save-category" class="waves-effect waves-green btn">Save new Categories</button>
           </div>
 
@@ -103,10 +104,13 @@
             <input id="product-price" type="number" placeholder="Unit Price">
           </div>
           
-        </div>
-        <div class="modal-footer">
+         <div class="modal-footer">
+          <button type="button" class="modal-close btn-flat">Cancel</button>
           <button id="save-product" class="waves-effect waves-green btn">Save Product</button>
         </div>
+
+        </div>
+
       </div>
 
       <!-- EDIT PRODUCT MODAL -->
@@ -129,9 +133,24 @@
           <div class="input-field">
             <input id="edit-price" type="number">
           </div>
-        </div>
-        <div class="modal-footer">
+          
+           <div class="modal-footer">
+          <button type="button" class="modal-close btn-flat">Cancel</button>
           <button id="edit-save" class="waves-effect waves-light btn blue">Update Product</button>
+        </div>
+        </div>
+      </div>
+
+      <!-- DELETE CATEGORY CONFIRMATION -->
+      <div id="modal-delete-category" class="modal">
+        <div class="modal-content">
+          <h4 id="delete-confirmation-title">Delete category?</h4>
+          <p id="delete-confirmation-message">This category will be permanently deleted. You cannot delete a category that still has products.</p>
+        
+          <div class="modal-footer">
+          <button id="cancel-delete-category" type="button" class="modal-close btn-flat">Cancel</button>
+          <button id="confirm-delete-category" type="button" class="btn red">Delete</button>
+        </div>
         </div>
       </div>
 

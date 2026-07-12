@@ -15,10 +15,52 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ==================== INVENTORY ==================== //
+let unsubscribeInventory = null;
+
+function toLocalDateValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function confirmDeletion(title, message) {
+  const modalElement = document.getElementById("modal-delete-category");
+  const confirmButton = document.getElementById("confirm-delete-category");
+  const cancelButton = document.getElementById("cancel-delete-category");
+  const titleElement = document.getElementById("delete-confirmation-title");
+  const messageElement = document.getElementById("delete-confirmation-message");
+  const modalInstance = M.Modal.init(modalElement, { dismissible: false });
+
+  titleElement.textContent = title;
+  messageElement.textContent = message;
+
+  return new Promise((resolve) => {
+    cancelButton.onclick = () => {
+      modalInstance.close();
+      resolve(false);
+    };
+
+    confirmButton.onclick = () => {
+      modalInstance.close();
+      resolve(true);
+    };
+
+    modalInstance.open();
+  });
+}
+
 export function loadInventory() {
   const tbody = document.getElementById("inventory-table-body");
+  const dateInput = document.getElementById("filter-date");
 
-  onSnapshot(collection(db, "inventory"), async (querySnapshot) => {
+  // Only one listener must control this table. Otherwise old filters can
+  // render after the user changes the selected date.
+  if (unsubscribeInventory) {
+    unsubscribeInventory();
+  }
+
+  unsubscribeInventory = onSnapshot(collection(db, "inventory"), async (querySnapshot) => {
     tbody.innerHTML = "";
 
     let totalProducts = 0;
@@ -27,7 +69,7 @@ export function loadInventory() {
     const categories = new Set();
 
     const selectedCategory = document.getElementById("filter-category").value;
-    const selectedDate = document.getElementById("filter-date").value;
+    const selectedDate = dateInput.value;
 
 querySnapshot.forEach((docSnap) => {
   const data = docSnap.data();
@@ -47,10 +89,7 @@ querySnapshot.forEach((docSnap) => {
   if (selectedDate) {
     if (!data.created_at) return;
 
-    const docDate = data.created_at
-      .toDate()
-      .toISOString()
-      .split("T")[0];
+    const docDate = toLocalDateValue(data.created_at.toDate());
 
     if (docDate !== selectedDate) return;
   }
@@ -229,7 +268,10 @@ export async function deleteCategory(categoryId){
     return;
   }
 
-  if (!confirm("Delete this category")) return;
+  if (!await confirmDeletion(
+    "Delete category?",
+    "This category will be permanently deleted. You cannot delete a category that still has products."
+  )) return;
 
   await deleteDoc(doc(db,"categoriesINV", categoryId));
 
@@ -277,6 +319,11 @@ export async function addProduct(productName, categoryId, quantity, unitPrice) {
 
 // Delete product
 export async function deleteProduct(id) {
+  if (!await confirmDeletion(
+    "Delete product?",
+    "This product will be permanently removed from the inventory."
+  )) return;
+
   await deleteDoc(doc(db, "inventory", id));
   M.toast({ html: "Product deleted successfully!", classes: "red rounded" });
 }
@@ -345,13 +392,6 @@ document.getElementById("save-category").onclick = async () => {
 };
 
 // ==================== FILTERS ==================== //
-// set default date to today
-document.addEventListener("DOMContentLoaded", () => {
-  const dateInput = document.getElementById("filter-date");
-  const today = new Date().toISOString().split("T")[0];
-  dateInput.value = today;
-});
-
 // filter triggers
 document.getElementById("filter-date").addEventListener("change", () => {
   loadInventory();
