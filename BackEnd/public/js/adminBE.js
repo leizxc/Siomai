@@ -315,6 +315,7 @@ export async function addProduct(productName, categoryId, quantity, unitPrice) {
     created_at: serverTimestamp(),
     last_updated: serverTimestamp()
   });
+  M.toast({html:"New product added successfully!", classes:"green rounded"});
 }
 
 // Delete product
