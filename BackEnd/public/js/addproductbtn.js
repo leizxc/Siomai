@@ -1,7 +1,10 @@
 import { db } from "/js/firebase.js";
-import { collection, getDocs, addDoc, query, where }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
+import {
+  collection,
+  getDocs,
+  query,
+  where
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 export async function initProductModal() {
   document.addEventListener("DOMContentLoaded", async () => {
     M.FormSelect.init(document.querySelectorAll("select"));
@@ -12,9 +15,12 @@ export async function initProductModal() {
   const inputs = [
     document.getElementById("productName"),
     document.getElementById("productPrice"),
-    document.getElementById("productStock"),
+    document.getElementById("availableStock"),
+    document.getElementById("assignQuantity"),
     document.getElementById("addProductBtn")
-  ];
+];
+
+console.log("Inputs:", inputs);
 
   //  Function to enable/disable product inputs
   function toggleInputs() {
@@ -53,39 +59,6 @@ export async function initProductModal() {
 
   employeeSelect.addEventListener("change", toggleInputs);
 
-  //  Handle form submission
-  const form = document.getElementById("addProductForm");
-  if (form) {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const name = document.getElementById("productName").value.trim();
-      const price = parseFloat(document.getElementById("productPrice").value);
-      const stock = parseInt(document.getElementById("productStock").value);
-      const role = roleSelect.value;
-      const employeeId = employeeSelect.value || null;
-
-      if (!name || isNaN(price) || isNaN(stock) || !role) {
-        M.toast({ html: "⚠️ Please fill out all fields correctly.", classes: "red rounded" });
-        return;
-      }
-      
-      try {
-        await addDoc(collection(db, "products"), {
-          name,
-          price,
-          stock,
-          role,
-          employeeId
-        });
-        M.toast({ html: "Product added successfully!", classes: "green rounded" });
-        form.reset();
-        toggleInputs(); // disable again after reset
-        M.FormSelect.init(document.querySelectorAll("select"));
-      } catch (err) {
-        console.error("Error adding product:", err);
-        M.toast({ html: "Failed to add product.", classes: "red rounded" });
-      }
-    });
-  }
 }
+
+

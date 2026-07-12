@@ -1,107 +1,148 @@
-      <!-- Add Product Form -->
-      <section class="card add-product-card">
-        <h4>Add Product Sales</h4>
-        <form id="addProductForm">
-          <!-- Role Selection -->
-          <div class="input-field">
-            <select id="productRole" required>
-              <option value="" disabled selected>Choose Role</option>
-              <option value="siomai">Siomai</option>
-              <option value="pares">Pares</option>
-            </select>
-            <label for="productRole">Employee Role</label>
-          </div>
+<!-- ==================== HEADER ==================== -->
+<header class="header">
+    <h1>Add New Product</h1>
+    <p>Assign product to Employees</p>
+</header>
 
-          <!-- Employee Selection -->
-          <div class="input-field">
-            <select id="productEmployee">
-              <option value="" selected>All Employees (Shared)</option>
-              <!-- Dito papasok yung mga nasa Firestore -->
-            </select>
-            <label for="productEmployee">Assign to Specific Employee</label>
-          </div>
+<!-- ==================== ADD PRODUCT FORM ==================== -->
+<section class="card inventory-card">
+    <form id="addProductForm">
+        <div class="row">
+            <!-- Role Selection -->
+            <div class="input-field col s12 m6">
+                <select id="productRole" required>
+                    <option value="" disabled selected>Choose Role</option>
+                </select>
+                <label for="productRole">Employee Role</label>
+            </div>
 
-          <!-- Product Inputs -->
-          <div class="input-field">
-            <input type="text" id="productName" required>
-            <label for="productName">Product Name</label>
-          </div>
-
-          <div class="input-field">
-            <input type="number" id="productPrice" step="0.01" required>
-            <label for="productPrice">Product Price</label>
-          </div>
-
-          <div class="input-field">
-            <input type="number" id="productStock" required>
-            <label for="productStock">Product Stock</label>
-          </div>
-
-          <button type="submit" class="btn green" disabled id="addProductBtn">Add Product</button>
-        </form>
-      </section>
-
-      <!-- Product List Table -->
-      <section class="card product-list-card">
-        <h4>Product List</h4>
-
-        <!-- Filter by Role -->
-        <div class="input-field">
-          <select id="filterRole">
-            <option value="" selected>All Roles</option>
-            <option value="siomai">Siomai</option>
-            <option value="pares">Pares</option>
-          </select>
-          <label for="filterRole">Filter by Role</label>
+            <!-- Employee Selection -->
+            <div class="input-field col s12 m6">
+                <select id="productEmployee">
+                    <option value="" selected>All Employees (Shared)</option>
+                </select>
+                <label for="productEmployee">Assign to Employee</label>
+            </div>
         </div>
 
-        <table id="productTable">
-          <thead>
-            <tr>
-              <th>Product Name</th>
-              <th>Price</th>
-              <th>Stock</th>
-              <th>Role</th>
-              <th>Employee</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </section>
+        <div class="row">
+            <div class="input-field col s12">
+                <select id="productName" required>
+                    <option value="" disabled selected>Choose Product</option>
+                </select>
+                <label for="productName">Product Name</label>
+            </div>
+        </div>
 
-      <!-- Update Product Modal -->
-      <div id="modal-edit-product" class="modal">
-        <div class="modal-content">
-          <h4>Update Product</h4>
-          <form id="updateProductForm">
+        <div class="row">
+            <div class="input-field col s12 m6">
+                <input type="number" id="productPrice" step="0.01" min="0" readonly>
+                <label for="productPrice">Product Price (₱)</label>
+            </div>
+            <div class="input-field col s12 m6">
+                <input type="number" id="availableStock" readonly>
+                <label for="availableStock">Available Stock</label>
+            </div>
+        </div>
+        <div class="row">
+            <div class="input-field col s12 m6">
+                <input type="number" id="assignQuantity" min="1" required>
+                <label for="assignQuantity">Quantity to Assign</label>
+            </div>
+        </div>
+
+
+
+        <div class="add-buttons">
+            <button type="submit" class="btn green" id="addProductBtn" disabled>Add Product</button>
+        </div>
+    </form>
+</section>
+
+<!-- ==================== PRODUCT LIST ==================== -->
+<section class="card inventory-card product-list-card">
+    <div class="header">
+        <h4>Product List</h4>
+    </div>
+
+    <!-- Filter -->
+    <div class="row">
+        <div class="input-field col s12 m6">
+            <select id="filterRole">
+                <option value="" selected>All Roles</option>
+            </select>
+            <label>Filter by Role</label>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="productTable" class="highlight">
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Role</th>
+                    <th>Employee</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ==================== EDIT PRODUCT MODAL ==================== -->
+<div id="modal-edit-product" class="modal">
+    <div class="modal-content">
+        <h4>Update Product</h4>
+
+        <form id="updateProductForm">
             <input type="hidden" id="updateProductId">
 
-            <div class="input-field">
-              <input type="text" id="edit-name" required>
-              <label for="edit-name">Product Name</label>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input type="text" id="edit-name" required>
+                    <label for="edit-name">Product Name</label>
+                </div>
             </div>
 
-            <div class="input-field">
-              <input type="number" id="edit-price" step="0.01" required>
-              <label for="edit-price">Product Price</label>
-            </div>
-
-            <div class="input-field">
-              <input type="number" id="edit-stock" required>
-              <label for="edit-stock">Product Stock</label>
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <input type="number" id="edit-price" step="0.01" min="0" required>
+                    <label for="edit-price">Product Price (₱)</label>
+                </div>
+                <div class="input-field col s12 m6">
+                    <input type="number" id="edit-stock" min="0" required>
+                    <label for="edit-stock">Stock</label>
+                </div>
             </div>
 
             <div class="modal-footer">
-              <button type="button" id="edit-save" class="btn blue">Save Changes</button>
+                <button type="button" id="edit-cancel" class="modal-close btn-flat">Cancel</button>
+                <button type="button" id="edit-save" class="btn blue">Save Changes</button>
             </div>
-          </form>
+        </form>
+    </div>
+</div>
+
+<!-- DELETE CATEGORY CONFIRMATION -->
+<div id="modal-delete-category" class="modal">
+    <div class="modal-content">
+        <h4 id="delete-confirmation-title">Delete category?</h4>
+        <p id="delete-confirmation-message">This category will be permanently deleted. You cannot delete a category that
+            still has products.</p>
+
+        <div class="modal-footer">
+            <button id="cancel-delete-category" type="button" class="modal-close btn-flat">Cancel</button>
+            <button id="confirm-delete-category" type="button" class="btn red">Delete</button>
         </div>
-  <!-- JS modules -->
-  <script src="/js/refresh.js"></script>
-  <script src="/js/functionalnav.js"></script>
-  <script type="module" src="/js/firebase.js"></script>
-  <script type="module" src="/js/addproductbtn.js"></script>
-  <script type="module" src="/js/adminaddProduct.js"></script>
-</body>
-</html>
+    </div>
+</div>
+
+<!-- JS modules -->
+<script src="/js/refresh.js"></script>
+<script src="/js/functionalnav.js"></script>
+<script type="module" src="/js/firebase.js"></script>
+<script type="module" src="/js/addproductbtn.js"></script>
+<script type="module" src="/js/adminaddProduct.js"></script>

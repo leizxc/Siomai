@@ -1,206 +1,210 @@
-      <header class="header">
-        <h1>Inventory (Storage)</h1>
-        <p>Product List and Stocks</p>
-      </header>
+<header class="header">
+  <h1>Inventory (Storage)</h1>
+  <p>Product List and Stocks</p>
+</header>
 
-      <!-- FILTERS -->
+<!-- FILTERS -->
 <div class="card filter-card">
- <div class="filters">
+  <div class="filters">
 
     <div class="filter-group">
-        <label>Date</label>
+      <label>Date</label>
 
-        <input type="date" id="filter-date">
+      <input type="date" id="filter-date">
     </div>
 
     <div class="filter-group">
-        <label>Category</label>
+      <label>Category</label>
 
-        <div class="category-row">
+      <div class="category-row">
 
-            <select id="filter-category">
-                <option value="all">All Categories</option>
-            </select>
+        <select id="filter-category">
+          <option value="all">All Categories</option>
+        </select>
 
-            <button
-                id="delete-category-btn"
-                class="btn-flat"
-                disabled
-                title="Delete Category">
+        <button id="delete-category-btn" class="btn-flat" disabled title="Delete Category">
 
-                <i class="material-icons">close</i>
+          <i class="material-icons">close</i>
 
-            </button>
+        </button>
 
-        </div>
+      </div>
     </div>
 
   </div>
 
-<div class="add-buttons">
+  <div class="add-buttons">
 
     <button id="btn-add" class="btn waves-effect waves-light">
-        <i class="material-icons left">add</i>
-        Add Product
+      <i class="material-icons left">add</i>
+      Add Product
     </button>
 
     <button id="btn-add-categories" class="btn waves-effect waves-light">
-        <i class="material-icons left">category</i>
-        Add Category
+      <i class="material-icons left">category</i>
+      Add Category
     </button>
 
+  </div>
+
+  <!--ADD categories-->
+  <div id="modal-add-category" class="modal">
+    <div class="modal-content">
+      <h4>Add Categories</h4>
+
+      <div class="input-field">
+        <input type="text" placeholder="Add new Categories" id="new-category-name">
+      </div>
+
+      <div class="input-field">
+        <select id="category-role">
+          <option value="" disabled selected>Choose Role</option>
+        </select>
+      </div>
+
+      <div class="input-field">
+        <select id="new-category-unit">
+          <option value="" disabled selected>Choose unit</option>
+          <option value="pack">pack</option>
+          <option value="kg">Kilogram</option>
+        </select>
+        <label for="new-category-unit">Unit Type</label>
+      </div>
+
+
+      <div class="input-field" id="pieces-per-pack-field" style="display: none;">
+        <input type="number" id="pieces-per-pack" placeholder="Pieces per Pack">
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="modal-close btn-flat">Cancel</button>
+        <button id="save-category" class="waves-effect waves-green btn">Save new Categories</button>
+      </div>
+
+    </div>
+  </div>
 </div>
 
-      <!--ADD categories-->
-      <div id="modal-add-category" class="modal">
-        <div class="modal-content">
-          <h4>Add Categories</h4>
 
-          <div class="input-field">
-            <input type="text" placeholder="Add new Categories" id="new-category-name">
-          </div>
+<!-- ADD PRODUCT MODAL -->
+<div id="modal-add" class="modal">
+  <div class="modal-content">
+    <h4>Add Product</h4>
+    <div class="input-field">
+      <input id="product-name" type="text" placeholder="Product Name">
+    </div>
+    <div class="input-field">
+      <select id="product-category">
+        <option value="" disabled selected>Choose Category</option>
+      </select>
+      <label>Category</label>
+    </div>
+    <div class="input-field">
+      <input id="product-packs" type="number" placeholder="Number of Packs">
+      <label for="product-packs"> </label>
+    </div>
+    <div class="input-field">
+      <input id="product-price" type="number" placeholder="Unit Price">
+    </div>
 
-          <div class="input-field">
-            <select id="new-category-unit">
-              <option value="" disabled selected>Choose unit</option>\
-              <option value="pack">pack</option>
-              <option value="kg">Kilogram</option>
-            </select>
-            <label for="new-category-unit">Unit Type</label>
-          </div>
+    <div class="modal-footer">
+      <button type="button" class="modal-close btn-flat">Cancel</button>
+      <button id="save-product" class="waves-effect waves-green btn">Save Product</button>
+    </div>
 
-          <div class="input-field" id="pieces-per-pack-field" style="display: none;">
-            <input type="number" id="pieces-per-pack" placeholder="Pieces per Pack">
-          </div>
+  </div>
 
-          <div class="modal-footer">
-            <button type="button" class="modal-close btn-flat">Cancel</button>
-            <button id="save-category" class="waves-effect waves-green btn">Save new Categories</button>
-          </div>
-
-        </div>
-      </div>
 </div>
 
+<!-- EDIT PRODUCT MODAL -->
+<div id="modal-edit" class="modal">
+  <div class="modal-content">
+    <h4>Edit Product</h4>
+    <div class="input-field">
+      <input id="edit-name" type="text">
+    </div>
+    <div class="input-field">
+      <select id="edit-category">
+        <option value="" disabled selected>Choose Category</option>
+        <option value="Siomai">Siomai</option>
+      </select>
+      <label>Category</label>
+    </div>
+    <div class="input-field">
+      <input id="edit-packs" type="number">
+    </div>
+    <div class="input-field">
+      <input id="edit-price" type="number">
+    </div>
 
-      <!-- ADD PRODUCT MODAL -->
-      <div id="modal-add" class="modal">
-        <div class="modal-content">
-          <h4>Add Product</h4>
-          <div class="input-field">
-            <input id="product-name" type="text" placeholder="Product Name">
-          </div>
-          <div class="input-field">
-            <select id="product-category">
-              <option value="" disabled selected>Choose Category</option>
-            </select>
-            <label>Category</label>
-          </div>
-          <div class="input-field">
-            <input id="product-packs" type="number" placeholder="Number of Packs">
-            <label for="product-packs"> </label>
-          </div>
-          <div class="input-field">
-            <input id="product-price" type="number" placeholder="Unit Price">
-          </div>
-          
-         <div class="modal-footer">
-          <button type="button" class="modal-close btn-flat">Cancel</button>
-          <button id="save-product" class="waves-effect waves-green btn">Save Product</button>
-        </div>
+    <div class="modal-footer">
+      <button type="button" class="modal-close btn-flat">Cancel</button>
+      <button id="edit-save" class="waves-effect waves-light btn blue">Update Product</button>
+    </div>
+  </div>
+</div>
 
-        </div>
+<!-- DELETE CATEGORY CONFIRMATION -->
+<div id="modal-delete-category" class="modal">
+  <div class="modal-content">
+    <h4 id="delete-confirmation-title">Delete category?</h4>
+    <p id="delete-confirmation-message">This category will be permanently deleted. You cannot delete a category that
+      still has products.</p>
 
-      </div>
+    <div class="modal-footer">
+      <button id="cancel-delete-category" type="button" class="modal-close btn-flat">Cancel</button>
+      <button id="confirm-delete-category" type="button" class="btn red">Delete</button>
+    </div>
+  </div>
+</div>
 
-      <!-- EDIT PRODUCT MODAL -->
-      <div id="modal-edit" class="modal">
-        <div class="modal-content">
-          <h4>Edit Product</h4>
-          <div class="input-field">
-            <input id="edit-name" type="text">
-          </div>
-          <div class="input-field">
-            <select id="edit-category">
-              <option value="" disabled selected>Choose Category</option>
-              <option value="Siomai">Siomai</option>
-            </select>
-            <label>Category</label>
-          </div>
-          <div class="input-field">
-            <input id="edit-packs" type="number">
-          </div>
-          <div class="input-field">
-            <input id="edit-price" type="number">
-          </div>
-          
-           <div class="modal-footer">
-          <button type="button" class="modal-close btn-flat">Cancel</button>
-          <button id="edit-save" class="waves-effect waves-light btn blue">Update Product</button>
-        </div>
-        </div>
-      </div>
+<!-- SUMMARY -->
+<section class="summary">
+  <div class="card">
+    <h3 id="total-products">0</h3>
+    <p>Total Products</p>
+  </div>
+  <div class="card">
+    <h3 id="total-stocks">0</h3>
+    <p id="stocks-label">Total Pieces</p>
+  </div>
+  <div class="card">
+    <h3 id="total-value">₱0.00</h3>
+    <p>Total Inventory Value</p>
+  </div>
+  <div class="card">
+    <h3 id="total-categories">0</h3>
+    <p>Categories</p>
+  </div>
+</section>
 
-      <!-- DELETE CATEGORY CONFIRMATION -->
-      <div id="modal-delete-category" class="modal">
-        <div class="modal-content">
-          <h4 id="delete-confirmation-title">Delete category?</h4>
-          <p id="delete-confirmation-message">This category will be permanently deleted. You cannot delete a category that still has products.</p>
-        
-          <div class="modal-footer">
-          <button id="cancel-delete-category" type="button" class="modal-close btn-flat">Cancel</button>
-          <button id="confirm-delete-category" type="button" class="btn red">Delete</button>
-        </div>
-        </div>
-      </div>
+<!-- TABLE -->
+<section class="inventory-card">
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Category</th>
+        <th>Total Packs</th>
+        <th>Total Pieces</th>
+        <th>Unit Price</th>
+        <th>Total Value</th>
+        <th>Date Added</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="inventory-table-body">
+      <!-- Firestore data will be injected here -->
+    </tbody>
+  </table>
+</section>
 
-      <!-- SUMMARY -->
-      <section class="summary">
-        <div class="card">
-          <h3 id="total-products">0</h3>
-          <p>Total Products</p>
-        </div>
-        <div class="card">
-          <h3 id="total-stocks">0</h3>
-          <p id="stocks-label">Total Pieces</p>
-        </div>
-        <div class="card">
-          <h3 id="total-value">₱0.00</h3>
-          <p>Total Inventory Value</p>
-        </div>
-        <div class="card">
-          <h3 id="total-categories">0</h3>
-          <p>Categories</p>
-        </div>
-      </section>
-
-      <!-- TABLE -->
-      <section class="inventory-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Category</th>
-              <th>Total Packs</th>
-              <th>Total Pieces</th>
-              <th>Unit Price</th>
-              <th>Total Value</th>
-              <th>Date Added</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="inventory-table-body">
-            <!-- Firestore data will be injected here -->
-          </tbody>
-        </table>
-      </section>
-
-  <script src="/js/refresh.js"></script>
-  <script src="/js/functionalnav.js"></script>
-  <script type="module" src="/js/firebase.js"></script>
-  <script type="module">
-    import { loadInventory, loadCategories } from "/js/adminBE.js";
-    loadInventory();
-    loadCategories();
-  </script>
+<script src="/js/refresh.js"></script>
+<script src="/js/functionalnav.js"></script>
+<script type="module" src="/js/firebase.js"></script>
+<script type="module">
+  import { loadInventory, loadCategories, loadRoles } from "/js/adminBE.js";
+  loadInventory();
+  loadCategories();
+</script>

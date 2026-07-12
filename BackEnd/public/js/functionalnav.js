@@ -56,6 +56,11 @@ function loadSection(page) {
                         }
 
                         const productModule = await import("/js/adminaddproduct.js");
+
+                        if (typeof productModule.initProductPage === "function") {
+                            await productModule.initProductPage();
+                        }
+
                         if (typeof productModule.loadProducts === "function") {
                             productModule.loadProducts();
                         }

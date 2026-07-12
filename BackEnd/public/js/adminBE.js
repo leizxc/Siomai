@@ -71,30 +71,30 @@ export function loadInventory() {
     const selectedCategory = document.getElementById("filter-category").value;
     const selectedDate = dateInput.value;
 
-querySnapshot.forEach((docSnap) => {
-  const data = docSnap.data();
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
 
-  if (selectedCategory !== "all") {
-    const selectedOption = document.querySelector(
-      `#filter-category option[value="${selectedCategory}"]`
-    );
+      if (selectedCategory !== "all") {
+        const selectedOption = document.querySelector(
+          `#filter-category option[value="${selectedCategory}"]`
+        );
 
-    const selectedName = selectedOption
-      ? selectedOption.textContent
-      : "";
+        const selectedName = selectedOption
+          ? selectedOption.textContent
+          : "";
 
-    if (data.category !== selectedName) return;
-  }
+        if (data.category !== selectedName) return;
+      }
 
-  if (selectedDate) {
-    if (!data.created_at) return;
+      if (selectedDate) {
+        if (!data.created_at) return;
 
-    const docDate = toLocalDateValue(data.created_at.toDate());
+        const docDate = toLocalDateValue(data.created_at.toDate());
 
-    if (docDate !== selectedDate) return;
-  }
+        if (docDate !== selectedDate) return;
+      }
 
-  // Kapag pasado sa filter, saka lang magre-render
+      // Kapag pasado sa filter, saka lang magre-render
 
       totalProducts++;
       totalStocks += data.stock_quantity;
@@ -114,7 +114,7 @@ querySnapshot.forEach((docSnap) => {
           ? `${data.stock_quantity} pcs`
           : data.unit_type === "kg"
             ? `${data.quantity} kg`
-              : `${data.stock_quantity}`;
+            : `${data.stock_quantity}`;
 
       // Determine display label and value based on unit type
       let totalLabel = "Total Pieces";
@@ -133,10 +133,10 @@ querySnapshot.forEach((docSnap) => {
       }
 
       const dateAdded = data.created_at
-        ? data.created_at.toDate().toLocaleDateString("en-PH",{
+        ? data.created_at.toDate().toLocaleDateString("en-PH", {
           year: "numeric",
-          month:"short",
-          day:"numeric"
+          month: "short",
+          day: "numeric"
         })
         : "-";
 
@@ -168,18 +168,18 @@ querySnapshot.forEach((docSnap) => {
     let totalDisplay1 = totalStocks;
 
     //if a specific category is selected, adjust label based on its unit type
-    if(selectedCategory !== "all"){
-      const categoryDoc = await getDoc(doc(db,"categoriesINV", selectedCategory)); 
+    if (selectedCategory !== "all") {
+      const categoryDoc = await getDoc(doc(db, "categoriesINV", selectedCategory));
       const unitType = categoryDoc.data().unit_type;
 
-      if (unitType === "pack"){
+      if (unitType === "pack") {
         totalLabel1 = "Total Pieces";
         totalDisplay1 = `${totalStocks} pcs`
-      }else if (unitType === "kg"){
+      } else if (unitType === "kg") {
         totalLabel1 = "Total Weight";
         const pounds1 = (totalStocks * 2.2).toFixed(2);
         totalDisplay1 = `${pounds1} lb`;
-      }  else {
+      } else {
         totalLabel1 = "Total Quantity";
         totalDisplay1 = totalStocks;
       }
@@ -202,69 +202,70 @@ querySnapshot.forEach((docSnap) => {
 
     // Edit button logic
     document.querySelectorAll(".edit-btn").forEach((btn) => {
-  btn.onclick = async (e) => {
-    const id = e.target.closest("button").dataset.id;
-    const row = e.target.closest("tr");
+      btn.onclick = async (e) => {
+        const id = e.target.closest("button").dataset.id;
+        const row = e.target.closest("tr");
 
-    document.getElementById("edit-name").value = row.children[0].textContent;
-    document.getElementById("edit-category").value = row.dataset.categoryId; //  doc ID
-    document.getElementById("edit-packs").value = row.children[2].textContent.replace(/\D/g, "");
-    document.getElementById("edit-price").value = row.children[4].textContent.replace("₱", "");
+        document.getElementById("edit-name").value = row.children[0].textContent;
+        document.getElementById("edit-category").value = row.dataset.categoryId; //  doc ID
+        document.getElementById("edit-packs").value = row.children[2].textContent.replace(/\D/g, "");
+        document.getElementById("edit-price").value = row.children[4].textContent.replace("₱", "");
 
-    M.FormSelect.init(document.querySelectorAll("select"));
+        M.FormSelect.init(document.querySelectorAll("select"));
 
-    const modalElem = document.getElementById("modal-edit");
-    const modalInstance = M.Modal.init(modalElem);
-    modalInstance.open();
+        const modalElem = document.getElementById("modal-edit");
+        const modalInstance = M.Modal.init(modalElem);
+        modalInstance.open();
 
-    const saveBtn = document.getElementById("edit-save");
-    saveBtn.onclick = async () => {
-      const newName = document.getElementById("edit-name").value.trim();
-      const newCategoryId = document.getElementById("edit-category").value; //  doc ID
-      const newQuantity = parseFloat(document.getElementById("edit-packs").value);
-      const newPrice = parseFloat(document.getElementById("edit-price").value);
+        const saveBtn = document.getElementById("edit-save");
+        saveBtn.onclick = async () => {
+          const newName = document.getElementById("edit-name").value.trim();
+          const newCategoryId = document.getElementById("edit-category").value; //  doc ID
+          const newQuantity = parseFloat(document.getElementById("edit-packs").value);
+          const newPrice = parseFloat(document.getElementById("edit-price").value);
 
-      const categoryDoc = await getDoc(doc(db, "categoriesINV", newCategoryId));
-      const categoryData = categoryDoc.data();
-      const unitType = categoryData.unit_type;
-      const piecesPerPack = categoryData.pieces_per_pack || 1;
+          const categoryDoc = await getDoc(doc(db, "categoriesINV", newCategoryId));
+          const categoryData = categoryDoc.data();
+          const unitType = categoryData.unit_type;
+          const piecesPerPack = categoryData.pieces_per_pack || 1;
 
-      let newStock = unitType === "pack" ? newQuantity * piecesPerPack : newQuantity;
-      const newTotalValue = newStock * newPrice;
+          let newStock = unitType === "pack" ? newQuantity * piecesPerPack : newQuantity;
+          const newTotalValue = newStock * newPrice;
 
-      await updateDoc(doc(db, "inventory", id), {
-        product_name: newName,
-        category_id: newCategoryId,       //  store doc ID
-        category: categoryData.name,      //  store readable name
-        unit_type: unitType,
-        quantity: newQuantity,
-        stock_quantity: newStock,
-        unit_price: newPrice,
-        total_value: newTotalValue,
-        last_updated: serverTimestamp()
-      });
-      M.toast({ html: "Product updated successfully!", classes: "green rounded" });
-      modalInstance.close();
-    };
-  };
-});
+          await updateDoc(doc(db, "inventory", id), {
+            product_name: newName,
+            category_id: newCategoryId,       //  store doc ID
+            category: categoryData.name,      //  store readable name
+            role: categoryData.role,
+            unit_type: unitType,
+            quantity: newQuantity,
+            stock_quantity: newStock,
+            unit_price: newPrice,
+            total_value: newTotalValue,
+            last_updated: serverTimestamp()
+          });
+          M.toast({ html: "Product updated successfully!", classes: "green rounded" });
+          modalInstance.close();
+        };
+      };
+    });
   });
 }
 
 //delete category
-export async function deleteCategory(categoryId){
-  if (!categoryId || categoryId == "all"){
-    M.toast({html:"Please select a category", classes: "red rounded"});
+export async function deleteCategory(categoryId) {
+  if (!categoryId || categoryId == "all") {
+    M.toast({ html: "Please select a category", classes: "red rounded" });
     return;
   }
 
   // check kung ginagamit pa 
-  const q = query(collection(db,"inventory"), where ("category_id", "==", categoryId));
+  const q = query(collection(db, "inventory"), where("category_id", "==", categoryId));
 
   const result = await getDocs(q);
 
-  if(!result.empty){
-    M.toast({html:"Cannot Delete. This Category still contains products.", classes:"red rounded"});
+  if (!result.empty) {
+    M.toast({ html: "Cannot Delete. This Category still contains products.", classes: "red rounded" });
     return;
   }
 
@@ -273,9 +274,9 @@ export async function deleteCategory(categoryId){
     "This category will be permanently deleted. You cannot delete a category that still has products."
   )) return;
 
-  await deleteDoc(doc(db,"categoriesINV", categoryId));
+  await deleteDoc(doc(db, "categoriesINV", categoryId));
 
-  M.toast({html:"Category Deleted", classes:"green rounded"});
+  M.toast({ html: "Category Deleted", classes: "green rounded" });
 }
 
 //
@@ -297,16 +298,17 @@ export async function addProduct(productName, categoryId, quantity, unitPrice) {
   } else if (unitType === "kg") {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
-    }  else {
+  } else {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
   }
 
 
-    await addDoc(collection(db, "inventory"), {
+  await addDoc(collection(db, "inventory"), {
     product_name: productName,
     category_id: categoryId,        // Firestore doc ID
     category: categoryData.name,    // readable name
+    role: categoryData.role,
     unit_type: unitType,
     quantity: quantity,
     stock_quantity: stockQty,
@@ -315,7 +317,7 @@ export async function addProduct(productName, categoryId, quantity, unitPrice) {
     created_at: serverTimestamp(),
     last_updated: serverTimestamp()
   });
-  M.toast({html:"New product added successfully!", classes:"green rounded"});
+  M.toast({ html: "New product added successfully!", classes: "green rounded" });
 }
 
 // Delete product
@@ -326,7 +328,7 @@ export async function deleteProduct(id) {
   )) return;
 
   await deleteDoc(doc(db, "inventory", id));
-  M.toast({ html: "Product deleted successfully!", classes: "red rounded" });
+  M.toast({ html: "Product deleted successfully!", classes: "green rounded" });
 }
 
 // ==================== CATEGORIES ==================== //
@@ -356,16 +358,10 @@ export function loadCategories() {
   });
 }
 
-// Hook sa add category modal
-document.getElementById("btn-add-categories").onclick = () => {
-  const modalElem = document.getElementById("modal-add-category");
-  const modalInstance = M.Modal.init(modalElem);
-  modalInstance.open();
-};
-
 // Save category with unit type + pieces per pack
 document.getElementById("save-category").onclick = async () => {
   const name = document.getElementById("new-category-name").value.trim();
+  const role = document.getElementById("category-role").value;
   const unitType = document.getElementById("new-category-unit").value;
   const piecesPerPack = document.getElementById("pieces-per-pack").value;
 
@@ -374,7 +370,7 @@ document.getElementById("save-category").onclick = async () => {
     return;
   }
 
-  const categoryData = { name, unit_type: unitType };
+  const categoryData = { name, role, unit_type: unitType };
   if (unitType === "pack" && piecesPerPack) {
     categoryData.pieces_per_pack = parseInt(piecesPerPack);
   }
@@ -382,7 +378,6 @@ document.getElementById("save-category").onclick = async () => {
   await addDoc(collection(db, "categoriesINV"), categoryData);
   M.toast({ html: "Category added!", classes: "green rounded" });
 
-  
   document.getElementById("new-category-name").value = "";
   document.getElementById("new-category-unit").value = "";
   document.getElementById("pieces-per-pack").value = "";
@@ -390,6 +385,10 @@ document.getElementById("save-category").onclick = async () => {
   const modalElem = document.getElementById("modal-add-category");
   const modalInstance = M.Modal.getInstance(modalElem);
   modalInstance.close();
+
+  document.getElementById("category-role").selectedIndex = 0;
+
+  M.FormSelect.init(document.querySelectorAll("select"));
 };
 
 // ==================== FILTERS ==================== //
@@ -411,15 +410,35 @@ document.getElementById("new-category-unit").addEventListener("change", (e) => {
 });
 
 //make dropdown of inside modal in category
-document.getElementById("btn-add-categories").onclick = () => {
-  const modalElem = document.getElementById("modal-add-category");
-  const modalInstance = M.Modal.init(modalElem, {
-    onOpenEnd: () => {
-      M.FormSelect.init(document.querySelectorAll("select"));
-    }
-  });
-  modalInstance.open();
-}
+document.getElementById("btn-add-categories").onclick = async () => {
+    await loadRoles();
+
+    const modalElem = document.getElementById("modal-add-category");
+
+    const modalInstance = M.Modal.init(modalElem, {
+
+        onOpenEnd() {
+            M.FormSelect.init(document.querySelectorAll("select"));
+        },
+
+        onCloseEnd() {
+
+            document.getElementById("new-category-name").value = "";
+            document.getElementById("pieces-per-pack").value = "";
+
+            document.getElementById("category-role").selectedIndex = 0;
+            document.getElementById("new-category-unit").selectedIndex = 0;
+
+            document.getElementById("pieces-per-pack-field").style.display = "none";
+
+            M.updateTextFields();
+            M.FormSelect.init(document.querySelectorAll("select"));
+        }
+
+    });
+
+    modalInstance.open();
+};
 
 
 //Updatae quantity label based on selected category
@@ -468,3 +487,35 @@ if (filter && deleteBtn) {
     await deleteCategory(filter.value);
   };
 }
+
+//load roles in add category
+
+export async function loadRoles() {
+  const roleSelect = document.getElementById("category-role");
+
+  if (!roleSelect) return;
+
+  const snap = await getDocs(collection(db, "employees"));
+
+  const roles = new Set();
+
+  snap.forEach((docSnap) => {
+    const data = docSnap.data();
+
+    if (data.role) {
+      roles.add(data.role.trim());
+    }
+  });
+
+  roleSelect.innerHTML = `<option value="" disabled selected>Choose Role</option>`;
+
+  roles.forEach((role) => {
+    const option = document.createElement("option");
+    option.value = role;
+    option.textContent = role;
+    roleSelect.appendChild(option);
+  });
+
+  M.FormSelect.init(roleSelect);
+}
+
