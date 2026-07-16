@@ -130,12 +130,25 @@ document.getElementById("addProductForm").addEventListener("submit", async (e) =
   const invRef = doc(db, "inventory", inventoryId);
   const invSnap = await getDoc(invRef);
   const invData = invSnap.data();
+  //bilangin muna lahat ng employees sa role na yun
+  let employeeCount = 1;
+  if (employeeId === "") {
+    const q = query(
+      collection(db, "employees"),
+      where("role", "==", role)
+    );
+
+    const employeeSnap = await getDocs(q);
+    employeeCount = employeeSnap.size;
+  }
+
+  const totalAssigned = quantity * employeeCount;
 
 
-
+  //stop checking
   if (invData.unit_type === "pack") {
 
-    if (invData.quantity < quantity) {
+    if (invData.quantity < totalAssigned) {
       M.toast({
         html: "Not enough stock!",
         classes: "red rounded"
@@ -145,7 +158,7 @@ document.getElementById("addProductForm").addEventListener("submit", async (e) =
 
   } else {
 
-    if (invData.stock_quantity < quantity) {
+    if (invData.stock_quantity < totalAssigned) {
       M.toast({
         html: "Not enough stock!",
         classes: "red rounded"
@@ -154,23 +167,23 @@ document.getElementById("addProductForm").addEventListener("submit", async (e) =
     }
 
   }
-
-  let newStockQuantity;
+  //compute bagong stock
   let newQuantity;
-
+  let newStockQuantity;
   if (invData.unit_type === "pack") {
 
-    const categorySnap = await getDoc(doc(db, "categoriesINV", invData.category_id));
+    const categorySnap = await getDoc(
+      doc(db, "categoriesINV", invData.category_id)
+    );
 
     const piecesPerPack = categorySnap.data().pieces_per_pack;
 
-    newQuantity = invData.quantity - quantity;
-
+    newQuantity = invData.quantity - totalAssigned;
     newStockQuantity = newQuantity * piecesPerPack;
 
   } else {
 
-    newQuantity = invData.quantity - quantity;
+    newQuantity = invData.quantity - totalAssigned;
     newStockQuantity = newQuantity;
 
   }
@@ -181,31 +194,85 @@ document.getElementById("addProductForm").addEventListener("submit", async (e) =
     last_updated: serverTimestamp()
   });
 
-  await addDoc(collection(db, "products"), {
-    name: invData.product_name,
-    price: invData.unit_price,
-    role,
-    employeeId,
-    stock: quantity,
+  if (employeeId === "") {
+    const employeeQuery = query(
+      collection(db, "employees"),
+      where("role", "==", role)
+    );
 
-    // IMPORTANT
-    inventoryId: inventoryId,
-    unit_type: invData.unit_type,
-    assigned_at: serverTimestamp()
-  });
+    const employeeSnap = await getDocs(employeeQuery);
+
+    for (const employee of employeeSnap.docs) {
+      await addDoc(collection(db, "products"), {
+        name: invData.product_name,
+        price: invData.unit_price,
+        role,
+        employeeId: employee.id,
+        stock: quantity,
+        inventoryId,
+        unit_type: invData.unit_type,
+        assigned_at: serverTimestamp()
+      });
+    }
+  } else {
+    await addDoc(collection(db, "products"), {
+      name: invData.product_name,
+      price: invData.unit_price,
+      role,
+      employeeId,
+      stock: quantity,
+      inventoryId,
+      unit_type: invData.unit_type,
+      assigned_at: serverTimestamp()
+    });
+  }
 
   M.toast({ html: "Product assigned successfully!", classes: "green rounded" });
-  // ✅ Clear all inputs
-  e.target.reset(); // clears the form
+
+  //stop listening to old producct
+  if (unsubscribeProduct) {
+    unsubscribeProduct();
+    unsubscribeProduct = null;
+  }
+
+  //reset form 
+  document.getElementById("addProductForm").reset();
+
   document.getElementById("productPrice").value = "";
   document.getElementById("availableStock").value = "";
+  document.getElementById("assignQuantity").value = "";
 
-  // Re‑init Materialize labels and selects
+  //reset selects
+  document.getElementById("productRole").selectedIndex = 0;
+  document.getElementById("productEmployee").selectedIndex = 0;
+
+  // I-clear muna ang product dropdown
+  const productSelect = document.getElementById("productName");
+  productSelect.innerHTML = `
+    <option value="" disabled selected>Choose Product</option>
+`;
+
+  // Refresh Materialize
   M.updateTextFields();
   M.FormSelect.init(document.querySelectorAll("select"));
 
-  // Disable Add Product button again
-  document.getElementById("addProductBtn").disabled = true;
+  // Reload inventory para gumana ulit
+  loadInventoryOptions();
+
+  setTimeout(() => {
+
+    const select = document.getElementById("productName");
+
+    M.FormSelect.init(select);
+
+    select.selectedIndex = 0;
+
+    document.getElementById("productPrice").value = "";
+    document.getElementById("availableStock").value = "";
+
+    M.updateTextFields();
+
+  }, 200);
 });
 
 export async function loadProducts() {
@@ -241,7 +308,7 @@ export async function loadProducts() {
           const empData = employeesMap[data.employeeId] || {};
           const empDisplay = empData.fname
             ? `${empData.fname} ${empData.lname} (${empData.role})`
-            : "Shared";
+            : "-";
 
           const row = document.createElement("tr");
           row.innerHTML = `
@@ -297,7 +364,6 @@ export async function loadProducts() {
                   return;
                 }
 
-
                 const inventoryRef = doc(
                   db,
                   "inventory",
@@ -306,46 +372,28 @@ export async function loadProducts() {
 
                 const inventorySnap = await getDoc(inventoryRef);
 
-
                 if (inventorySnap.exists()) {
 
                   const invData = inventorySnap.data();
 
-
-                  let restoreQuantity =
-                    invData.quantity + productData.stock;
-
-
+                  let restoreQuantity = invData.quantity + productData.stock;
                   let restoreStockQuantity;
-
 
                   if (invData.unit_type === "pack") {
 
                     const categorySnap = await getDoc(
-                      doc(
-                        db,
-                        "categoriesINV",
-                        invData.category_id
-                      )
+                      doc(db, "categoriesINV", invData.category_id)
                     );
 
+                    const piecesPerPack = categorySnap.data().pieces_per_pack;
 
-                    const piecesPerPack =
-                      categorySnap.data().pieces_per_pack;
-
-
-                    restoreStockQuantity =
-                      restoreQuantity * piecesPerPack;
-
+                    restoreStockQuantity = restoreQuantity * piecesPerPack;
 
                   } else {
 
-                    restoreStockQuantity =
-                      restoreQuantity;
+                    restoreStockQuantity = restoreQuantity;
 
                   }
-
-
 
                   await updateDoc(inventoryRef, {
                     quantity: restoreQuantity,
@@ -353,9 +401,7 @@ export async function loadProducts() {
                     last_updated: serverTimestamp()
                   });
 
-
                 }
-
 
                 // delete assigned product
                 await deleteDoc(productRef);
@@ -381,7 +427,7 @@ export async function loadProducts() {
 
       // Edit logic
       document.querySelectorAll(".edit-btn").forEach((btn) => {
-        btn.onclick = (e) => {
+        btn.onclick = async (e) => {
           const id = e.target.closest("button").dataset.id;
           const row = e.target.closest("tr");
 
@@ -396,18 +442,85 @@ export async function loadProducts() {
           const modalInstance = M.Modal.init(modalElem);
           modalInstance.open();
 
+          const productRef = doc(db, "products", id);
+          const productSnap = await getDoc(productRef);
+          const oldData = productSnap.data();
+          const oldStock = oldData.stock;
           const saveBtn = document.getElementById("edit-save");
           saveBtn.onclick = async () => {
+
             const newName = document.getElementById("edit-name").value;
             const newPrice = parseFloat(document.getElementById("edit-price").value);
             const newStock = parseInt(document.getElementById("edit-stock").value);
 
+            const diff = newStock - oldStock;
+
+            const inventoryRef = doc(db, "inventory", oldData.inventoryId);
+            const inventorySnap = await getDoc(inventoryRef);
+
+            const inventoryData = inventorySnap.data();
+
+            let updatedQuantity;
+
+            if (diff > 0) {
+              if (inventoryData.quantity < diff) {
+                M.toast({
+                  html: "Not enough inventory stock!",
+                  classes: "red rounded"
+                });
+                return;
+              }
+              updatedQuantity = inventoryData.quantity - diff;
+            }else{
+              updatedQuantity = inventoryData.quantity + Math.abs(diff);
+            }
+
+            let updatedStockQuantity;
+
+            if (inventoryData.unit_type === "pack") {
+
+              const categorySnap = await getDoc(
+                doc(db, "categoriesINV", inventoryData.category_id)
+              );
+
+              const piecesPerPack = categorySnap.data().pieces_per_pack;
+
+              updatedStockQuantity = updatedQuantity * piecesPerPack;
+
+            } else {
+
+              updatedStockQuantity = updatedQuantity;
+
+            }
+
+            // update assigned product
             await updateDoc(doc(db, "products", id), {
               name: newName,
               price: newPrice,
               stock: newStock
             });
+
+            // update inventory
+            await updateDoc(inventoryRef, {
+              quantity: updatedQuantity,
+              stock_quantity: updatedStockQuantity,
+              last_updated: serverTimestamp()
+            });
+
+            if(unsubscribeProduct){
+              unsubscribeProduct();
+              unsubscribeProduct = null;
+            }
+
+            loadInventoryOptions(document.getElementById("productRole").value);
+
+            M.toast({
+              html: "Successfully Updated!",
+              classes: "green rounded"
+            });
+
             modalInstance.close();
+
           };
         };
       });
@@ -421,10 +534,10 @@ export async function loadProducts() {
   filterRole.addEventListener("change", () => {
     const filterRole = document.getElementById("filterRole");
 
-if(!filterRole){
-    return;
-}
-const selectedRole = filterRole.value;
+    if (!filterRole) {
+      return;
+    }
+    const selectedRole = filterRole.value;
     renderProducts("", selectedRole);
   });
 }

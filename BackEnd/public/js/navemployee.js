@@ -49,7 +49,7 @@ function loadSection(page) {
 
         case "userpanel.html":
           try {
-            const posModule = await import("../employee/siomai/empoleyee.js");
+            const posModule = await import("./empoleyee.js");
             if (typeof posModule.initPOS === "function") {
               posModule.initPOS();
             }
