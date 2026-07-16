@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS PARES DASHBOARD</title>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+
+    
+    <!-- Materialize -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
+
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json">
+
+</head>
+<body>
+<div class="container">
+    <!-- Side Bar -->
+    <aside class="sidebar">
+      <h2 class="logo">Queen Casy</h2>
+      <p class="role">Employee</p>
+
+      <ul class="nav">
+       <li><a href="../../employee/pares/userpanelpares.html"><i class="material-icons">shopping_cart</i>Point of Sale</a></li>
+        <li><a href="#" onclick="loadSection('./stockpares.html', this)"><i class="material-icons">inventory</i>Inventory</a></li>
+        <li><a href="#" onclick="loadSection('./qoutapares.html', this)"><i class="material-icons">bar_chart</i>Income Per Cart</a></li>
+        <li><a href="#" onclick="loadSection('./salespares.html', this)"><i class="material-icons">payments</i>Expenses Records</a></li>
+        <li><a href="../../index.html"><i class="material-icons">logout</i>Logout</a></li>
+      </ul>
+    </aside>
+
+    <div class="overlay"></div>
+      <!-- MAIN -->
+    <main class="main">
+      <div class="mobile-header">
+            <button id="menu-toggle">
+            <i class="material-icons">menu</i>
+            </button>
+      </div>
+
+
+        <!-- Header -->
+        <header>
+            <h1>POS</h1>
+            <p>Process Sales Transactions</p>
+        </header>
+
+        <section class="pos-container">
+
+            <!-- Products -->
+            <div class="products">
+
+                <h2>Products</h2>
+
+                <input type="text" placeholder="Search Product">
+
+                <div class="categories">
+                    <button>All</button>
+                    <button>Pares</button>
+                    <button>Rice</button>
+                    <button>Drinks</button>
+                </div>
+
+                <div class="product-list">
+
+                    <div class="product-card">
+                        <img src="images/pares.jpg" alt="">
+                        <div>
+                            <h3>Pares</h3>
+                            <p>₱60.00</p>
+                        </div>
+                        <button>+</button>
+                    </div>
+
+                    <div class="product-card">
+                        <img src="images/rice.jpg" alt="">
+                        <div>
+                            <h3>Rice</h3>
+                            <p>₱15.00</p>
+                        </div>
+                        <button>+</button>
+                    </div>
+
+                    <div class="product-card">
+                        <img src="images/water.jpg" alt="">
+                        <div>
+                            <h3>Bottled Water</h3>
+                            <p>₱20.00</p>
+                        </div>
+                        <button>+</button>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Current Order -->
+            <div class="current-order">
+
+                <h2>Current Order</h2>
+
+                <div class="order-item">
+                    <span> Pares </span>
+                    <span>Qty: 1</span>
+                    <span>₱60.00</span>
+                </div>
+
+                <div class="order-item">
+                    <span>Rice</span>
+                    <span>Qty: 1</span>
+                    <span>₱15.00</span>
+                </div>
+
+                <div class="order-item">
+                    <span>Bottled Water</span>
+                    <span>Qty: 1</span>
+                    <span>₱20.00</span>
+                </div>
+
+                <hr>
+
+                <p>Subtotal : ₱95.00</p>
+                <p>Discount : ₱0.00</p>
+
+                <h2>Total : ₱95.00</h2>
+
+                <button>Hold Order</button>
+                <button>Checkout</button>
+
+            </div>
+
+        </section>
+
+        <!-- Payment -->
+        <section class="payment">
+
+            <h2>Payment</h2>
+
+            <div class="payment-info">
+
+                <div>
+                    <h3>Total Amount</h3>
+                    <p>₱95.00</p>
+                </div>
+
+                <div>
+                    <h3>Payment Method</h3>
+                    <button>Cash</button>
+                    <button>GCash</button>
+                </div>
+
+                <div>
+                    <label>Cash Received</label>
+                    <input type="number">
+                </div>
+
+                <div>
+                    <h3>Change</h3>
+                    <p>₱5.00</p>
+                </div>
+
+                <button>Complete Sale</button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</body>
+</html>
