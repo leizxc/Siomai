@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel Queen Cassy Food Cart</title>
-
+    <title>POS Dashboard</title>
     <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="/css/admin.css">
 
+    
     <!-- Materialize -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
@@ -16,10 +16,11 @@
 
     <!-- Manifest -->
     <link rel="manifest" href="/manifest.json">
+
 </head>
 
 <body>
-  <div class="container">
+<div class="container">
     <!-- Side Bar -->
     <aside class="sidebar">
       <h2 class="logo">Queen Casy</h2>
@@ -35,8 +36,7 @@
     </aside>
 
     <div class="overlay"></div>
-
-    <!-- MAIN -->
+      <!-- MAIN -->
     <main class="main">
       <div class="mobile-header">
             <button id="menu-toggle">
@@ -44,64 +44,133 @@
             </button>
       </div>
 
-      <!-- Content container -->
-      <div id="content">
-        <!-- POS HEADER -->
-        <section class="card pos-card">
-          <div class="card-header">
-            <i class="material-icons">shopping_cart</i>
-            <h3>Point of Sale</h3>
-          </div>
-          <p class="subtitle">Select items and process transactions</p>
-        </section>
 
-        <!-- PRODUCT LIST -->
-        <section class="card products-card">
-          <h4>Available Products</h4>
-          <div class="product-grid">
-            <div class="product-card">
-              <h5>Siomai</h5>
-              <p>₱6.00 / piece</p>
-              <button class="btn add-btn">Add</button>
+        <!-- Header -->
+        <header>
+            <h1>POS</h1>
+            <p>Process Sales Transactions</p>
+        </header>
+
+        <section class="pos-container">
+
+            <!-- Products -->
+            <div class="products">
+
+                <h2>Products</h2>
+
+                <input type="text" placeholder="Search Product">
+
+                <div class="categories">
+                    <button>All</button>
+                    <button>Siomai</button>
+                    <button>Siomai Rice</button>
+                    <button>Drinks</button>
+                </div>
+
+                <div class="product-list">
+
+                    <div class="product-card">
+                        <img src="images/siomai.jpg" alt="">
+                        <div>
+                            <h3>Siomai (4pcs)</h3>
+                            <p>₱40.00</p>
+                        </div>
+                        <button>+</button>
+                    </div>
+
+                    <div class="product-card">
+                        <img src="images/rice.jpg" alt="">
+                        <div>
+                            <h3>Siomai Rice</h3>
+                            <p>₱60.00</p>
+                        </div>
+                        <button>+</button>
+                    </div>
+
+                    <div class="product-card">
+                        <img src="images/water.jpg" alt="">
+                        <div>
+                            <h3>Bottled Water</h3>
+                            <p>₱20.00</p>
+                        </div>
+                        <button>+</button>
+                    </div>
+
+                </div>
+
             </div>
 
-            <div class="product-card">
-              <h5>Siomai Rice</h5>
-              <p>₱50.00</p>
-              <button class="btn add-btn">Add</button>
+            <!-- Current Order -->
+            <div class="current-order">
+
+                <h2>Current Order</h2>
+
+                <div class="order-item">
+                    <span>Siomai (4pcs)</span>
+                    <span>Qty: 2</span>
+                    <span>₱80.00</span>
+                </div>
+
+                <div class="order-item">
+                    <span>Siomai Rice</span>
+                    <span>Qty: 1</span>
+                    <span>₱60.00</span>
+                </div>
+
+                <div class="order-item">
+                    <span>Bottled Water</span>
+                    <span>Qty: 1</span>
+                    <span>₱20.00</span>
+                </div>
+
+                <hr>
+
+                <p>Subtotal : ₱160.00</p>
+                <p>Discount : ₱0.00</p>
+
+                <h2>Total : ₱160.00</h2>
+
+                <button>Hold Order</button>
+                <button>Checkout</button>
+
             </div>
 
-            <div class="product-card">
-              <h5>Drinks</h5>
-              <p>₱15.00</p>
-              <button class="btn add-btn">Add</button>
-            </div>
-          </div>
         </section>
 
-        <!-- CART SECTION -->
-        <section class="card cart-card">
-          <h4>Cart</h4>
-          <table id="cartTable">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Total</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Firestore data will render here -->
-            </tbody>
-          </table>
-          <div class="cart-summary">
-            <p><strong>Grand Total:</strong> ₱<span id="grandTotal">0</span></p>
-            <button id="checkoutBtn" class="btn green">Checkout</button>
-          </div>
+        <!-- Payment -->
+        <section class="payment">
+
+            <h2>Payment</h2>
+
+            <div class="payment-info">
+
+                <div>
+                    <h3>Total Amount</h3>
+                    <p>₱160.00</p>
+                </div>
+
+                <div>
+                    <h3>Payment Method</h3>
+                    <button>Cash</button>
+                    <button>GCash</button>
+                </div>
+
+                <div>
+                    <label>Cash Received</label>
+                    <input type="number">
+                </div>
+
+                <div>
+                    <h3>Change</h3>
+                    <p>₱40.00</p>
+                </div>
+
+                <button>Complete Sale</button>
+
+            </div>
+
         </section>
-      </div>
+
     </main>
   </div>
 
@@ -112,5 +181,6 @@
   import { initPOS } from "/js/empoleyee.js";
   initPOS();
 </script>
+
 </body>
 </html>
