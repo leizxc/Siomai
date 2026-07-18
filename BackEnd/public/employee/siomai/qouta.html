@@ -1,256 +1,211 @@
-<!DOCTYPE html>
-<html lang="en">
+<div id="content">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QUOTA SIOMAI DASHBOARD</title>
-    <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+  <section class="page-header">
 
-    
-    <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <div>
 
-    <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
+      <h2>Quota Progress</h2>
 
-</head>
-<body>
-<div class="container">
-    <!-- Side Bar -->
-    <aside class="sidebar">
-      <h2 class="logo">Queen Casy</h2>
-      <p class="role">Employee</p>
+      <p>Monitor and track quota achievement.</p>
 
-      <ul class="nav">
-       <li><a href="../../employee/siomai/userpanel.html"><i class="material-icons">shopping_cart</i>Point of Sale</a></li>
-        <li><a href="#" onclick="loadSection('./stock.html', this)"><i class="material-icons">inventory</i>Inventory</a></li>
-        <li><a href="#" onclick="loadSection('./qouta.html', this)"><i class="material-icons">bar_chart</i>Income Per Cart</a></li>
-        <li><a href="#" onclick="loadSection('./sales.html', this)"><i class="material-icons">payments</i>Expenses Records</a></li>
-        <li><a href="../../index.html"><i class="material-icons">logout</i>Logout</a></li>
-      </ul>
-    </aside>
+    </div>
 
-      <div class="overlay"></div>
-      <!-- MAIN -->
-    <main class="main">
-      <div class="mobile-header">
-            <button id="menu-toggle">
-            <i class="material-icons">menu</i>
-            </button>
-      </div>
+    <div class="filters">
 
-      <div id="content">
+      <input type="date">
 
-<section class="page-header">
+      <select>
 
-<div>
+        <option>All Carts</option>
 
-<h2>Quota Progress</h2>
+      </select>
 
-<p>Monitor and track quota achievement.</p>
+    </div>
+
+  </section>
+
+  <!-- Cards -->
+
+  <div class="dashboard-cards">
+
+    <div class="card">
+
+      <h4>Total Quota</h4>
+
+      <h2>₱0.00</h2>
+
+    </div>
+
+    <div class="card">
+
+      <h4>Total Achieved</h4>
+
+      <h2>₱0.00</h2>
+
+    </div>
+
+    <div class="card">
+
+      <h4>Remaining</h4>
+
+      <h2>₱0.00</h2>
+
+    </div>
+
+    <div class="card">
+
+      <h4>Status</h4>
+
+      <h2>On Track</h2>
+
+    </div>
+
+  </div>
+
+  <!-- Time Period -->
+
+  <section class="card">
+
+    <h4>Quota by Time Period</h4>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Time</th>
+
+          <th>Target</th>
+
+          <th>Achieved</th>
+
+          <th>Remaining</th>
+
+          <th>Status</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr>
+
+          <td>Morning</td>
+
+          <td>₱0.00</td>
+
+          <td>₱0.00</td>
+
+          <td>₱0.00</td>
+
+          <td>On Track</td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </section>
+
+  <!-- Per Cart -->
+
+  <section class="card">
+
+    <h4>Quota by Cart</h4>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Cart</th>
+
+          <th>Quota</th>
+
+          <th>Achieved</th>
+
+          <th>Remaining</th>
+
+          <th>Status</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr>
+
+          <td>Cart 1</td>
+
+          <td>₱0.00</td>
+
+          <td>₱0.00</td>
+
+          <td>₱0.00</td>
+
+          <td>On Track</td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </section>
+
+  <!-- History -->
+
+  <section class="card">
+
+    <h4>Recent Quota History</h4>
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>Date</th>
+
+          <th>Quota</th>
+
+          <th>Achieved</th>
+
+          <th>Remaining</th>
+
+          <th>Status</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody>
+
+        <tr>
+
+          <td>May 22</td>
+
+          <td>₱0.00</td>
+
+          <td>₱0.00</td>
+
+          <td>₱0.00</td>
+
+          <td>On Track</td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </section>
 
 </div>
 
-<div class="filters">
-
-<input type="date">
-
-<select>
-
-<option>All Carts</option>
-
-</select>
-
-</div>
-
-</section>
-
-<!-- Cards -->
-
-<div class="dashboard-cards">
-
-<div class="card">
-
-<h4>Total Quota</h4>
-
-<h2>₱0.00</h2>
-
-</div>
-
-<div class="card">
-
-<h4>Total Achieved</h4>
-
-<h2>₱0.00</h2>
-
-</div>
-
-<div class="card">
-
-<h4>Remaining</h4>
-
-<h2>₱0.00</h2>
-
-</div>
-
-<div class="card">
-
-<h4>Status</h4>
-
-<h2>On Track</h2>
-
-</div>
-
-</div>
-
-<!-- Time Period -->
-
-<section class="card">
-
-<h4>Quota by Time Period</h4>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Time</th>
-
-<th>Target</th>
-
-<th>Achieved</th>
-
-<th>Remaining</th>
-
-<th>Status</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-<tr>
-
-<td>Morning</td>
-
-<td>₱0.00</td>
-
-<td>₱0.00</td>
-
-<td>₱0.00</td>
-
-<td>On Track</td>
-
-</tr>
-
-</tbody>
-
-</table>
-
-</section>
-
-<!-- Per Cart -->
-
-<section class="card">
-
-<h4>Quota by Cart</h4>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Cart</th>
-
-<th>Quota</th>
-
-<th>Achieved</th>
-
-<th>Remaining</th>
-
-<th>Status</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-<tr>
-
-<td>Cart 1</td>
-
-<td>₱0.00</td>
-
-<td>₱0.00</td>
-
-<td>₱0.00</td>
-
-<td>On Track</td>
-
-</tr>
-
-</tbody>
-
-</table>
-
-</section>
-
-<!-- History -->
-
-<section class="card">
-
-<h4>Recent Quota History</h4>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Date</th>
-
-<th>Quota</th>
-
-<th>Achieved</th>
-
-<th>Remaining</th>
-
-<th>Status</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-<tr>
-
-<td>May 22</td>
-
-<td>₱0.00</td>
-
-<td>₱0.00</td>
-
-<td>₱0.00</td>
-
-<td>On Track</td>
-
-</tr>
-
-</tbody>
-
-</table>
-
-</section>
-
-</div>
-
-    
+<script src="/js/navemployee.js"></script>
