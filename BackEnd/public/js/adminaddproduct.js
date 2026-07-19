@@ -48,6 +48,8 @@ function loadInventoryOptions(role = "") {
     snapshot.forEach((docSnap) => {
 
       const data = docSnap.data();
+      //hindi na ipapakita kung wala nag stock
+      if (data.status === "On Selling") return;
 
       const option = document.createElement("option");
 
@@ -85,6 +87,9 @@ document.getElementById("productRole").addEventListener("change", (e) => {
 let unsubscribeProduct = null;
 document.getElementById("productName").addEventListener("change", (e) => {
 
+  console.log(" PRODUCT CHANGE FIRED");
+  console.log("Selected ID:", e.target.value);
+
   const id = e.target.value;
 
   if (!id) return;
@@ -95,9 +100,16 @@ document.getElementById("productName").addEventListener("change", (e) => {
 
   unsubscribeProduct = onSnapshot(doc(db, "inventory", id), (snap) => {
 
-    if (!snap.exists()) return;
+    console.log(" Snapshot Fired");
+
+    if (!snap.exists()) {
+      console.log(" Inventory not found");
+      return;
+    }
 
     const data = snap.data();
+
+    console.log("Inventory Data:", data);
 
     document.getElementById("productPrice").value = data.unit_price;
 
@@ -111,6 +123,7 @@ document.getElementById("productName").addEventListener("change", (e) => {
   });
 
 });
+
 document.getElementById("addProductForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -191,6 +204,7 @@ document.getElementById("addProductForm").addEventListener("submit", async (e) =
   await updateDoc(invRef, {
     quantity: newQuantity,
     stock_quantity: newStockQuantity,
+    status: newQuantity <= 0 ? "On Selling" : "Available",
     last_updated: serverTimestamp()
   });
 
@@ -344,7 +358,12 @@ export async function loadProducts() {
             try {
               const productRef = doc(db, "products", id);
               const productSnap = await getDoc(productRef);
-
+              //checking sa delete
+              const productData = productSnap.data();
+              console.log("DELETED")
+              console.log(productData);
+              console.log("inventoryId:", productData.inventoryId);
+              console.log("stock:", productData.stock);
               if (productSnap.exists()) {
 
                 const productData = productSnap.data();
@@ -372,6 +391,13 @@ export async function loadProducts() {
 
                 const inventorySnap = await getDoc(inventoryRef);
 
+                console.log("Inventory Exists:", inventorySnap.exists());
+
+                if (inventorySnap.exists()) {
+                  console.log("Inventory Data:", inventorySnap.data());
+                } else {
+                  console.log("Inventory not found");
+                }
                 if (inventorySnap.exists()) {
 
                   const invData = inventorySnap.data();
@@ -398,8 +424,10 @@ export async function loadProducts() {
                   await updateDoc(inventoryRef, {
                     quantity: restoreQuantity,
                     stock_quantity: restoreStockQuantity,
+                    status: restoreQuantity <= 0 ? "On selling" : "Available",
                     last_updated: serverTimestamp()
                   });
+                  console.log("Inventory Updated!")
 
                 }
 
@@ -411,12 +439,26 @@ export async function loadProducts() {
 
               form.reset();
 
-              document.getElementById("productPrice").value = "";
-              document.getElementById("availableStock").value = "";
+              const productSelect = document.getElementById("productName");
+              productSelect.innerHTML = ` <option value="" disabled selected>Choose Product</option>`;
+              document.getElementById ("productPrice").value = "";
+              document.getElementById ("availableStock").value = "";
+              document.getElementById ("assignQuantity").value = "";
+
+              if(unsubscribeProduct){
+                unsubscribeProduct();
+                unsubscribeProduct = null;
+              }
+
+              //reload inventory dropdown
+              loadInventoryOptions(document.getElementById("productRole").value);
 
               M.updateTextFields();
 
-              M.FormSelect.init(document.querySelectorAll("select"));
+              setTimeout(() => {
+                M.FormSelect.init(productSelect);
+              }, 100);
+
             } catch (err) {
               console.error("Delete error:", err);
               M.toast({ html: "Failed to delete Product.", classes: "red rounded" });
@@ -471,7 +513,7 @@ export async function loadProducts() {
                 return;
               }
               updatedQuantity = inventoryData.quantity - diff;
-            }else{
+            } else {
               updatedQuantity = inventoryData.quantity + Math.abs(diff);
             }
 
@@ -504,10 +546,11 @@ export async function loadProducts() {
             await updateDoc(inventoryRef, {
               quantity: updatedQuantity,
               stock_quantity: updatedStockQuantity,
+              status: updatedQuantity <= 0 ? "On Selling" : "Available",
               last_updated: serverTimestamp()
             });
 
-            if(unsubscribeProduct){
+            if (unsubscribeProduct) {
               unsubscribeProduct();
               unsubscribeProduct = null;
             }

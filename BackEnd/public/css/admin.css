@@ -577,6 +577,29 @@ body.modal-open {
     }
 }
 
+.status{
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:600;
+}
+
+.status.available{
+    background:#d4edda;
+    color:#155724;
+}
+
+.status.low-stock{
+    background:#fff3cd;
+    color:#856404;
+}
+
+.status.on-selling{
+    background:#d1ecf1;
+    color:#0c5460;
+}
+
 
 /* MOBILE RESPONSIVE */
 

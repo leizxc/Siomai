@@ -68,7 +68,8 @@ export function loadInventory() {
     let totalValue = 0;
     const categories = new Set();
 
-    const selectedCategory = document.getElementById("filter-category").value;
+    const categorySelect = document.getElementById("filter-category");
+    const selectedCategory = categorySelect ? categorySelect.value : "";
     const selectedDate = dateInput.value;
 
     querySnapshot.forEach((docSnap) => {
@@ -101,7 +102,15 @@ export function loadInventory() {
       totalValue += data.total_value;
       categories.add(data.category);
 
-      const status = data.stock_quantity <= 50 ? "Low Stock" : "Available";
+      //status
+      let status = "Available";
+
+      if (data.quantity <= 0) {
+        status = "On Selling";
+      }
+      else if (data.stock_quantity <= 25) {
+        status = "Low Stock";
+      }
 
       //  Dynamic display for quantity and total pieces
       const displayQty =
@@ -127,7 +136,11 @@ export function loadInventory() {
         totalLabel = "Total Weight";
         const pounds = (data.quantity * 2.2).toFixed(2);
         totalDisplay = `${pounds} lb`;
-      } else {
+      } else if (data.unit_type === "liter") {
+        const vol = "Total Volume";
+        totalDisplay = `${data.quantity} L`;
+      }
+      else {
         totalLabel = "Total Quantity";
         totalDisplay = `${data.stock_quantity}`;
       }
@@ -150,7 +163,11 @@ export function loadInventory() {
     <td data-label="Unit Price">₱${data.unit_price.toFixed(2)}</td>
     <td data-label="Total Value">₱${data.total_value.toFixed(2)}</td>
      <td data-label="Date">${dateAdded}</td> 
-    <td data-label="Status">${status}</td>
+    <td data-label="Status">
+        <span class="status ${status.toLowerCase().replace(/\s/g, '-')}>
+        ${status}
+        </span>
+    </td>
     <td data-label="Action">
       <button class="edit-btn btn blue" data-id="${docSnap.id}">
         <i class="material-icons">edit</i>
@@ -168,29 +185,49 @@ export function loadInventory() {
     let totalDisplay1 = totalStocks;
 
     //if a specific category is selected, adjust label based on its unit type
-    if (selectedCategory !== "all") {
-      const categoryDoc = await getDoc(doc(db, "categoriesINV", selectedCategory));
-      const unitType = categoryDoc.data().unit_type;
+    if (selectedCategory && selectedCategory !== "all") {
 
-      if (unitType === "pack") {
-        totalLabel1 = "Total Pieces";
-        totalDisplay1 = `${totalStocks} pcs`
-      } else if (unitType === "kg") {
-        totalLabel1 = "Total Weight";
-        const pounds1 = (totalStocks * 2.2).toFixed(2);
-        totalDisplay1 = `${pounds1} lb`;
-      } else {
-        totalLabel1 = "Total Quantity";
-        totalDisplay1 = totalStocks;
+      const categoryDoc = await getDoc(
+        doc(db, "categoriesINV", selectedCategory)
+      );
+
+      if (categoryDoc.exists()) {
+
+        const unitType = categoryDoc.data().unit_type;
+
+        if (unitType === "pack") {
+          totalLabel1 = "Total Pieces";
+          totalDisplay1 = `${totalStocks} pcs`;
+        }
+        else if (unitType === "kg") {
+          totalLabel1 = "Total Weight";
+          totalDisplay1 = `${(totalStocks * 2.2).toFixed(2)} lb`;
+        }
+        else if (unitType === "liter") {
+          totalLabel1 = "Total Volume";
+          totalDisplay1 = `${totalStocks} L`;
+        }
+        else {
+          totalLabel1 = "Total Quantity";
+          totalDisplay1 = totalStocks;
+        }
+
       }
+
     }
 
     // Update summary cards
-    document.getElementById("total-products").textContent = totalProducts;
-    document.getElementById("stocks-label").textContent = totalLabel1;
-    document.getElementById("total-stocks").textContent = totalDisplay1;
-    document.getElementById("total-value").textContent = `₱${totalValue.toFixed(2)}`;
-    document.getElementById("total-categories").textContent = categories.size;
+    const totalProductsEl = document.getElementById("total-products");
+    const stocksLabelEl = document.getElementById("stocks-label");
+    const totalStocksEl = document.getElementById("total-stocks");
+    const totalValueEl = document.getElementById("total-value");
+    const totalCategoriesEl = document.getElementById("total-categories");
+
+    if (totalProductsEl) totalProductsEl.textContent = totalProducts;
+    if (stocksLabelEl) stocksLabelEl.textContent = totalLabel1;
+    if (totalStocksEl) totalStocksEl.textContent = totalDisplay1;
+    if (totalValueEl) totalValueEl.textContent = `₱${totalValue.toFixed(2)}`;
+    if (totalCategoriesEl) totalCategoriesEl.textContent = categories.size;
 
     // Delete button logic
     document.querySelectorAll(".delete-btn").forEach((btn) => {
@@ -298,6 +335,9 @@ export async function addProduct(productName, categoryId, quantity, unitPrice) {
   } else if (unitType === "kg") {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
+  } else if (unitType === "liter") {
+    stockQty * quantity;
+    totalValue = quantity * unitPrice;
   } else {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
@@ -314,6 +354,7 @@ export async function addProduct(productName, categoryId, quantity, unitPrice) {
     stock_quantity: stockQty,
     unit_price: unitPrice,
     total_value: totalValue,
+    status: "Available",
     created_at: serverTimestamp(),
     last_updated: serverTimestamp()
   });
@@ -411,33 +452,33 @@ document.getElementById("new-category-unit").addEventListener("change", (e) => {
 
 //make dropdown of inside modal in category
 document.getElementById("btn-add-categories").onclick = async () => {
-    await loadRoles();
+  await loadRoles();
 
-    const modalElem = document.getElementById("modal-add-category");
+  const modalElem = document.getElementById("modal-add-category");
 
-    const modalInstance = M.Modal.init(modalElem, {
+  const modalInstance = M.Modal.init(modalElem, {
 
-        onOpenEnd() {
-            M.FormSelect.init(document.querySelectorAll("select"));
-        },
+    onOpenEnd() {
+      M.FormSelect.init(document.querySelectorAll("select"));
+    },
 
-        onCloseEnd() {
+    onCloseEnd() {
 
-            document.getElementById("new-category-name").value = "";
-            document.getElementById("pieces-per-pack").value = "";
+      document.getElementById("new-category-name").value = "";
+      document.getElementById("pieces-per-pack").value = "";
 
-            document.getElementById("category-role").selectedIndex = 0;
-            document.getElementById("new-category-unit").selectedIndex = 0;
+      document.getElementById("category-role").selectedIndex = 0;
+      document.getElementById("new-category-unit").selectedIndex = 0;
 
-            document.getElementById("pieces-per-pack-field").style.display = "none";
+      document.getElementById("pieces-per-pack-field").style.display = "none";
 
-            M.updateTextFields();
-            M.FormSelect.init(document.querySelectorAll("select"));
-        }
+      M.updateTextFields();
+      M.FormSelect.init(document.querySelectorAll("select"));
+    }
 
-    });
+  });
 
-    modalInstance.open();
+  modalInstance.open();
 };
 
 
@@ -460,6 +501,9 @@ document.getElementById("product-category").addEventListener("change", async (e)
   } else if (unitType === "kg") {
     qtyLabel.textContent = "Weight (in kilograms)";
     qtyInput.placeholder = "Enter weigh in kg"
+  } else if (unitType === "liter") {
+    qtyLabel.textContent = "Volume (L)";
+    qtyInput.placeholder = "Enter Liters"
   } else {
     qtyLabel.textContent = "Quantity";
     qtyInput.placeholder = "Enter quantity"
