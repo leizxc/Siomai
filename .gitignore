@@ -13,3 +13,5 @@ BackEnd/*.key
 Thumbs.db
 
 # Firebase configs
+BackEnd/public/js/firebase.js
+BackEnd/public/js/frontfirebase.js
