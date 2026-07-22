@@ -5,6 +5,21 @@ function loadSection(page) {
             const main = document.getElementById('content');
             main.innerHTML = data;
 
+            const title = document.getElementById("mobile-title");
+
+            const pageTitles = {
+                "dashboard.html": "Dashboard",
+                "inventory.html": "Inventory",
+                "product.html": "Products Assign",
+                "expenses.html": "Expenses Records",
+                "EmployeeManagement.html": "Employees Management",
+                "EmployeeMonitoring.html": "Employee Monitoring"
+            };
+
+            if (title) {
+                title.textContent = pageTitles[page] || "Administrator";
+            }
+
             // Initialize Materialize Components
             const selects = document.querySelectorAll('select');
             M.FormSelect.init(selects);
@@ -22,9 +37,7 @@ function loadSection(page) {
                         }
 
                         const inventoryModule = await import("/js/adminBE.js");
-                        if (typeof inventoryModule.loadInventory === "function") {
-                            inventoryModule.loadInventory();
-                        }
+                        await inventoryModule.initInventoryPage();
                     } catch (err) {
                         console.error("Inventory Init Error:", err);
                     }
@@ -38,6 +51,11 @@ function loadSection(page) {
                         }
 
                         const productModule = await import("/js/adminaddproduct.js");
+
+                        if (typeof productModule.initProductPage === "function") {
+                            await productModule.initProductPage();
+                        }
+
                         if (typeof productModule.loadProducts === "function") {
                             productModule.loadProducts();
                         }

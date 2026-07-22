@@ -1,134 +1,227 @@
-<!DOCTYPE html>
-<html lang="en">
+<header class="header">
+  <h1>Inventory (Storage)</h1>
+  <p>Product List and Stocks</p>
+</header>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel Queen Cassy Food Cart</title>
+<!-- FILTERS -->
+<div class="card filter-card">
+  <div class="filters">
+    <div class="filter-group">
+      <label>Date</label>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+      <input type="date" id="filter-date" />
+    </div>
 
-    <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <div class="filter-group">
+      <label>Category</label>
 
-    <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
-</head>
+      <div class="category-row">
+        <select id="filter-category">
+          <option value="all">All Categories</option>
+        </select>
 
-<body>
-  <div class="container">
-    <main class="main">
-      <header class="header">
-        <h1>Inventory (Products)</h1>
-        <p>Product List and Stocks</p>
-      </header>
-
-      <button id="btn-add" class="waves-effect waves-light btn">Add Product</button>
-
-      <!-- ADD PRODUCT MODAL -->
-      <div id="modal-add" class="modal">
-        <div class="modal-content">
-          <h4>Add Product</h4>
-          <div class="input-field">
-            <input id="product-name" type="text" placeholder="Product Name">
-          </div>
-          <div class="input-field">
-            <select id="product-category">
-              <option value="" disabled selected>Choose Category</option>
-              <option value="Siomai">Siomai</option>
-            </select>
-            <label>Category</label>
-          </div>
-          <div class="input-field">
-            <input id="product-packs" type="number" placeholder="Number of Packs">
-          </div>
-          <div class="input-field">
-            <input id="product-price" type="number" placeholder="Unit Price">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button id="save-product" class="waves-effect waves-green btn">Save Product</button>
-        </div>
+        <button
+          id="delete-category-btn"
+          class="btn-flat"
+          disabled
+          title="Delete Category"
+        >
+          <i class="material-icons">close</i>
+        </button>
       </div>
-
-      <!-- EDIT PRODUCT MODAL -->
-      <div id="modal-edit" class="modal">
-        <div class="modal-content">
-          <h4>Edit Product</h4>
-          <div class="input-field">
-            <input id="edit-name" type="text">
-          </div>
-          <div class="input-field">
-            <select id="edit-category">
-              <option value="" disabled selected>Choose Category</option>
-              <option value="Siomai">Siomai</option>
-            </select>
-            <label>Category</label>
-          </div>
-          <div class="input-field">
-            <input id="edit-packs" type="number">
-          </div>
-          <div class="input-field">
-            <input id="edit-price" type="number">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button id="edit-save" class="waves-effect waves-light btn blue">Update Product</button>
-        </div>
-      </div>
-
-      <!-- SUMMARY -->
-      <section class="summary">
-        <div class="card">
-          <h3 id="total-products">0</h3>
-          <p>Total Products</p>
-        </div>
-        <div class="card">
-          <h3 id="total-stocks">0</h3>
-          <p>Total Pieces</p>
-        </div>
-        <div class="card">
-          <h3 id="total-value">₱0.00</h3>
-          <p>Total Inventory Value</p>
-        </div>
-        <div class="card">
-          <h3 id="total-categories">0</h3>
-          <p>Categories</p>
-        </div>
-      </section>
-
-      <!-- TABLE -->
-      <section class="inventory-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Category</th>
-              <th>Total Packs</th>
-              <th>Total Pieces</th>
-              <th>Unit Price</th>
-              <th>Total Value</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="inventory-table-body">
-            <!-- Firestore data will be injected here -->
-          </tbody>
-        </table>
-      </section>
-    </main>
+    </div>
   </div>
 
-  <script src="/js/refresh.js"></script>
-  <script src="/js/functionalnav.js"></script>
-  <script type="module" src="/js/firebase.js"></script>
-  <script type="module">
-    import { loadInventory } from "/js/adminBE.js";
-    loadInventory();
-  </script>
+  <div class="add-buttons">
+    <button id="btn-add" class="btn waves-effect waves-light">
+      <i class="material-icons left">add</i>
+      Add Product
+    </button>
 
-</html>
+    <button id="btn-add-categories" class="btn waves-effect waves-light">
+      <i class="material-icons left">category</i>
+      Add Category
+    </button>
+  </div>
+
+  <!--ADD categories-->
+  <div id="modal-add-category" class="modal">
+    <div class="modal-content">
+      <h4>Add Categories</h4>
+
+      <div class="input-field">
+        <input
+          type="text"
+          placeholder="Add new Categories"
+          id="new-category-name"
+        />
+      </div>
+
+      <div class="input-field">
+        <select id="category-role">
+          <option value="" disabled selected>Choose Role</option>
+        </select>
+      </div>
+
+      <div class="input-field">
+        <select id="new-category-unit">
+          <option value="" disabled selected>Choose unit</option>
+          <option value="pack">pack</option>
+          <option value="kg">Kilogram</option>
+          <option value="liter">Liter</option>
+        </select>
+        <label for="new-category-unit">Unit Type</label>
+      </div>
+
+      <div class="input-field" id="pieces-per-pack-field" style="display: none">
+        <input
+          type="number"
+          id="pieces-per-pack"
+          placeholder="Pieces per Pack"
+        />
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="modal-close btn-flat">Cancel</button>
+        <button id="save-category" class="waves-effect waves-green btn">
+          Save new Categories
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PRODUCT MODAL -->
+<div id="modal-add" class="modal">
+  <div class="modal-content">
+    <h4>Add Product</h4>
+    <div class="input-field">
+      <input id="product-name" type="text" placeholder="Product Name" />
+    </div>
+    <div class="input-field">
+      <select id="product-category">
+        <option value="" disabled selected>Choose Category</option>
+      </select>
+      <label>Category</label>
+    </div>
+    <div class="input-field">
+      <input id="product-packs" type="number" placeholder="Number of Packs" />
+      <label for="product-packs"> </label>
+    </div>
+    <div class="input-field">
+      <input id="product-price" type="number" placeholder="Unit Price" />
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="modal-close btn-flat">Cancel</button>
+      <button id="save-product" class="waves-effect waves-green btn">
+        Save Product
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PRODUCT MODAL -->
+<div id="modal-edit" class="modal">
+  <div class="modal-content">
+    <h4>Edit Product</h4>
+    <div class="input-field">
+      <input id="edit-name" type="text" />
+    </div>
+    <div class="input-field">
+      <select id="edit-category">
+        <option value="" disabled selected>Choose Category</option>
+        <option value="Siomai">Siomai</option>
+      </select>
+      <label>Category</label>
+    </div>
+    <div class="input-field">
+      <input id="edit-packs" type="number" />
+    </div>
+    <div class="input-field">
+      <input id="edit-price" type="number" />
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="modal-close btn-flat">Cancel</button>
+      <button id="edit-save" class="waves-effect waves-light btn blue">
+        Update Product
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CATEGORY CONFIRMATION -->
+<div id="modal-delete-category" class="modal">
+  <div class="modal-content">
+    <h4 id="delete-confirmation-title">Delete category?</h4>
+    <p id="delete-confirmation-message">
+      This category will be permanently deleted. You cannot delete a category
+      that still has products.
+    </p>
+
+    <div class="modal-footer">
+      <button
+        id="cancel-delete-category"
+        type="button"
+        class="modal-close btn-flat"
+      >
+        Cancel
+      </button>
+      <button id="confirm-delete-category" type="button" class="btn red">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<section class="summary">
+  <div class="card">
+    <h3 id="total-products">0</h3>
+    <p>Total Products</p>
+  </div>
+  <div class="card">
+    <h3 id="total-stocks">0</h3>
+    <p id="stocks-label">Total Pieces</p>
+  </div>
+  <div class="card">
+    <h3 id="total-value">₱0.00</h3>
+    <p>Total Inventory Value</p>
+  </div>
+  <div class="card">
+    <h3 id="total-categories">0</h3>
+    <p>Categories</p>
+  </div>
+</section>
+
+<!-- TABLE -->
+<section class="inventory-card">
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Category</th>
+        <th>Total Packs</th>
+        <th>Total Pieces</th>
+        <th>Unit Price</th>
+        <th>Total Value</th>
+        <th>Date Added</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="inventory-table-body">
+      <!-- Firestore data will be injected here -->
+    </tbody>
+  </table>
+</section>
+
+<script src="/js/refresh.js"></script>
+<script src="/js/functionalnav.js"></script>
+<script type="module" src="/js/firebase.js"></script>
+<script type="module">
+  import { loadInventory, loadCategories, loadRoles } from "/js/adminBE.js";
+  loadInventory();
+  loadCategories();
+</script>

@@ -10,12 +10,12 @@ import {
   getDoc,
   query,
   where,
-  getDocs
+  getDocs,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import {
   getAuth,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const auth = getAuth();
@@ -41,7 +41,7 @@ export async function loadEmployees() {
       const data = docSnap.data();
       const username = usersMap[data.email] || "—"; // fallback kung wala
 
-     tbody.innerHTML += `
+      tbody.innerHTML += `
   <tr data-id="${docSnap.id}">
     <td data-label="First Name">${data.fname}</td>
     <td data-label="Last Name">${data.lname}</td>
@@ -74,10 +74,14 @@ export async function loadEmployees() {
         const id = e.target.closest("button").dataset.id;
         const row = e.target.closest("tr");
 
-        document.getElementById("edit-fname").value = row.children[0].textContent;
-        document.getElementById("edit-lname").value = row.children[1].textContent;
-        document.getElementById("edit-email").value = row.children[2].textContent;
-        document.getElementById("edit-role").value = row.children[4].textContent;
+        document.getElementById("edit-fname").value =
+          row.children[0].textContent;
+        document.getElementById("edit-lname").value =
+          row.children[1].textContent;
+        document.getElementById("edit-email").value =
+          row.children[2].textContent;
+        document.getElementById("edit-role").value =
+          row.children[4].textContent;
 
         M.updateTextFields();
         M.FormSelect.init(document.querySelectorAll("select"));
@@ -98,15 +102,18 @@ export async function loadEmployees() {
             lname: newLname,
             email: newEmail,
             role: newRole,
-            last_updated: serverTimestamp()
+            last_updated: serverTimestamp(),
           });
 
-          const q = query(collection(db, "users"), where("email", "==", newEmail));
+          const q = query(
+            collection(db, "users"),
+            where("email", "==", newEmail),
+          );
           const snapshot = await getDocs(q);
           snapshot.forEach(async (docSnap) => {
             await updateDoc(doc(db, "users", docSnap.id), {
               role: newRole,
-              last_updated: serverTimestamp()
+              last_updated: serverTimestamp(),
             });
           });
 
@@ -115,6 +122,15 @@ export async function loadEmployees() {
       };
     });
   });
+}
+
+//hash password
+async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 //  Add employee securely with Firebase Auth
@@ -128,7 +144,11 @@ export async function addEmployee(fname, lname, email, role, password) {
       return;
     }
 
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password,
+    );
     const uid = userCredential.user.uid;
 
     await addDoc(collection(db, "employees"), {
@@ -137,15 +157,16 @@ export async function addEmployee(fname, lname, email, role, password) {
       lname,
       email,
       role,
-      created_at: serverTimestamp()
+      created_at: serverTimestamp(),
     });
-
+    const hashvalue = await hashPassword(password);
     await addDoc(collection(db, "users"), {
       username: email.split("@")[0].toLowerCase().trim(),
       email,
       role,
       status: "active",
-      created_at: serverTimestamp()
+      passwordHash: hashvalue, // store hashed password
+      created_at: serverTimestamp(),
     });
 
     M.toast({ html: "Employee added successfully!", classes: "green rounded" });
@@ -168,7 +189,10 @@ export async function deleteEmployee(id) {
       const role = employeeData.role?.toLowerCase();
 
       if (role === "admin") {
-        M.toast({ html: "Admin accounts cannot be deleted.", classes: "red rounded" });
+        M.toast({
+          html: "Admin accounts cannot be deleted.",
+          classes: "red rounded",
+        });
         return;
       }
 
@@ -181,15 +205,31 @@ export async function deleteEmployee(id) {
       });
 
       if (!uid) {
-        M.toast({ html: "No UID found for this employee. Cannot delete Auth account.", classes: "red rounded" });
+        M.toast({
+          html: "No UID found for this employee. Cannot delete Auth account.",
+          classes: "red rounded",
+        });
         return;
       }
 
       const API_BASE = window.location.origin;
+      const idToken = await auth.currentUser?.getIdToken();
+
+      if (!idToken) {
+        M.toast({
+          html: "Your session has expired. Please sign in again.",
+          classes: "red rounded",
+        });
+        return;
+      }
+
       const res = await fetch(`${API_BASE}/deleteAuthUser`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid })
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ uid }),
       });
 
       const result = await res.json();

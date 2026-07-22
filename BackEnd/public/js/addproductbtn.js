@@ -1,46 +1,70 @@
 import { db } from "/js/firebase.js";
-import { collection, getDocs, addDoc, query, where } 
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 export async function initProductModal() {
-  document.addEventListener("DOMContentLoaded", async () => {
-    M.FormSelect.init(document.querySelectorAll("select"));
-  });
-
   const roleSelect = document.getElementById("productRole");
   const employeeSelect = document.getElementById("productEmployee");
+  const productNameSelect = document.getElementById("productName");
+
   const inputs = [
-    document.getElementById("productName"),
+    productNameSelect,
     document.getElementById("productPrice"),
-    document.getElementById("productStock"),
-    document.getElementById("addProductBtn")
+    document.getElementById("availableStock"),
+    document.getElementById("assignQuantity"),
+    document.getElementById("addProductBtn"),
   ];
+
+  console.log("Inputs:", inputs);
+
+  // Materialize caches a select's disabled state inside its ".select-wrapper"
+  // at init time. Flipping the native .disabled property alone does NOT
+  // update that wrapper, so we always re-sync it right after.
+  function resyncSelectWrapper(selectEl) {
+    if (!selectEl) return;
+    const instance = M.FormSelect.getInstance(selectEl);
+    if (instance) {
+      instance.destroy();
+    }
+    M.FormSelect.init(selectEl);
+  }
 
   //  Function to enable/disable product inputs
   function toggleInputs() {
     const role = roleSelect.value;
-    const employee = employeeSelect.value;
-    const enable = role && employee;
-    inputs.forEach(el => el.disabled = !enable);
+    const enable = !!role;
+    inputs.forEach((el) => (el.disabled = !enable));
+
+    // productName is Materialize-managed, so resync its wrapper too,
+    // otherwise it can get visually stuck showing "disabled" even
+    // after we just enabled the underlying <select>.
+    resyncSelectWrapper(productNameSelect);
   }
 
   //  Populate employee dropdown based on selected role
   async function loadEmployeesByRole(selectedRole) {
     employeeSelect.innerHTML = `
-      <option value="" disabled selected>Choose Employee</option>
-    `;
-    const q = query(collection(db, "employees"), where("role", "==", selectedRole));
+    <option value="" selected>All ${selectedRole} Employees (Shared)</option>
+  `;
+    const q = query(
+      collection(db, "employees"),
+      where("role", "==", selectedRole),
+    );
     const snap = await getDocs(q);
 
     snap.forEach((docSnap) => {
       const data = docSnap.data();
       const option = document.createElement("option");
       option.value = docSnap.id;
-      option.textContent = `${data.fname} ${data.lname} (${data.role})`;
+      option.textContent = `${data.fname} ${data.lname}`;
       employeeSelect.appendChild(option);
     });
 
-    M.FormSelect.init(employeeSelect);
+    resyncSelectWrapper(employeeSelect);
   }
 
   //  When role changes, reload employee list
@@ -51,40 +75,4 @@ export async function initProductModal() {
   });
 
   employeeSelect.addEventListener("change", toggleInputs);
-
-  //  Handle form submission
-  const form = document.getElementById("addProductForm");
-  if (form) {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const name = document.getElementById("productName").value.trim();
-      const price = parseFloat(document.getElementById("productPrice").value);
-      const stock = parseInt(document.getElementById("productStock").value);
-      const role = roleSelect.value;
-      const employeeId = employeeSelect.value;
-
-      if (!name || isNaN(price) || isNaN(stock) || !role || !employeeId) {
-        M.toast({ html: " Please fill out all fields correctly.", classes: "red rounded"});
-        return;
-      }
-
-      try {
-        await addDoc(collection(db, "products"), {
-          name,
-          price,
-          stock,
-          role,
-          employeeId
-        });
-        M.toast({ html: "Product added successfully!" , classes: "green rounded" });
-        form.reset();
-        toggleInputs(); // disable again after reset
-        M.FormSelect.init(document.querySelectorAll("select"));
-      } catch (err) {
-        console.error("Error adding product:", err);
-        M.toast({ html: "Failed to add product." , classes: "red rounded"});
-      }
-    });
-  }
 }

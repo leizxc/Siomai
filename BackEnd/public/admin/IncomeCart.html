@@ -1,107 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
+<header class="header">
+  <h1>Income Per Cart</h1>
+  <p>Income breakdown per cart</p>
+</header>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel Queen Cassy Food Cart</title>
+<!-- FILTERS -->
+<div class="filters">
+  <input type="date" value="2026-05-22" />
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+  <select>
+    <option>All Carts</option>
+    <option>Cart 1</option>
+    <option>Cart 2</option>
+    <option>Cart 3</option>
+    <option>Cart 4</option>
+    <option>Cart 5</option>
+    <option>Cart 6</option>
+  </select>
+</div>
 
-    <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
+<!-- TABLE -->
+<section class="table-section">
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Total Sales (₱)</th>
+        <th>Total Expenses (₱)</th>
+        <th>Net Income (₱)</th>
+        <th>Net Income per Cart (₱)</th>
+      </tr>
+    </thead>
 
-    <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
-</head>
+    <tbody>
+      <tr>
+        <td data-label="Time">Morning (6:00 AM - 11:59 AM)</td>
+        <td data-label="Total Sales">3,250.00</td>
+        <td data-label="Total Expenses">1,950.00</td>
+        <td data-label="Net Income">1,300.00</td>
+        <td data-label="Net Income per Cart">1,300.00</td>
+      </tr>
 
-<body>
+      <tr>
+        <td data-label="Time">Afternoon (12:00 PM - 4:59 PM)</td>
+        <td data-label="Total Sales">5,100.00</td>
+        <td data-label="Total Expenses">2,950.00</td>
+        <td data-label="Net Income">2,150.00</td>
+        <td data-label="Net Income per Cart">2,150.00</td>
+      </tr>
 
-    <main class="main">
+      <tr>
+        <td data-label="Time">Evening (5:00 PM - 10:00 PM)</td>
+        <td data-label="Total Sales">7,250.00</td>
+        <td data-label="Total Expenses">4,450.00</td>
+        <td data-label="Net Income">2,800.00</td>
+        <td data-label="Net Income per Cart">2,800.00</td>
+      </tr>
 
-        <header class="header">
-            <h1>Income Per Cart</h1>
-            <p>Income breakdown per cart</p>
-        </header>
+      <tr class="total-row">
+        <td data-label="Time">Total (All Day)</td>
+        <td data-label="Total Sales">15,600.00</td>
+        <td data-label="Total Expenses">9,350.00</td>
+        <td data-label="Net Income">6,250.00</td>
+        <td data-label="Net Income per Cart">1,250.00</td>
+      </tr>
+    </tbody>
+  </table>
 
-        <!-- FILTERS -->
-        <div class="filters">
-            <input type="date" value="2026-05-22">
-
-            <select>
-                <option>All Carts</option>
-                <option>Cart 1</option>
-                <option>Cart 2</option>
-                <option>Cart 3</option>
-                <option>Cart 4</option>
-                <option>Cart 5</option>
-                <option>Cart 6</option>
-            </select>
-        </div>
-
-        <!-- TABLE -->
-        <section class="table-section">
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Total Sales (₱)</th>
-                        <th>Total Expenses (₱)</th>
-                        <th>Net Income (₱)</th>
-                        <th>Net Income per Cart (₱)</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    <tr>
-                        <td data-label="Time">Morning (6:00 AM - 11:59 AM)</td>
-                        <td data-label="Total Sales">3,250.00</td>
-                        <td data-label="Total Expenses">1,950.00</td>
-                        <td data-label="Net Income">1,300.00</td>
-                        <td data-label="Net Income per Cart">1,300.00</td>
-                    </tr>
-
-                    <tr>
-                        <td data-label="Time">Afternoon (12:00 PM - 4:59 PM)</td>
-                        <td data-label="Total Sales">5,100.00</td>
-                        <td data-label="Total Expenses">2,950.00</td>
-                        <td data-label="Net Income">2,150.00</td>
-                        <td data-label="Net Income per Cart">2,150.00</td>
-                    </tr>
-
-                    <tr>
-                        <td data-label="Time">Evening (5:00 PM - 10:00 PM)</td>
-                        <td data-label="Total Sales">7,250.00</td>
-                        <td data-label="Total Expenses">4,450.00</td>
-                        <td data-label="Net Income">2,800.00</td>
-                        <td data-label="Net Income per Cart">2,800.00</td>
-                    </tr>
-
-                    <tr class="total-row">
-                        <td data-label="Time">Total (All Day)</td>
-                        <td data-label="Total Sales">15,600.00</td>
-                        <td data-label="Total Expenses">9,350.00</td>
-                        <td data-label="Net Income">6,250.00</td>
-                        <td data-label="Net Income per Cart">1,250.00</td>
-                    </tr>
-
-                </tbody>
-            </table>
-
-            <p class="note">* Net Income per cart is the average per cart for the selected date.</p>
-
-        </section>
-
-    </main>
-
-</body>
+  <p class="note">
+    * Net Income per cart is the average per cart for the selected date.
+  </p>
+</section>
 
 <script src="/js/functionalnav.js"></script>
 <script src="/js/refresh.js"></script>
-
-</html>

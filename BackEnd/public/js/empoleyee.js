@@ -6,10 +6,11 @@ import {
   addDoc,
   doc,
   updateDoc,
-  serverTimestamp
+  serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app } from "/js/firebase.js";
+import { loadProductsOffline } from "./IndexDB.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -18,13 +19,22 @@ let cart = [];
 
 // INIT POS
 export async function initPOS() {
+  const user = auth.currentUser;
+  const currentEmployeeId = user ? user.uid : null;
+
+  if (!navigator.onLine) {
+    console.log("Offline mode: loading from IndexedDB");
+    await loadProductsOffline(currentEmployeeId);
+    setupCartEvents();
+    return;
+  }
   await loadProducts();
   setupCartEvents();
 }
 
 // LOAD PRODUCTS
 async function loadProducts() {
-  const productGrid = document.querySelector(".product-grid");
+  const productGrid = document.getElementById("productList");
   productGrid.innerHTML = "";
 
   const querySnapshot = await getDocs(collection(db, "products"));
@@ -34,20 +44,37 @@ async function loadProducts() {
     const card = document.createElement("div");
     card.classList.add("product-card");
     card.innerHTML = `
-      <h5>${product.name}</h5>
-      <p>₱${product.price}</p>
-      <button class="btn add-btn"
+<div class="product-card">
+
+    <img
+        src="${product.image || "/images/no-image.png"}"
+        class="product-image">
+
+    <div class="product-info">
+
+        <h4>${product.name}</h4>
+
+        <span class="price">
+            ₱${Number(product.price).toFixed(2)}
+        </span>
+
+    </div>
+
+    <button
+        class="add-btn"
         data-id="${docSnap.id}"
         data-name="${product.name}"
         data-price="${product.price}"
         data-stock="${product.stock}">
-        Add
-      </button>
-    `;
+        <i class="material-icons">add</i>
+    </button>
+
+</div>
+`;
     productGrid.appendChild(card);
   });
 
-  document.querySelectorAll(".add-btn").forEach(btn => {
+  document.querySelectorAll(".add-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id;
       const name = btn.dataset.name;
@@ -60,7 +87,7 @@ async function loadProducts() {
 
 // ADD TO CART
 function addToCart(product) {
-  const existing = cart.find(item => item.id === product.id);
+  const existing = cart.find((item) => item.id === product.id);
   if (existing) {
     if (existing.qty < product.stock) {
       existing.qty += 1;
@@ -70,10 +97,32 @@ function addToCart(product) {
   } else {
     cart.push({ ...product, qty: 1 });
   }
-  renderCart();
+  identifyCart();
 }
 
 // RENDER CART
+function identifyCart() {
+  if (window.innerWidth <= 768) {
+    renderMobileCart();
+  } else {
+    renderCart();
+  }
+}
+//mobile
+function renderMobileCart() {
+  let total = 0;
+  let items = 0;
+
+  cart.forEach((item) => {
+    total += item.price * item.qty;
+    items += item.qty;
+  });
+
+  document.querySelector(".cart-count").textContent = `${items} Items`;
+  document.getElementById("grandTotal").textContent = total.toFixed(2);
+}
+
+//desktop
 function renderCart() {
   const tbody = document.querySelector("#cartTable tbody");
   tbody.innerHTML = "";
@@ -98,20 +147,20 @@ function renderCart() {
   document.getElementById("grandTotal").textContent = grandTotal.toFixed(2);
 
   // Quantity change
-  document.querySelectorAll(".qty-input").forEach(input => {
+  document.querySelectorAll(".qty-input").forEach((input) => {
     input.addEventListener("change", (e) => {
       const idx = e.target.dataset.index;
       cart[idx].qty = parseInt(e.target.value);
-      renderCart();
+      identifyCart();
     });
   });
 
   // Remove item
-  document.querySelectorAll(".remove-btn").forEach(btn => {
+  document.querySelectorAll(".remove-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const idx = e.target.dataset.index;
       cart.splice(idx, 1);
-      renderCart();
+      identifyCart();
     });
   });
 }
@@ -123,13 +172,13 @@ async function addOrder(orderItems) {
     items: orderItems,
     employee: user ? user.uid : "guest",
     created_at: serverTimestamp(),
-    status: "paid"
+    status: "paid",
   });
 
   for (const item of orderItems) {
     const productRef = doc(db, "products", item.id);
     await updateDoc(productRef, {
-      stock: item.stock - item.qty
+      stock: item.stock - item.qty,
     });
   }
 
@@ -146,7 +195,7 @@ async function checkout() {
 
   await addOrder(cart);
   cart = [];
-  renderCart();
+  identifyCart();
 }
 
 // SETUP EVENTS

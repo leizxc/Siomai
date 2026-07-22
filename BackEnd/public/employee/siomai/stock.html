@@ -1,177 +1,95 @@
-<!DOCTYPE html>
-<html lang="en">
+<div id="content">
+  <section class="page-header">
+    <div>
+      <h2>Stock Status</h2>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STOCK PARES DASHBOARD</title>
-    <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+      <p>Monitor stock availability and inventory levels.</p>
+    </div>
 
-    
-    <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <div class="filters">
+      <input type="date" />
 
-    <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
+      <select>
+        <option>All Carts</option>
+      </select>
+    </div>
+  </section>
 
-</head>
-<body>
-<div class="container">
-    <!-- Side Bar -->
-    <aside class="sidebar">
-      <h2 class="logo">Queen Casy</h2>
-      <p class="role">Employee</p>
+  <!-- Summary -->
 
-      <ul class="nav">
-       <li><a href="../../employee/siomai/userpanel.html"><i class="material-icons">shopping_cart</i>Point of Sale</a></li>
-        <li><a href="#" onclick="loadSection('./stock.html', this)"><i class="material-icons">inventory</i>Inventory</a></li>
-        <li><a href="#" onclick="loadSection('./qouta.html', this)"><i class="material-icons">bar_chart</i>Income Per Cart</a></li>
-        <li><a href="#" onclick="loadSection('./sales.html', this)"><i class="material-icons">payments</i>Expenses Records</a></li>
-        <li><a href="../../index.html"><i class="material-icons">logout</i>Logout</a></li>
-      </ul>
-    </aside>
+  <div class="dashboard-cards">
+    <div class="card">
+      <h4>Total Products</h4>
 
-      <div class="overlay"></div>
-      <!-- MAIN -->
-    <main class="main">
-      <div class="mobile-header">
-            <button id="menu-toggle">
-            <i class="material-icons">menu</i>
-            </button>
+      <h2>0</h2>
+    </div>
+
+    <div class="card">
+      <h4>In Stock</h4>
+
+      <h2>0</h2>
+    </div>
+  </div>
+
+  <!-- Stock Overview -->
+
+  <section class="card">
+    <div class="overview">
+      <div>
+        <h4>Total Inventory Value</h4>
+
+        <h2>₱0.00</h2>
       </div>
 
-      <div id="content">
+      <div>
+        <h4>Last Stock Update</h4>
 
-<section class="page-header">
+        <p>--</p>
+      </div>
+    </div>
+  </section>
 
-<div>
+  <!-- Product List -->
 
-<h2>Stock Status</h2>
+  <section class="card">
+    <div class="table-header">
+      <h4>Stock Items</h4>
 
-<p>Monitor stock availability and inventory levels.</p>
+      <input type="search" placeholder="Search Product" />
+    </div>
 
-</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Product</th>
 
-<div class="filters">
+          <th>Category</th>
 
-<input type="date">
+          <th>Current Stock</th>
 
-<select>
+          <th>Unit</th>
 
-<option>All Carts</option>
+          <th>Status</th>
 
-</select>
+          <th>Last Updated</th>
+        </tr>
+      </thead>
 
-</div>
+      <tbody>
+        <tr>
+          <td>Pares</td>
 
-</section>
+          <td>Pares</td>
 
-<!-- Summary -->
+          <td>0</td>
 
-<div class="dashboard-cards">
+          <td>Packs</td>
 
-<div class="card">
+          <td>In Stock</td>
 
-<h4>Total Products</h4>
-
-<h2>0</h2>
-
-</div>
-
-<div class="card">
-
-<h4>In Stock</h4>
-
-<h2>0</h2>
-
-</div>
-
-</div>
-
-<!-- Stock Overview -->
-
-<section class="card">
-
-<div class="overview">
-
-<div>
-
-<h4>Total Inventory Value</h4>
-
-<h2>₱0.00</h2>
-
-</div>
-
-<div>
-
-<h4>Last Stock Update</h4>
-
-<p>--</p>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- Product List -->
-
-<section class="card">
-
-<div class="table-header">
-
-<h4>Stock Items</h4>
-
-<input type="search" placeholder="Search Product">
-
-</div>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Product</th>
-
-<th>Category</th>
-
-<th>Current Stock</th>
-
-<th>Unit</th>
-
-<th>Status</th>
-
-<th>Last Updated</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-<tr>
-
-<td>Pares</td>
-
-<td>Pares</td>
-
-<td>0</td>
-
-<td>Packs</td>
-
-<td>In Stock</td>
-
-<td>--</td>
-
-</tr>
-
-</tbody>
-
-</table>
-</section>
-
+          <td>--</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 </div>

@@ -10,8 +10,13 @@ export function initInventoryModal() {
   }
 
   // Initialize Modal
-  const modalInstance = M.Modal.init(modalElem);
+  let modalInstance = M.Modal.getInstance(modalElem);
 
+if (!modalInstance) {
+    modalInstance = M.Modal.init(modalElem, {
+        dismissible: true
+    });
+}
   // Delay para sure na rendered na ang fetched HTML
   setTimeout(() => {
     const selects = document.querySelectorAll("select");
