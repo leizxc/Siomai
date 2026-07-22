@@ -7,7 +7,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
-  onSnapshot
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 //filters logic
@@ -47,11 +47,13 @@ export function loadExpenses() {
       const expenseDate = data.date;
       const amount = parseFloat(data.amount);
 
-    //Filter Logic 
-    if(currentFilterDate && expenseDate !== currentFilterDate)return;
-    if(currentFilterCategory !== "all" && data.category !== currentFilterCategory)return;
-
-
+      //Filter Logic
+      if (currentFilterDate && expenseDate !== currentFilterDate) return;
+      if (
+        currentFilterCategory !== "all" &&
+        data.category !== currentFilterCategory
+      )
+        return;
 
       // Calculate totals
       if (expenseDate === today) totalToday += amount;
@@ -81,10 +83,13 @@ export function loadExpenses() {
     });
 
     // Update summary cards
-    document.getElementById("total-today").textContent = `₱${totalToday.toFixed(2)}`;
-    document.getElementById("total-month").textContent = `₱${totalMonth.toFixed(2)}`;
+    document.getElementById("total-today").textContent =
+      `₱${totalToday.toFixed(2)}`;
+    document.getElementById("total-month").textContent =
+      `₱${totalMonth.toFixed(2)}`;
     const avgDaily = totalMonth / (daysWithExpenses.size || 1);
-    document.getElementById("avg-daily").textContent = `₱${avgDaily.toFixed(2)}`;
+    document.getElementById("avg-daily").textContent =
+      `₱${avgDaily.toFixed(2)}`;
 
     // Delete button logic
     document.querySelectorAll(".delete-btn").forEach((btn) => {
@@ -101,12 +106,16 @@ export function loadExpenses() {
         const row = e.target.closest("tr");
 
         // Fill modal fields (matching your HTML IDs)
-        document.getElementById("edit-expenses-date").value = row.children[0].textContent;
-        document.getElementById("edit-expenses-category").value = row.children[1].textContent;
-        document.getElementById("edit-expenses-description").value = row.children[2].textContent;
-        document.getElementById("edit-expenses-amount").value = row.children[3].textContent.replace("₱", "");
-        document.getElementById("edit-expenses-status").value = row.children[4].textContent;
-
+        document.getElementById("edit-expenses-date").value =
+          row.children[0].textContent;
+        document.getElementById("edit-expenses-category").value =
+          row.children[1].textContent;
+        document.getElementById("edit-expenses-description").value =
+          row.children[2].textContent;
+        document.getElementById("edit-expenses-amount").value =
+          row.children[3].textContent.replace("₱", "");
+        document.getElementById("edit-expenses-status").value =
+          row.children[4].textContent;
 
         M.FormSelect.init(document.querySelectorAll("select"));
         //initialize and open modal
@@ -119,11 +128,18 @@ export function loadExpenses() {
         saveBtn.onclick = null; // remove any previous handler
         saveBtn.onclick = async () => {
           const newDate = document.getElementById("edit-expenses-date").value;
-          const newCategory = document.getElementById("edit-expenses-category").value;
-          const newDescription = document.getElementById("edit-expenses-description").value;
-          const newAmount = parseFloat(document.getElementById("edit-expenses-amount").value);
-          const newStatus = document.getElementById("edit-expenses-status").value;
-
+          const newCategory = document.getElementById(
+            "edit-expenses-category",
+          ).value;
+          const newDescription = document.getElementById(
+            "edit-expenses-description",
+          ).value;
+          const newAmount = parseFloat(
+            document.getElementById("edit-expenses-amount").value,
+          );
+          const newStatus = document.getElementById(
+            "edit-expenses-status",
+          ).value;
 
           await updateDoc(doc(db, "expenses", id), {
             date: newDate,
@@ -131,7 +147,7 @@ export function loadExpenses() {
             description: newDescription,
             amount: newAmount,
             status: newStatus,
-            last_updated: serverTimestamp()
+            last_updated: serverTimestamp(),
           });
 
           modalInstance.close();
@@ -149,7 +165,7 @@ export async function addExpense(date, category, description, amount, status) {
     description,
     amount,
     status,
-    last_updated: serverTimestamp()
+    last_updated: serverTimestamp(),
   });
 }
 

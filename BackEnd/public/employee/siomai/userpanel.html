@@ -1,181 +1,155 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>POS Dashboard</title>
     <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/employee.css">
-
+    <link rel="stylesheet" type="text/css" href="/css/employee.css" />
 
     <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet" />
     <script type="text/javascript" src="/js/materialize.min.js"></script>
 
     <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/manifest.json" />
+  </head>
 
-</head>
+  <body>
+    <!-- Side Bar -->
+    <aside class="sidebar">
+      <h2 class="logo">Queen Casy</h2>
+      <p class="role">Employee</p>
 
-<body>
-        <!-- Side Bar -->
-        <aside class="sidebar">
-            <h2 class="logo">Queen Casy</h2>
-            <p class="role">Employee</p>
+      <ul class="nav">
+        <li>
+          <a href="../../employee/siomai/userpanel.html"
+            ><i class="material-icons">shopping_cart</i>Point of Sale</a
+          >
+        </li>
+        <li>
+          <a href="#" onclick="loadSection('./stock.html', this)"
+            ><i class="material-icons">inventory</i>Inventory</a
+          >
+        </li>
+        <li>
+          <a href="#" onclick="loadSection('./qouta.html', this)"
+            ><i class="material-icons">bar_chart</i>Income Per Cart</a
+          >
+        </li>
+        <li>
+          <a href="#" onclick="loadSection('./sales.html', this)"
+            ><i class="material-icons">payments</i>Expenses Records</a
+          >
+        </li>
+        <li>
+          <a href="../../index.html"
+            ><i class="material-icons">logout</i>Logout</a
+          >
+        </li>
+      </ul>
+    </aside>
 
-            <ul class="nav">
-                <li><a href="../../employee/siomai/userpanel.html"><i class="material-icons">shopping_cart</i>Point of
-                        Sale</a></li>
-                <li><a href="#" onclick="loadSection('./stock.html', this)"><i
-                            class="material-icons">inventory</i>Inventory</a></li>
-                <li><a href="#" onclick="loadSection('./qouta.html', this)"><i
-                            class="material-icons">bar_chart</i>Income Per Cart</a></li>
-                <li><a href="#" onclick="loadSection('./sales.html', this)"><i
-                            class="material-icons">payments</i>Expenses Records</a></li>
-                <li><a href="../../index.html"><i class="material-icons">logout</i>Logout</a></li>
-            </ul>
-        </aside>
+    <div class="overlay"></div>
+    <!-- MAIN -->
+    <main class="main">
+      <!-- Mobile Header -->
+      <header class="mobile-header">
+        <button id="menu-toggle">
+          <i class="material-icons">menu</i>
+        </button>
 
-        <div class="overlay"></div>
-        <!-- MAIN -->
-        <main class="main">
+        <h2>Point of Sale</h2>
 
-            <!-- Mobile Header -->
-            <header class="mobile-header">
+        <button class="notif-btn">
+          <i class="material-icons">notifications_none</i>
+        </button>
+      </header>
 
-                <button id="menu-toggle">
-                    <i class="material-icons">menu</i>
-                </button>
+      <!-- Search -->
+      <section class="search-section">
+        <div class="search-box">
+          <i class="material-icons">search</i>
 
-                <h2>Point of Sale</h2>
+          <input
+            type="text"
+            id="searchProduct"
+            placeholder="Search product..."
+          />
+        </div>
+      </section>
 
-                <button class="notif-btn">
-                    <i class="material-icons">notifications_none</i>
-                </button>
+      <!-- Categories -->
+      <section class="categories">
+        <button class="category active">All</button>
 
-            </header>
+        <button class="category">Siomai</button>
 
-            <!-- Search -->
-            <section class="search-section">
+        <button class="category">Siomai Rice</button>
 
-                <div class="search-box">
+        <button class="category">Drinks</button>
+      </section>
 
-                    <i class="material-icons">search</i>
+      <!-- Products -->
+      <section class="product-list" id="productList"></section>
 
-                    <input type="text" id="searchProduct" placeholder="Search product...">
+      <!-- Floating Checkout -->
+      <section class="checkout-bar">
+        <div class="checkout-info">
+          <div>
+            <span class="cart-count"> 0 Items </span>
 
-                </div>
+            <button id="viewOrderBtn">View Order</button>
+          </div>
 
-            </section>
+          <div>
+            <small>Total Amount</small>
 
-            <!-- Categories -->
-            <section class="categories">
+            <h3>₱<span id="grandTotal">0.00</span></h3>
+          </div>
+        </div>
 
-                <button class="category active">All</button>
+        <button id="checkoutBtn" class="checkout-btn">
+          <i class="material-icons"> payments </i>
 
-                <button class="category">Siomai</button>
+          Proceed to Checkout
+        </button>
+      </section>
 
-                <button class="category">Siomai Rice</button>
+      <!-- Bottom Navigation -->
 
-                <button class="category">Drinks</button>
+      <nav class="bottom-nav">
+        <a class="active">
+          <i class="material-icons"> point_of_sale </i>
 
-            </section>
+          <span>POS</span>
+        </a>
 
-            <!-- Products -->
-            <section class="product-list" id="productList">
+        <a>
+          <i class="material-icons"> inventory_2 </i>
 
-            </section>
+          <span>Inventory</span>
+        </a>
 
-            <!-- Floating Checkout -->
-            <section class="checkout-bar">
+        <a>
+          <i class="material-icons"> history </i>
 
-                <div class="checkout-info">
-
-                    <div>
-
-                        <span class="cart-count">
-                            0 Items
-                        </span>
-
-                        <button id="viewOrderBtn">
-                            View Order
-                        </button>
-
-                    </div>
-
-                    <div>
-
-                        <small>Total Amount</small>
-
-                        <h3>
-                            ₱<span id="grandTotal">0.00</span>
-                        </h3>
-
-                    </div>
-
-                </div>
-
-                <button id="checkoutBtn" class="checkout-btn">
-
-                    <i class="material-icons">
-                        payments
-                    </i>
-
-                    Proceed to Checkout
-
-                </button>
-
-            </section>
-
-            <!-- Bottom Navigation -->
-
-            <nav class="bottom-nav">
-
-                <a class="active">
-
-                    <i class="material-icons">
-                        point_of_sale
-                    </i>
-
-                    <span>POS</span>
-
-                </a>
-
-                <a>
-
-                    <i class="material-icons">
-                        inventory_2
-                    </i>
-
-                    <span>Inventory</span>
-
-                </a>
-
-                <a>
-
-                    <i class="material-icons">
-                        history
-                    </i>
-
-                    <span>History</span>
-
-                </a>
-
-            </nav>
-
-        </main>
+          <span>History</span>
+        </a>
+      </nav>
+    </main>
 
     <script src="/js/refresh.js"></script>
     <script type="module" src="/js/navemployee.js"></script>
     <script type="module" src="/js/firebase.js"></script>
     <script type="module" src="/js/IndexDB.js"></script>
     <script type="module">
-        import { initPOS } from "/js/empoleyee.js";
-        initPOS();
+      import { initPOS } from "/js/empoleyee.js";
+      initPOS();
     </script>
-
-</body>
-
+  </body>
 </html>

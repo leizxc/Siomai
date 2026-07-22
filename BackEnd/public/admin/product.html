@@ -1,143 +1,157 @@
 <!-- ==================== HEADER ==================== -->
 <header class="header">
-    <h1>Add New Product</h1>
-    <p>Assign product to Employees</p>
+  <h1>Add New Product</h1>
+  <p>Assign product to Employees</p>
 </header>
 
 <!-- ==================== ADD PRODUCT FORM ==================== -->
 <section class="card inventory-card">
-    <form id="addProductForm">
-        <div class="row">
-            <!-- Role Selection -->
-            <div class="input-field col s12 m6">
-                <select id="productRole" required>
-                    <option value="" disabled selected>Choose Role</option>
-                </select>
-                <label for="productRole">Employee Role</label>
-            </div>
+  <form id="addProductForm">
+    <div class="row">
+      <!-- Role Selection -->
+      <div class="input-field col s12 m6">
+        <select id="productRole" required>
+          <option value="" disabled selected>Choose Role</option>
+        </select>
+        <label for="productRole">Employee Role</label>
+      </div>
 
-            <!-- Employee Selection -->
-            <div class="input-field col s12 m6">
-                <select id="productEmployee">
-                    <option value="" selected>All Employees (Shared)</option>
-                </select>
-                <label for="productEmployee">Assign to Employee</label>
-            </div>
-        </div>
+      <!-- Employee Selection -->
+      <div class="input-field col s12 m6">
+        <select id="productEmployee">
+          <option value="" selected>All Employees (Shared)</option>
+        </select>
+        <label for="productEmployee">Assign to Employee</label>
+      </div>
+    </div>
 
-        <div class="row">
-            <div class="input-field col s12">
-                <select id="productName" required>
-                    <option value="" disabled selected>Choose Product</option>
-                </select>
-                <label for="productName">Product Name</label>
-            </div>
-        </div>
+    <div class="row">
+      <div class="input-field col s12">
+        <select id="productName" required>
+          <option value="" disabled selected>Choose Product</option>
+        </select>
+        <label for="productName">Product Name</label>
+      </div>
+    </div>
 
-        <div class="row">
-            <div class="input-field col s12 m6">
-                <input type="number" id="productPrice" step="0.01" min="0" readonly>
-                <label for="productPrice">Product Price (₱)</label>
-            </div>
-            <div class="input-field col s12 m6">
-                <input type="number" id="availableStock" readonly>
-                <label for="availableStock">Available Stock</label>
-            </div>
-        </div>
-        <div class="row">
-            <div class="input-field col s12 m6">
-                <input type="number" id="assignQuantity" min="1" required>
-                <label for="assignQuantity">Quantity to Assign</label>
-            </div>
-        </div>
+    <div class="row">
+      <div class="input-field col s12 m6">
+        <input type="number" id="productPrice" step="0.01" min="0" readonly />
+        <label for="productPrice">Product Price (₱)</label>
+      </div>
+      <div class="input-field col s12 m6">
+        <input type="number" id="availableStock" readonly />
+        <label for="availableStock">Available Stock</label>
+      </div>
+    </div>
+    <div class="row">
+      <div class="input-field col s12 m6">
+        <input type="number" id="assignQuantity" min="1" required />
+        <label for="assignQuantity">Quantity to Assign</label>
+      </div>
+    </div>
 
-
-
-        <div class="add-buttons">
-            <button type="submit" class="btn green" id="addProductBtn" disabled>Add Product</button>
-        </div>
-    </form>
+    <div class="add-buttons">
+      <button type="submit" class="btn green" id="addProductBtn" disabled>
+        Add Product
+      </button>
+    </div>
+  </form>
 </section>
 
 <!-- ==================== PRODUCT LIST ==================== -->
 <section class="card inventory-card product-list-card">
-    <div class="header">
-        <h4>Product List</h4>
-    </div>
+  <div class="header">
+    <h4>Product List</h4>
+  </div>
 
-    <!-- Filter -->
-    <div class="row">
-        <div class="input-field col s12 m6">
-            <select id="filterRole">
-                <option value="" selected>All Roles</option>
-            </select>
-            <label>Filter by Role</label>
-        </div>
+  <!-- Filter -->
+  <div class="row">
+    <div class="input-field col s12 m6">
+      <select id="filterRole">
+        <option value="" selected>All Roles</option>
+      </select>
+      <label>Filter by Role</label>
     </div>
+  </div>
 
-    <div class="table-container">
-        <table id="productTable" class="highlight">
-            <thead>
-                <tr>
-                    <th>Product Name</th>
-                    <th>Price</th>
-                    <th>Stock</th>
-                    <th>Role</th>
-                    <th>Employee</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+  <div class="table-container">
+    <table id="productTable" class="highlight">
+      <thead>
+        <tr>
+          <th>Product Name</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th>Role</th>
+          <th>Employee</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </section>
 
 <!-- ==================== EDIT PRODUCT MODAL ==================== -->
 <div id="modal-edit-product" class="modal">
-    <div class="modal-content">
-        <h4>Update Product</h4>
+  <div class="modal-content">
+    <h4>Update Product</h4>
 
-        <form id="updateProductForm">
-            <input type="hidden" id="updateProductId">
+    <form id="updateProductForm">
+      <input type="hidden" id="updateProductId" />
 
-            <div class="row">
-                <div class="input-field col s12">
-                    <input type="text" id="edit-name" required>
-                    <label for="edit-name">Product Name</label>
-                </div>
-            </div>
+      <div class="row">
+        <div class="input-field col s12">
+          <input type="text" id="edit-name" required />
+          <label for="edit-name">Product Name</label>
+        </div>
+      </div>
 
-            <div class="row">
-                <div class="input-field col s12 m6">
-                    <input type="number" id="edit-price" step="0.01" min="0" required>
-                    <label for="edit-price">Product Price (₱)</label>
-                </div>
-                <div class="input-field col s12 m6">
-                    <input type="number" id="edit-stock" min="0" required>
-                    <label for="edit-stock">Stock</label>
-                </div>
-            </div>
+      <div class="row">
+        <div class="input-field col s12 m6">
+          <input type="number" id="edit-price" step="0.01" min="0" required />
+          <label for="edit-price">Product Price (₱)</label>
+        </div>
+        <div class="input-field col s12 m6">
+          <input type="number" id="edit-stock" min="0" required />
+          <label for="edit-stock">Stock</label>
+        </div>
+      </div>
 
-            <div class="modal-footer">
-                <button type="button" id="edit-cancel" class="modal-close btn-flat">Cancel</button>
-                <button type="button" id="edit-save" class="btn blue">Save Changes</button>
-            </div>
-        </form>
-    </div>
+      <div class="modal-footer">
+        <button type="button" id="edit-cancel" class="modal-close btn-flat">
+          Cancel
+        </button>
+        <button type="button" id="edit-save" class="btn blue">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- DELETE CATEGORY CONFIRMATION -->
 <div id="modal-delete-category" class="modal">
-    <div class="modal-content">
-        <h4 id="delete-confirmation-title">Delete category?</h4>
-        <p id="delete-confirmation-message">This category will be permanently deleted. You cannot delete a category that
-            still has products.</p>
+  <div class="modal-content">
+    <h4 id="delete-confirmation-title">Delete category?</h4>
+    <p id="delete-confirmation-message">
+      This category will be permanently deleted. You cannot delete a category
+      that still has products.
+    </p>
 
-        <div class="modal-footer">
-            <button id="cancel-delete-category" type="button" class="modal-close btn-flat">Cancel</button>
-            <button id="confirm-delete-category" type="button" class="btn red">Delete</button>
-        </div>
+    <div class="modal-footer">
+      <button
+        id="cancel-delete-category"
+        type="button"
+        class="modal-close btn-flat"
+      >
+        Cancel
+      </button>
+      <button id="confirm-delete-category" type="button" class="btn red">
+        Delete
+      </button>
     </div>
+  </div>
 </div>
 
 <!-- JS modules -->

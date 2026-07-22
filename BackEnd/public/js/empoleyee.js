@@ -6,7 +6,7 @@ import {
   addDoc,
   doc,
   updateDoc,
-  serverTimestamp
+  serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { app } from "/js/firebase.js";
@@ -22,12 +22,12 @@ export async function initPOS() {
   const user = auth.currentUser;
   const currentEmployeeId = user ? user.uid : null;
 
-   if (!navigator.onLine) {
+  if (!navigator.onLine) {
     console.log("Offline mode: loading from IndexedDB");
     await loadProductsOffline(currentEmployeeId);
     setupCartEvents();
     return;
-   }
+  }
   await loadProducts();
   setupCartEvents();
 }
@@ -47,7 +47,7 @@ async function loadProducts() {
 <div class="product-card">
 
     <img
-        src="${product.image || '/images/no-image.png'}"
+        src="${product.image || "/images/no-image.png"}"
         class="product-image">
 
     <div class="product-info">
@@ -74,7 +74,7 @@ async function loadProducts() {
     productGrid.appendChild(card);
   });
 
-  document.querySelectorAll(".add-btn").forEach(btn => {
+  document.querySelectorAll(".add-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id;
       const name = btn.dataset.name;
@@ -87,7 +87,7 @@ async function loadProducts() {
 
 // ADD TO CART
 function addToCart(product) {
-  const existing = cart.find(item => item.id === product.id);
+  const existing = cart.find((item) => item.id === product.id);
   if (existing) {
     if (existing.qty < product.stock) {
       existing.qty += 1;
@@ -101,19 +101,19 @@ function addToCart(product) {
 }
 
 // RENDER CART
-function identifyCart(){
-  if(window.innerWidth <= 768){
+function identifyCart() {
+  if (window.innerWidth <= 768) {
     renderMobileCart();
-  }else{
+  } else {
     renderCart();
   }
 }
 //mobile
-function renderMobileCart(){
+function renderMobileCart() {
   let total = 0;
   let items = 0;
 
-  cart.forEach(item => {
+  cart.forEach((item) => {
     total += item.price * item.qty;
     items += item.qty;
   });
@@ -122,7 +122,7 @@ function renderMobileCart(){
   document.getElementById("grandTotal").textContent = total.toFixed(2);
 }
 
-//desktop 
+//desktop
 function renderCart() {
   const tbody = document.querySelector("#cartTable tbody");
   tbody.innerHTML = "";
@@ -147,7 +147,7 @@ function renderCart() {
   document.getElementById("grandTotal").textContent = grandTotal.toFixed(2);
 
   // Quantity change
-  document.querySelectorAll(".qty-input").forEach(input => {
+  document.querySelectorAll(".qty-input").forEach((input) => {
     input.addEventListener("change", (e) => {
       const idx = e.target.dataset.index;
       cart[idx].qty = parseInt(e.target.value);
@@ -156,7 +156,7 @@ function renderCart() {
   });
 
   // Remove item
-  document.querySelectorAll(".remove-btn").forEach(btn => {
+  document.querySelectorAll(".remove-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       const idx = e.target.dataset.index;
       cart.splice(idx, 1);
@@ -172,13 +172,13 @@ async function addOrder(orderItems) {
     items: orderItems,
     employee: user ? user.uid : "guest",
     created_at: serverTimestamp(),
-    status: "paid"
+    status: "paid",
   });
 
   for (const item of orderItems) {
     const productRef = doc(db, "products", item.id);
     await updateDoc(productRef, {
-      stock: item.stock - item.qty
+      stock: item.stock - item.qty,
     });
   }
 

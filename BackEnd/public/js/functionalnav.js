@@ -37,12 +37,7 @@ function loadSection(page) {
                         }
 
                         const inventoryModule = await import("/js/adminBE.js");
-                        if (typeof inventoryModule.loadInventory === "function") {
-                            inventoryModule.loadInventory();
-                        }
-                        if (typeof inventoryModule.loadCategories === "function") {
-                            inventoryModule.loadCategories();
-                        }
+                        await inventoryModule.initInventoryPage();
                     } catch (err) {
                         console.error("Inventory Init Error:", err);
                     }

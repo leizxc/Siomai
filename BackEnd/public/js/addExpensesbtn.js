@@ -54,7 +54,9 @@ export function initExpensesModal() {
 
     const date = document.getElementById("expenses-date").value;
     const category = document.getElementById("expenses-category").value;
-    const description = document.getElementById("expenses-description").value.trim();
+    const description = document
+      .getElementById("expenses-description")
+      .value.trim();
     const amountStr = document.getElementById("expenses-amount").value;
     const status = document.getElementById("expenses-status").value;
 

@@ -3,40 +3,57 @@ import {
   collection,
   getDocs,
   query,
-  where
+  where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-export async function initProductModal() {
-  document.addEventListener("DOMContentLoaded", async () => {
-    M.FormSelect.init(document.querySelectorAll("select"));
-  });
 
+export async function initProductModal() {
   const roleSelect = document.getElementById("productRole");
   const employeeSelect = document.getElementById("productEmployee");
+  const productNameSelect = document.getElementById("productName");
+
   const inputs = [
-    document.getElementById("productName"),
+    productNameSelect,
     document.getElementById("productPrice"),
     document.getElementById("availableStock"),
     document.getElementById("assignQuantity"),
-    document.getElementById("addProductBtn")
-];
+    document.getElementById("addProductBtn"),
+  ];
 
-console.log("Inputs:", inputs);
+  console.log("Inputs:", inputs);
+
+  // Materialize caches a select's disabled state inside its ".select-wrapper"
+  // at init time. Flipping the native .disabled property alone does NOT
+  // update that wrapper, so we always re-sync it right after.
+  function resyncSelectWrapper(selectEl) {
+    if (!selectEl) return;
+    const instance = M.FormSelect.getInstance(selectEl);
+    if (instance) {
+      instance.destroy();
+    }
+    M.FormSelect.init(selectEl);
+  }
 
   //  Function to enable/disable product inputs
   function toggleInputs() {
     const role = roleSelect.value;
-    const employee = employeeSelect.value;
     const enable = !!role;
-    inputs.forEach(el => el.disabled = !enable);
+    inputs.forEach((el) => (el.disabled = !enable));
+
+    // productName is Materialize-managed, so resync its wrapper too,
+    // otherwise it can get visually stuck showing "disabled" even
+    // after we just enabled the underlying <select>.
+    resyncSelectWrapper(productNameSelect);
   }
 
   //  Populate employee dropdown based on selected role
   async function loadEmployeesByRole(selectedRole) {
-    const employeeSelect = document.getElementById("productEmployee");
     employeeSelect.innerHTML = `
     <option value="" selected>All ${selectedRole} Employees (Shared)</option>
   `;
-    const q = query(collection(db, "employees"), where("role", "==", selectedRole));
+    const q = query(
+      collection(db, "employees"),
+      where("role", "==", selectedRole),
+    );
     const snap = await getDocs(q);
 
     snap.forEach((docSnap) => {
@@ -47,7 +64,7 @@ console.log("Inputs:", inputs);
       employeeSelect.appendChild(option);
     });
 
-    M.FormSelect.init(employeeSelect);
+    resyncSelectWrapper(employeeSelect);
   }
 
   //  When role changes, reload employee list
@@ -58,7 +75,4 @@ console.log("Inputs:", inputs);
   });
 
   employeeSelect.addEventListener("change", toggleInputs);
-
 }
-
-
