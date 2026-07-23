@@ -1,16 +1,16 @@
 :root {
-  --bg: #f3f6fb;
-  --card: #ffffff;
-  --border: #e7ecf3;
-  --text: #1c2a44;
-  --text-muted: #8a95a8;
-  --blue: #2f80ed;
-  --blue-dark: #1c66d0;
-  --blue-tint: #dfebfd;
-  --radius-lg: 18px;
-  --radius-md: 12px;
-  --radius-pill: 999px;
-  --shadow: 0 2px 10px rgba(28, 42, 68, 0.06);
+  bg: #f3f6fb;
+  card: #ffffff;
+  border: #e7ecf3;
+  text: #1c2a44;
+  text-muted: #8a95a8;
+  blue: #2f80ed;
+  blue-dark: #1c66d0;
+  blue-tint: #dfebfd;
+  radius-lg: 18px;
+  radius-md: 12px;
+  radius-pill: 999px;
+  shadow: 0 2px 10px rgba(28, 42, 68, 0.06);
 }
 
 * { box-sizing: border-box; }
