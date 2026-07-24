@@ -151,7 +151,7 @@ header p {
 .pos-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
   padding: 16px 20px 0;
 }
 
