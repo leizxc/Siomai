@@ -1,0 +1,273 @@
+
+* :root {
+  --bg: #f3f6fb;
+  --card: #ffffff;
+  --border: #e7ecf3;
+  --text: #1c2a44;
+  --text-muted: #8a95a8;
+  --blue: #2f80ed;
+  --blue-dark: #1c66d0;
+  --blue-tint: #dfebfd;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+  --shadow: 0 2px 10px rgba(28, 42, 68, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+ font-family: "Poppins", "Segoe UI", Roboto, Arial, sans-serif;
+  background: #f3f6fb;
+  color: var(--text);
+}
+
+.container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---------------- Sidebar ---------------- */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  padding: 28px 20px;
+  position: fixed;
+  z-index: 20;
+  transition: transform 0.3s ease;
+}
+
+.sidebar.active { transform: translateX(0); }
+.sidebar .logo {
+
+  font-size: 20px;
+  color: #1c1313;
+  font-weight: 700;
+  margin: 0 0 2px;
+  color: var(--text);
+}
+
+.sidebar .role {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 28px;
+}
+
+.sidebar .nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar .nav  li + li { margin-top: 4px;}
+
+.sidebar .nav li a {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 10px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-size: 14px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sidebar .nav li a:hover {
+  background: #f3f4f6;
+}
+
+.sidebar .nav li a.hover,
+.sidebar .nav li a:active {
+  background: var(--blue-tint);
+  color: var(--blue-dark);
+}
+
+.sidebar .nav .material-icons {
+  font-size: 20px;
+}
+
+
+/* ---------------- Overlay (mobile sidebar backdrop) ---------------- */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 90;
+}
+
+.overlay.active {
+  display: block;
+}
+
+/* ---------------- Main ---------------- */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mobile-header {
+  display: none;
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 16px;
+}
+
+.mobile-header #menu-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1f2430;
+  display: flex;
+  align-items: center;
+}
+
+#content {
+  padding: 28px;
+  width: 100%;
+}
+
+/* ---------------- Page Header ---------------- */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.page-header h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.page-header p {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 4px 0 0;
+}
+
+.page-header .filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-header .filters input[type="date"],
+.page-header .filters select {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #4b5563;
+  height: auto;
+}
+
+/* ---------------- Card ---------------- */
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+.card h4 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+#salesChart {
+  min-height: 280px;
+}
+
+/* ---------------- Tables ---------------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+tbody td {
+  padding: 14px 12px;
+  font-size: 14px;
+  color: #1f2430;
+  border-bottom: 1px solid #f1f2f4;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* Numeric-looking columns (sales, transactions, avg) right aligned for readability */
+table td:nth-child(2),
+table td:nth-child(3),
+table td:nth-child(4) {
+  text-align: left;
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 900px) {
+  .mobile-header {
+    display: flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    transform: translateX(-100%);
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  #content {
+    padding: 20px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

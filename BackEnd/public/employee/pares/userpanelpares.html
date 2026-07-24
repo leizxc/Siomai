@@ -13,6 +13,7 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
     <script type="text/javascript" src="/js/materialize.min.js"></script>
+
     <!-- Manifest -->
     <link rel="manifest" href="/manifest.json">
     <!-- Design -->
@@ -27,9 +28,9 @@
 
       <ul class="nav">
        <li><a href="../../employee/pares/userpanelpares.html"><i class="material-icons">shopping_cart</i>Point of Sale</a></li>
-       <li><a href="stockpares.html" target="_blank"><i class="material-icons">inventory</i>Inventory</a></li>
-        <li><a href="salespares.html" target="_blank"><i class="material-icons">bar_chart</i>Income Per Cart</a></li>
-        <li><a href="qoutapares.html" target="_blank"><i class="material-icons">payments</i>Expenses Records</a></li>
+        <li><a href="#" onclick="loadSection('./stockpares.html', this)"><i class="material-icons">inventory</i>Inventory</a></li>
+        <li><a href="#" onclick="loadSection('./qoutapares.html', this)"><i class="material-icons">bar_chart</i>Income Per Cart</a></li>
+        <li><a href="#" onclick="loadSection('./salespares.html', this)"><i class="material-icons">payments</i>Expenses Records</a></li>
         <li><a href="../../index.html"><i class="material-icons">logout</i>Logout</a></li>
       </ul>
     </aside>
@@ -46,7 +47,7 @@
 
         <!-- Header -->
         <header>
-            <h1>Point of sales</h1>
+            <h1>POS</h1>
             <p>Process Sales Transactions</p>
         </header>
 
@@ -69,7 +70,7 @@
                 <div class="product-list">
 
                     <div class="product-card">
-                        <img src="/assets/pares.jpg" alt="">
+                        <img src="/assets/images.jpg    " alt="">
                         <div>
                             <h3>Pares</h3>
                             <p>₱60.00</p>
@@ -87,7 +88,7 @@
                     </div>
 
                     <div class="product-card">
-                        <img src="/assets/bottledwater.jpg" alt="">
+                        <img src="/assets/OIP.jpg" alt="">
                         <div>
                             <h3>Bottled Water</h3>
                             <p>₱20.00</p>

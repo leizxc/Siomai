@@ -55,7 +55,7 @@ body {
 
 .sidebar .role {
   font-size: 13px;
-  color: var(--text-muted);
+  color: #9ca3af;
   margin: 0 0 28px;
 }
 
@@ -104,21 +104,24 @@ body {
 
 .main {
   flex: 1;
-  padding: 0 0 100px;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
 .mobile-header {
-  display: flex;
+  display: none;
   align-items: center;
-  padding: 18px 20px 0;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 16px;
 }
 
 .mobile-header #menu-toggle {
   border: none;
   background: var(--card);
-  width: 42px;
-  height: 42px;
+  width: 100px;
+  height: 28px;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow);
   display: flex;
@@ -148,11 +151,11 @@ header p {
 .pos-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
   padding: 16px 20px 0;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .pos-container {
     flex-direction: row;
     align-items: flex-start;
@@ -441,12 +444,12 @@ header p {
 
 /* ---------------- Desktop: show sidebar permanently ---------------- */
 
-@media (min-width: 900px) {
+@media  (min-width: 768px) {
   .sidebar {
     position: static;
     transform: none;
   }
   .mobile-header { display: none; }
   .overlay { display: none !important; }
-  .main { padding-bottom: 40px; }
+  .main { padding-bottom: 20px; }
 }
