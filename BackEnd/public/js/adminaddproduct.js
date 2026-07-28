@@ -28,10 +28,6 @@ let unsubscribeRoleFilter = null;
 function reinitSelect(selectEl) {
   if (!selectEl) return;
   // If the section was navigated away from, functionalnav.js already
-  // replaced #content's innerHTML, so this element may be a detached
-  // node still referenced by a lingering onSnapshot closure. Touching a
-  // detached node is exactly what threw "Cannot set properties of null
-  // (setting 'tabIndex')" — bail out instead of calling into Materialize.
   if (!selectEl.isConnected) return;
 
   const instance = M.FormSelect.getInstance(selectEl);
@@ -80,8 +76,6 @@ function loadInventoryOptions(role = "") {
 
   unsubscribeInventoryOptions = onSnapshot(q, (snapshot) => {
     // Guard against a stale snapshot firing after the user navigated away
-    // from product.html — the element still exists in memory (closure)
-    // but is no longer attached to the live DOM.
     if (!select.isConnected) return;
 
     select.innerHTML = `<option value="" disabled selected>Choose Product</option>`;
@@ -100,11 +94,7 @@ function loadInventoryOptions(role = "") {
   });
 }
 
-// ---------------------------------------------------------
 // all DOM-dependent listeners live in one place and get
-// re-attached every time initProductPage() runs (i.e. every
-// time this section is loaded via loadSection()).
-// ---------------------------------------------------------
 function bindProductFormListeners() {
   const productRole = document.getElementById("productRole");
   const productName = document.getElementById("productName");
@@ -210,11 +200,7 @@ function bindProductFormListeners() {
       quantity: newQuantity,
       stock_quantity: newStockQuantity,
       status: newQuantity <= 0 ? "On Selling" : "Available",
-      // Marks this item as "currently assigned to an employee" the
-      // moment ANY quantity is assigned — regardless of how much
-      // warehouse stock is left. adminBE.js's inventory table uses
-      // this (not `status` above) to decide when to show "On Selling",
-      // and keeps showing it even once quantity hits 0.
+      // Marks this item as "currently assigned to an employee"
       assigned: true,
       last_updated: serverTimestamp(),
     });
@@ -277,9 +263,6 @@ export async function loadProducts() {
   });
 
   // Populate "Filter by Role" with only the roles that currently have
-  // at least one assigned product. Live-updates via onSnapshot so a
-  // newly-assigned role appears (or an emptied-out role disappears)
-  // without needing to refresh the page.
   loadRoleFilterOptions(filterRole);
 
   function renderProducts(employeeId = "", role = "") {
@@ -397,10 +380,6 @@ export async function loadProducts() {
               });
 
               // Only revert "assigned" back to false once NO other
-              // assignment still references this inventory item —
-              // deleting one employee's assignment shouldn't turn off
-              // "On Selling" for an item that's still assigned to
-              // other employees.
               const remainingAssignmentsQuery = query(
                 collection(db, "products"),
                 where("inventoryId", "==", productData.inventoryId),
@@ -607,11 +586,7 @@ function confirmDeletion(title, message) {
   });
 }
 
-// ---------------------------------------------------------
 // This is the entry point called every single time
-// loadSection('product.html') runs. It now re-binds all
-// the listeners against the freshly-injected DOM elements.
-// ---------------------------------------------------------
 export async function initProductPage() {
   M.Modal.init(document.querySelectorAll(".modal"), {
     dismissible: false,
@@ -625,16 +600,7 @@ export async function initProductPage() {
   console.log("✅ Product page initialized");
 }
 
-// ---------------------------------------------------------
-// Call this BEFORE navigating away from product.html (i.e. right
-// before functionalnav.js replaces #content's innerHTML with a
-// different page). It stops every Firestore listener this module
-// started, so none of them can fire against detached DOM nodes.
-// The isConnected guards above are a safety net; this is the real fix
-// — without it these listeners keep running (and keep re-syncing
-// Firestore data) for as long as the tab stays open, even on pages
-// that have nothing to do with products.
-// ---------------------------------------------------------
+// Call this BEFORE navigating away from product.html
 export function cleanupProductPage() {
   if (unsubscribeInventoryOptions) {
     unsubscribeInventoryOptions();
