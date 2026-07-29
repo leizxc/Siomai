@@ -36,6 +36,9 @@ if (!modalInstance) {
     document.getElementById("product-category").selectedIndex = 0;
     document.getElementById("product-packs").value = "";
     document.getElementById("product-price").value = "";
+    if (document.getElementById("product-plastic-color")) {
+      document.getElementById("product-plastic-color").value = "";
+    }
 
     //reset save button label
     const saveBtn = document.getElementById("save-product");
@@ -60,6 +63,9 @@ if (!modalInstance) {
     const category = document.getElementById("product-category").value;
     const packsStr = document.getElementById("product-packs").value;
     const priceStr = document.getElementById("product-price").value;
+    const plasticColor = document.getElementById("product-plastic-color")
+      ? document.getElementById("product-plastic-color").value.trim()
+      : "";
 
     if (!name || !category || !packsStr || !priceStr) {
       alert("Please fill all required fields!");
@@ -85,7 +91,7 @@ if (!modalInstance) {
       console.log("SAVING...");
 
       // pass packs converted to pieces
-      await addProduct(name, category, packs, unitPrice);
+      await addProduct(name, category, packs, unitPrice, plasticColor);
 
       console.log("SAVED SUCCESS");
 
@@ -94,6 +100,9 @@ if (!modalInstance) {
       document.getElementById("product-category").selectedIndex = 0;
       document.getElementById("product-packs").value = "";
       document.getElementById("product-price").value = "";
+      if (document.getElementById("product-plastic-color")) {
+        document.getElementById("product-plastic-color").value = "";
+      }
 
       // Refresh Select UI
       const selects = document.querySelectorAll("select");

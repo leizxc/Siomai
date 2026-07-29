@@ -5296,7 +5296,7 @@ small {
 .btn-small {
     text-decoration: none;
     color: #fff;
-    background-color: #26a69a;
+    background-color: #2563eb;
     text-align: center;
     letter-spacing: .5px;
     -webkit-transition: background-color .2s ease-out;
@@ -5304,11 +5304,6 @@ small {
     cursor: pointer
 }
 
-.btn:hover,
-.btn-large:hover,
-.btn-small:hover {
-    background-color: #2bbbad
-}
 
 .btn-floating {
     display: inline-block;
@@ -5320,7 +5315,7 @@ small {
     height: 40px;
     line-height: 40px;
     padding: 0;
-    background-color: #26a69a;
+    background-color: #2563eb;
     border-radius: 50%;
     -webkit-transition: background-color .3s;
     transition: background-color .3s;
@@ -5329,7 +5324,7 @@ small {
 }
 
 .btn-floating:hover {
-    background-color: #26a69a
+    background-color: #2563eb
 }
 
 .btn-floating:before {
@@ -5534,7 +5529,7 @@ button.btn-floating {
     z-index: -1;
     width: 40px;
     height: 40px;
-    background-color: #26a69a;
+    background-color: #2563eb;
     border-radius: 50%;
     -webkit-transform: scale(0);
     transform: scale(0)

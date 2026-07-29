@@ -1,177 +1,170 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>STOCK PARES DASHBOARD</title>
     <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+    <link rel="stylesheet" type="text/css" href="/css/admin.css" />
 
-    
     <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet" />
     <script type="text/javascript" src="/js/materialize.min.js"></script>
 
     <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/manifest.json" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Side Bar -->
+      <aside class="sidebar">
+        <h2 class="logo">Queen Cassy</h2>
+        <p class="role">Employee</p>
 
-</head>
-<body>
-<div class="container">
-    <!-- Side Bar -->
-    <aside class="sidebar">
-      <h2 class="logo">Queen Casy</h2>
-      <p class="role">Employee</p>
-
-      <ul class="nav">
-       <li><a href="../../employee/pares/userpanelpares.html"><i class="material-icons">shopping_cart</i>Point of Sale</a></li>
-        <li><a href="#" onclick="loadSection('./stockpares.html', this)"><i class="material-icons">inventory</i>Inventory</a></li>
-        <li><a href="#" onclick="loadSection('./qoutapares.html', this)"><i class="material-icons">bar_chart</i>Income Per Cart</a></li>
-        <li><a href="#" onclick="loadSection('./salespares.html', this)"><i class="material-icons">payments</i>Expenses Records</a></li>
-        <li><a href="../../index.html"><i class="material-icons">logout</i>Logout</a></li>
-      </ul>
-    </aside>
+        <ul class="nav">
+          <li>
+            <a href="../../employee/pares/userpanelpares.html"
+              ><i class="material-icons">shopping_cart</i>Point of Sale</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('./stockpares.html', this)"
+              ><i class="material-icons">inventory</i>Inventory</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('./qoutapares.html', this)"
+              ><i class="material-icons">bar_chart</i>Income Per Cart</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('./salespares.html', this)"
+              ><i class="material-icons">payments</i>Expenses Records</a
+            >
+          </li>
+          <li>
+            <a href="../../index.html"
+              ><i class="material-icons">logout</i>Logout</a
+            >
+          </li>
+        </ul>
+      </aside>
 
       <div class="overlay"></div>
       <!-- MAIN -->
-    <main class="main">
-      <div class="mobile-header">
-            <button id="menu-toggle">
+      <main class="main">
+        <div class="mobile-header">
+          <button id="menu-toggle">
             <i class="material-icons">menu</i>
-            </button>
-      </div>
+          </button>
+        </div>
 
-      <div id="content">
+        <div id="content">
+          <section class="page-header">
+            <div>
+              <h2>Stock Status</h2>
 
-<section class="page-header">
+              <p>Monitor stock availability and inventory levels.</p>
+            </div>
 
-<div>
+            <div class="filters">
+              <input type="date" />
 
-<h2>Stock Status</h2>
+              <select>
+                <option>All Carts</option>
+              </select>
+            </div>
+          </section>
 
-<p>Monitor stock availability and inventory levels.</p>
+          <!-- Summary -->
 
-</div>
+          <div class="dashboard-cards">
+            <div class="card">
+              <h4>Total Products</h4>
 
-<div class="filters">
+              <h2>0</h2>
+            </div>
 
-<input type="date">
+            <div class="card">
+              <h4>In Stock</h4>
 
-<select>
+              <h2>0</h2>
+            </div>
+          </div>
 
-<option>All Carts</option>
+          <!-- Stock Overview -->
 
-</select>
+          <section class="card">
+            <div class="overview">
+              <div>
+                <h4>Total Inventory Value</h4>
 
-</div>
+                <h2>₱0.00</h2>
+              </div>
 
-</section>
+              <div>
+                <h4>Last Stock Update</h4>
 
-<!-- Summary -->
+                <p>--</p>
+              </div>
+            </div>
+          </section>
 
-<div class="dashboard-cards">
+          <!-- Product List -->
 
-<div class="card">
+          <section class="card">
+            <div class="table-header">
+              <h4>Stock Items</h4>
 
-<h4>Total Products</h4>
+              <input type="search" placeholder="Search Product" />
+            </div>
 
-<h2>0</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
 
-</div>
+                  <th>Category</th>
 
-<div class="card">
+                  <th>Current Stock</th>
 
-<h4>In Stock</h4>
+                  <th>Unit</th>
 
-<h2>0</h2>
+                  <th>Status</th>
 
-</div>
+                  <th>Last Updated</th>
+                </tr>
+              </thead>
 
-</div>
+              <tbody>
+                <tr>
+                  <td>Pares</td>
 
-<!-- Stock Overview -->
+                  <td>Pares</td>
 
-<section class="card">
+                  <td>0</td>
 
-<div class="overview">
+                  <td>Packs</td>
 
-<div>
-
-<h4>Total Inventory Value</h4>
-
-<h2>₱0.00</h2>
-
-</div>
-
-<div>
-
-<h4>Last Stock Update</h4>
-
-<p>--</p>
-
-</div>
-
-</div>
-
-</section>
-
-<!-- Product List -->
-
-<section class="card">
-
-<div class="table-header">
-
-<h4>Stock Items</h4>
-
-<input type="search" placeholder="Search Product">
-
-</div>
-
-<table>
-
-<thead>
-
-<tr>
-
-<th>Product</th>
-
-<th>Category</th>
-
-<th>Current Stock</th>
-
-<th>Unit</th>
-
-<th>Status</th>
-
-<th>Last Updated</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-<tr>
-
-<td>Pares</td>
-
-<td>Pares</td>
-
-<td>0</td>
-
-<td>Packs</td>
-
-<td>In Stock</td>
-
-<td>--</td>
-
-</tr>
-
-</tbody>
-
-</table>
-</section>
-
-</div>
+                  <td>In Stock</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+      </main>
+    </div>
+    <script src="/js/refresh.js"></script>
+    <script type="module" src="/js/navemployee.js"></script>
+    <script type="module" src="/js/firebase.js"></script>
+    <script type="module" src="/js/IndexDB.js"></script>
+    <script type="module">
+      import { initPOS } from "/js/empoleyee.js";
+      initPOS();
+    </script>
+  </body>
+</html>
