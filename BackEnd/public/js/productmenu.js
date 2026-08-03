@@ -13,11 +13,6 @@ import {
   where,
   runTransaction,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 //global listener state
 let unsubscribeInventoryOptions = null;
@@ -292,7 +287,11 @@ async function loadCategoryFilter() {
 
   const categories = new Set();
 
+<<<<<<< HEAD
   select.innerHTML = <option value="">All Categories</option>;
+=======
+  select.innerHTML = `<option value="">All Categories</option>`;
+>>>>>>> 0fdabadc10d7012f7d9168eb72d4480cd3ef55eb
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
