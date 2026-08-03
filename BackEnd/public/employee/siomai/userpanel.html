@@ -7,146 +7,193 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="/css/employee.css" />
 
-    <!-- Materialize -->
+    <link rel="stylesheet" href="/css/employee.css" />
+<link rel="stylesheet" href="/css/materialize.min.css">
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet" />
-    <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <link href="/css/materialize.min.css" rel="stylesheet" />
+    <script src="/js/materialize.min.js"></script>
 
     <!-- Manifest -->
     <link rel="manifest" href="/manifest.json" />
   </head>
 
   <body>
-    <!-- Side Bar -->
+    <!-- Sidebar -->
     <aside class="sidebar">
       <h2 class="logo">Queen Casy</h2>
       <p class="role">Employee</p>
 
       <ul class="nav">
         <li>
-          <a href="../../employee/siomai/userpanel.html"
-            ><i class="material-icons">shopping_cart</i>Point of Sale</a
-          >
+          <a href="../../employee/siomai/userpanel.html">
+            <i class="material-icons">shopping_cart</i>
+            Point of Sale
+          </a>
         </li>
+
         <li>
-          <a href="#" onclick="loadSection('./stock.html', this)"
-            ><i class="material-icons">inventory</i>Inventory</a
+          <a
+            href="#"
+            onclick="
+              loadSection('stock.html');
+              return false;
+            "
           >
+            <i class="material-icons">inventory</i>
+            Inventory
+          </a>
         </li>
+
         <li>
-          <a href="#" onclick="loadSection('./qouta.html', this)"
-            ><i class="material-icons">bar_chart</i>Income Per Cart</a
+          <a
+            href="#"
+            onclick="
+              loadSection('qouta.html');
+              return false;
+            "
           >
+            <i class="material-icons">bar_chart</i>
+            Income Per Cart
+          </a>
         </li>
+
         <li>
-          <a href="#" onclick="loadSection('./sales.html', this)"
-            ><i class="material-icons">payments</i>Expenses Records</a
+          <a
+            href="#"
+            onclick="
+              loadSection('sales.html');
+              return false;
+            "
           >
+            <i class="material-icons">payments</i>
+            Expenses Records
+          </a>
         </li>
+
         <li>
-          <a href="../../index.html"
-            ><i class="material-icons">logout</i>Logout</a
-          >
+          <a href="../../index.html">
+            <i class="material-icons">logout</i>
+            Logout
+          </a>
         </li>
       </ul>
     </aside>
 
     <div class="overlay"></div>
-    <!-- MAIN -->
+
+    <!-- Main -->
     <main class="main">
-      <!-- Mobile Header -->
-      <header class="mobile-header">
+      <div class="mobile-header">
         <button id="menu-toggle">
           <i class="material-icons">menu</i>
         </button>
+        <h2 id="mobile-title">Dashboard</h2>
+        <i class="material-icons">notifications_none</i>
+      </div>
+      
+      <div id="content">
 
-        <h2>Point of Sale</h2>
+          <h2>Point of Sale</h2>
+          <button class="notif-btn">
+            <i class="material-icons">notifications_none</i>
+          </button>
+        </header>
 
-        <button class="notif-btn">
-          <i class="material-icons">notifications_none</i>
-        </button>
-      </header>
+        <!-- Search -->
+        <section class="search-section">
+          <div class="search-box">
+            <i class="material-icons">search</i>
 
-      <!-- Search -->
-      <section class="search-section">
-        <div class="search-box">
-          <i class="material-icons">search</i>
+            <input
+              type="text"
+              id="searchProduct"
+              placeholder="Search product..."
+            />
+          </div>
+        </section>
 
-          <input
-            type="text"
-            id="searchProduct"
-            placeholder="Search product..."
-          />
-        </div>
-      </section>
+        <!-- Categories -->
+        <section class="categories">
+          <button class="category active">All</button>
 
-      <!-- Categories -->
-      <section class="categories">
-        <button class="category active">All</button>
+          <button class="category">Siomai</button>
 
-        <button class="category">Siomai</button>
+          <button class="category">Siomai Rice</button>
 
-        <button class="category">Siomai Rice</button>
+          <button class="category">Drinks</button>
+        </section>
 
-        <button class="category">Drinks</button>
-      </section>
+        <!-- Products -->
+        <section class="product-list" id="productList"></section>
 
-      <!-- Products -->
-      <section class="product-list" id="productList"></section>
+        <!-- Cart -->
+        <section class="cart-section">
+          <table id="cartTable" class="striped">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
 
-      <!-- Floating Checkout -->
-      <section class="checkout-bar">
-        <div class="checkout-info">
-          <div>
-            <span class="cart-count"> 0 Items </span>
+            <tbody></tbody>
+          </table>
+        </section>
 
-            <button id="viewOrderBtn">View Order</button>
+        <!-- Checkout -->
+        <section class="checkout-bar">
+          <div class="checkout-info">
+            <div>
+              <span class="cart-count">0 Items</span>
+              <button id="viewOrderBtn">View Order</button>
+            </div>
+
+            <div>
+              <small>Total Amount</small>
+
+              <h3>₱<span id="grandTotal">0.00</span></h3>
+            </div>
           </div>
 
-          <div>
-            <small>Total Amount</small>
+          <button id="checkoutBtn" class="checkout-btn">
+            <i class="material-icons">payments</i>
+            Proceed to Checkout
+          </button>
+        </section>
 
-            <h3>₱<span id="grandTotal">0.00</span></h3>
-          </div>
-        </div>
+        <!-- Bottom Navigation -->
 
-        <button id="checkoutBtn" class="checkout-btn">
-          <i class="material-icons"> payments </i>
+        <nav class="bottom-nav">
+          <a class="active">
+            <i class="material-icons">point_of_sale</i>
+            <span>POS</span>
+          </a>
 
-          Proceed to Checkout
-        </button>
-      </section>
+          <a>
+            <i class="material-icons">inventory_2</i>
+            <span>Inventory</span>
+          </a>
 
-      <!-- Bottom Navigation -->
-
-      <nav class="bottom-nav">
-        <a class="active">
-          <i class="material-icons"> point_of_sale </i>
-
-          <span>POS</span>
-        </a>
-
-        <a>
-          <i class="material-icons"> inventory_2 </i>
-
-          <span>Inventory</span>
-        </a>
-
-        <a>
-          <i class="material-icons"> history </i>
-
-          <span>History</span>
-        </a>
-      </nav>
+          <a>
+            <i class="material-icons">history</i>
+            <span>History</span>
+          </a>
+        </nav>
+      </div>
     </main>
 
     <script src="/js/refresh.js"></script>
+
     <script type="module" src="/js/navemployee.js"></script>
     <script type="module" src="/js/firebase.js"></script>
     <script type="module" src="/js/IndexDB.js"></script>
+
     <script type="module">
       import { initPOS } from "/js/empoleyee.js";
       initPOS();

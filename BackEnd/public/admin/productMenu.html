@@ -1,65 +1,107 @@
-<!--Header-->
+<!-- Header -->
 <header class="header">
-    <h1>Add new Product Menu</h1>
+  <h1>Add New Product Menu</h1>
 </header>
 
-<!--product menu-->
+<!-- ================= ADD PRODUCT ================= -->
 <section class="card inventory-card">
-    <form id="addProductMenu">
-        <div class="row">
-            <!--Inventory Allocation-->
-            <div class="input-field col s12 m6">
-                <select id="employeeINV">
-                    <option value="" disabled selected>Inventory Allocation</option>
-                </select>
-                <label for="employeeINV">Inventory</label>
-            </div>
-            <!--Dito yung input product name-->
-            <div class="input-field col s12 m6">
-                <input type="text" name="input-product" id="inputProduct">
-                <label for="inputProduct">Product Name (e.g Pork Siomai) </label>
-            </div>
-            <!--select category-->
-            <div class="input-field col s12 m6">
-                <select id="selectCategory">
-                    <!--dito lalabas yung function kung ano na meron sa firestore na role-->
-                    <option value="" disabled selected>Select Category</option>
-                </select>
-                <label for="selectCategory">Select Category</label>
-            </div>
-            <!--Initial Stock-->
-            <div class="input-field col s12 m6">
-                <input type="number" name="Inv-stocl" id="stock">
-                <label for="stock">Initial Stock</label>
-            </div>
-            <!--Price-->
-            <div class="input-field col s12 m6">
-                <input type="number" name="Product-Price" id="price" step="0.01" min="0">
-                <label for="price">Product Price</label>
-            </div>
-            <!--Generated Id-->
-            <div class="input-field col s12">
-                <p class="GeneratedId">Product Id</p>
-                <input type="text" name="GeneratedId" id="productId" readonly/>
-            </div>
-           <!--Input Img-->
-            <div class="col s12">
+  <form id="addProductMenu">
+    <div class="row">
+      <!-- Inventory Allocation -->
+      <div class="input-field col s12 m6">
+        <select id="employeeINV">
+          <option value="" disabled selected>Inventory Allocation</option>
+        </select>
+        <label for="employeeINV">Inventory</label>
+      </div>
 
-    <!-- Hidden File Input -->
-    <input type="file" id="inputImg" accept="image/*" hidden>
+      <!-- Product Name -->
+      <div class="input-field col s12 m6">
+        <input type="text" id="inputProduct" />
+        <label for="inputProduct">Product Name (e.g Pork Siomai)</label>
+      </div>
 
-    <!-- Upload Area -->
-    <div class="image-upload" id="uploadBox">
+      <!-- Category -->
+      <div class="input-field col s12 m6">
+        <select id="selectCategory">
+          <option value="" disabled selected>Select Category</option>
+        </select>
+        <label for="selectCategory">Select Category</label>
+      </div>
 
-        <!-- Default Placeholder -->
-        <img  id="previewImage" src="/assets/upload-placeholder.png" alt="Upload Image">
+      <!-- Initial Stock -->
+      <div class="input-field col s12 m6">
+        <input type="number" id="stock" />
+        <label for="stock">Initial Stock</label>
+      </div>
+
+      <!-- Price -->
+      <div class="input-field col s12 m6">
+        <input type="number" id="price" step="0.01" min="0" />
+        <label for="price">Product Price</label>
+      </div>
+
+      <!-- Product ID -->
+      <div class="input-field col s12">
+        <p class="GeneratedId">Product ID</p>
+        <input type="text" id="productId" readonly />
+      </div>
+
+      <!-- Image Upload -->
+      <div class="col s12">
+        <input type="file" id="inputImg" accept="image/*" hidden />
+
+        <div class="image-upload" id="uploadBox">
+          <img
+            id="previewImage"
+            src="/assets/upload-placeholder.png"
+            alt="Upload Image"
+          />
+        </div>
+      </div>
     </div>
 
-</div>
-        <button type="submit" id="save-menu" class="btn save-menu">Save Product Menu</button>
-    </form>
+    <button type="submit" id="save-menu" class="btn save-menu">
+      Save Product Menu
+    </button>
+  </form>
 </section>
+
+<!-- ================= PRODUCT MENU TABLE ================= -->
+<section class="card menu-card product-list-card">
+  <div class="row">
+    <div class="input-field col s12 m6">
+      <select id="filterCategory">
+        <option value="" selected>All Categories</option>
+      </select>
+
+      <label for="filterCategory">Filter by Category</label>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table id="menutable" class="highlight responsive-table">
+      <thead>
+        <tr>
+          <th>Product ID</th>
+          <th>Inventory Allocation</th>
+          <th>Product Name</th>
+          <th>Category</th>
+          <th>Stock</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <!-- Products will appear here -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
 <script src="/js/photomenu.js"></script>
+
 <script type="module">
-    import{loadinventoryOptions, loadroles} from "/js/productmenu.js"
+  import { initProductPage } from "/js/productmenu.js";
+  initProductPage();
 </script>
