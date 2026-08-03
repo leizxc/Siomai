@@ -3,6 +3,7 @@ import {
   collection,
   addDoc,
   updateDoc,
+  deleteDoc,
   deleteField,
   doc,
   serverTimestamp,
@@ -27,8 +28,8 @@ export async function refresh() {
     form.reset();
   }
 
-  document.getElementById("previewImage").src =
-    "/assets/upload-placeholder.png";
+  const previewImg = document.getElementById("previewImage");
+  if (previewImg) previewImg.src = "/assets/upload-placeholder.png";
 
   M.updateTextFields();
 
@@ -60,7 +61,8 @@ async function generateProductCode() {
 // Kailangan i-destroy at i-init ulit ang Materialize select, dahil hindi
 // ito automatic nag-re-refresh kapag dumagdag ng options after i-init.
 function reinitSelect(selectEl) {
-  if (!selectEl) return;
+  if (!selectEl || !selectEl.isConnected) return;
+
   const instance = M.FormSelect.getInstance(selectEl);
   if (instance) {
     instance.destroy();
@@ -100,6 +102,45 @@ export function loadInventoryOptions(role = "") {
   });
 }
 
+// Kapag pumili ng inventory item, i-auto-fill ang "stock" field base sa
+// available stock nung napiling item (pwede pa ring baguhin bago i-save).
+function bindInventoryAllocationChange() {
+  const select = document.getElementById("employeeINV");
+  const stockInput = document.getElementById("stock");
+  const stockUnit = document.getElementById("stockUnit");
+  if (!select || !stockInput) return;
+
+  select.onchange = async (e) => {
+    const inventoryId = e.target.value;
+    if (!inventoryId) return;
+
+    const inventorySnap = await getDoc(doc(db, "inventory", inventoryId));
+    if (!inventorySnap.exists()) return;
+
+    const data = inventorySnap.data();
+
+    // pack = bilangin sa dami ng packs, hindi sa total pieces
+    let stock = data.stock_quantity;
+    let unit = data.unit_type;
+
+    if (unit === "pack") {
+      stock = data.quantity;
+      unit = "PACK";
+    } else if (unit === "kg") {
+      stock = data.quantity;
+      unit = "KG";
+    } else if (unit === "liter") {
+      stock = data.quantity;
+      unit = "LITER";
+    }
+
+    stockInput.value = stock;
+    if (stockUnit) stockUnit.value = unit;
+
+    M.updateTextFields();
+  };
+}
+
 //load roles
 export async function loadroles() {
   const roleSelect = document.getElementById("selectCategory");
@@ -115,7 +156,15 @@ export async function loadroles() {
       roles.add(data.role.trim());
     }
   });
-  roleSelect.innerHTML = `<option value= "" disabled selected>Select Category</option>`;
+
+  roleSelect.innerHTML = `<option value="" disabled selected>Select Role</option>`;
+
+  // Hiwalay na option: hindi tied sa isang specific role, makikita sa
+  // Assign Product page kahit anong role ang piliin doon.
+  const sharedOption = document.createElement("option");
+  sharedOption.value = "ALL";
+  sharedOption.textContent = "Shared Across All Roles";
+  roleSelect.appendChild(sharedOption);
 
   roles.forEach((role) => {
     const option = document.createElement("option");
@@ -123,6 +172,7 @@ export async function loadroles() {
     option.textContent = role;
     roleSelect.appendChild(option);
   });
+
   reinitSelect(roleSelect);
 }
 
@@ -189,6 +239,8 @@ export function addproductmenu() {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const saveBtn = document.getElementById("save-menu");
+
     try {
       const inventoryId = document.getElementById("employeeINV").value;
       const productName = document
@@ -206,6 +258,8 @@ export function addproductmenu() {
         });
         return;
       }
+
+      if (saveBtn) saveBtn.disabled = true;
 
       //checking kung may kaparehas na name product
       const existingProduct = await getDocs(
@@ -233,7 +287,7 @@ export function addproductmenu() {
       const inventorySnap = await getDoc(doc(db, "inventory", inventoryId));
 
       if (!inventorySnap.exists()) {
-        M.toast({ html: "Inventory not found." });
+        M.toast({ html: "Inventory not found.", classes: "red rounded" });
         return;
       }
 
@@ -248,6 +302,7 @@ export function addproductmenu() {
         inventory_name: inventory.product_name,
         initial_stock: stock,
         current_stock: stock,
+        unit: inventory.unit_type,
         price: price,
         image_url: imageURL,
         status: "Available",
@@ -263,10 +318,14 @@ export function addproductmenu() {
 
       M.toast({
         html: "Error saving product.",
+        classes: "red rounded",
       });
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
     }
   });
 }
+
 //gawing upper case din habang nag ttype
 function initUppercaseProductName() {
   const input = document.getElementById("inputProduct");
@@ -277,6 +336,7 @@ function initUppercaseProductName() {
     input.value = input.value.toUpperCase();
   });
 }
+
 //filter function
 async function loadCategoryFilter() {
   const select = document.getElementById("filterCategory");
@@ -309,12 +369,163 @@ async function loadCategoryFilter() {
   reinitSelect(select);
 }
 
+// Parehong modal na ginagamit din sa Inventory/Product Assign pages
+// (modal-delete-category) — reused dito, hindi na gumawa ng bago.
+function confirmDeletion(title, message) {
+  const modalElement = document.getElementById("modal-delete-category");
+  if (!modalElement) return Promise.resolve(window.confirm(message));
+
+  const confirmButton = document.getElementById("confirm-delete-category");
+  const cancelButton = document.getElementById("cancel-delete-category");
+  const titleElement = document.getElementById("delete-confirmation-title");
+  const messageElement = document.getElementById("delete-confirmation-message");
+
+  const modalInstance = M.Modal.init(modalElement, { dismissible: false });
+
+  titleElement.textContent = title;
+  messageElement.textContent = message;
+
+  return new Promise((resolve) => {
+    cancelButton.onclick = () => {
+      modalInstance.close();
+      resolve(false);
+    };
+
+    confirmButton.onclick = () => {
+      modalInstance.close();
+      resolve(true);
+    };
+
+    modalInstance.open();
+  });
+}
+
 //table function
 export async function loadmenu() {
   const tbody = document.querySelector("#menutable tbody");
   const filterCategory = document.getElementById("filterCategory");
 
   if (!tbody || !filterCategory) return;
+
+  function bindRowButtons() {
+    tbody.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+
+        // Bawal tanggalin ang Product Menu entry kung naka-assign pa ito
+        // sa isa o higit pang empleyado. Direkta itong tinitingnan sa
+        // "products" collection (hindi lang sa "assigned" flag ng
+        // productMenu doc) para sigurado — ito rin ang parehong source
+        // of truth na ginagamit sa product.js pag-uunassign.
+        const assignedQuery = query(
+          collection(db, "products"),
+          where("inventoryId", "==", id),
+        );
+        const assignedSnap = await getDocs(assignedQuery);
+        if (!assignedSnap.empty) {
+          M.toast({
+            html: "Cannot delete: this product is still assigned to employee(s). Unassign it first.",
+            classes: "red rounded",
+          });
+          return;
+        }
+
+        const confirmed = await confirmDeletion(
+          "Delete Product?",
+          "This product menu entry will be permanently deleted.",
+        );
+        if (!confirmed) return;
+
+        try {
+          // Tandaan: hindi binabawasan ng addproductmenu() ang linked
+          // inventory doc pag-Save, kaya walang dapat i-restore pag-Delete
+          // — burahin lang natin ang productMenu doc mismo.
+          await deleteDoc(doc(db, "productMenu", id));
+          M.toast({
+            html: "Product menu entry deleted.",
+            classes: "green rounded",
+          });
+        } catch (err) {
+          console.error("Delete error:", err);
+          M.toast({
+            html: "Failed to delete product.",
+            classes: "red rounded",
+          });
+        }
+      };
+    });
+
+    tbody.querySelectorAll(".edit-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+
+        const menuRef = doc(db, "productMenu", id);
+        const menuSnap = await getDoc(menuRef);
+        if (!menuSnap.exists()) return;
+
+        const data = menuSnap.data();
+
+        document.getElementById("edit-menu-name").value =
+          data.product_name || "";
+        document.getElementById("edit-menu-stock").value =
+          data.current_stock ?? "";
+        document.getElementById("edit-menu-price").value = data.price ?? "";
+        M.updateTextFields();
+
+        const modalElem = document.getElementById("modal-edit-menu");
+        if (!modalElem) return;
+
+        let modalInstance = M.Modal.getInstance(modalElem);
+        if (!modalInstance) {
+          modalInstance = M.Modal.init(modalElem);
+        }
+        modalInstance.open();
+
+        const saveBtn = document.getElementById("edit-menu-save");
+        saveBtn.onclick = async () => {
+          const newName = document
+            .getElementById("edit-menu-name")
+            .value.trim()
+            .toUpperCase();
+          const newStock = Number(
+            document.getElementById("edit-menu-stock").value,
+          );
+          const newPrice = Number(
+            document.getElementById("edit-menu-price").value,
+          );
+
+          if (!newName || newStock < 0 || newPrice < 0) {
+            M.toast({
+              html: "Please enter valid values.",
+              classes: "red rounded",
+            });
+            return;
+          }
+
+          try {
+            await updateDoc(menuRef, {
+              product_name: newName,
+              current_stock: newStock,
+              price: newPrice,
+              last_updated: serverTimestamp(),
+            });
+
+            M.toast({
+              html: "Product menu updated!",
+              classes: "green rounded",
+            });
+            modalInstance.close();
+          } catch (err) {
+            console.error("Update error:", err);
+            M.toast({
+              html: "Failed to update product.",
+              classes: "red rounded",
+            });
+          }
+        };
+      };
+    });
+  }
 
   function renderMenu() {
     // Stop previous listener
@@ -327,11 +538,18 @@ export async function loadmenu() {
     let q = collection(db, "productMenu");
 
     if (selectedCategory) {
+      // Match the exact category AND anything marked "ALL" (Shared
+      // Across All Roles) — shared items are meant to show up under
+      // every specific category filter, not just under "All
+      // Categories". Firestore's "in" operator lets us match either
+      // value in a single query without needing a composite index.
       q = query(
         collection(db, "productMenu"),
-        where("category", "==", selectedCategory),
+        where("category", "in", [selectedCategory, "ALL"]),
       );
     }
+    // When selectedCategory is "" (All Categories), leave q unfiltered —
+    // that already returns every entry, "ALL"-tagged or not.
 
     unsubscribeMenu = onSnapshot(q, (snapshot) => {
       if (!tbody.isConnected) return;
@@ -349,11 +567,22 @@ export async function loadmenu() {
     <td data-label="Product Name">${data.product_name}</td>
     <td data-label="Category">${data.category}</td>
     <td data-label="Stock">${data.current_stock}</td>
+    <td data-label="Unit">${data.unit ? data.unit.toUpperCase() : "-"}</td>
     <td data-label="Price">₱${Number(data.price).toFixed(2)}</td>
+    <td data-label="Action">
+              <button class="edit-btn btn blue" data-id="${docSnap.id}">
+                <i class="material-icons">edit</i>
+              </button>
+              <button class="delete-btn btn red" data-id="${docSnap.id}">
+                <i class="material-icons">delete</i>
+              </button>
+            </td>
 `;
 
         tbody.appendChild(tr);
       });
+
+      bindRowButtons();
     });
   }
 
@@ -362,6 +591,22 @@ export async function loadmenu() {
 
   // Reload kapag nag-filter
   filterCategory.addEventListener("change", renderMenu);
+}
+
+// Call this BEFORE navigating away from productMenu.html
+export function cleanupProductMenuPage() {
+  if (unsubscribeInventoryOptions) {
+    unsubscribeInventoryOptions();
+    unsubscribeInventoryOptions = null;
+  }
+  if (unsubscribeProductIdPreview) {
+    unsubscribeProductIdPreview();
+    unsubscribeProductIdPreview = null;
+  }
+  if (unsubscribeMenu) {
+    unsubscribeMenu();
+    unsubscribeMenu = null;
+  }
 }
 
 //export function to functionalnav.js
@@ -373,4 +618,5 @@ export async function initProductPage() {
   addproductmenu();
   loadmenu();
   initUppercaseProductName();
+  bindInventoryAllocationChange();
 }

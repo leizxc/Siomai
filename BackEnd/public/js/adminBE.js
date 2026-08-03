@@ -25,6 +25,30 @@ let selectedCategoryFilter = "all";
 // Nagma-map ng categoriesINV doc id papunta sa pangalan ng category.
 let categoryNameMap = {};
 
+// Ginagawang UPPERCASE ang mga text field bago i-save, para hindi
+// magkaroon ng duplicate entries dahil lang sa magkaibang casing
+// (hal. "Pares" vs "PARES" vs "pares" ay magiging iisa: "PARES").
+function toUpper(value) {
+  return (value || "").trim().toUpperCase();
+}
+
+// Ginagawang UPPERCASE habang nagta-type ang user (live), hindi lang sa
+// pag-save. Pinapanatili ang cursor position para hindi lumulukso ito
+// habang nagta-type. Safe tawagin ito ulit-ulit sa parehong input —
+// naka-guard na para isang beses lang mabind ang listener.
+function bindLiveUppercase(input) {
+  if (!input || input.dataset.uppercaseBound) return;
+  input.dataset.uppercaseBound = "true";
+  input.addEventListener("input", () => {
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    input.value = input.value.toUpperCase();
+    if (start !== null && end !== null) {
+      input.setSelectionRange(start, end);
+    }
+  });
+}
+
 function toLocalDateValue(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -38,10 +62,13 @@ function confirmDeletion(title, message) {
   const cancelButton = document.getElementById("cancel-delete-category");
   const titleElement = document.getElementById("delete-confirmation-title");
   const messageElement = document.getElementById("delete-confirmation-message");
+  if (!modalElement || !confirmButton || !cancelButton) {
+    return Promise.resolve(false);
+  }
   const modalInstance = M.Modal.init(modalElement, { dismissible: false });
 
-  titleElement.textContent = title;
-  messageElement.textContent = message;
+  if (titleElement) titleElement.textContent = title;
+  if (messageElement) messageElement.textContent = message;
 
   return new Promise((resolve) => {
     cancelButton.onclick = () => {
@@ -65,12 +92,25 @@ export function loadInventory() {
   // Isang listener lang dapat ang kumokontrol sa table na ito.
   if (unsubscribeInventory) {
     unsubscribeInventory();
+    unsubscribeInventory = null;
   }
 
   unsubscribeInventory = onSnapshot(
     collection(db, "inventory"),
     async (querySnapshot) => {
-      tbody.innerHTML = "";
+      // Baka naka-navigate na papalayo sa inventory page — kung wala na
+      // sa DOM ang table, itigil na ang listener imbes na mag-crash.
+      const tbodyNow = document.getElementById("inventory-table-body");
+      const dateInputNow = document.getElementById("filter-date");
+      if (!tbodyNow) {
+        if (unsubscribeInventory) {
+          unsubscribeInventory();
+          unsubscribeInventory = null;
+        }
+        return;
+      }
+
+      tbodyNow.innerHTML = "";
 
       let totalProducts = 0;
       let totalStocks = 0;
@@ -81,7 +121,7 @@ export function loadInventory() {
       const unitTotals = { pack: 0, kg: 0, liter: 0, other: 0 };
 
       const selectedCategory = selectedCategoryFilter;
-      const selectedDate = dateInput.value;
+      const selectedDate = dateInputNow ? dateInputNow.value : "";
 
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
@@ -108,7 +148,9 @@ export function loadInventory() {
         categories.add(data.category);
 
         const bucket =
-          data.unit_type === "pack" || data.unit_type === "kg" || data.unit_type === "liter"
+          data.unit_type === "pack" ||
+          data.unit_type === "kg" ||
+          data.unit_type === "liter"
             ? data.unit_type
             : "other";
         unitTotals[bucket] += data.stock_quantity;
@@ -165,7 +207,7 @@ export function loadInventory() {
           : "-";
 
         // I-render ang row
-        tbody.innerHTML += `
+        tbodyNow.innerHTML += `
   <tr data-category-id="${docSnap.data().category_id}">
     <td data-label="Product Name">${data.product_name}${
       data.plasticColor
@@ -234,7 +276,7 @@ export function loadInventory() {
         totalDisplay1 = parts.length ? parts.join(" • ") : "0";
       }
 
-      // I-update ang summary cards
+      // I-update ang summary cards (may null-check na dati pa)
       const totalProductsEl = document.getElementById("total-products");
       const stocksLabelEl = document.getElementById("stocks-label");
       const totalStocksEl = document.getElementById("total-stocks");
@@ -261,16 +303,28 @@ export function loadInventory() {
           const id = e.target.closest("button").dataset.id;
           const row = e.target.closest("tr");
 
-          document.getElementById("edit-name").value =
-            row.children[0].textContent;
-          document.getElementById("edit-category").value =
-            row.dataset.categoryId; //  doc ID
-          document.getElementById("edit-packs").value =
-            row.children[2].textContent.replace(/\D/g, "");
-          document.getElementById("edit-price").value =
-            row.children[4].textContent.replace("₱", "");
+          const editNameInput = document.getElementById("edit-name");
+          const editCategoryInput = document.getElementById("edit-category");
+          const editPacksInput = document.getElementById("edit-packs");
+          const editPriceInput = document.getElementById("edit-price");
+          if (
+            !editNameInput ||
+            !editCategoryInput ||
+            !editPacksInput ||
+            !editPriceInput
+          ) {
+            return;
+          }
 
-          M.FormSelect.init(document.querySelectorAll("select"));
+          editNameInput.value = row.children[0].textContent;
+          editCategoryInput.value = row.dataset.categoryId; //  doc ID
+          editPacksInput.value = row.children[2].textContent.replace(/\D/g, "");
+          editPriceInput.value = row.children[4].textContent.replace("₱", "");
+
+          bindLiveUppercase(editNameInput);
+
+          const selects = document.querySelectorAll("select");
+          if (selects.length) M.FormSelect.init(selects);
 
           // Prefill at toggle ang quantity label at plastic color field base sa category.
           const productSnapForEdit = await getDoc(doc(db, "inventory", id));
@@ -278,29 +332,33 @@ export function loadInventory() {
             ? productSnapForEdit.data()
             : {};
 
-          const editPlasticColorInput = document.getElementById(
-            "edit-plastic-color",
-          );
+          const editPlasticColorInput =
+            document.getElementById("edit-plastic-color");
           if (editPlasticColorInput) {
             editPlasticColorInput.value = productDataForEdit.plasticColor || "";
+            bindLiveUppercase(editPlasticColorInput);
           }
 
           const editCategoryDoc = productDataForEdit.category_id
-            ? await getDoc(doc(db, "categoriesINV", productDataForEdit.category_id))
+            ? await getDoc(
+                doc(db, "categoriesINV", productDataForEdit.category_id),
+              )
             : null;
 
           if (editCategoryDoc && editCategoryDoc.exists()) {
             applyCategoryDependentFields(editCategoryDoc.data(), {
               qtyLabel: document.querySelector('label[for="edit-packs"]'),
               qtyInput: document.getElementById("edit-packs"),
-              plasticColorField: document.getElementById("edit-plastic-color-field"),
+              plasticColorField: document.getElementById(
+                "edit-plastic-color-field",
+              ),
               plasticColorInput: editPlasticColorInput,
             });
           }
           M.updateTextFields();
 
           // Live-update ang label/plastic color kapag binago ang category habang nag-e-edit.
-          document.getElementById("edit-category").onchange = async (e) => {
+          editCategoryInput.onchange = async (e) => {
             const newCategoryDoc = await getDoc(
               doc(db, "categoriesINV", e.target.value),
             );
@@ -309,30 +367,32 @@ export function loadInventory() {
             applyCategoryDependentFields(newCategoryDoc.data(), {
               qtyLabel: document.querySelector('label[for="edit-packs"]'),
               qtyInput: document.getElementById("edit-packs"),
-              plasticColorField: document.getElementById("edit-plastic-color-field"),
+              plasticColorField: document.getElementById(
+                "edit-plastic-color-field",
+              ),
               plasticColorInput: document.getElementById("edit-plastic-color"),
             });
             M.updateTextFields();
           };
 
           const modalElem = document.getElementById("modal-edit");
+          if (!modalElem) return;
           const modalInstance = M.Modal.init(modalElem);
           modalInstance.open();
 
           const saveBtn = document.getElementById("edit-save");
+          if (!saveBtn) return;
           saveBtn.onclick = async () => {
-            const newName = document.getElementById("edit-name").value.trim();
-            const newCategoryId =
-              document.getElementById("edit-category").value; //  doc ID
-            const newQuantity = parseFloat(
-              document.getElementById("edit-packs").value,
-            );
-            const newPrice = parseFloat(
-              document.getElementById("edit-price").value,
-            );
-            const newPlasticColorEl = document.getElementById("edit-plastic-color");
+            // UPPERCASE ang pangalan para hindi magduplicate ang product
+            // dahil lang sa magkaibang letter case.
+            const newName = toUpper(editNameInput.value);
+            const newCategoryId = editCategoryInput.value; //  doc ID
+            const newQuantity = parseFloat(editPacksInput.value);
+            const newPrice = parseFloat(editPriceInput.value);
+            const newPlasticColorEl =
+              document.getElementById("edit-plastic-color");
             const newPlasticColor = newPlasticColorEl
-              ? newPlasticColorEl.value.trim()
+              ? toUpper(newPlasticColorEl.value)
               : "";
 
             const categoryDoc = await getDoc(
@@ -360,7 +420,10 @@ export function loadInventory() {
             };
 
             // Pares lang pwedeng may plastic color, kaya tinatanggal ito sa ibang category.
-            if (categoryData.name.toLowerCase() === "pares" && newPlasticColor) {
+            if (
+              categoryData.name.toLowerCase() === "pares" &&
+              newPlasticColor
+            ) {
               updateData.plasticColor = newPlasticColor;
             } else {
               updateData.plasticColor = deleteField();
@@ -377,6 +440,16 @@ export function loadInventory() {
       });
     },
   );
+
+  return unsubscribeInventory;
+}
+
+// Tawagin ito pag umalis sa inventory page para itigil ang listener.
+export function stopLoadingInventory() {
+  if (unsubscribeInventory) {
+    unsubscribeInventory();
+    unsubscribeInventory = null;
+  }
 }
 
 //delete category
@@ -418,7 +491,14 @@ export async function deleteCategory(categoryId) {
 //
 
 // Optional lang ang plasticColor at extraFields, kaya walang epekto sa existing callers.
-export async function addProduct(productName, categoryId, quantity, unitPrice, plasticColor = "", extraFields = {}) {
+export async function addProduct(
+  productName,
+  categoryId,
+  quantity,
+  unitPrice,
+  plasticColor = "",
+  extraFields = {},
+) {
   const categoryDoc = await getDoc(doc(db, "categoriesINV", categoryId));
   const categoryData = categoryDoc.data();
   const unitType = categoryDoc.data().unit_type;
@@ -442,8 +522,30 @@ export async function addProduct(productName, categoryId, quantity, unitPrice, p
     totalValue = quantity * unitPrice;
   }
 
+  // UPPERCASE ang product name para hindi magduplicate ang entries dahil
+  // lang sa magkaibang casing (hal. "pares" vs "Pares" vs "PARES").
+  const normalizedProductName = toUpper(productName);
+  const normalizedPlasticColor = toUpper(plasticColor);
+
+  // Hard block: huwag payagang malikha ang produkto kung may existing na
+  // parehong pangalan sa parehong category — hindi lang basta i-uppercase,
+  // titigilan na talaga bago pa maisave.
+  const dupQuery = query(
+    collection(db, "inventory"),
+    where("category_id", "==", categoryId),
+    where("product_name", "==", normalizedProductName),
+  );
+  const dupResult = await getDocs(dupQuery);
+  if (!dupResult.empty) {
+    M.toast({
+      html: "Product already exists in this category.",
+      classes: "red rounded",
+    });
+    return;
+  }
+
   const productData = {
-    product_name: productName,
+    product_name: normalizedProductName,
     category_id: categoryId, // Firestore doc ID
     category: categoryData.name, // readable name
     role: categoryData.role,
@@ -458,8 +560,8 @@ export async function addProduct(productName, categoryId, quantity, unitPrice, p
   };
 
   // I-store lang ang field kung may kulay talagang binigay.
-  if (plasticColor && plasticColor.trim()) {
-    productData.plasticColor = plasticColor.trim();
+  if (normalizedPlasticColor) {
+    productData.plasticColor = normalizedPlasticColor;
   }
 
   // I-merge ang mga optional extra fields mula sa Add Product Menu page.
@@ -476,6 +578,24 @@ export async function addProduct(productName, categoryId, quantity, unitPrice, p
 
 // Delete product
 export async function deleteProduct(id) {
+  // Bawal i-delete ang inventory item kung may naka-link pa dito sa
+  // Product Menu (regardless kung "assigned" pa 'yon o hindi) — dapat
+  // munang matanggal LAHAT ng productMenu entries na gumagamit nito
+  // (at ang mga 'yon ay dapat munang ma-unassign bago sila puwedeng
+  // tanggalin — check 'yon nasa productmenu.js).
+  const linkedMenuQuery = query(
+    collection(db, "productMenu"),
+    where("inventory_id", "==", id),
+  );
+  const linkedMenuSnap = await getDocs(linkedMenuQuery);
+  if (!linkedMenuSnap.empty) {
+    M.toast({
+      html: "Cannot delete: this item is still linked to Product Menu entries. Delete those first.",
+      classes: "red rounded",
+    });
+    return;
+  }
+
   if (
     !(await confirmDeletion(
       "Delete product?",
@@ -503,34 +623,62 @@ export function loadCategories() {
   // Iniiwasan dito ang duplicate listener na naka-bind sa nabura nang DOM elements.
   if (unsubscribeCategories) {
     unsubscribeCategories();
+    unsubscribeCategories = null;
   }
 
-  unsubscribeCategories = onSnapshot(collection(db, "categoriesINV"), (snapshot) => {
-    categoryNameMap = {};
-    snapshot.forEach((docSnap) => {
-      categoryNameMap[docSnap.id] = docSnap.data().name;
-    });
+  unsubscribeCategories = onSnapshot(
+    collection(db, "categoriesINV"),
+    (snapshot) => {
+      // Kung wala nang pills container (umalis na sa page), itigil ang listener.
+      const pillsContainerNow = document.getElementById(
+        "filter-category-pills",
+      );
+      const selectsNow = document.querySelectorAll(
+        "#product-category, #edit-category, #menu-product-category",
+      );
 
-    selects.forEach((sel) => {
-      sel.innerHTML = `<option value="" disabled selected>Choose Category</option>`;
+      if (!pillsContainerNow && selectsNow.length === 0) {
+        if (unsubscribeCategories) {
+          unsubscribeCategories();
+          unsubscribeCategories = null;
+        }
+        return;
+      }
 
+      categoryNameMap = {};
       snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const option = document.createElement("option");
-        option.value = docSnap.id;
-        option.textContent = data.name;
-        option.dataset.unitType = data.unit_type;
-        option.dataset.piecesPerPack = data.pieces_per_pack || 1;
-        sel.appendChild(option);
+        categoryNameMap[docSnap.id] = docSnap.data().name;
       });
-    });
 
-    M.FormSelect.init(selects);
+      selectsNow.forEach((sel) => {
+        sel.innerHTML = `<option value="" disabled selected>Choose Category</option>`;
 
-    if (pillsContainer) {
-      renderCategoryPills(pillsContainer, snapshot);
-    }
-  });
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const option = document.createElement("option");
+          option.value = docSnap.id;
+          option.textContent = data.name;
+          option.dataset.unitType = data.unit_type;
+          option.dataset.piecesPerPack = data.pieces_per_pack || 1;
+          sel.appendChild(option);
+        });
+      });
+
+      if (selectsNow.length) M.FormSelect.init(selectsNow);
+
+      if (pillsContainerNow) {
+        renderCategoryPills(pillsContainerNow, snapshot);
+      }
+    },
+  );
+}
+
+// Tawagin ito pag umalis sa page na may category pills/selects para itigil ang listener.
+export function stopLoadingCategories() {
+  if (unsubscribeCategories) {
+    unsubscribeCategories();
+    unsubscribeCategories = null;
+  }
 }
 
 // I-render ang "All Categories" + isang pill per category, kasama ang click handlers.
@@ -552,7 +700,8 @@ function renderCategoryPills(container, snapshot) {
     const pill = document.createElement("button");
     pill.type = "button";
     pill.className =
-      "category-pill" + (selectedCategoryFilter === docSnap.id ? " active" : "");
+      "category-pill" +
+      (selectedCategoryFilter === docSnap.id ? " active" : "");
     pill.textContent = data.name;
     pill.dataset.id = docSnap.id;
     pill.onclick = () => selectCategoryPill(docSnap.id);
@@ -598,14 +747,37 @@ function bindSaveCategoryButton() {
   if (!saveCategoryBtn) return;
 
   saveCategoryBtn.onclick = async () => {
-    const name = document.getElementById("new-category-name").value.trim();
-    const role = document.getElementById("category-role").value;
-    const unitType = document.getElementById("new-category-unit").value;
-    const piecesPerPack = document.getElementById("pieces-per-pack").value;
+    const nameInput = document.getElementById("new-category-name");
+    const roleInput = document.getElementById("category-role");
+    const unitInput = document.getElementById("new-category-unit");
+    const piecesInput = document.getElementById("pieces-per-pack");
+    if (!nameInput || !roleInput || !unitInput || !piecesInput) return;
+
+    // UPPERCASE ang category name para hindi magduplicate ang entries
+    // dahil lang sa magkaibang letter case.
+    const name = toUpper(nameInput.value);
+    const role = roleInput.value;
+    const unitType = unitInput.value;
+    const piecesPerPack = piecesInput.value;
 
     if (!name || !unitType) {
       M.toast({
         html: "Please enter name and unit type",
+        classes: "red rounded",
+      });
+      return;
+    }
+
+    // Hard block: huwag payagang malikha ang category kung may existing
+    // na na parehong pangalan (case-insensitive dahil naka-uppercase na).
+    const dupQuery = query(
+      collection(db, "categoriesINV"),
+      where("name", "==", name),
+    );
+    const dupResult = await getDocs(dupQuery);
+    if (!dupResult.empty) {
+      M.toast({
+        html: "Category already exists.",
         classes: "red rounded",
       });
       return;
@@ -619,17 +791,20 @@ function bindSaveCategoryButton() {
     await addDoc(collection(db, "categoriesINV"), categoryData);
     M.toast({ html: "Category added!", classes: "green rounded" });
 
-    document.getElementById("new-category-name").value = "";
-    document.getElementById("new-category-unit").value = "";
-    document.getElementById("pieces-per-pack").value = "";
+    nameInput.value = "";
+    unitInput.value = "";
+    piecesInput.value = "";
 
     const modalElem = document.getElementById("modal-add-category");
-    const modalInstance = M.Modal.getInstance(modalElem);
-    modalInstance.close();
+    if (modalElem) {
+      const modalInstance = M.Modal.getInstance(modalElem);
+      if (modalInstance) modalInstance.close();
+    }
 
-    document.getElementById("category-role").selectedIndex = 0;
+    roleInput.selectedIndex = 0;
 
-    M.FormSelect.init(document.querySelectorAll("select"));
+    const selects = document.querySelectorAll("select");
+    if (selects.length) M.FormSelect.init(selects);
   };
 }
 
@@ -650,13 +825,15 @@ function bindNewCategoryUnitSelect() {
 
   newCategoryUnitSelect.onchange = (e) => {
     const field = document.getElementById("pieces-per-pack-field");
+    if (!field) return;
     if (e.target.value === "pack") {
       field.style.display = "block";
     } else {
       field.style.display = "none";
     }
     // I-reinitialize ang select para maayos ang posisyon ng dropdown
-    M.FormSelect.init(document.querySelectorAll("select"));
+    const selects = document.querySelectorAll("select");
+    if (selects.length) M.FormSelect.init(selects);
   };
 }
 
@@ -669,23 +846,30 @@ function bindAddCategoryButton() {
     await loadRoles();
 
     const modalElem = document.getElementById("modal-add-category");
+    if (!modalElem) return;
 
     const modalInstance = M.Modal.init(modalElem, {
       onOpenEnd() {
-        M.FormSelect.init(document.querySelectorAll("select"));
+        const selects = document.querySelectorAll("select");
+        if (selects.length) M.FormSelect.init(selects);
       },
 
       onCloseEnd() {
-        document.getElementById("new-category-name").value = "";
-        document.getElementById("pieces-per-pack").value = "";
+        const nameInput = document.getElementById("new-category-name");
+        const piecesInput = document.getElementById("pieces-per-pack");
+        const roleInput = document.getElementById("category-role");
+        const unitInput = document.getElementById("new-category-unit");
+        const piecesField = document.getElementById("pieces-per-pack-field");
 
-        document.getElementById("category-role").selectedIndex = 0;
-        document.getElementById("new-category-unit").selectedIndex = 0;
-
-        document.getElementById("pieces-per-pack-field").style.display = "none";
+        if (nameInput) nameInput.value = "";
+        if (piecesInput) piecesInput.value = "";
+        if (roleInput) roleInput.selectedIndex = 0;
+        if (unitInput) unitInput.selectedIndex = 0;
+        if (piecesField) piecesField.style.display = "none";
 
         M.updateTextFields();
-        M.FormSelect.init(document.querySelectorAll("select"));
+        const selects = document.querySelectorAll("select");
+        if (selects.length) M.FormSelect.init(selects);
       },
     });
 
@@ -757,6 +941,10 @@ function bindInventoryPageButtons() {
   bindFilterDateInput();
   bindNewCategoryUnitSelect();
   bindProductCategorySelect();
+
+  // Live-uppercase ang mga text field na ito habang nagta-type.
+  bindLiveUppercase(document.getElementById("new-category-name"));
+  bindLiveUppercase(document.getElementById("product-plastic-color"));
 }
 
 //button para sa delete category
@@ -798,4 +986,11 @@ export async function initInventoryPage() {
   loadInventory();
   loadCategories();
   bindInventoryPageButtons();
+}
+
+// Tawagin ito ng functionalnav.js pag aalis sa inventory.html papunta sa
+// ibang page, para maayos na matigil ang mga listener bago mabura ang DOM.
+export function stopInventoryPage() {
+  stopLoadingInventory();
+  stopLoadingCategories();
 }

@@ -39,9 +39,13 @@
         <input type="number" id="productPrice" step="0.01" min="0" readonly />
         <label for="productPrice">Product Price (₱)</label>
       </div>
-      <div class="input-field col s12 m6">
+      <div class="input-field col s12 m6 stock-with-unit">
         <input type="number" id="availableStock" readonly />
         <label for="availableStock">Available Stock</label>
+        <!-- Populated by adminaddproduct.js's productName change listener,
+             shows PACK / KG / LITER beside the value based on the
+             selected productMenu entry's "unit" field. -->
+        <span id="availableStockUnit" class="stock-unit-badge"></span>
       </div>
     </div>
     <div class="row">
@@ -52,7 +56,7 @@
     </div>
 
     <div class="add-buttons">
-      <button type="submit" class="btn green" id="addProductBtn" disabled>
+      <button type="submit" class="btn" id="addProductBtn" disabled>
         Add Product
       </button>
     </div>

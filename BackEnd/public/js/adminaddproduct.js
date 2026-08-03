@@ -36,7 +36,7 @@ function reinitSelect(selectEl) {
   }
   M.FormSelect.init(selectEl);
 }
-
+//refresh all input types
 function resetAssignProductForm() {
   if (unsubscribeProduct) {
     unsubscribeProduct();
@@ -51,6 +51,8 @@ function resetAssignProductForm() {
   document.getElementById("productPrice").value = "";
   document.getElementById("availableStock").value = "";
   document.getElementById("assignQuantity").value = "";
+  const stockUnitElReset = document.getElementById("availableStockUnit");
+  if (stockUnitElReset) stockUnitElReset.textContent = "";
 
   const select = document.getElementById("productName");
   select.innerHTML = `<option value="" disabled selected>Choose Product</option>`;
@@ -69,9 +71,15 @@ function loadInventoryOptions(role = "") {
     unsubscribeInventoryOptions();
   }
 
-  let q = collection(db, "inventory");
+  let q = collection(db, "productMenu");
+
   if (role) {
-    q = query(collection(db, "inventory"), where("role", "==", role));
+    // "ALL" = "Shared Across All Roles" sa productmenu.js — dapat lumabas
+    // ito kahit anong role ang napili, kaya "in" hindi basta "==".
+    q = query(
+      collection(db, "productMenu"),
+      where("category", "in", [role, "ALL"]),
+    );
   }
 
   unsubscribeInventoryOptions = onSnapshot(q, (snapshot) => {
@@ -82,15 +90,55 @@ function loadInventoryOptions(role = "") {
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data.status === "On Selling") return;
+
+      if (data.status !== "Available") return;
 
       const option = document.createElement("option");
-      option.value = docSnap.id;
+      option.value = docSnap.id; // productMenu id
       option.textContent = data.product_name;
+
       select.appendChild(option);
     });
 
     reinitSelect(select);
+  });
+}
+
+// Ibinabawas o ibinabalik ang stock ng ORIGINAL na linked inventory doc
+// (yung inventory_id na naka-store sa productMenu doc), para manatiling
+// sync ang dalawang collections. delta: negative = bawas (pag-assign),
+// positive = dagdag (pag-restore/delete/undo). Parehong unit ang delta
+// dito sa inventory.quantity (packs/kg/liter/quantity) — tumutugma ito
+// dahil galing mismo dito ang unang stock na kinopya papunta sa
+// productMenu (via bindInventoryAllocationChange sa productmenu.js).
+async function adjustLinkedInventoryStock(inventoryId, delta) {
+  if (!inventoryId) return;
+
+  const inventoryRef = doc(db, "inventory", inventoryId);
+  const inventorySnap = await getDoc(inventoryRef);
+  if (!inventorySnap.exists()) return;
+
+  const invData = inventorySnap.data();
+  const newQuantity = (invData.quantity || 0) + delta;
+
+  let newStockQuantity;
+  if (invData.unit_type === "pack") {
+    const categorySnap = await getDoc(
+      doc(db, "categoriesINV", invData.category_id),
+    );
+    const piecesPerPack = categorySnap.exists()
+      ? categorySnap.data().pieces_per_pack || 1
+      : 1;
+    newStockQuantity = newQuantity * piecesPerPack;
+  } else {
+    newStockQuantity = newQuantity;
+  }
+
+  await updateDoc(inventoryRef, {
+    quantity: newQuantity,
+    stock_quantity: newStockQuantity,
+    status: newQuantity <= 0 ? "On Selling" : "Available",
+    last_updated: serverTimestamp(),
   });
 }
 
@@ -108,6 +156,8 @@ function bindProductFormListeners() {
     document.getElementById("productPrice").value = "";
     document.getElementById("availableStock").value = "";
     document.getElementById("assignQuantity").value = "";
+    const stockUnitElRole = document.getElementById("availableStockUnit");
+    if (stockUnitElRole) stockUnitElRole.textContent = "";
 
     M.updateTextFields();
     loadInventoryOptions(role);
@@ -121,21 +171,20 @@ function bindProductFormListeners() {
       unsubscribeProduct();
     }
 
-    unsubscribeProduct = onSnapshot(doc(db, "inventory", id), (snap) => {
+    unsubscribeProduct = onSnapshot(doc(db, "productMenu", id), (snap) => {
       const priceEl = document.getElementById("productPrice");
       const stockEl = document.getElementById("availableStock");
+      const stockUnitEl = document.getElementById("availableStockUnit");
       // Same stale-listener guard as elsewhere: bail if the page was
       // navigated away from before this snapshot callback fired.
       if (!priceEl || !priceEl.isConnected) return;
       if (!snap.exists()) return;
 
       const data = snap.data();
-      priceEl.value = data.unit_price;
-
-      if (data.unit_type === "pack") {
-        stockEl.value = data.quantity;
-      } else {
-        stockEl.value = data.stock_quantity;
+      priceEl.value = data.price;
+      stockEl.value = data.current_stock;
+      if (stockUnitEl) {
+        stockUnitEl.textContent = data.unit ? data.unit.toUpperCase() : "";
       }
 
       M.updateTextFields();
@@ -145,19 +194,25 @@ function bindProductFormListeners() {
   addProductForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const inventoryId = document.getElementById("productName").value;
+    const menuId = document.getElementById("productName").value;
     const employeeId = document.getElementById("productEmployee").value;
     const role = document.getElementById("productRole").value;
     const quantity = parseInt(document.getElementById("assignQuantity").value);
 
-    if (!inventoryId) {
-      console.error("inventoryId is empty");
+    if (!menuId) {
+      console.error("menuId is empty");
       return;
     }
 
-    const invRef = doc(db, "inventory", inventoryId);
-    const invSnap = await getDoc(invRef);
-    const invData = invSnap.data();
+    const menuRef = doc(db, "productMenu", menuId);
+    const menuSnap = await getDoc(menuRef);
+
+    if (!menuSnap.exists()) {
+      M.toast({ html: "Product not found.", classes: "red rounded" });
+      return;
+    }
+
+    const menuData = menuSnap.data();
 
     let employeeCount = 1;
     if (employeeId === "") {
@@ -168,42 +223,26 @@ function bindProductFormListeners() {
 
     const totalAssigned = quantity * employeeCount;
 
-    if (invData.unit_type === "pack") {
-      if (invData.quantity < totalAssigned) {
-        M.toast({ html: "Not enough stock!", classes: "red rounded" });
-        return;
-      }
-    } else {
-      if (invData.stock_quantity < totalAssigned) {
-        M.toast({ html: "Not enough stock!", classes: "red rounded" });
-        return;
-      }
+    // productMenu tracks a flat current_stock — hindi na kailangan ang
+    // pack/kg/liter distinction dito (nasa "inventory" na lang yun).
+    if (menuData.current_stock < totalAssigned) {
+      M.toast({ html: "Not enough stock!", classes: "red rounded" });
+      return;
     }
 
-    let newQuantity;
-    let newStockQuantity;
+    const newStock = menuData.current_stock - totalAssigned;
 
-    if (invData.unit_type === "pack") {
-      const categorySnap = await getDoc(
-        doc(db, "categoriesINV", invData.category_id),
-      );
-      const piecesPerPack = categorySnap.data().pieces_per_pack;
-
-      newQuantity = invData.quantity - totalAssigned;
-      newStockQuantity = newQuantity * piecesPerPack;
-    } else {
-      newQuantity = invData.quantity - totalAssigned;
-      newStockQuantity = newQuantity;
-    }
-
-    await updateDoc(invRef, {
-      quantity: newQuantity,
-      stock_quantity: newStockQuantity,
-      status: newQuantity <= 0 ? "On Selling" : "Available",
+    await updateDoc(menuRef, {
+      current_stock: newStock,
+      status: newStock <= 0 ? "On Selling" : "Available",
       // Marks this item as "currently assigned to an employee"
       assigned: true,
       last_updated: serverTimestamp(),
     });
+
+    // Ibawas din sa ORIGINAL na inventory doc, dahil naka-connect dito
+    // ang productMenu entry (via inventory_id).
+    await adjustLinkedInventoryStock(menuData.inventory_id, -totalAssigned);
 
     if (employeeId === "") {
       const employeeQuery = query(
@@ -214,25 +253,23 @@ function bindProductFormListeners() {
 
       for (const employee of employeeSnap.docs) {
         await addDoc(collection(db, "products"), {
-          name: invData.product_name,
-          price: invData.unit_price,
+          name: menuData.product_name,
+          price: menuData.price,
           role,
           employeeId: employee.id,
           stock: quantity,
-          inventoryId,
-          unit_type: invData.unit_type,
+          inventoryId: menuId, // now points to a productMenu doc id
           assigned_at: serverTimestamp(),
         });
       }
     } else {
       await addDoc(collection(db, "products"), {
-        name: invData.product_name,
-        price: invData.unit_price,
+        name: menuData.product_name,
+        price: menuData.price,
         role,
         employeeId,
         stock: quantity,
-        inventoryId,
-        unit_type: invData.unit_type,
+        inventoryId: menuId, // now points to a productMenu doc id
         assigned_at: serverTimestamp(),
       });
     }
@@ -343,36 +380,35 @@ export async function loadProducts() {
                 return;
               }
 
-              const inventoryRef = doc(
-                db,
-                "inventory",
-                productData.inventoryId,
-              );
+              // productData.inventoryId now points to a productMenu doc.
+              const menuRef = doc(db, "productMenu", productData.inventoryId);
+              const menuCheckSnap = await getDoc(menuRef);
+
+              // Orphaned reference — matandang data bago ma-migrate papunta
+              // sa productMenu collection, o na-delete na yung linked entry.
+              // Burahin na lang ang products doc, wala nang i-re-restore.
+              if (!menuCheckSnap.exists()) {
+                await deleteDoc(productRef);
+                M.toast({
+                  html: "Product deleted, but linked menu entry was already gone (stock not restored).",
+                  classes: "orange rounded",
+                });
+                return;
+              }
 
               await runTransaction(db, async (transaction) => {
-                const inventorySnap = await transaction.get(inventoryRef);
-                if (!inventorySnap.exists()) {
-                  throw new Error("Inventory not found");
+                const menuSnap = await transaction.get(menuRef);
+                if (!menuSnap.exists()) {
+                  throw new Error("Product menu entry not found");
                 }
 
-                const invData = inventorySnap.data();
-                let restoreQuantity = invData.quantity + productData.stock;
-                let restoreStockQuantity;
+                const menuData = menuSnap.data();
+                const restoredStock =
+                  (menuData.current_stock || 0) + productData.stock;
 
-                if (invData.unit_type === "pack") {
-                  const categorySnap = await getDoc(
-                    doc(db, "categoriesINV", invData.category_id),
-                  );
-                  const piecesPerPack = categorySnap.data().pieces_per_pack;
-                  restoreStockQuantity = restoreQuantity * piecesPerPack;
-                } else {
-                  restoreStockQuantity = restoreQuantity;
-                }
-
-                transaction.update(inventoryRef, {
-                  quantity: restoreQuantity,
-                  stock_quantity: restoreStockQuantity,
-                  status: restoreQuantity <= 0 ? "On Selling" : "Available",
+                transaction.update(menuRef, {
+                  current_stock: restoredStock,
+                  status: restoredStock <= 0 ? "On Selling" : "Available",
                   last_updated: serverTimestamp(),
                 });
 
@@ -389,7 +425,7 @@ export async function loadProducts() {
               );
 
               if (remainingAssignmentsSnap.empty) {
-                await updateDoc(inventoryRef, { assigned: false });
+                await updateDoc(menuRef, { assigned: false });
               }
 
               await SyncProductFromFirebase();
@@ -451,35 +487,24 @@ export async function loadProducts() {
             );
             const diff = newStock - oldStock;
 
-            const inventoryRef = doc(db, "inventory", oldData.inventoryId);
-            const inventorySnap = await getDoc(inventoryRef);
-            const inventoryData = inventorySnap.data();
+            // productData.inventoryId now points to a productMenu doc.
+            const menuRef = doc(db, "productMenu", oldData.inventoryId);
+            const menuSnap = await getDoc(menuRef);
+            const menuData = menuSnap.data();
 
-            let updatedQuantity;
+            let updatedStock;
 
             if (diff > 0) {
-              if (inventoryData.quantity < diff) {
+              if (menuData.current_stock < diff) {
                 M.toast({
                   html: "Not enough inventory stock!",
                   classes: "red rounded",
                 });
                 return;
               }
-              updatedQuantity = inventoryData.quantity - diff;
+              updatedStock = menuData.current_stock - diff;
             } else {
-              updatedQuantity = inventoryData.quantity + Math.abs(diff);
-            }
-
-            let updatedStockQuantity;
-
-            if (inventoryData.unit_type === "pack") {
-              const categorySnap = await getDoc(
-                doc(db, "categoriesINV", inventoryData.category_id),
-              );
-              const piecesPerPack = categorySnap.data().pieces_per_pack;
-              updatedStockQuantity = updatedQuantity * piecesPerPack;
-            } else {
-              updatedStockQuantity = updatedQuantity;
+              updatedStock = menuData.current_stock + Math.abs(diff);
             }
 
             await updateDoc(doc(db, "products", id), {
@@ -488,10 +513,9 @@ export async function loadProducts() {
               stock: newStock,
             });
 
-            await updateDoc(inventoryRef, {
-              quantity: updatedQuantity,
-              stock_quantity: updatedStockQuantity,
-              status: updatedQuantity <= 0 ? "On Selling" : "Available",
+            await updateDoc(menuRef, {
+              current_stock: updatedStock,
+              status: updatedStock <= 0 ? "On Selling" : "Available",
               last_updated: serverTimestamp(),
             });
 
