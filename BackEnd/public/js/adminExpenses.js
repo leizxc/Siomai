@@ -28,11 +28,38 @@ filterCategorySelect.addEventListener("change", (e) => {
 });
 
 // Load expenses data with realtime listener
+let unsubscribeExpenses = null;
+
 export function loadExpenses() {
   const tbody = document.getElementById("expenses-table-body");
 
-  onSnapshot(collection(db, "expenses"), (querySnapshot) => {
-    tbody.innerHTML = "";
+  // If a listener from a previous call/visit is still running, stop it
+  // first instead of letting listeners stack up.
+  if (unsubscribeExpenses) {
+    unsubscribeExpenses();
+    unsubscribeExpenses = null;
+  }
+
+  unsubscribeExpenses = onSnapshot(collection(db, "expenses"), (querySnapshot) => {
+    // If the user has navigated away from the expenses page since this
+    // listener was attached, its DOM nodes may be gone. Bail out instead
+    // of crashing on a null element.
+    const totalTodayEl = document.getElementById("total-today");
+    const totalMonthEl = document.getElementById("total-month");
+    const avgDailyEl = document.getElementById("avg-daily");
+    const tbodyEl = document.getElementById("expenses-table-body");
+
+    if (!totalTodayEl || !totalMonthEl || !avgDailyEl || !tbodyEl) {
+      // Page isn't showing anymore — stop listening so this doesn't
+      // keep firing forever in the background.
+      if (unsubscribeExpenses) {
+        unsubscribeExpenses();
+        unsubscribeExpenses = null;
+      }
+      return;
+    }
+
+    tbodyEl.innerHTML = "";
 
     let totalToday = 0;
     let totalMonth = 0;
@@ -47,23 +74,29 @@ export function loadExpenses() {
       const expenseDate = data.date;
       const amount = parseFloat(data.amount);
 
-      //Filter Logic
-      if (currentFilterDate && expenseDate !== currentFilterDate) return;
-      if (
-        currentFilterCategory !== "all" &&
-        data.category !== currentFilterCategory
-      )
-        return;
+      // Category filter affects BOTH the summary totals and the table —
+      // e.g. picking "Siomai" should show Siomai-only totals.
+      const matchesCategory =
+        currentFilterCategory === "all" ||
+        data.category === currentFilterCategory;
 
-      // Calculate totals
+      if (!matchesCategory) return;
+
+      // Totals always reflect the real "today" / current month, no
+      // matter which date the user has picked in filter-date to browse
+      // the table with.
       if (expenseDate === today) totalToday += amount;
       if (expenseDate.startsWith(currentMonth)) {
         totalMonth += amount;
         daysWithExpenses.add(expenseDate);
       }
 
+      // The date filter only controls which rows get rendered in the
+      // table below — it no longer affects the totals above.
+      if (currentFilterDate && expenseDate !== currentFilterDate) return;
+
       // Render table row
-      tbody.innerHTML += `
+      tbodyEl.innerHTML += `
         <tr data-id="${docSnap.id}">
           <td data-label="Date">${expenseDate}</td>
           <td data-label="Category">${data.category}</td>
@@ -83,13 +116,10 @@ export function loadExpenses() {
     });
 
     // Update summary cards
-    document.getElementById("total-today").textContent =
-      `₱${totalToday.toFixed(2)}`;
-    document.getElementById("total-month").textContent =
-      `₱${totalMonth.toFixed(2)}`;
+    totalTodayEl.textContent = `₱${totalToday.toFixed(2)}`;
+    totalMonthEl.textContent = `₱${totalMonth.toFixed(2)}`;
     const avgDaily = totalMonth / (daysWithExpenses.size || 1);
-    document.getElementById("avg-daily").textContent =
-      `₱${avgDaily.toFixed(2)}`;
+    avgDailyEl.textContent = `₱${avgDaily.toFixed(2)}`;
 
     // Delete button logic
     document.querySelectorAll(".delete-btn").forEach((btn) => {
@@ -117,9 +147,14 @@ export function loadExpenses() {
         document.getElementById("edit-expenses-status").value =
           row.children[4].textContent;
 
-        M.FormSelect.init(document.querySelectorAll("select"));
+        // Guard against the select not being present (page navigated
+        // away, or Materialize markup not mounted yet).
+        const selects = document.querySelectorAll("select");
+        if (selects.length) M.FormSelect.init(selects);
+
         //initialize and open modal
         const modalElem = document.getElementById("modal-edit");
+        if (!modalElem) return;
         const modalInstance = M.Modal.init(modalElem);
         modalInstance.open();
 
@@ -155,6 +190,18 @@ export function loadExpenses() {
       };
     });
   });
+
+  return unsubscribeExpenses;
+}
+
+// Call this when the user navigates away from the expenses page, so the
+// Firestore listener stops running (and stops trying to touch a DOM
+// that's no longer there).
+export function stopLoadingExpenses() {
+  if (unsubscribeExpenses) {
+    unsubscribeExpenses();
+    unsubscribeExpenses = null;
+  }
 }
 
 // Add new expense

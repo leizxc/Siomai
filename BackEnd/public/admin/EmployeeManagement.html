@@ -1,106 +1,252 @@
-<header class="header">
-  <h1>Employee Management</h1>
-  <p>Manage Account and Roles of Employees</p>
-</header>
+<div class="employee-page">
+  <!-- ================= HEADER ================= -->
+  <header class="header">
+    <div>
+      <h1>Employee Management</h1>
+      <p>Manage Employee Accounts and Roles</p>
+    </div>
+  </header>
 
-<!-- Create Employee Form -->
-<section class="form-section">
-  <form id="employeeForm">
-    <div class="input-field">
-      <input type="text" id="fname" required />
-      <label for="fname">First Name</label>
+  <!-- ================= SUMMARY ================= -->
+
+  <section class="employee-summary">
+    <div class="summary-box">
+      <span>Total Employees</span>
+      <h3 id="totalEmployees">0</h3>
+      <small>Registered Employees</small>
+
+      <div class="summary-icon icon-blue">
+        <i class="material-icons">groups</i>
+      </div>
     </div>
 
-    <div class="input-field">
-      <input type="text" id="lname" required />
-      <label for="lname">Last Name</label>
+    <div class="summary-box">
+      <span>Active Employees</span>
+      <h3 id="activeEmployees">0</h3>
+      <small>Currently Active</small>
+
+      <div class="summary-icon icon-green">
+        <i class="material-icons">verified_user</i>
+      </div>
     </div>
 
-    <div class="input-field">
-      <input type="email" id="email" required />
-      <label for="email">Email</label>
+    <div class="summary-box">
+      <span>Available Roles</span>
+      <h3 id="totalRoles">2</h3>
+      <small>Employee Roles</small>
+
+      <div class="summary-icon icon-orange">
+        <i class="material-icons">badge</i>
+      </div>
     </div>
 
-    <div class="input-field">
-      <input type="password" id="password" required />
-      <label for="password">Password</label>
+    <div class="summary-box">
+      <span>Today's Added</span>
+      <h3 id="todayEmployees">0</h3>
+      <small>New Employees</small>
+
+      <div class="summary-icon icon-purple">
+        <i class="material-icons">person_add</i>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ADD EMPLOYEE ================= -->
+
+  <section class="employee-form-card">
+    <form id="employeeForm">
+      <div class="employee-form-grid">
+        <div class="input-field">
+          <input type="text" id="fname" required />
+          <label for="fname">First Name</label>
+        </div>
+
+        <div class="input-field">
+          <input type="text" id="lname" required />
+          <label for="lname">Last Name</label>
+        </div>
+
+        <div class="input-field full-width">
+          <input type="email" id="email" required />
+          <label for="email">Email Address</label>
+        </div>
+
+        <div class="input-field full-width">
+          <input type="text" id="username" required />
+          <label for="username">Username</label>
+        </div>
+
+        <!-- Eye icon toggles type="password" -->
+        <div class="input-field password-field">
+          <input type="password" id="password" required />
+
+          <i id="togglePassword" class="material-icons password-toggle-icon">
+            visibility_off
+          </i>
+
+          <label for="password">Password</label>
+        </div>
+
+        <div class="input-field">
+          <select id="role">
+            <option value="" disabled selected>Select Role</option>
+          </select>
+
+          <label>Role</label>
+        </div>
+      </div>
+
+      <div class="employee-actions">
+        <button
+          type="button"
+          id="btnAddRole"
+          class="btn-flat outline-btn waves-effect"
+        >
+          <i class="material-icons left">add_circle_outline</i>
+
+          Add New Role
+        </button>
+
+        <button type="submit" class="btn blue waves-effect waves-light">
+          <i class="material-icons left">person_add</i>
+
+          Add Employee
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ================= EMPLOYEE TABLE ================= -->
+
+  <section class="employee-card">
+    <h4>Employee List</h4>
+
+    <div class="table-container">
+      <table id="employeeTable" class="highlight responsive-table">
+        <thead>
+          <tr>
+            <th>First Name</th>
+
+            <th>Last Name</th>
+
+            <th>Email</th>
+
+            <th>Username</th>
+
+            <th>Role</th>
+
+            <th style="text-align: center">Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <!-- Firestore Render -->
+        </tbody>
+      </table>
     </div>
 
-    <div class="input-field">
-      <select id="role">
-        <option value="" disabled selected>Choose Role</option>
-        <option value="siomai">Seller of Siomai</option>
-        <option value="pares">Seller of Pares</option>
-      </select>
-      <label for="role">Role</label>
+    <div class="employee-footer">
+      <div>
+        Showing
+
+        <strong id="showingCount">0</strong>
+
+        Employees
+      </div>
+
+      <div class="employee-pagination">
+        <a class="btn-flat disabled">Previous</a>
+
+        <a class="btn-flat">Next</a>
+      </div>
     </div>
+  </section>
+</div>
 
-    <button type="submit" class="waves-effect waves-green btn">
-      Add Employee
-    </button>
-  </form>
-</section>
+<!-- ================= EDIT MODAL ================= -->
 
-<!-- Employee List -->
-<section class="card table-section employee-card">
-  <h4>Employee List</h4>
-  <table id="employeeTable" class="highlight centered">
-    <thead>
-      <tr>
-        <th>First Name</th>
-        <th>Last Name</th>
-        <th>Email</th>
-        <th>Username</th>
-        <th>Role</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Firestore data will render here with data-label attributes -->
-    </tbody>
-  </table>
-</section>
-
-<!-- Edit Employee Modal -->
 <div id="modal-edit-employee" class="modal">
   <div class="modal-content">
     <h4>Edit Employee</h4>
 
     <div class="input-field">
-      <input type="text" id="edit-fname" />
+      <input id="edit-fname" type="text" />
       <label for="edit-fname">First Name</label>
     </div>
 
     <div class="input-field">
-      <input type="text" id="edit-lname" />
+      <input id="edit-lname" type="text" />
       <label for="edit-lname">Last Name</label>
     </div>
 
     <div class="input-field">
-      <input type="email" id="edit-email" />
+      <input id="edit-email" type="email" />
       <label for="edit-email">Email</label>
     </div>
 
     <div class="input-field">
       <select id="edit-role">
-        <option value="" disabled selected>Choose Role</option>
-        <option value="siomai">Seller of Siomai</option>
-        <option value="pares">Seller of Pares</option>
+        <option disabled selected>Select Role</option>
       </select>
-      <label for="edit-role">Role</label>
+
+      <label>Role</label>
     </div>
   </div>
 
   <div class="modal-footer">
-    <button id="edit-save" class="waves-effect waves-light btn blue">
-      save Update Employee
+    <a class="modal-close btn-flat"> Cancel </a>
+
+    <button id="edit-save" class="btn blue">Save Changes</button>
+  </div>
+</div>
+
+<!-- ================= ADD ROLE MODAL ================= -->
+
+<div id="modal-add-role" class="modal">
+  <div class="modal-content">
+    <h4>Add New Role</h4>
+
+    <div class="input-field">
+      <input id="new-role" type="text" />
+
+      <label for="new-role"> Role Name </label>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <a class="modal-close btn-flat"> Cancel </a>
+
+    <button id="save-role" class="btn blue">Save Role</button>
+  </div>
+</div>
+
+<div id="modal-delete-category" class="modal">
+  <div class="modal-content">
+    <h4 id="delete-confirmation-title">Delete Employee?</h4>
+
+    <p id="delete-confirmation-message">
+      This employee will be permanently deleted.
+    </p>
+  </div>
+
+  <div class="modal-footer">
+    <button
+      id="cancel-delete-category"
+      type="button"
+      class="btn-flat modal-close"
+    >
+      Cancel
+    </button>
+
+    <button id="confirm-delete-category" type="button" class="btn red">
+      Delete
     </button>
   </div>
 </div>
 
-<!-- Scripts -->
 <script src="/js/functionalnav.js"></script>
 <script src="/js/refresh.js"></script>
+
 <script type="module">
   import { initEmployee } from "/js/addemployeebtn.js";
   initEmployee();

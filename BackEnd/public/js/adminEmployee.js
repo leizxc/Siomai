@@ -13,114 +13,242 @@ import {
   getDocs,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const auth = getAuth();
+
+// How many rows show per page in the employee table — the table's
+const PAGE_SIZE = 10;
+let currentPage = 1;
+
+// Cache of the current (unpaginated) employee list, rebuilt every time
+let employeeListCache = [];
+
+function toLocalDateValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+// Kept live (not a one-time snapshot) so a just-added employee's
+let usersMap = {};
+let latestEmployeeDocs = [];
+let unsubscribeUsers = null;
+let unsubscribeEmployees = null;
 
 // Load employees list with username from users collection
 export async function loadEmployees() {
   const tbody = document.querySelector("#employeeTable tbody");
-  tbody.innerHTML = "";
+  if (tbody) tbody.innerHTML = "";
 
-  //  Get all users first to map email → username
-  const usersSnap = await getDocs(collection(db, "users"));
-  const usersMap = {};
-  usersSnap.forEach((docSnap) => {
-    const data = docSnap.data();
-    usersMap[data.email] = data.username;
+  if (unsubscribeUsers) unsubscribeUsers();
+  if (unsubscribeEmployees) unsubscribeEmployees();
+
+  unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+    usersMap = {};
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      usersMap[data.email] = {
+        username: data.username,
+        status: data.status,
+      };
+    });
+    rebuildEmployeeData();
   });
 
   //  Real-time listener for employees
-  onSnapshot(collection(db, "employees"), (querySnapshot) => {
-    tbody.innerHTML = "";
+  unsubscribeEmployees = onSnapshot(
+    collection(db, "employees"),
+    (querySnapshot) => {
+      latestEmployeeDocs = [];
+      querySnapshot.forEach((docSnap) => {
+        latestEmployeeDocs.push({ id: docSnap.id, data: docSnap.data() });
+      });
+      rebuildEmployeeData();
+    },
+  );
+}
 
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const username = usersMap[data.email] || "—"; // fallback kung wala
+// Recomputes the summary cards + employeeListCache from whichever
+function rebuildEmployeeData() {
+  const tbody = document.querySelector("#employeeTable tbody");
+  if (!tbody || !tbody.isConnected) return;
 
-      tbody.innerHTML += `
-  <tr data-id="${docSnap.id}">
+  const today = toLocalDateValue(new Date());
+
+  let activeCount = 0;
+  let todayCount = 0;
+
+  employeeListCache = latestEmployeeDocs.map(({ id, data }) => {
+    const userInfo = usersMap[data.email] || {};
+
+    if (userInfo.status === "active") activeCount++;
+
+    if (data.created_at) {
+      const createdDate = toLocalDateValue(data.created_at.toDate());
+      if (createdDate === today) todayCount++;
+    }
+
+    return {
+      id,
+      data,
+      username: userInfo.username || "—",
+    };
+  });
+
+  // Summary cards
+  const totalEmployeesEl = document.getElementById("totalEmployees");
+  const activeEmployeesEl = document.getElementById("activeEmployees");
+  const todayEmployeesEl = document.getElementById("todayEmployees");
+
+  if (totalEmployeesEl) totalEmployeesEl.textContent = employeeListCache.length;
+  if (activeEmployeesEl) activeEmployeesEl.textContent = activeCount;
+  if (todayEmployeesEl) todayEmployeesEl.textContent = todayCount;
+
+  renderEmployeePage();
+}
+
+// Renders whichever page is currently selected, updates
+function renderEmployeePage() {
+  const tbody = document.querySelector("#employeeTable tbody");
+  const showingCountEl = document.getElementById("showingCount");
+  const paginationLinks = document.querySelectorAll(".employee-pagination a");
+  const prevBtn = paginationLinks[0];
+  const nextBtn = paginationLinks[1];
+
+  if (!tbody) return;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(employeeListCache.length / PAGE_SIZE),
+  );
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageItems = employeeListCache.slice(start, start + PAGE_SIZE);
+
+  tbody.innerHTML = "";
+
+  pageItems.forEach(({ id, data, username }) => {
+    tbody.innerHTML += `
+  <tr data-id="${id}">
     <td data-label="First Name">${data.fname}</td>
     <td data-label="Last Name">${data.lname}</td>
     <td data-label="Email">${data.email}</td>
     <td data-label="Username">${username}</td>
     <td data-label="Role">${data.role}</td>
     <td data-label="Action">
-      <button class="edit-btn btn blue" data-id="${docSnap.id}">
+      <button class="edit-btn btn blue" data-id="${id}">
         <i class="material-icons">edit</i>
       </button>
-      <button class="delete-btn btn red" data-id="${docSnap.id}">
+      <button class="delete-btn btn red" data-id="${id}">
         <i class="material-icons">delete</i>
       </button>
     </td>
   </tr>
 `;
-    });
+  });
 
-    //  Delete logic
-    document.querySelectorAll(".delete-btn").forEach((btn) => {
-      btn.onclick = async (e) => {
-        const id = e.target.closest("button").dataset.id;
-        await deleteEmployee(id);
-      };
-    });
+  if (showingCountEl) showingCountEl.textContent = pageItems.length;
 
-    //  Edit logic
-    document.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.onclick = (e) => {
-        const id = e.target.closest("button").dataset.id;
-        const row = e.target.closest("tr");
+  if (prevBtn) {
+    prevBtn.classList.toggle("disabled", currentPage <= 1);
+    prevBtn.onclick = (e) => {
+      e.preventDefault();
+      if (currentPage <= 1) return;
+      currentPage--;
+      renderEmployeePage();
+    };
+  }
 
-        document.getElementById("edit-fname").value =
-          row.children[0].textContent;
-        document.getElementById("edit-lname").value =
-          row.children[1].textContent;
-        document.getElementById("edit-email").value =
-          row.children[2].textContent;
-        document.getElementById("edit-role").value =
-          row.children[4].textContent;
+  if (nextBtn) {
+    nextBtn.classList.toggle("disabled", currentPage >= totalPages);
+    nextBtn.onclick = (e) => {
+      e.preventDefault();
+      if (currentPage >= totalPages) return;
+      currentPage++;
+      renderEmployeePage();
+    };
+  }
 
-        M.updateTextFields();
-        M.FormSelect.init(document.querySelectorAll("select"));
+  bindRowButtons();
+}
 
-        const modalElem = document.getElementById("modal-edit-employee");
-        const modalInstance = M.Modal.init(modalElem);
-        modalInstance.open();
+function bindRowButtons() {
+  // Delete buttons
+  document.querySelectorAll(".delete-btn").forEach((btn) => {
+    btn.onclick = async (e) => {
+      const id = e.currentTarget.dataset.id;
 
-        const saveBtn = document.getElementById("edit-save");
-        saveBtn.onclick = async () => {
-          const newFname = document.getElementById("edit-fname").value;
-          const newLname = document.getElementById("edit-lname").value;
-          const newEmail = document.getElementById("edit-email").value;
-          const newRole = document.getElementById("edit-role").value;
+      const confirmed = await confirmDeletion(
+        "Delete Employee?",
+        "This employee will be permanently deleted. This action cannot be undone.",
+      );
 
-          await updateDoc(doc(db, "employees", id), {
-            fname: newFname,
-            lname: newLname,
-            email: newEmail,
+      if (!confirmed) return;
+
+      await deleteEmployee(id);
+    };
+  });
+
+  // Edit buttons
+  document.querySelectorAll(".edit-btn").forEach((btn) => {
+    btn.onclick = (e) => {
+      const id = e.currentTarget.dataset.id;
+      const row = e.currentTarget.closest("tr");
+
+      document.getElementById("edit-fname").value = row.children[0].textContent;
+      document.getElementById("edit-lname").value = row.children[1].textContent;
+      document.getElementById("edit-email").value = row.children[2].textContent;
+      document.getElementById("edit-role").value = row.children[4].textContent;
+
+      M.updateTextFields();
+      M.FormSelect.init(document.querySelectorAll("select"));
+
+      const modalElem = document.getElementById("modal-edit-employee");
+      let modalInstance = M.Modal.getInstance(modalElem);
+
+      if (!modalInstance) {
+        modalInstance = M.Modal.init(modalElem);
+      }
+
+      modalInstance.open();
+
+      const saveBtn = document.getElementById("edit-save");
+
+      saveBtn.onclick = async () => {
+        const newFname = document.getElementById("edit-fname").value;
+        const newLname = document.getElementById("edit-lname").value;
+        const newEmail = document.getElementById("edit-email").value;
+        const newRole = document.getElementById("edit-role").value;
+
+        await updateDoc(doc(db, "employees", id), {
+          fname: newFname,
+          lname: newLname,
+          email: newEmail,
+          role: newRole,
+          last_updated: serverTimestamp(),
+        });
+
+        const q = query(
+          collection(db, "users"),
+          where("email", "==", newEmail),
+        );
+
+        const snapshot = await getDocs(q);
+
+        for (const docSnap of snapshot.docs) {
+          await updateDoc(docSnap.ref, {
             role: newRole,
             last_updated: serverTimestamp(),
           });
+        }
 
-          const q = query(
-            collection(db, "users"),
-            where("email", "==", newEmail),
-          );
-          const snapshot = await getDocs(q);
-          snapshot.forEach(async (docSnap) => {
-            await updateDoc(doc(db, "users", docSnap.id), {
-              role: newRole,
-              last_updated: serverTimestamp(),
-            });
-          });
-
-          modalInstance.close();
-        };
+        modalInstance.close();
       };
-    });
+    };
   });
 }
 
@@ -133,9 +261,49 @@ async function hashPassword(password) {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+// Blocks obviously weak/guessable usernames: too short, all-digits,
+const WEAK_USERNAMES = [
+  "admin",
+  "administrator",
+  "user",
+  "guest",
+  "test",
+  "root",
+  "employee",
+  "password",
+  "12345",
+  "qwerty",
+];
+
+function isWeakUsername(username) {
+  if (!username || username.length < 5) return true;
+  if (/^\d+$/.test(username)) return true; // all numbers
+  if (/\s/.test(username)) return true; // contains a space
+  if (/^(.)\1+$/.test(username)) return true; // same character repeated
+  if (WEAK_USERNAMES.includes(username.toLowerCase())) return true;
+  return false;
+}
+
 //  Add employee securely with Firebase Auth
-export async function addEmployee(fname, lname, email, role, password) {
+export async function addEmployee(
+  fname,
+  lname,
+  email,
+  username,
+  role,
+  password,
+) {
   try {
+    const normalizedUsername = username.trim().toLowerCase();
+
+    if (isWeakUsername(normalizedUsername)) {
+      M.toast({
+        html: "Username is too weak. Use at least 5 characters, not all numbers, and not a common word like 'admin' or 'test'.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
     const q = query(collection(db, "users"), where("email", "==", email));
     const snapshot = await getDocs(q);
 
@@ -144,12 +312,42 @@ export async function addEmployee(fname, lname, email, role, password) {
       return;
     }
 
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password,
+    const usernameQuery = query(
+      collection(db, "users"),
+      where("username", "==", normalizedUsername),
     );
-    const uid = userCredential.user.uid;
+    const usernameSnapshot = await getDocs(usernameQuery);
+
+    if (!usernameSnapshot.empty) {
+      M.toast({ html: "Username is already taken.", classes: "red rounded" });
+      return;
+    }
+
+    const API_BASE = window.location.origin;
+    const idToken = await auth.currentUser.getIdToken();
+
+    const authRes = await fetch(`${API_BASE}/createAuthUser`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    });
+
+    const authResult = await authRes.json();
+    if (!authResult.success) {
+      M.toast({
+        html: authResult.error,
+        classes: "red rounded",
+      });
+      return;
+    }
+
+    const uid = authResult.uid;
 
     await addDoc(collection(db, "employees"), {
       uid,
@@ -161,7 +359,7 @@ export async function addEmployee(fname, lname, email, role, password) {
     });
     const hashvalue = await hashPassword(password);
     await addDoc(collection(db, "users"), {
-      username: email.split("@")[0].toLowerCase().trim(),
+      username: normalizedUsername,
       email,
       role,
       status: "active",
@@ -176,74 +374,125 @@ export async function addEmployee(fname, lname, email, role, password) {
   }
 }
 
+//confirmation delete
+function confirmDeletion(title, message) {
+  const modalElement = document.getElementById("modal-delete-category");
+  const confirmButton = document.getElementById("confirm-delete-category");
+  const cancelButton = document.getElementById("cancel-delete-category");
+  const titleElement = document.getElementById("delete-confirmation-title");
+  const messageElement = document.getElementById("delete-confirmation-message");
+  if (!modalElement || !confirmButton || !cancelButton) {
+    return Promise.resolve(false);
+  }
+  const modalInstance = M.Modal.init(modalElement, { dismissible: false });
+
+  if (titleElement) titleElement.textContent = title;
+  if (messageElement) messageElement.textContent = message;
+
+  return new Promise((resolve) => {
+    cancelButton.onclick = () => {
+      modalInstance.close();
+      resolve(false);
+    };
+
+    confirmButton.onclick = () => {
+      modalInstance.close();
+      resolve(true);
+    };
+
+    modalInstance.open();
+  });
+}
+
 // Delete employee
 export async function deleteEmployee(id) {
   try {
     const employeeRef = doc(db, "employees", id);
     const employeeSnap = await getDoc(employeeRef);
 
-    if (employeeSnap.exists()) {
-      const employeeData = employeeSnap.data();
-      const uid = employeeData.uid;
-      const email = employeeData.email;
-      const role = employeeData.role?.toLowerCase();
-
-      if (role === "admin") {
-        M.toast({
-          html: "Admin accounts cannot be deleted.",
-          classes: "red rounded",
-        });
-        return;
-      }
-
-      await deleteDoc(employeeRef);
-
-      const q = query(collection(db, "users"), where("email", "==", email));
-      const snapshot = await getDocs(q);
-      snapshot.forEach(async (docSnap) => {
-        await deleteDoc(doc(db, "users", docSnap.id));
+    if (!employeeSnap.exists()) {
+      M.toast({
+        html: "Employee not found.",
+        classes: "red rounded",
       });
-
-      if (!uid) {
-        M.toast({
-          html: "No UID found for this employee. Cannot delete Auth account.",
-          classes: "red rounded",
-        });
-        return;
-      }
-
-      const API_BASE = window.location.origin;
-      const idToken = await auth.currentUser?.getIdToken();
-
-      if (!idToken) {
-        M.toast({
-          html: "Your session has expired. Please sign in again.",
-          classes: "red rounded",
-        });
-        return;
-      }
-
-      const res = await fetch(`${API_BASE}/deleteAuthUser`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ uid }),
-      });
-
-      const result = await res.json();
-
-      if (result.success) {
-        M.toast({ html: result.message, classes: "green rounded" });
-      } else {
-        M.toast({ html: `Error: ${result.error}`, classes: "red rounded" });
-      }
-    } else {
-      M.toast({ html: "Employee not found.", classes: "red rounded" });
+      return;
     }
+
+    const employeeData = employeeSnap.data();
+    const uid = employeeData.uid;
+    const email = employeeData.email;
+    const role = employeeData.role?.toLowerCase();
+
+    if (role === "admin") {
+      M.toast({
+        html: "Admin accounts cannot be deleted.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
+    if (!uid) {
+      M.toast({
+        html: "No UID found for this employee.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
+    const idToken = await auth.currentUser?.getIdToken();
+
+    if (!idToken) {
+      M.toast({
+        html: "Your session has expired. Please sign in again.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
+    const API_BASE = window.location.origin;
+
+    // STEP 1: Delete Firebase Auth FIRST
+    const res = await fetch(`${API_BASE}/deleteAuthUser`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ uid }),
+    });
+
+    const result = await res.json();
+
+    if (!result.success) {
+      M.toast({
+        html: result.error || "Unable to delete authentication account.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
+    // STEP 2: Delete employee document
+    await deleteDoc(employeeRef);
+
+    // STEP 3: Delete users document
+    const q = query(collection(db, "users"), where("email", "==", email));
+
+    const snapshot = await getDocs(q);
+
+    for (const docSnap of snapshot.docs) {
+      await deleteDoc(docSnap.ref);
+    }
+
+    M.toast({
+      html: "Employee deleted successfully!",
+      classes: "green rounded",
+    });
   } catch (error) {
     console.error("Error deleting employee:", error);
-    M.toast({ html: "Failed to delete employee.", classes: "red rounded" });
+
+    M.toast({
+      html: "Failed to delete employee.",
+      classes: "red rounded",
+    });
   }
 }

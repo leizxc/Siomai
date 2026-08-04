@@ -1,7 +1,13 @@
 // Guards against overlapping loadSection()
 let currentLoadToken = 0;
 
+// Pinipigilan ang spam-click: habang may on-going pang page load
+let isNavigating = false;
+
 function loadSection(page) {
+  if (isNavigating) return;
+  isNavigating = true;
+
   const myToken = ++currentLoadToken;
 
   fetch(page)
@@ -140,7 +146,10 @@ function loadSection(page) {
           break;
       }
     })
-    .catch((err) => console.error("Error Loading Section:", err));
+    .catch((err) => console.error("Error Loading Section:", err))
+    .finally(() => {
+      isNavigating = false;
+    });
 
   // Highlight nav
   const navItems = document.querySelectorAll(".nav li");

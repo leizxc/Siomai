@@ -628,12 +628,12 @@ body.modal-open {
 }
 
 /*add product and category overide color */
-.btn-custom{
-    background:#2563eb !important;
+.btn-custom {
+  background: #2563eb !important;
 }
 
-.btn-custom:hover{
-    background:#1d4ed8 !important;
+.btn-custom:hover {
+  background: #1d4ed8 !important;
 }
 
 /* ==================== STATUS BADGES ==================== */
@@ -704,10 +704,614 @@ body.modal-open {
 }
 
 .GeneratedId {
-    color: #9e9e9e;
-    font-size: 0.8rem;
-    margin: 0 0 5px 0;
-    line-height: 1;
+  color: #9e9e9e;
+  font-size: 0.8rem;
+  margin: 0 0 5px 0;
+  line-height: 1;
+}
+
+/*para sa stock assign product */
+.stock-with-unit {
+  position: relative;
+}
+
+.stock-unit-badge {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 0.75em;
+  font-weight: 600;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* product menu table */
+
+.product-list-card td:last-child {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.product-list-card td:last-child .btn {
+  width: 46px;
+  height: 40px;
+  min-width: 46px;
+  padding: 0 !important;
+
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  margin: 0 !important;
+  border-radius: 6px;
+  line-height: 40px;
+}
+
+.product-list-card td:last-child .btn i {
+  margin: 0 !important;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.product-list-card td:last-child .blue,
+.product-list-card td:last-child .red {
+  vertical-align: middle;
+}
+
+/* expenses */
+.expenses-page .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 35px;
+  padding-bottom: 10px;
+}
+
+.expenses-page .header h1 {
+  font-size: 3rem;
+  font-weight: 500;
+  color: #111827;
+  margin: 0;
+}
+
+.expenses-page .header p {
+  color: #6b7280;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.expenses-page .expense-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-bottom: 30px;
+}
+
+.expenses-page .summary-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  min-height: 165px;
+}
+
+.summary-title {
+  display: block;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  color: #777;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.summary-content h2,
+.summary-left h2 {
+  font-size: 3rem;
+  margin: 0;
+}
+
+.summary-content p {
+  margin-top: 8px;
+  color: #666;
+}
+
+.summary-card:last-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: auto;
+  margin-top: 15px;
+}
+
+.summary-icon i {
+  font-size: 32px;
+}
+
+.expenses-page .expense-filter-card {
+  padding: 28px;
+  border-radius: 12px;
+}
+
+.expenses-page .expense-filter-card {
+  padding: 28px;
+  border-radius: 12px;
+}
+
+.expenses-page .expense-btn {
+  width: 220px;
+  height: 52px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.expenses-page .expenses-card {
+  padding: 22px;
+}
+
+.expenses-page .card-header {
+  margin-bottom: 20px;
+}
+
+.expenses-page .card-header h4 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.expenses-page table {
+  width: 100%;
+}
+
+.expenses-page th {
+  font-weight: 700;
+}
+
+.expenses-page td,
+.expenses-page th {
+  padding: 18px 16px;
+}
+
+.expenses-page .status-paid {
+  background: #d4edda;
+  color: #155724;
+  padding: 6px 15px;
+  border-radius: 30px;
+  font-weight: 600;
+}
+
+.expenses-page .status-pending {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 6px 15px;
+  border-radius: 30px;
+  font-weight: 600;
+}
+
+.expense-filter-card .filter-row {
+  display: flex;
+  align-items: flex-end;
+  margin-bottom: 0;
+}
+
+.expense-filter-card .input-field {
+  margin-bottom: 0;
+}
+
+.expense-button-area {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.expense-btn {
+  width: 260px;
+  height: 56px !important;
+
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+.expense-btn i {
+  margin-right: 8px !important;
+  margin-left: 0 !important;
+  line-height: 56px !important;
+}
+
+/* productMenu */
+.save-btn-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 25px;
+}
+
+.save-menu-btn {
+  width: 280px; /* mas mahaba */
+  height: 58px; /* mas mataas */
+  border-radius: 12px !important;
+
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 16px;
+  font-weight: 600;
+  text-transform: uppercase;
+
+  background: #2563eb !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+.save-menu-btn i {
+  margin: 0 !important;
+  font-size: 24px;
+}
+
+/*employee management */
+.employee-page {
+  width: 100%;
+}
+
+/* HEADER */
+
+.employee-page .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 28px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ececec;
+}
+
+.employee-page .header h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.employee-page .header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+/* SUMMARY */
+
+.employee-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 22px;
+  margin-bottom: 30px;
+}
+
+.employee-summary .summary-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  min-height: 165px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.employee-summary .summary-box span {
+  display: block;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  color: #777;
+  font-weight: 700;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+
+.employee-summary .summary-box h3 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0;
+  color: #111827;
+}
+
+.employee-summary .summary-box small {
+  margin-top: 8px;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* icon layout katulad ng Expenses */
+
+.employee-summary .summary-box {
+  position: relative;
+}
+
+.employee-summary .summary-icon {
+  position: absolute;
+  right: 25px;
+  bottom: 25px;
+
+  width: 70px;
+  height: 70px;
+
+  border-radius: 50%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.employee-summary .summary-icon i {
+  font-size: 34px;
+}
+
+/* color icons */
+/* Individual icon colors */
+.icon-blue i {
+  color: #2563eb;
+}
+
+.icon-green i {
+  color: #16a34a;
+}
+
+.icon-orange i {
+  color: #f59e0b;
+}
+
+.icon-purple i {
+  color: #9333ea;
+}
+
+/* FORM */
+
+.employee-form-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px;
+  margin-bottom: 28px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+.employee-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 40px; /* dagdag pagitan ng left at right */
+  row-gap: 24px;
+}
+
+.employee-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 48px;
+  row-gap: 28px;
+}
+
+.employee-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.employee-actions .btn,
+.employee-actions .outline-btn {
+  flex: 1;
+  max-width: 260px;
+  height: 52px;
+  border-radius: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.employee-actions .outline-btn {
+  background: #fff !important;
+  color: #2563eb !important;
+  border: 2px solid #2563eb;
+}
+
+.employee-actions .outline-btn:hover {
+  background: #2563eb !important;
+  color: #fff !important;
+}
+
+.employee-actions .btn {
+  background: #2563eb !important;
+}
+
+.employee-actions .btn i,
+.employee-actions .outline-btn i {
+  margin-right: 8px;
+}
+.employee-actions .btn,
+.employee-actions .outline-btn {
+  width: 280px;
+  flex: none;
+}
+
+/* eye */
+/* Password field */
+.password-field {
+  position: relative;
+}
+
+/* Eye icon */
+.password-toggle-icon {
+  position: absolute;
+  right: 0;
+  top: 60%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  color: #9e9e9e;
+  cursor: pointer;
+  user-select: none;
+  z-index: 5;
+}
+
+.password-toggle-icon:hover {
+  color: #2563eb;
+}
+/* TABLE */
+
+.employee-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 25px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+.employee-card h4 {
+  margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 2rem;
+}
+
+.employee-card table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.employee-card th {
+  padding: 18px;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.78rem;
+  color: #64748b;
+  border-bottom: 1px solid #ececec;
+}
+
+.employee-card td {
+  padding: 18px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.employee-card tbody tr:hover {
+  background: #fafafa;
+}
+
+/* button action */
+.employee-card td:last-child {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.employee-card td:last-child .btn {
+  width: 46px;
+  height: 40px;
+  min-width: 46px;
+  padding: 0 !important;
+
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+
+  margin: 0 !important;
+  border-radius: 6px;
+  line-height: 40px;
+}
+
+.employee-card td:last-child .btn i {
+  margin: 0 !important;
+  font-size: 18px;
+  line-height: 1;
+}
+
+  .employee-card td:last-child .edit-btn,
+  .employee-card td:last-child .delete-btn {
+    margin-top: 0;
+    display: inline-flex;
+    align-items: center;
+  }
+
+/* ROLE */
+
+.role-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.role-admin {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.role-siomai {
+  background: #fff4d8;
+  color: #d97706;
+}
+
+.role-pares {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* ACTION */
+
+.action-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.action-cell .btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+}
+
+.action-cell i {
+  margin: 0;
+}
+
+/* FOOTER */
+
+.employee-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 22px;
+}
+
+.employee-pagination {
+  display: flex;
+  gap: 10px;
 }
 
 /* MOBILE RESPONSIVE */
@@ -1058,7 +1662,105 @@ body.modal-open {
     margin-top: 0;
   }
 
+  /*product menu */
+  .save-btn-wrapper {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .save-menu-btn {
+    width: 100%;
+    height: 54px;
+    border-radius: 14px !important;
+
+    font-size: 17px;
+    gap: 8px;
+  }
+
+  .save-menu-btn i {
+    font-size: 22px;
+  }
+
   /*expenses */
+
+  .expenses-page .expense-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 16px;
+  }
+
+  .expenses-page .summary-card {
+    padding: 22px;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  }
+
+  .expenses-page .summary-title {
+    display: block;
+    font-size: 14px;
+    letter-spacing: 3px;
+    font-weight: 700;
+    color: #6d4c41;
+    margin-bottom: 20px;
+  }
+
+  .expenses-page .summary-content h2,
+  .expenses-page .summary-left h2 {
+    margin: 0;
+    font-size: 3rem;
+    font-weight: 700;
+  }
+
+  .expenses-page .summary-content p {
+    margin-top: 4px;
+    color: #777;
+    font-size: 18px;
+  }
+
+  .expenses-page .summary-card:last-child {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .expenses-page .summary-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #dfe7ff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .expenses-page .summary-icon i {
+    font-size: 30px;
+    color: #5f6778;
+  }
+
+  .expenses-page .expense-filter-card {
+    margin: 16px;
+  }
+
+  .expenses-page .expense-btn {
+    width: 100%;
+    height: 50px;
+    border-radius: 12px;
+  }
+
+  .expenses-page .expenses-card {
+    margin: 16px;
+  }
+
+  .expenses-page .card-header {
+    margin-bottom: 18px;
+  }
+
+  .expenses-page .card-header h4 {
+    font-size: 30px;
+  }
   .expenses-card thead {
     display: none;
   }
@@ -1110,6 +1812,27 @@ body.modal-open {
   .expenses-card .edit-btn,
   .expenses-card .delete-btn {
     margin-top: 0;
+  }
+
+  .expenses-page .filter-btn-wrapper {
+    justify-content: stretch;
+    margin-top: 10px;
+  }
+
+  .expenses-page .expense-btn {
+    width: 100%;
+  }
+
+  .expense-filter-card .filter-row {
+    display: block;
+  }
+
+  .expense-button-area {
+    margin-top: 18px;
+  }
+
+  .expense-btn {
+    width: 100%;
   }
 
   /*employee table*/

@@ -1,3 +1,7 @@
+require("dotenv").config();
+console.log("Current Directory:", process.cwd());
+console.log("ADMIN_EMAILS=", process.env.ADMIN_EMAILS);
+console.log("ALLOWED_ORIGINS=", process.env.ALLOWED_ORIGINS);
 const express = require("express");
 const admin = require("firebase-admin");
 const path = require("path");
@@ -15,7 +19,7 @@ try {
   }
 
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(serviceAccount),
   });
 
   firebaseReady = true;
@@ -29,13 +33,13 @@ const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS || "")
     .split(",")
     .map((origin) => origin.trim())
-    .filter(Boolean)
+    .filter(Boolean),
 );
 const adminEmails = new Set(
   (process.env.ADMIN_EMAILS || "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
-    .filter(Boolean)
+    .filter(Boolean),
 );
 
 app.use((req, res, next) => {
@@ -53,7 +57,9 @@ app.use((req, res, next) => {
   return req.method === "OPTIONS" ? res.sendStatus(204) : next();
 
   if (origin && origin !== appOrigin && !allowedOrigins.has(origin)) {
-    return res.status(403).json({ success: false, error: "Origin is not allowed" });
+    return res
+      .status(403)
+      .json({ success: false, error: "Origin is not allowed" });
   }
 
   if (origin) {
@@ -79,45 +85,89 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
   res.status(firebaseReady ? 200 : 503).json({
     success: firebaseReady,
-    firebase: firebaseReady ? "ready" : "unavailable"
+    firebase: firebaseReady ? "ready" : "unavailable",
   });
 });
-
+//get bereartoken
 function getBearerToken(req) {
   const [scheme, token] = (req.get("Authorization") || "").split(" ");
   return scheme === "Bearer" && token ? token : null;
 }
 
+//createAuthUser()
 async function requireAdmin(req, res, next) {
   if (!firebaseReady) {
-    return res.status(503).json({ success: false, error: "Firebase Admin is unavailable" });
+    return res
+      .status(503)
+      .json({ success: false, error: "Firebase Admin is unavailable" });
   }
 
   if (adminEmails.size === 0) {
     console.error("ADMIN_EMAILS is not configured");
-    return res.status(503).json({ success: false, error: "Admin authorization is not configured" });
+    return res
+      .status(503)
+      .json({ success: false, error: "Admin authorization is not configured" });
   }
 
   const token = getBearerToken(req);
   if (!token) {
-    return res.status(401).json({ success: false, error: "Authentication token is required" });
+    return res
+      .status(401)
+      .json({ success: false, error: "Authentication token is required" });
   }
 
   try {
     const user = await admin.auth().verifyIdToken(token);
     const email = user.email?.toLowerCase();
 
+    console.log("logged in email:", email);
+    console.log("Allowed admins", [...adminEmails]);
+
     if (!email || !adminEmails.has(email)) {
-      return res.status(403).json({ success: false, error: "Administrator access is required" });
+      return res.status(403).json({
+        success: false,
+        error: "Administrator access is required",
+      });
     }
 
     req.user = user;
     return next();
   } catch (error) {
     console.error("Token verification failed:", error.code || error.message);
-    return res.status(401).json({ success: false, error: "Invalid or expired authentication token" });
+    return res.status(401).json({
+      success: false,
+      error: "Invalid or expired authentication token",
+    });
   }
 }
+
+//create Auth user
+app.post("/createAuthUser", requireAdmin, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "Email and password are required",
+      });
+    }
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+    });
+    console.log("Created Auth User:", userRecord.uid);
+    return res.status(200).json({
+      success: true,
+      uid: userRecord.uid,
+    });
+  } catch (error) {
+    console.error("Create Auth Error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
 
 // Delete Firebase Auth User
 app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
@@ -128,21 +178,29 @@ app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
     }
 
     if (uid === req.user.uid) {
-      return res.status(400).json({ success: false, error: "You cannot delete your own account" });
+      return res
+        .status(400)
+        .json({ success: false, error: "You cannot delete your own account" });
     }
 
     const targetUser = await admin.auth().getUser(uid);
     if (targetUser.email && adminEmails.has(targetUser.email.toLowerCase())) {
-      return res.status(403).json({ success: false, error: "Admin accounts cannot be deleted" });
+      return res
+        .status(403)
+        .json({ success: false, error: "Admin accounts cannot be deleted" });
     }
 
     await admin.auth().deleteUser(uid);
     console.log(`Deleted Auth User: ${uid}`);
 
-    return res.status(200).json({ success: true, message: "User deleted successfully" });
+    return res
+      .status(200)
+      .json({ success: true, message: "User deleted successfully" });
   } catch (error) {
     console.error("Delete Auth Error:", error);
-    return res.status(500).json({ success: false, error: "Unable to delete the user" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Unable to delete the user" });
   }
 });
 
@@ -153,7 +211,7 @@ app.get("/testFirebase", requireAdmin, async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Firebase Admin Connected",
-      count: users.users.length
+      count: users.users.length,
     });
   } catch (error) {
     console.error(error);
