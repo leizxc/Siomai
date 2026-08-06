@@ -93,6 +93,7 @@ function renderOrder() {
 
       cart[index].qty++;
       localStorage.setItem("cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("storage"));
       renderOrder();
     };
   });
@@ -148,10 +149,10 @@ checkoutBtn.onclick = () => {
 
   alert(`Checkout Success!\nPayment Method: ${paymentMethod}`);
 
-  localStorage.removeItem("cart");
+  
 
   cart = [];
-
+  localStorage.setItem("cart", JSON.stringify(cart));
   renderOrder();
 
   window.location.href = "/employee/siomai/userpanel.html";

@@ -15,21 +15,29 @@ import { loadProductsOffline } from "./IndexDB.js";
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-let cart = [];
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
 // INIT POS
 export async function initPOS() {
+
+  cart = JSON.parse(localStorage.getItem("get")) || [];
   const user = auth.currentUser;
   const currentEmployeeId = user ? user.uid : null;
 
   if (!navigator.onLine) {
     console.log("Offline mode: loading from IndexedDB");
     await loadProductsOffline(currentEmployeeId);
+    identifyCart();
     setupCartEvents();
     return;
   }
   await loadProducts();
+  identifyCart();
   setupCartEvents();
+}
+
+function saveCart() {
+    localStorage.setItem("cart", JSON.stringify(cart));
 }
 
 // LOAD PRODUCTS
@@ -97,6 +105,7 @@ function addToCart(product) {
   } else {
     cart.push({ ...product, qty: 1 });
   }
+  saveCart();
   identifyCart();
 }
 
@@ -151,6 +160,7 @@ function renderCart() {
     input.addEventListener("change", (e) => {
       const idx = e.target.dataset.index;
       cart[idx].qty = parseInt(e.target.value);
+      saveCart();
       identifyCart();
     });
   });
@@ -160,6 +170,7 @@ function renderCart() {
     btn.addEventListener("click", (e) => {
       const idx = e.target.dataset.index;
       cart.splice(idx, 1);
+      saveCart();
       identifyCart();
     });
   });
@@ -215,3 +226,11 @@ checkoutBtn.addEventListener("click", () => {
     window.location.href = "/employee/siomai/vieworder.html";
 
 })};
+
+window.addEventListener("pageshow", () => {
+
+    cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    identifyCart();
+
+});
