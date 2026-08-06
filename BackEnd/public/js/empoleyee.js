@@ -200,6 +200,18 @@ async function checkout() {
 
 // SETUP EVENTS
 function setupCartEvents() {
-  const checkoutBtn = document.getElementById("checkoutBtn");
-  checkoutBtn?.addEventListener("click", checkout);
-}
+ const checkoutBtn = document.getElementById("checkoutBtn");
+
+checkoutBtn.addEventListener("click", () => {
+
+    if (cart.length === 0) {
+        alert("Cart is empty!");
+        return;
+    }
+
+    // Save cart 
+    localStorage.setItem("cart", JSON.stringify(cart));
+
+    window.location.href = "/employee/siomai/vieworder.html";
+
+})};

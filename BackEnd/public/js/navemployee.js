@@ -5,6 +5,19 @@ function loadSection(page) {
       const main = document.getElementById('content');
       main.innerHTML = data;
 
+      const title = document.getElementById("mobile-title");
+
+      const pageTitles = {
+        "vieworder.html": "View Order",
+        "stock.html": "Inventory",
+        "qouta.html": "Income Per Cart",
+        "sales.html": "Expenses Records",
+      };
+      
+      if (title) {
+        title.textContent = pageTitles[page] || "Employee";
+      }
+
       // Initialize Materialize Components
       const selects = document.querySelectorAll('select');
       M.FormSelect.init(selects);
@@ -14,50 +27,30 @@ function loadSection(page) {
 
       // PAGE INITIALIZERS (Employee side)
       switch (page) {
-        case "stock.html":
-          try {
-            const stockModule = await import("");
-            if (typeof stockModule.loadStock === "function") {
-              stockModule.loadStock();
-            }
-          } catch (err) {
-            console.error("Stock Init Error:", err);
-          }
-          break;
 
-        case "sales.html":
-          try {
-            const salesModule = await import("");
-            if (typeof salesModule.loadSales === "function") {
-              salesModule.loadSales();
-            }
-          } catch (err) {
-            console.error("Sales Init Error:", err);
-          }
-          break;
+  case "stock.html":
+    // Wala pang stock.js
+    break;
 
-        case "qouta.html":
-          try {
-            const quotaModule = await import("");
-            if (typeof quotaModule.loadQuota === "function") {
-              quotaModule.loadQuota();
-            }
-          } catch (err) {
-            console.error("Quota Init Error:", err);
-          }
-          break;
+  case "sales.html":
+    // Wala pang sales.js
+    break;
 
-        case "userpanel.html":
-          try {
-            const posModule = await import("./empoleyee.js");
-            if (typeof posModule.initPOS === "function") {
-              posModule.initPOS();
-            }
-          } catch (err) {
-            console.error("POS Init Error:", err);
-          }
-          break;
+  case "qouta.html":
+    // Wala pang qouta.js
+    break;
+
+  case "userpanel.html":
+    try {
+      const posModule = await import("/js/empoleyee.js");
+      if (typeof posModule.initPOS === "function") {
+        posModule.initPOS();
       }
+    } catch (err) {
+      console.error("POS Init Error:", err);
+    }
+    break;
+}
     })
     .catch(err => console.error("Error Loading Section:", err));
 

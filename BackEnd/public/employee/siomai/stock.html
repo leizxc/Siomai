@@ -1,94 +1,220 @@
-<section class="page-header">
-    <div>
-      <h2>Stock Status</h2>
+<div class="stock-page">
 
-      <p>Monitor stock availability and inventory levels.</p>
-    </div>
+    <!-- Header -->
+    <section class="page-header">
 
-    <div class="filters">
-      <input type="date" />
+        <div class="header-left">
+            <h2>Stock Status</h2>
+            <p>Monitor stock availability and inventory levels.</p>
+        </div>
 
-      <select>
-        <option>All Carts</option>
-      </select>
-    </div>
-  </section>
+        <div class="header-right">
 
-  <!-- Summary -->
+            <input type="date" id="stockDate">
 
-  <div class="dashboard-cards">
-    <div class="card">
-      <h4>Total Products</h4>
+            <select id="cartFilter">
+                <option>All Carts</option>
+                <option>Cart 1</option>
+                <option>Cart 2</option>
+            </select>
 
-      <h2>0</h2>
-    </div>
+        </div>
 
-    <div class="card">
-      <h4>In Stock</h4>
+    </section>
 
-      <h2>0</h2>
-    </div>
-  </div>
+    <!-- Summary Cards -->
 
-  <!-- Stock Overview -->
+    <section class="summary-grid">
 
-  <section class="card">
-    <div class="overview">
-      <div>
-        <h4>Total Inventory Value</h4>
+        <div class="summary-card">
 
-        <h2>₱0.00</h2>
-      </div>
+            <div class="icon purple">
+                <i class="material-icons">inventory_2</i>
+            </div>
 
-      <div>
-        <h4>Last Stock Update</h4>
+            <h5>Total Products</h5>
 
-        <p>--</p>
-      </div>
-    </div>
-  </section>
+            <h2 id="totalProducts">24</h2>
 
-  <!-- Product List -->
+            <p>All items in inventory</p>
 
-  <section class="card">
-    <div class="table-header">
-      <h4>Stock Items</h4>
+        </div>
 
-      <input type="search" placeholder="Search Product" />
-    </div>
+        <div class="summary-card">
 
-    <table>
-      <thead>
-        <tr>
-          <th>Product</th>
+            <div class="icon green">
+                <i class="material-icons">check_circle</i>
+            </div>
 
-          <th>Category</th>
+            <h5>In Stock</h5>
 
-          <th>Current Stock</th>
+            <h2 id="inStock">18</h2>
 
-          <th>Unit</th>
+            <p>Items with stock</p>
 
-          <th>Status</th>
+        </div>
 
-          <th>Last Updated</th>
-        </tr>
-      </thead>
+    </section>
 
-      <tbody>
-        <tr>
-          <td>Pares</td>
+    <!-- Stock Overview -->
 
-          <td>Pares</td>
+    <section class="overview-card">
 
-          <td>0</td>
+        <h3>Stock Overview</h3>
 
-          <td>Packs</td>
+        <p>Overview of inventory value and stock levels.</p>
 
-          <td>In Stock</td>
+        <div class="overview-grid">
 
-          <td>--</td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
+            <div class="overview-box">
 
+                <div class="icon purple">
+                    <i class="material-icons">payments</i>
+                </div>
+
+                <div>
+
+                    <small>Total Inventory Value</small>
+
+                    <h2 id="inventoryValue">₱12,450.00</h2>
+
+                    <span>Total value of current stock</span>
+
+                </div>
+
+            </div>
+
+            <div class="overview-box">
+
+                <div class="icon blue">
+                    <i class="material-icons">calendar_month</i>
+                </div>
+
+                <div>
+
+                    <small>Last Stock Update</small>
+
+                    <h2 id="lastUpdated">May 22, 2025</h2>
+
+                    <span>Latest inventory update</span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Stock Items -->
+
+    <section class="table-card">
+
+        <div class="table-header">
+
+            <div>
+
+                <h3>Stock Items</h3>
+
+                <p>Detailed list of all products and their stock levels.</p>
+
+            </div>
+
+            <div class="table-actions">
+
+                <div class="search-box">
+
+                    <i class="material-icons">search</i>
+
+                    <input
+                        type="search"
+                        id="searchProduct"
+                        placeholder="Search product..."
+                    >
+
+                </div>
+
+                <button class="filter-btn">
+
+                    <i class="material-icons">filter_alt</i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <table class="stock-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>Product</th>
+
+                    <th>Category</th>
+
+                    <th>Current Stock</th>
+
+                    <th>Unit</th>
+
+                    <th>Status</th>
+
+                    <th>Last Updated</th>
+
+                    <th></th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="stockTableBody">
+
+                <tr>
+
+                    <td class="product-cell">
+
+                        <img src="/assets/siomai.jpg">
+
+                        <span>Siomai (4pcs)</span>
+
+                    </td>
+
+                    <td>Siomai</td>
+
+                    <td>120</td>
+
+                    <td>packs</td>
+
+                    <td>
+
+                        <span class="badge success">
+                            In Stock
+                        </span>
+
+                    </td>
+
+                    <td>
+
+                        May 22, 2025<br>
+                        8:45 AM
+
+                    </td>
+
+                    <td>
+
+                        <i class="material-icons more">
+                            more_vert
+                        </i>
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </section>
+
+</div>

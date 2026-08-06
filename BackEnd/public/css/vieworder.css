@@ -4,12 +4,13 @@
     margin:0;
     padding:0;
     box-sizing:border-box;
-    font-family:Arial, Helvetica, sans-serif;
+    font-family: 'Segoe UI', sans-serif;
 }
 
 body{
-    background:#f5f5f5;
-    color:#222;
+    background: #f8f9fc;
+    color: #333;
+    overflow-x: hidden;
 }
 
 /* Container */
@@ -44,7 +45,7 @@ body{
     height:42px;
     border:none;
     border-radius:50%;
-    background:#f2f2f2;
+    background:#fff;
     cursor:pointer;
     display:flex;
     align-items:center;
@@ -218,7 +219,7 @@ body{
 
     border-radius:15px;
 
-    background:#2196f3;
+    background:#4caf50;
 
     color:#fff;
 
@@ -234,11 +235,11 @@ body{
 
 .checkout-btn:hover{
 
-    background:#1976d2;
+    background:#4caf50;
 
 }
 
-/*  MOBILE */
+/* MOBILE */
 
 @media(max-width:768px){
 
@@ -282,12 +283,39 @@ body{
     height:32px;
     border:none;
     border-radius:50%;
-    background-color: #1976d2;
     color:#fff;
     cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
+    transition:0.3s;
+}
+
+/* PLUS */
+.plus-btn{
+    background:#2196f3;
+}
+
+.plus-btn:hover{
+    background:#1976d2;
+}
+.add-btn:disabled{
+    background:#bdbdbd;
+    cursor:not-allowed;
+    opacity:.6;
+}
+/* MINUS */
+.minus-btn{
+    background:#f44336;
+}
+
+.minus-btn:hover{
+    background:#d32f2f;
+}
+
+.qty-control button i{
+    font-size:18px;
+    color:#fff;
 }
 
 .qty-control button i{

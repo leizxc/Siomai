@@ -1,64 +1,98 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Order</title>
 
-    <link rel="stylesheet" href="/css/materialize.min.css" />
-    <link rel="stylesheet" href="/css/vieworder.css" />
+    <link rel="stylesheet" href="/css/materialize.min.css">
+    <link rel="stylesheet" href="/css/vieworder.css">
 
-    <link
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div class="order-container">
-      <!-- Header -->
-      <header class="order-header">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+<div class="order-container">
+
+    <!-- Header -->
+    <header class="order-header">
+
         <button id="backBtn" class="back-btn">
-          <i class="material-icons">arrow_back</i>
+            <i class="material-icons">arrow_back</i>
         </button>
 
         <h5>Order Menu</h5>
-      </header>
 
-      <!-- Products -->
-      <div id="orderList" class="order-list"></div>
+    </header>
 
-      <!-- Summary -->
-      <div class="summary-card">
+    <!-- Products -->
+    <div id="orderList" class="order-list">
+
+
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-card">
+
         <div class="summary-top">
-          <div>
-            <h6>Orders</h6>
-            <p><span id="totalItems">0</span> items in total</p>
-          </div>
 
-          <h5>₱<span id="orderTotal">0.00</span></h5>
+            <div>
+                <h6>Orders</h6>
+                <p>
+                    <span id="totalItems">0</span> items in total
+                </p>
+            </div>
+
+            <h5>
+                ₱<span id="orderTotal">0.00</span>
+            </h5>
+
         </div>
 
         <h6>Payment Method</h6>
 
         <div class="payment-method">
-          <button id="cashBtn" class="payment-btn active" data-method="Cash">
-            <i class="material-icons">payments</i>
 
-            Cash
-          </button>
+            <button
+                id="cashBtn"
+                class="payment-btn active"
+                data-method="Cash">
 
-          <button id="cashlessBtn" class="payment-btn" data-method="Cashless">
-            <i class="material-icons">credit_card</i>
+                <i class="material-icons">payments</i>
 
-            Cashless
-          </button>
+                Cash
+
+            </button>
+
+            <button
+                id="cashlessBtn"
+                class="payment-btn"
+                data-method="Cashless">
+
+                <i class="material-icons">credit_card</i>
+
+                Cashless
+
+            </button>
+
         </div>
 
-        <button id="checkoutBtn" class="checkout-btn">Checkout</button>
-      </div>
+        <button
+            id="checkoutBtn"
+            class="checkout-btn">
+
+            Checkout
+
+        </button>
+
     </div>
 
-    <script src="/js/materialize.min.js"></script>
-    <script type="module" src="/js/vieworder.js"></script>
-  </body>
+</div>
+
+<script src="/js/materialize.min.js"></script>
+<script type="module" src="/js/vieworder.js"></script>
+<script type="module" src="/js/firebase.js"></script>
+<script type="module" src="/js/navemployee.js"></script>
+
+</body>
 </html>
