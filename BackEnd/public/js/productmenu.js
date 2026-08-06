@@ -413,10 +413,6 @@ export async function loadmenu() {
         const id = btn.dataset.id;
 
         // Bawal tanggalin ang Product Menu entry kung naka-assign pa ito
-        // sa isa o higit pang empleyado. Direkta itong tinitingnan sa
-        // "products" collection (hindi lang sa "assigned" flag ng
-        // productMenu doc) para sigurado — ito rin ang parehong source
-        // of truth na ginagamit sa product.js pag-uunassign.
         const assignedQuery = query(
           collection(db, "products"),
           where("inventoryId", "==", id),
@@ -539,10 +535,6 @@ export async function loadmenu() {
 
     if (selectedCategory) {
       // Match the exact category AND anything marked "ALL" (Shared
-      // Across All Roles) — shared items are meant to show up under
-      // every specific category filter, not just under "All
-      // Categories". Firestore's "in" operator lets us match either
-      // value in a single query without needing a composite index.
       q = query(
         collection(db, "productMenu"),
         where("category", "in", [selectedCategory, "ALL"]),

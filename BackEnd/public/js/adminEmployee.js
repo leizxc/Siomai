@@ -177,7 +177,7 @@ function renderEmployeePage() {
 }
 
 function bindRowButtons() {
-  // Delete buttons
+  // Delete employees
   document.querySelectorAll(".delete-btn").forEach((btn) => {
     btn.onclick = async (e) => {
       const id = e.currentTarget.dataset.id;
@@ -199,10 +199,17 @@ function bindRowButtons() {
       const id = e.currentTarget.dataset.id;
       const row = e.currentTarget.closest("tr");
 
-      document.getElementById("edit-fname").value = row.children[0].textContent;
-      document.getElementById("edit-lname").value = row.children[1].textContent;
-      document.getElementById("edit-email").value = row.children[2].textContent;
-      document.getElementById("edit-role").value = row.children[4].textContent;
+      // Ang mga orihinal na value bago mag-edit — gagamitin sa pag-check
+      // kung talagang may binago bago pumayag mag-submit ng update.
+      const originalFname = row.children[0].textContent;
+      const originalLname = row.children[1].textContent;
+      const originalEmail = row.children[2].textContent;
+      const originalRole = row.children[4].textContent;
+
+      document.getElementById("edit-fname").value = originalFname;
+      document.getElementById("edit-lname").value = originalLname;
+      document.getElementById("edit-email").value = originalEmail;
+      document.getElementById("edit-role").value = originalRole;
 
       M.updateTextFields();
       M.FormSelect.init(document.querySelectorAll("select"));
@@ -219,10 +226,35 @@ function bindRowButtons() {
       const saveBtn = document.getElementById("edit-save");
 
       saveBtn.onclick = async () => {
-        const newFname = document.getElementById("edit-fname").value;
-        const newLname = document.getElementById("edit-lname").value;
-        const newEmail = document.getElementById("edit-email").value;
+        const newFname = document.getElementById("edit-fname").value.trim();
+        const newLname = document.getElementById("edit-lname").value.trim();
+        const newEmail = document.getElementById("edit-email").value.trim();
         const newRole = document.getElementById("edit-role").value;
+
+        // Walang pwedeng maiwan na blangko.
+        if (!newFname || !newLname || !newEmail || !newRole) {
+          M.toast({
+            html: "Please fill in all fields before saving.",
+            classes: "red rounded",
+          });
+          return;
+        }
+
+        // Bawal mag-Update kung wala namang binago.
+        const noChanges =
+          newFname === originalFname &&
+          newLname === originalLname &&
+          newEmail === originalEmail &&
+          newRole === originalRole;
+
+        if (noChanges) {
+          M.toast({
+            html: "No changes were made.",
+            classes: "orange rounded",
+          });
+          modalInstance.close();
+          return;
+        }
 
         await updateDoc(doc(db, "employees", id), {
           fname: newFname,
@@ -239,14 +271,19 @@ function bindRowButtons() {
 
         const snapshot = await getDocs(q);
 
-        for (const docSnap of snapshot.docs) {
-          await updateDoc(docSnap.ref, {
-            role: newRole,
-            last_updated: serverTimestamp(),
-          });
+        try {
+          for (const docSnap of snapshot.docs) {
+            await updateDoc(docSnap.ref, {
+              role: newRole,
+              last_updated: serverTimestamp(),
+            });
+          }
+          M.toast({ html: "Update Successfully", classes: "green rounded" });
+          modalInstance.close();
+        } catch (err) {
+          console.error("Update error", err);
+          M.toast({ html: "Failed to update", classes: "red rounded" });
         }
-
-        modalInstance.close();
       };
     };
   });
@@ -294,6 +331,15 @@ export async function addEmployee(
   password,
 ) {
   try {
+    // Materialize-enhanced <select> elements don't reliably enforce
+    if (!role || !role.trim()) {
+      M.toast({
+        html: "Please select a role before adding the employee.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
     const normalizedUsername = username.trim().toLowerCase();
 
     if (isWeakUsername(normalizedUsername)) {
@@ -372,6 +418,42 @@ export async function addEmployee(
     console.error("Error adding employee:", error);
     M.toast({ html: "Failed to add employee.", classes: "red rounded" });
   }
+}
+
+//delete role
+// Delete role — only if no user is currently assigned to it
+export async function deleteRole() {
+  const roleSelect = document.getElementById("role");
+  const roleName = roleSelect ? roleSelect.value : "";
+  console.log("DEBUG deleteRole roleName:", roleName);
+
+  if (!roleName) {
+    M.toast({ html: "Please select a role", classes: "red rounded" });
+    return;
+  }
+
+  const inUse = await getDocs(
+    query(collection(db, "users"), where("role", "==", roleName)),
+  );
+  if (!inUse.empty) {
+    M.toast({
+      html: "Cannot delete. This role still has users.",
+      classes: "red rounded",
+    });
+    return;
+  }
+
+  // option.value stores the role NAME, not the Firestore doc ID
+  const roleDoc = await getDocs(
+    query(collection(db, "roles"), where("name", "==", roleName)),
+  );
+  if (roleDoc.empty) {
+    M.toast({ html: "Role not found.", classes: "red rounded" });
+    return;
+  }
+
+  await deleteDoc(roleDoc.docs[0].ref);
+  M.toast({ html: "Role deleted", classes: "green rounded" });
 }
 
 //confirmation delete

@@ -67,8 +67,8 @@
         </div>
 
         <div class="input-field full-width">
-          <input type="email" id="email" required />
-          <label for="email">Email Address</label>
+          <input type="email" id="email" required/>
+          <label for="email">Email Address ex:Thor@gmail.com</label>
         </div>
 
         <div class="input-field full-width">
@@ -97,6 +97,14 @@
       </div>
 
       <div class="employee-actions">
+            <button
+          type="button"
+          id="btn-delete-role"
+        class="btn-flat outline-btn delete-role-btn waves-effect">
+          <i class="material-icons left">clear</i>
+        Delete Role
+      </button>
+
         <button
           type="button"
           id="btnAddRole"
@@ -121,8 +129,7 @@
   <section class="employee-card">
     <h4>Employee List</h4>
 
-    <div class="table-container">
-      <table id="employeeTable" class="highlight responsive-table">
+      <table id="employeeTable">
         <thead>
           <tr>
             <th>First Name</th>
@@ -143,11 +150,9 @@
           <!-- Firestore Render -->
         </tbody>
       </table>
-    </div>
-
-    <div class="employee-footer">
+          <div class="employee-footer">
       <div>
-        Showing
+        Showing:
 
         <strong id="showingCount">0</strong>
 
@@ -160,8 +165,9 @@
         <a class="btn-flat">Next</a>
       </div>
     </div>
+    </div>
+
   </section>
-</div>
 
 <!-- ================= EDIT MODAL ================= -->
 
@@ -180,7 +186,7 @@
     </div>
 
     <div class="input-field">
-      <input id="edit-email" type="email" />
+      <input id="edit-email" type="email" readonly/>
       <label for="edit-email">Email</label>
     </div>
 
