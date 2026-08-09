@@ -19,23 +19,18 @@ import {
 let unsubscribeInventory = null;
 let unsubscribeCategories = null;
 
-// Kasalukuyang napiling category pill ("all" o isang categoriesINV doc id).
 let selectedCategoryFilter = "all";
-
-// Nagma-map ng categoriesINV doc id papunta sa pangalan ng category.
 let categoryNameMap = {};
 
-// Ginagawang UPPERCASE ang mga text field bago i-save, para hindi
-// magkaroon ng duplicate entries dahil lang sa magkaibang casing
-// (hal. "Pares" vs "PARES" vs "pares" ay magiging iisa: "PARES").
+// PAGINATION
+const PAGE_SIZE = 10;
+let currentPage = 1;
+let inventoryRowsCache = [];
+
 function toUpper(value) {
   return (value || "").trim().toUpperCase();
 }
 
-// Ginagawang UPPERCASE habang nagta-type ang user (live), hindi lang sa
-// pag-save. Pinapanatili ang cursor position para hindi lumulukso ito
-// habang nagta-type. Safe tawagin ito ulit-ulit sa parehong input —
-// naka-guard na para isang beses lang mabind ang listener.
 function bindLiveUppercase(input) {
   if (!input || input.dataset.uppercaseBound) return;
   input.dataset.uppercaseBound = "true";
@@ -89,7 +84,6 @@ export function loadInventory() {
   const tbody = document.getElementById("inventory-table-body");
   const dateInput = document.getElementById("filter-date");
 
-  // Isang listener lang dapat ang kumokontrol sa table na ito.
   if (unsubscribeInventory) {
     unsubscribeInventory();
     unsubscribeInventory = null;
@@ -98,8 +92,6 @@ export function loadInventory() {
   unsubscribeInventory = onSnapshot(
     collection(db, "inventory"),
     async (querySnapshot) => {
-      // Baka naka-navigate na papalayo sa inventory page — kung wala na
-      // sa DOM ang table, itigil na ang listener imbes na mag-crash.
       const tbodyNow = document.getElementById("inventory-table-body");
       const dateInputNow = document.getElementById("filter-date");
       if (!tbodyNow) {
@@ -110,15 +102,12 @@ export function loadInventory() {
         return;
       }
 
-      tbodyNow.innerHTML = "";
-
       let totalProducts = 0;
       let totalStocks = 0;
       let totalValue = 0;
       const categories = new Set();
-
-      // Magkaiba ang unit types (pcs/kg/L) kaya hiwalay ang pag-total per type.
       const unitTotals = { pack: 0, kg: 0, liter: 0, other: 0 };
+      const rowsHtml = [];
 
       const selectedCategory = selectedCategoryFilter;
       const selectedDate = dateInputNow ? dateInputNow.value : "";
@@ -128,19 +117,14 @@ export function loadInventory() {
 
         if (selectedCategory !== "all") {
           const selectedName = categoryNameMap[selectedCategory] || "";
-
           if (data.category !== selectedName) return;
         }
 
         if (selectedDate) {
           if (!data.created_at) return;
-
           const docDate = toLocalDateValue(data.created_at.toDate());
-
           if (docDate !== selectedDate) return;
         }
-
-        // Kapag pasado sa filter, saka lang magre-render
 
         totalProducts++;
         totalStocks += data.stock_quantity;
@@ -155,9 +139,7 @@ export function loadInventory() {
             : "other";
         unitTotals[bucket] += data.stock_quantity;
 
-        //status
         let status = "Available";
-        // Optional na per-product override mula sa Add Product Menu page.
         const lowStockThreshold = data.low_stock_threshold || 25;
 
         if (data.quantity <= 0) {
@@ -166,20 +148,6 @@ export function loadInventory() {
           status = "Low Stock";
         }
 
-        //  Dinamikong display para sa quantity at total pieces
-        const displayQty =
-          data.unit_type === "pack"
-            ? `${data.quantity} packs`
-            : `${data.quantity} ${data.unit_type}`;
-
-        const totalPiecesDisplay =
-          data.unit_type === "pack"
-            ? `${data.stock_quantity} pcs`
-            : data.unit_type === "kg"
-              ? `${data.quantity} kg`
-              : `${data.stock_quantity}`;
-
-        // Alamin ang label at value base sa unit type
         let totalLabel = "Total Pieces";
         let totalDisplay = "";
 
@@ -191,7 +159,6 @@ export function loadInventory() {
           const pounds = (data.quantity * 2.2).toFixed(2);
           totalDisplay = `${pounds} lb`;
         } else if (data.unit_type === "liter") {
-          const vol = "Total Volume";
           totalDisplay = `${data.quantity} L`;
         } else {
           totalLabel = "Total Quantity";
@@ -206,8 +173,7 @@ export function loadInventory() {
             })
           : "-";
 
-        // I-render ang row
-        tbodyNow.innerHTML += `
+        rowsHtml.push(`
   <tr data-category-id="${docSnap.data().category_id}">
     <td data-label="Product Name">${data.product_name}${
       data.plasticColor
@@ -234,14 +200,12 @@ export function loadInventory() {
       </button>
     </td>
   </tr>
-`;
+`);
       });
 
-      //para sa summary card ng total quantity
       let totalLabel1 = "Total Stocks";
       let totalDisplay1 = totalStocks;
 
-      //kung may specific category na napili, i-adjust ang label base sa unit type
       if (selectedCategory && selectedCategory !== "all") {
         const categoryDoc = await getDoc(
           doc(db, "categoriesINV", selectedCategory),
@@ -265,7 +229,6 @@ export function loadInventory() {
           }
         }
       } else {
-        // Sa "All Categories" view, ipapakita ang breakdown dahil magkaiba ang units.
         const parts = [];
         if (unitTotals.pack) parts.push(`${unitTotals.pack} pcs`);
         if (unitTotals.kg) parts.push(`${unitTotals.kg} kg`);
@@ -276,7 +239,6 @@ export function loadInventory() {
         totalDisplay1 = parts.length ? parts.join(" • ") : "0";
       }
 
-      // I-update ang summary cards (may null-check na dati pa)
       const totalProductsEl = document.getElementById("total-products");
       const stocksLabelEl = document.getElementById("stocks-label");
       const totalStocksEl = document.getElementById("total-stocks");
@@ -289,162 +251,220 @@ export function loadInventory() {
       if (totalValueEl) totalValueEl.textContent = `₱${totalValue.toFixed(2)}`;
       if (totalCategoriesEl) totalCategoriesEl.textContent = categories.size;
 
-      // Logic ng delete button
-      document.querySelectorAll(".delete-btn").forEach((btn) => {
-        btn.onclick = async (e) => {
-          const id = e.target.closest("button").dataset.id;
-          await deleteProduct(id);
-        };
-      });
-
-      // Logic ng edit button
-      document.querySelectorAll(".edit-btn").forEach((btn) => {
-        btn.onclick = async (e) => {
-          const id = e.target.closest("button").dataset.id;
-          const row = e.target.closest("tr");
-
-          const editNameInput = document.getElementById("edit-name");
-          const editCategoryInput = document.getElementById("edit-category");
-          const editPacksInput = document.getElementById("edit-packs");
-          const editPriceInput = document.getElementById("edit-price");
-          if (
-            !editNameInput ||
-            !editCategoryInput ||
-            !editPacksInput ||
-            !editPriceInput
-          ) {
-            return;
-          }
-
-          editNameInput.value = row.children[0].textContent;
-          editCategoryInput.value = row.dataset.categoryId; //  doc ID
-          editPacksInput.value = row.children[2].textContent.replace(/\D/g, "");
-          editPriceInput.value = row.children[4].textContent.replace("₱", "");
-
-          bindLiveUppercase(editNameInput);
-
-          const selects = document.querySelectorAll("select");
-          if (selects.length) M.FormSelect.init(selects);
-
-          // Prefill at toggle ang quantity label at plastic color field base sa category.
-          const productSnapForEdit = await getDoc(doc(db, "inventory", id));
-          const productDataForEdit = productSnapForEdit.exists()
-            ? productSnapForEdit.data()
-            : {};
-
-          const editPlasticColorInput =
-            document.getElementById("edit-plastic-color");
-          if (editPlasticColorInput) {
-            editPlasticColorInput.value = productDataForEdit.plasticColor || "";
-            bindLiveUppercase(editPlasticColorInput);
-          }
-
-          const editCategoryDoc = productDataForEdit.category_id
-            ? await getDoc(
-                doc(db, "categoriesINV", productDataForEdit.category_id),
-              )
-            : null;
-
-          if (editCategoryDoc && editCategoryDoc.exists()) {
-            applyCategoryDependentFields(editCategoryDoc.data(), {
-              qtyLabel: document.querySelector('label[for="edit-packs"]'),
-              qtyInput: document.getElementById("edit-packs"),
-              plasticColorField: document.getElementById(
-                "edit-plastic-color-field",
-              ),
-              plasticColorInput: editPlasticColorInput,
-            });
-          }
-          M.updateTextFields();
-
-          // Live-update ang label/plastic color kapag binago ang category habang nag-e-edit.
-          editCategoryInput.onchange = async (e) => {
-            const newCategoryDoc = await getDoc(
-              doc(db, "categoriesINV", e.target.value),
-            );
-            if (!newCategoryDoc.exists()) return;
-
-            applyCategoryDependentFields(newCategoryDoc.data(), {
-              qtyLabel: document.querySelector('label[for="edit-packs"]'),
-              qtyInput: document.getElementById("edit-packs"),
-              plasticColorField: document.getElementById(
-                "edit-plastic-color-field",
-              ),
-              plasticColorInput: document.getElementById("edit-plastic-color"),
-            });
-            M.updateTextFields();
-          };
-
-          const modalElem = document.getElementById("modal-edit");
-          if (!modalElem) return;
-          const modalInstance = M.Modal.init(modalElem);
-          modalInstance.open();
-
-          const saveBtn = document.getElementById("edit-save");
-          if (!saveBtn) return;
-          saveBtn.onclick = async () => {
-            // UPPERCASE ang pangalan para hindi magduplicate ang product
-            // dahil lang sa magkaibang letter case.
-            const newName = toUpper(editNameInput.value);
-            const newCategoryId = editCategoryInput.value; //  doc ID
-            const newQuantity = parseFloat(editPacksInput.value);
-            const newPrice = parseFloat(editPriceInput.value);
-            const newPlasticColorEl =
-              document.getElementById("edit-plastic-color");
-            const newPlasticColor = newPlasticColorEl
-              ? toUpper(newPlasticColorEl.value)
-              : "";
-
-            const categoryDoc = await getDoc(
-              doc(db, "categoriesINV", newCategoryId),
-            );
-            const categoryData = categoryDoc.data();
-            const unitType = categoryData.unit_type;
-            const piecesPerPack = categoryData.pieces_per_pack || 1;
-
-            let newStock =
-              unitType === "pack" ? newQuantity * piecesPerPack : newQuantity;
-            const newTotalValue = newStock * newPrice;
-
-            const updateData = {
-              product_name: newName,
-              category_id: newCategoryId, //  store doc ID
-              category: categoryData.name, //  store readable name
-              role: categoryData.role,
-              unit_type: unitType,
-              quantity: newQuantity,
-              stock_quantity: newStock,
-              unit_price: newPrice,
-              total_value: newTotalValue,
-              last_updated: serverTimestamp(),
-            };
-
-            // Pares lang pwedeng may plastic color, kaya tinatanggal ito sa ibang category.
-            if (
-              categoryData.name.toLowerCase() === "pares" &&
-              newPlasticColor
-            ) {
-              updateData.plasticColor = newPlasticColor;
-            } else {
-              updateData.plasticColor = deleteField();
-            }
-
-            await updateDoc(doc(db, "inventory", id), updateData);
-            M.toast({
-              html: "Product updated successfully!",
-              classes: "green rounded",
-            });
-            modalInstance.close();
-          };
-        };
-      });
+      inventoryRowsCache = rowsHtml;
+      renderInventoryPage();
     },
   );
 
   return unsubscribeInventory;
 }
 
-// Tawagin ito pag umalis sa inventory page para itigil ang listener.
+// Renders only the current page's slice of inventoryRowsCache.
+function renderInventoryPage() {
+  const tbodyNow = document.getElementById("inventory-table-body");
+  if (!tbodyNow) return;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(inventoryRowsCache.length / PAGE_SIZE),
+  );
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = inventoryRowsCache.slice(start, start + PAGE_SIZE);
+
+  tbodyNow.innerHTML = pageRows.join("");
+
+  bindInventoryRowButtons();
+  updateInventoryPagination(totalPages);
+}
+
+function updateInventoryPagination(totalPages) {
+  const prevBtn = document.getElementById("inventory-prev");
+  const nextBtn = document.getElementById("inventory-next");
+  const pageLabel = document.getElementById("inventory-page");
+  const infoLabel = document.getElementById("inventory-info");
+
+  // Kung wala ang pagination buttons, huwag ituloy
+  if (!prevBtn || !nextBtn) return;
+
+  prevBtn.disabled = currentPage === 1;
+  nextBtn.disabled = currentPage === totalPages;
+
+  if (pageLabel) {
+    pageLabel.textContent = `Page ${currentPage} of ${totalPages}`;
+  }
+
+  prevBtn.onclick = () => {
+    if (currentPage > 1) {
+      currentPage--;
+      renderInventoryPage();
+    }
+  };
+
+  nextBtn.onclick = () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderInventoryPage();
+    }
+  };
+
+  if (infoLabel) {
+    const totalRecords = inventoryRowsCache.length;
+
+    if (totalRecords === 0) {
+      infoLabel.textContent = "Showing: 0 Inventory data records";
+    } else {
+      const start = (currentPage - 1) * PAGE_SIZE + 1;
+
+      const end = Math.min(currentPage * PAGE_SIZE, totalRecords);
+
+      infoLabel.textContent = `Showing: ${totalRecords} Inventory data records`;
+    }
+  }
+}
+
+// Delete/edit button logic — rebound every time a page is rendered.
+function bindInventoryRowButtons() {
+  document.querySelectorAll(".delete-btn").forEach((btn) => {
+    btn.onclick = async (e) => {
+      const id = e.target.closest("button").dataset.id;
+      await deleteProduct(id);
+    };
+  });
+
+  document.querySelectorAll(".edit-btn").forEach((btn) => {
+    btn.onclick = async (e) => {
+      const id = e.target.closest("button").dataset.id;
+      const row = e.target.closest("tr");
+
+      const editNameInput = document.getElementById("edit-name");
+      const editCategoryInput = document.getElementById("edit-category");
+      const editPacksInput = document.getElementById("edit-packs");
+      const editPriceInput = document.getElementById("edit-price");
+      if (
+        !editNameInput ||
+        !editCategoryInput ||
+        !editPacksInput ||
+        !editPriceInput
+      ) {
+        return;
+      }
+
+      editNameInput.value = row.children[0].textContent;
+      editCategoryInput.value = row.dataset.categoryId;
+      editPacksInput.value = row.children[2].textContent.replace(/\D/g, "");
+      editPriceInput.value = row.children[4].textContent.replace("₱", "");
+
+      bindLiveUppercase(editNameInput);
+
+      const selects = document.querySelectorAll("select");
+      if (selects.length) M.FormSelect.init(selects);
+
+      const productSnapForEdit = await getDoc(doc(db, "inventory", id));
+      const productDataForEdit = productSnapForEdit.exists()
+        ? productSnapForEdit.data()
+        : {};
+
+      const editPlasticColorInput =
+        document.getElementById("edit-plastic-color");
+      if (editPlasticColorInput) {
+        editPlasticColorInput.value = productDataForEdit.plasticColor || "";
+        bindLiveUppercase(editPlasticColorInput);
+      }
+
+      const editCategoryDoc = productDataForEdit.category_id
+        ? await getDoc(doc(db, "categoriesINV", productDataForEdit.category_id))
+        : null;
+
+      if (editCategoryDoc && editCategoryDoc.exists()) {
+        applyCategoryDependentFields(editCategoryDoc.data(), {
+          qtyLabel: document.querySelector('label[for="edit-packs"]'),
+          qtyInput: document.getElementById("edit-packs"),
+          plasticColorField: document.getElementById(
+            "edit-plastic-color-field",
+          ),
+          plasticColorInput: editPlasticColorInput,
+        });
+      }
+      M.updateTextFields();
+
+      editCategoryInput.onchange = async (e) => {
+        const newCategoryDoc = await getDoc(
+          doc(db, "categoriesINV", e.target.value),
+        );
+        if (!newCategoryDoc.exists()) return;
+
+        applyCategoryDependentFields(newCategoryDoc.data(), {
+          qtyLabel: document.querySelector('label[for="edit-packs"]'),
+          qtyInput: document.getElementById("edit-packs"),
+          plasticColorField: document.getElementById(
+            "edit-plastic-color-field",
+          ),
+          plasticColorInput: document.getElementById("edit-plastic-color"),
+        });
+        M.updateTextFields();
+      };
+
+      const modalElem = document.getElementById("modal-edit");
+      if (!modalElem) return;
+      const modalInstance = M.Modal.init(modalElem);
+      modalInstance.open();
+
+      const saveBtn = document.getElementById("edit-save");
+      if (!saveBtn) return;
+      saveBtn.onclick = async () => {
+        const newName = toUpper(editNameInput.value);
+        const newCategoryId = editCategoryInput.value;
+        const newQuantity = parseFloat(editPacksInput.value);
+        const newPrice = parseFloat(editPriceInput.value);
+        const newPlasticColorEl = document.getElementById("edit-plastic-color");
+        const newPlasticColor = newPlasticColorEl
+          ? toUpper(newPlasticColorEl.value)
+          : "";
+
+        const categoryDoc = await getDoc(
+          doc(db, "categoriesINV", newCategoryId),
+        );
+        const categoryData = categoryDoc.data();
+        const unitType = categoryData.unit_type;
+        const piecesPerPack = categoryData.pieces_per_pack || 1;
+
+        let newStock =
+          unitType === "pack" ? newQuantity * piecesPerPack : newQuantity;
+        const newTotalValue = newStock * newPrice;
+
+        const updateData = {
+          product_name: newName,
+          category_id: newCategoryId,
+          category: categoryData.name,
+          role: categoryData.role,
+          unit_type: unitType,
+          quantity: newQuantity,
+          stock_quantity: newStock,
+          unit_price: newPrice,
+          total_value: newTotalValue,
+          last_updated: serverTimestamp(),
+        };
+
+        if (categoryData.name.toLowerCase() === "pares" && newPlasticColor) {
+          updateData.plasticColor = newPlasticColor;
+        } else {
+          updateData.plasticColor = deleteField();
+        }
+
+        await updateDoc(doc(db, "inventory", id), updateData);
+        M.toast({
+          html: "Product updated successfully!",
+          classes: "green rounded",
+        });
+        modalInstance.close();
+      };
+    };
+  });
+}
+
 export function stopLoadingInventory() {
   if (unsubscribeInventory) {
     unsubscribeInventory();
@@ -459,7 +479,6 @@ export async function deleteCategory(categoryId) {
     return;
   }
 
-  // check kung ginagamit pa
   const q = query(
     collection(db, "inventory"),
     where("category_id", "==", categoryId),
@@ -488,9 +507,6 @@ export async function deleteCategory(categoryId) {
   M.toast({ html: "Category Deleted", classes: "green rounded" });
 }
 
-//
-
-// Optional lang ang plasticColor at extraFields, kaya walang epekto sa existing callers.
 export async function addProduct(
   productName,
   categoryId,
@@ -507,7 +523,6 @@ export async function addProduct(
   let stockQty = 0;
   let totalValue = 0;
 
-  //formula based on digital timbangan
   if (unitType === "pack") {
     stockQty = quantity * piecesPerPack;
     totalValue = stockQty * unitPrice;
@@ -522,14 +537,9 @@ export async function addProduct(
     totalValue = quantity * unitPrice;
   }
 
-  // UPPERCASE ang product name para hindi magduplicate ang entries dahil
-  // lang sa magkaibang casing (hal. "pares" vs "Pares" vs "PARES").
   const normalizedProductName = toUpper(productName);
   const normalizedPlasticColor = toUpper(plasticColor);
 
-  // Hard block: huwag payagang malikha ang produkto kung may existing na
-  // parehong pangalan sa parehong category — hindi lang basta i-uppercase,
-  // titigilan na talaga bago pa maisave.
   const dupQuery = query(
     collection(db, "inventory"),
     where("category_id", "==", categoryId),
@@ -546,8 +556,8 @@ export async function addProduct(
 
   const productData = {
     product_name: normalizedProductName,
-    category_id: categoryId, // Firestore doc ID
-    category: categoryData.name, // readable name
+    category_id: categoryId,
+    category: categoryData.name,
     role: categoryData.role,
     unit_type: unitType,
     quantity: quantity,
@@ -559,12 +569,10 @@ export async function addProduct(
     last_updated: serverTimestamp(),
   };
 
-  // I-store lang ang field kung may kulay talagang binigay.
   if (normalizedPlasticColor) {
     productData.plasticColor = normalizedPlasticColor;
   }
 
-  // I-merge ang mga optional extra fields mula sa Add Product Menu page.
   if (extraFields && Object.keys(extraFields).length) {
     Object.assign(productData, extraFields);
   }
@@ -576,13 +584,7 @@ export async function addProduct(
   });
 }
 
-// Delete product
 export async function deleteProduct(id) {
-  // Bawal i-delete ang inventory item kung may naka-link pa dito sa
-  // Product Menu (regardless kung "assigned" pa 'yon o hindi) — dapat
-  // munang matanggal LAHAT ng productMenu entries na gumagamit nito
-  // (at ang mga 'yon ay dapat munang ma-unassign bago sila puwedeng
-  // tanggalin — check 'yon nasa productmenu.js).
   const linkedMenuQuery = query(
     collection(db, "productMenu"),
     where("inventory_id", "==", id),
@@ -610,17 +612,14 @@ export async function deleteProduct(id) {
 
 // ==================== CATEGORIES ==================== //
 export function loadCategories() {
-  // Pill buttons na ngayon ang filter-category, hindi na select dropdown.
   const selects = document.querySelectorAll(
     "#product-category, #edit-category, #menu-product-category",
   );
   const pillsContainer = document.getElementById("filter-category-pills");
 
-  // Kailangan i-rebind ito kada navigate dahil nade-destroy ang buttons kada innerHTML replace.
   bindDeleteCategoryButton();
   bindAddCategoryButton();
 
-  // Iniiwasan dito ang duplicate listener na naka-bind sa nabura nang DOM elements.
   if (unsubscribeCategories) {
     unsubscribeCategories();
     unsubscribeCategories = null;
@@ -629,7 +628,6 @@ export function loadCategories() {
   unsubscribeCategories = onSnapshot(
     collection(db, "categoriesINV"),
     (snapshot) => {
-      // Kung wala nang pills container (umalis na sa page), itigil ang listener.
       const pillsContainerNow = document.getElementById(
         "filter-category-pills",
       );
@@ -673,7 +671,6 @@ export function loadCategories() {
   );
 }
 
-// Tawagin ito pag umalis sa page na may category pills/selects para itigil ang listener.
 export function stopLoadingCategories() {
   if (unsubscribeCategories) {
     unsubscribeCategories();
@@ -681,7 +678,6 @@ export function stopLoadingCategories() {
   }
 }
 
-// I-render ang "All Categories" + isang pill per category, kasama ang click handlers.
 function renderCategoryPills(container, snapshot) {
   container.innerHTML = "";
 
@@ -711,9 +707,9 @@ function renderCategoryPills(container, snapshot) {
   syncDeleteCategoryButtonState();
 }
 
-// Kapag na-click ang isang pill, ina-update ang state at ire-run ulit ang inventory query.
 function selectCategoryPill(categoryId) {
   selectedCategoryFilter = categoryId;
+  currentPage = 1;
 
   document.querySelectorAll(".category-pill").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.id === categoryId);
@@ -740,8 +736,6 @@ function bindDeleteCategoryButton() {
   };
 }
 
-// I-save ang category kasama ang unit type + pieces per pack.
-// (Kada Inventory page load, tinatawag ito ulit sa bindInventoryPageButtons().)
 function bindSaveCategoryButton() {
   const saveCategoryBtn = document.getElementById("save-category");
   if (!saveCategoryBtn) return;
@@ -753,8 +747,6 @@ function bindSaveCategoryButton() {
     const piecesInput = document.getElementById("pieces-per-pack");
     if (!nameInput || !roleInput || !unitInput || !piecesInput) return;
 
-    // UPPERCASE ang category name para hindi magduplicate ang entries
-    // dahil lang sa magkaibang letter case.
     const name = toUpper(nameInput.value);
     const role = roleInput.value;
     const unitType = unitInput.value;
@@ -768,8 +760,6 @@ function bindSaveCategoryButton() {
       return;
     }
 
-    // Hard block: huwag payagang malikha ang category kung may existing
-    // na na parehong pangalan (case-insensitive dahil naka-uppercase na).
     const dupQuery = query(
       collection(db, "categoriesINV"),
       where("name", "==", name),
@@ -814,11 +804,11 @@ function bindFilterDateInput() {
   if (!filterDateInput) return;
 
   filterDateInput.onchange = () => {
+    currentPage = 1;
     loadInventory();
   };
 }
 
-// I-toggle ang visibility ng pieces-per-pack field.
 function bindNewCategoryUnitSelect() {
   const newCategoryUnitSelect = document.getElementById("new-category-unit");
   if (!newCategoryUnitSelect) return;
@@ -831,13 +821,11 @@ function bindNewCategoryUnitSelect() {
     } else {
       field.style.display = "none";
     }
-    // I-reinitialize ang select para maayos ang posisyon ng dropdown
     const selects = document.querySelectorAll("select");
     if (selects.length) M.FormSelect.init(selects);
   };
 }
 
-// Dropdown ng "Add Category" modal, kinakabit ulit dito kada page load para hindi mawala ang click handler.
 function bindAddCategoryButton() {
   const addCategoryBtn = document.getElementById("btn-add-categories");
   if (!addCategoryBtn) return;
@@ -877,7 +865,6 @@ function bindAddCategoryButton() {
   };
 }
 
-// Shared function ng Add at Edit Product modal para sa quantity label at plastic color visibility.
 function applyCategoryDependentFields(categoryData, els) {
   const { qtyLabel, qtyInput, plasticColorField, plasticColorInput } = els;
   const unitType = categoryData.unit_type;
@@ -900,7 +887,6 @@ function applyCategoryDependentFields(categoryData, els) {
     }
   }
 
-  // Pares category lang ang may plastic color, at optional pa rin ito.
   if (plasticColorField) {
     if (categoryName.toLowerCase() === "pares") {
       plasticColorField.style.display = "block";
@@ -911,7 +897,6 @@ function applyCategoryDependentFields(categoryData, els) {
   }
 }
 
-// I-update ang quantity label base sa napiling category.
 function bindProductCategorySelect() {
   const productCategorySelect = document.getElementById("product-category");
   if (!productCategorySelect) return;
@@ -930,27 +915,19 @@ function bindProductCategorySelect() {
       plasticColorInput: document.getElementById("product-plastic-color"),
     });
 
-    //i-refresh ang posisyon ng label
     M.updateTextFields();
   };
 }
 
-// Pinagsasama ang lahat ng handlers na kailangang i-rebind kada page load.
 function bindInventoryPageButtons() {
   bindSaveCategoryButton();
   bindFilterDateInput();
   bindNewCategoryUnitSelect();
   bindProductCategorySelect();
 
-  // Live-uppercase ang mga text field na ito habang nagta-type.
   bindLiveUppercase(document.getElementById("new-category-name"));
   bindLiveUppercase(document.getElementById("product-plastic-color"));
 }
-
-//button para sa delete category
-// (nasa loadCategories() na ang binding via bindDeleteCategoryButton)
-
-//load roles in add category
 
 export async function loadRoles() {
   const roleSelect = document.getElementById("category-role");
@@ -981,15 +958,13 @@ export async function loadRoles() {
   M.FormSelect.init(roleSelect);
 }
 
-// Tinatawag ito ng functionalnav.js kada mag-load ng inventory.html.
 export async function initInventoryPage() {
+  currentPage = 1;
   loadInventory();
   loadCategories();
   bindInventoryPageButtons();
 }
 
-// Tawagin ito ng functionalnav.js pag aalis sa inventory.html papunta sa
-// ibang page, para maayos na matigil ang mga listener bago mabura ang DOM.
 export function stopInventoryPage() {
   stopLoadingInventory();
   stopLoadingCategories();

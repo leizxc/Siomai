@@ -1,3 +1,4 @@
+/* Reset */
 * {
   margin: 0;
   padding: 0;
@@ -11,6 +12,10 @@ body {
   overflow-x: hidden;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 .container {
   width: 100% !important;
   max-width: none !important;
@@ -19,7 +24,7 @@ body {
   min-height: 100vh;
 }
 
-/* sidebar links */
+/* Sidebar links */
 .sidebar a,
 .sidebar .nav li a,
 .sidebar .nav li.active a,
@@ -30,7 +35,7 @@ body {
   text-decoration: none;
 }
 
-/* sidebar */
+/* Sidebar */
 .mobile-header {
   display: none;
 }
@@ -53,24 +58,11 @@ body {
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
 }
 
-/* logo and role */
-.logo {
-  font-size: 1.85rem;
-  font-weight: 700;
-  color: #8c1414;
-  margin-bottom: 6px;
-}
-
-.role {
-  color: #64748b;
-  font-size: 0.95rem;
-  margin-bottom: 32px;
-}
-
 .sidebar .logo {
   font-size: 2rem;
   font-weight: 600;
   color: #8c1414;
+  margin-bottom: 6px;
 }
 
 .sidebar .role {
@@ -79,26 +71,7 @@ body {
   margin-bottom: 20px;
 }
 
-/* navigation */
-.nav {
-  list-style: none;
-}
-
-.nav li {
-  margin-bottom: 4px;
-}
-
-.nav li a {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 16px;
-  border-radius: 5px;
-  text-decoration: none;
-  font-weight: 400;
-  transition: all 0.2s ease;
-}
-
+/* Navigation */
 .sidebar .nav {
   list-style: none;
 }
@@ -111,6 +84,17 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.3s ease;
+  margin-bottom: 4px;
+}
+
+.sidebar .nav li a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  color: #333;
+  text-decoration: none;
+  font-weight: 400;
 }
 
 .sidebar .nav li i {
@@ -123,7 +107,7 @@ body {
   background: #f0f0f0;
 }
 
-/* main content */
+/* Main content */
 .main {
   margin-left: 260px;
   width: calc(100% - 260px);
@@ -134,11 +118,11 @@ body {
 
 #content {
   width: 100%;
-  max-width: none; /* tanggal limit */
+  max-width: none;
   margin: 0;
 }
 
-/* cards */
+/* Cards */
 .card {
   background: #fff;
   border-radius: 12px;
@@ -147,7 +131,6 @@ body {
   margin-bottom: 20px;
 }
 
-/* text styles */
 .subtitle {
   color: #777;
   font-size: 0.9rem;
@@ -163,233 +146,7 @@ body {
   color: #999;
 }
 
-/*Inventory Design */
-.modal .input-field {
-  margin-bottom: 20px;
-}
-
-.edit-btn,
-.delete-btn {
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.edit-btn {
-  background-color: #2196f3;
-  color: #fff;
-}
-
-.edit-btn:hover {
-  background-color: #1976d2;
-  transform: scale(1.05);
-}
-
-.delete-btn {
-  margin-top: 10px;
-  background-color: #f44336;
-  color: #fff;
-}
-
-.delete-btn:hover {
-  background-color: #d32f2f;
-  transform: scale(1.05);
-}
-
-/* Center icons perfectly sa loob ng Materialize buttons */
-.btn i.material-icons {
-  vertical-align: middle;
-  line-height: 1; /* pantay sa text baseline */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.form-section {
-  margin-bottom: 24px; /* space sa ilalim ng form bago sumunod na card */
-}
-
-/* Base style para lahat ng toast */
-.toast {
-  position: fixed !important;
-  top: 0 !important; /* sagad sa pinaka-taas */
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  z-index: 9999 !important;
-  border-radius: 8px;
-  min-width: 350px;
-  text-align: center;
-  padding: 16px 24px;
-}
-
-/* Red toast (error) */
-.toast.red-toast {
-  background-color: #f44336 !important;
-  color: #fff !important;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-/* Green toast (success) */
-.toast.green-toast {
-  background-color: #4caf50 !important;
-  color: #fff !important;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-/* Blue toast (info) */
-.toast.blue-toast {
-  background-color: #2196f3 !important;
-  color: #fff !important;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-/* modal */
-/* Make modals fully responsive and centered */
-.modal {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  width: 92% !important;
-  max-width: 420px !important;
-  max-height: 92vh !important;
-  overflow-y: auto !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
-  z-index: 10000 !important;
-}
-
-/* Modal content */
-.modal-content {
-  padding: 20px 18px !important;
-  overflow-y: visible !important;
-}
-
-/* Make inputs and selects more mobile-friendly */
-.modal .input-field,
-.modal input,
-.modal select,
-.modal textarea {
-  width: 100% !important;
-  font-size: 16px !important; /* Prevents zoom on iOS */
-  margin-bottom: 12px !important;
-}
-
-/* Modal footer */
-.modal-footer {
-  margin-top: 10px !important;
-  padding: 12px 0 8px !important;
-  border-top: 1px solid #eee;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-/* CANCEL button style (optional) */
-.modal-footer .btn.grey,
-.modal-footer .btn-flat {
-  background-color: #f1f1f1 !important;
-  color: #333 !important;
-}
-
-/* Fix body overflow when modal opens */
-body.modal-open {
-  overflow: hidden;
-}
-
-.filter-card {
-  width: 100%;
-
-  padding: 35px;
-
-  border-radius: 18px;
-
-  background: #fff;
-
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
-
-  margin: 35px 0;
-}
-
-.filters {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 30px;
-}
-
-.filter-group {
-  width: 100%;
-}
-
-.filter-group label {
-  display: block;
-  font-size: 15px;
-  font-weight: 600;
-  color: #555;
-  margin-bottom: 8px;
-}
-
-.filter-group input {
-  width: 100%;
-}
-
-.category-row {
-  display: grid;
-  grid-template-columns: 1fr 55px;
-  gap: 15px;
-  align-items: end;
-}
-
-.category-row .select-wrapper {
-  flex: 1;
-}
-
-#delete-category-btn {
-  width: 55px;
-  height: 55px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #fff;
-  transition: 0.25s;
-}
-
-#delete-category-btn:hover {
-  background: #f44336;
-}
-
-#delete-category-btn:hover i {
-  color: white !important;
-}
-
-.add-buttons {
-  display: flex;
-
-  gap: 18px;
-
-  margin-top: 15px;
-}
-
-.add-buttons .btn {
-  min-width: 210px;
-  height: 52px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
+/* Header */
 .header {
   display: flex;
   justify-content: space-between;
@@ -412,87 +169,193 @@ body.modal-open {
   color: #6b7280;
 }
 
-/* SUMMARY */
-.summary {
+/* Summary cards */
+
+.inventory-summary {
   display: grid;
-
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-
+  grid-template-columns: repeat(4, 1fr);
   gap: 22px;
-
-  margin: 35px 0;
+  margin-bottom: 30px;
 }
 
-.summary .card {
+.inventory-summary .summary-box {
+  position: relative;
+
+  background: #fff;
+  border-radius: 12px;
+
+  padding: 25px;
+
+  min-height: 165px;
+
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  min-height: 140px;
-  margin: 0;
+  justify-content: space-between;
 }
 
-.summary .card h3 {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
+.inventory-summary .summary-box span {
+  display: block;
 
-.summary .card p {
-  margin: 0;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+
   color: #777;
-  font-size: 15px;
-}
 
-.inventory-card table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.inventory-card th {
   font-weight: 700;
 
-  padding: 16px;
+  margin-bottom: 18px;
+
+  text-transform: uppercase;
 }
 
-.inventory-card td {
-  padding: 18px 16px;
+.inventory-summary .summary-box h3 {
+  font-size: 2.6rem;
+  font-weight: 700;
+  margin: 0;
+  color: #111827;
+  /* Huwag pasakop sa icon */
+  padding-right: 80px;
+  /* Prevent overflow */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* desktop */
+/* inventory summary icons */
+.inventory-summary .summary-icon {
+  position: absolute;
+
+  right: 25px;
+  bottom: 25px;
+
+  width: 70px;
+  height: 70px;
+
+  border-radius: 50%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: #fff;
+
+  border: 1px solid #e5e7eb;
+}
+
+.inventory-summary .summary-icon i {
+  font-size: 34px;
+  margin: 0;
+}
+
+/* inventory summary icons color */
+.inventory-summary .icon-blue i {
+  color: #2563eb;
+}
+
+.inventory-summary .icon-green i {
+  color: #16a34a;
+}
+
+.inventory-summary .icon-orange i {
+  color: #f59e0b;
+}
+
+.inventory-summary .icon-purple i {
+  color: #9333ea;
+}
+
+/* Center icons inside Materialize buttons */
+.btn i.material-icons {
+  vertical-align: middle;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-section {
+  margin-bottom: 24px;
+}
+
+/* Toast */
+.toast {
+  position: fixed !important;
+  top: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 9999 !important;
+  border-radius: 8px;
+  min-width: 350px;
+  text-align: center;
+  padding: 16px 24px;
+}
+
+.toast.red-toast {
+  background-color: #f44336 !important;
+  color: #fff !important;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.toast.green-toast {
+  background-color: #4caf50 !important;
+  color: #fff !important;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.toast.blue-toast {
+  background-color: #2196f3 !important;
+  color: #fff !important;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Modal - base (mobile first) */
 .modal {
-  width: 620px !important;
-  border-radius: 14px;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 92% !important;
+  max-width: 420px !important;
+  max-height: 92vh !important;
+  overflow-y: auto !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+  z-index: 10000 !important;
 }
 
-/* Bawasan ang space sa loob */
 .modal-content {
-  padding: 20px 24px 4px !important;
+  padding: 20px 18px !important;
+  overflow-y: visible !important;
 }
 
-/* Alisin ang malaking pagitan ng rows */
+.modal .input-field,
+.modal input,
+.modal select,
+.modal textarea {
+  width: 100% !important;
+  font-size: 16px !important;
+  margin-bottom: 12px !important;
+}
+
 .modal .row {
   margin-bottom: 0 !important;
 }
 
-/* Ilapit ang bawat input */
-.modal .input-field {
-  margin-bottom: 8px !important;
-}
-
-/* Huling input wala nang margin */
 .modal .input-field:last-child {
   margin-bottom: 0 !important;
 }
 
-/* Ilapit ang footer sa last input */
 .modal-footer {
-  margin-top: 0 !important;
-  border-top: none !important;
+  margin-top: 10px !important;
+  padding: 12px 0 8px !important;
+  border-top: 1px solid #eee;
   display: flex;
   justify-content: flex-end;
-  align-items: center;
   gap: 10px;
 }
 
@@ -500,38 +363,13 @@ body.modal-open {
   margin: 0 !important;
 }
 
-.inventory-card td:last-child {
-  display: flex;
-  gap: 8px;
-  white-space: nowrap;
+.modal-footer .btn.grey,
+.modal-footer .btn-flat {
+  background-color: #f1f1f1 !important;
+  color: #333 !important;
 }
 
-.inventory-card td:last-child .btn {
-  width: 46px;
-  height: 40px;
-  min-width: 46px;
-  padding: 0 !important;
-
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-
-  margin: 0 !important;
-  border-radius: 6px;
-  line-height: 40px;
-}
-
-.inventory-card td:last-child .btn i {
-  margin: 0 !important;
-  font-size: 18px;
-  line-height: 1;
-}
-
-/* para pantay ang dalawang button */
-.inventory-card td:last-child .blue,
-.inventory-card td:last-child .red {
-  vertical-align: middle;
-}
+/* Desktop modal size */
 @media (min-width: 769px) {
   .modal {
     width: 620px !important;
@@ -544,44 +382,84 @@ body.modal-open {
   }
 }
 
-.status.available {
-  background: #d4edda;
-  color: #155724;
+/* Filter card */
+.filter-card {
+  width: 100%;
+  padding: 20px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  margin: 35px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.status.low-stock {
-  background: #fff3cd;
-  color: #856404;
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-end;
 }
 
-.status.on-selling {
-  background: #d1ecf1;
-  color: #0c5460;
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
 }
 
-/* ==================== CATEGORY FILTER PILLS ==================== */
-/* Wraps #filter-category-pills — the row of "All Categories / Siomai /
-   Pares / ..." buttons rendered by renderCategoryPills() in adminBE.js */
+.filter-group label {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 500;
+}
 
+.filter-group input {
+  width: 100%;
+}
+
+/* Category pills - with horizontal scroll */
 .category-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  margin-bottom: 16px;
+  overflow: hidden; /* important */
 }
 
 .category-pills {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* huwag mag-wrap */
   gap: 8px;
+  overflow-x: auto; /* horizontal scroll */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; /* smooth sa mobile */
+  scrollbar-width: thin; /* Firefox */
+  padding-bottom: 6px; /* space para sa scrollbar */
+}
+
+/* Optional: hide scrollbar pero naka-scroll pa rin */
+.category-pills::-webkit-scrollbar {
+  height: 4px;
+}
+
+.category-pills::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.category-pills::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
 }
 
 .category-pill {
+  flex-shrink: 0; /* para di magsikip ang pill */
   border: none;
   outline: none;
   border-radius: 999px;
   padding: 12px 28px;
-  background-color: #dbeafe; /* light blue, inactive */
+  background-color: #dbeafe;
   color: #1e40af;
   font-size: 1rem;
   font-weight: 600;
@@ -606,7 +484,7 @@ body.modal-open {
 }
 
 .category-pill.active {
-  background-color: #2563eb; /* solid blue, active */
+  background-color: #2563eb;
   color: #ffffff;
 }
 
@@ -614,75 +492,215 @@ body.modal-open {
   background-color: #1d4ed8;
 }
 
-/* "x" button next to the pill row for deleting the selected category */
-#delete-category-btn {
-  color: #94a3b8;
-}
+/* Inventory action buttons */
 
-#delete-category-btn:not([disabled]) {
-  color: #ef4444;
-}
-
-#delete-category-btn:not([disabled]):hover {
-  color: #dc2626;
-}
-
-/*add product and category overide color */
-.btn-custom {
-  background: #2563eb !important;
-}
-
-.btn-custom:hover {
-  background: #1d4ed8 !important;
-}
-
-/* ==================== STATUS BADGES ==================== */
-
-.status {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-/* ==================== FILTER CARD LAYOUT ==================== */
-
-.filter-card {
+.inventory-actions {
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-}
-
-.filters {
-  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+  margin: 30px 0;
   flex-wrap: wrap;
-  gap: 24px;
-  align-items: flex-end;
 }
 
-.filter-group {
+/* Common size for all inventory action buttons */
+.inventory-actions > button {
+  width: 225px;
+  height: 52px;
+  margin: 0 !important;
+  padding: 0 20px !important;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
-.filter-group label {
-  font-size: 0.85rem;
+.inventory-actions > button i {
+  margin: 0 !important;
+  font-size: 20px;
+}
+
+/* Add Product – solid blue (main action) */
+.inventory-actions #btn-add-product {
+  background: #2563eb !important;
+  color: #fff !important;
+  border: 2px solid #2563eb !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.inventory-actions #btn-add-product:hover {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+/* Add Category – outline style (same as Expenses / Employee) */
+.inventory-actions #btn-add-categories {
+  background: #fff !important;
+  color: #2563eb !important;
+  border: 2px solid #2563eb !important;
+  box-shadow: none;
+}
+
+.inventory-actions #btn-add-categories:hover {
+  background: #2563eb !important;
+  color: #fff !important;
+}
+
+.inventory-actions #btn-add-categories:hover i {
+  color: #fff !important;
+}
+
+/* Delete Category – red outline */
+.inventory-actions #delete-category-btn {
+  width: 225px;
+  background: #fff !important;
+  color: #333 !important;
+  border: 2px solid #f44336 !important;
+}
+
+.inventory-actions #delete-category-btn i {
+  color: #333 !important;
+}
+
+.inventory-actions #delete-category-btn:not(:disabled):hover {
+  background: #f5f5f5 !important;
+  border-color: #ff0000 !important;
+  color: #ff0000 !important;
+}
+
+.inventory-actions #delete-category-btn:not(:disabled):hover i {
+  color: #ff0000 !important;
+}
+
+.inventory-actions #delete-category-btn:disabled {
+  background: #fff !important;
+  color: #d1d5db !important;
+  border-color: #d1d5db !important;
+  opacity: 1 !important;
+}
+
+.inventory-actions #delete-category-btn:disabled i {
+  color: #d1d5db !important;
+}
+
+/* Status badge */
+.inventory-card .status {
+  display: inline-block;
+
+  padding: 6px 14px;
+
+  border-radius: 30px;
+
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.inventory-card .status.available {
+  background: #d4edda;
+  color: #155724;
+}
+
+.inventory-card .status.low-stock {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.inventory-card .status.on-selling {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+/* Inventory table */
+.inventory-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 25px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.inventory-card table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.inventory-card th {
+  padding: 18px;
+  text-align: left;
+
+  text-transform: uppercase;
+  letter-spacing: 2px;
+
+  font-size: 0.78rem;
+  font-weight: 700;
+
   color: #64748b;
-  font-weight: 500;
+
+  border-bottom: 1px solid #ececec;
 }
 
-.add-buttons {
+.inventory-card td {
+  padding: 18px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+.inventory-card tbody tr:hover {
+  background: #fafafa;
+}
+
+/* Action buttons - strong override for Materialize */
+.inventory-card td:last-child {
   display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
 }
 
-/* image sa product Menu */
+.inventory-card td:last-child .btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0 !important;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 !important;
+  border-radius: 8px;
+}
+
+.inventory-card td:last-child .btn i {
+  margin: 0 !important;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* inventory pagination */
+.inventory-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #eceff5;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Image upload (Product Menu) */
 .image-upload {
   width: 100%;
   max-width: 380px;
@@ -710,7 +728,6 @@ body.modal-open {
   line-height: 1;
 }
 
-/*para sa stock assign product */
 .stock-with-unit {
   position: relative;
 }
@@ -727,25 +744,24 @@ body.modal-open {
   border-radius: 4px;
 }
 
-/* product menu table */
-
+/* Product list table */
 .product-list-card td:last-child {
-  display: flex;
+  display: flex !important;
   gap: 8px;
   white-space: nowrap;
+  justify-content: center;
+  align-items: center;
 }
 
 .product-list-card td:last-child .btn {
-  width: 46px;
-  height: 40px;
-  min-width: 46px;
+  width: 46px !important;
+  height: 40px !important;
+  min-width: 46px !important;
   padding: 0 !important;
-
-  display: inline-flex;
+  margin: 0 !important;
+  display: inline-flex !important;
   justify-content: center;
   align-items: center;
-
-  margin: 0 !important;
   border-radius: 6px;
   line-height: 40px;
 }
@@ -761,185 +777,7 @@ body.modal-open {
   vertical-align: middle;
 }
 
-/* expenses */
-.expenses-page .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 35px;
-  padding-bottom: 10px;
-}
-
-.expenses-page .header h1 {
-  font-size: 3rem;
-  font-weight: 500;
-  color: #111827;
-  margin: 0;
-}
-
-.expenses-page .header p {
-  color: #6b7280;
-  font-size: 1.1rem;
-  margin: 0;
-}
-
-.expenses-page .expense-summary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
-  margin-bottom: 30px;
-}
-
-.expenses-page .summary-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 25px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  min-height: 165px;
-}
-
-.summary-title {
-  display: block;
-  font-size: 0.9rem;
-  letter-spacing: 2px;
-  color: #777;
-  font-weight: 700;
-  margin-bottom: 20px;
-}
-
-.summary-content h2,
-.summary-left h2 {
-  font-size: 3rem;
-  margin: 0;
-}
-
-.summary-content p {
-  margin-top: 8px;
-  color: #666;
-}
-
-.summary-card:last-child {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.summary-icon {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-left: auto;
-  margin-top: 15px;
-}
-
-.summary-icon i {
-  font-size: 32px;
-}
-
-.expenses-page .expense-filter-card {
-  padding: 28px;
-  border-radius: 12px;
-}
-
-.expenses-page .expense-filter-card {
-  padding: 28px;
-  border-radius: 12px;
-}
-
-.expenses-page .expense-btn {
-  width: 220px;
-  height: 52px;
-  border-radius: 12px;
-  font-weight: 600;
-}
-
-.expenses-page .expenses-card {
-  padding: 22px;
-}
-
-.expenses-page .card-header {
-  margin-bottom: 20px;
-}
-
-.expenses-page .card-header h4 {
-  font-size: 2rem;
-  font-weight: 600;
-}
-
-.expenses-page table {
-  width: 100%;
-}
-
-.expenses-page th {
-  font-weight: 700;
-}
-
-.expenses-page td,
-.expenses-page th {
-  padding: 18px 16px;
-}
-
-.expenses-page .status-paid {
-  background: #d4edda;
-  color: #155724;
-  padding: 6px 15px;
-  border-radius: 30px;
-  font-weight: 600;
-}
-
-.expenses-page .status-pending {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 6px 15px;
-  border-radius: 30px;
-  font-weight: 600;
-}
-
-.expense-filter-card .filter-row {
-  display: flex;
-  align-items: flex-end;
-  margin-bottom: 0;
-}
-
-.expense-filter-card .input-field {
-  margin-bottom: 0;
-}
-
-.expense-button-area {
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-}
-
-.expense-btn {
-  width: 260px;
-  height: 56px !important;
-
-  display: flex !important;
-  justify-content: center;
-  align-items: center;
-
-  border-radius: 14px;
-  font-size: 16px;
-  font-weight: 600;
-  text-transform: uppercase;
-
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
-}
-
-.expense-btn i {
-  margin-right: 8px !important;
-  margin-left: 0 !important;
-  line-height: 56px !important;
-}
-
-/* productMenu */
+/* Product Menu save button */
 .save-btn-wrapper {
   display: flex;
   justify-content: flex-end;
@@ -947,19 +785,16 @@ body.modal-open {
 }
 
 .save-menu-btn {
-  width: 280px; /* mas mahaba */
-  height: 58px; /* mas mataas */
+  width: 280px;
+  height: 58px;
   border-radius: 12px !important;
-
   display: flex !important;
   justify-content: center;
   align-items: center;
   gap: 10px;
-
   font-size: 16px;
   font-weight: 600;
   text-transform: uppercase;
-
   background: #2563eb !important;
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
 }
@@ -969,12 +804,217 @@ body.modal-open {
   font-size: 24px;
 }
 
-/*employee management */
+/* Expenses page */
+.expenses-page .header {
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 12px;
+  margin-bottom: 32px;
+}
+
+.expenses-page .header h1 {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.expenses-page .header p {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.expense-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  margin-bottom: 28px;
+}
+
+.summary-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  min-height: 160px;
+}
+
+.summary-title {
+  display: block;
+  margin-bottom: 18px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #64748b;
+}
+
+.summary-content h2,
+.summary-left h2 {
+  margin: 0;
+  font-size: 2.7rem;
+  font-weight: 600;
+}
+
+.summary-content p {
+  margin-top: 8px;
+  color: #6b7280;
+}
+
+.summary-card:last-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-icon {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+}
+
+.summary-icon i {
+  font-size: 30px;
+}
+
+.expense-filter-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 25px;
+}
+
+.expense-filter-card .input-field {
+  margin-bottom: 0;
+}
+
+.expense-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.expense-actions .btn,
+.expense-actions .outline-btn,
+.expense-actions .delete-outline {
+  min-width: 220px;
+  height: 52px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 600;
+}
+
+.expense-btn i {
+  margin-right: 8px;
+}
+
+.expenses-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.expenses-card h4 {
+  margin: 0 0 20px;
+  font-size: 2rem;
+  font-weight: 500;
+}
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+#expenseTable {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+#expenseTable th {
+  padding: 18px;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  border-bottom: 1px solid #eceff5;
+}
+
+#expenseTable td {
+  padding: 18px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+#expenseTable tbody tr:hover {
+  background: #fafafa;
+}
+
+#expenseTable th:last-child,
+#expenseTable td:last-child {
+  text-align: center;
+}
+/* EXPENSES DELETE BTN */
+#btn-delete-category {
+  width: 280px;
+  height: 52px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background: #fff !important;
+  color: #333 !important;
+  border: 2px solid #f44336;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+#btn-delete-category i {
+  color: #333 !important;
+  margin-right: 8px;
+}
+
+/* DELETE HOVER EXPENSES */
+#btn-delete-category:not(:disabled):hover {
+  background: #f5f5f5 !important;
+  border-color: #ff0000;
+  color: #ff0000 !important;
+}
+
+/* DELETE DISABLED EXPENSES */
+#btn-delete-category:disabled {
+  background: #fff !important;
+  color: #d1d5db !important;
+  border-color: #d1d5db !important;
+  opacity: 1 !important;
+}
+
+#btn-delete-category:disabled i {
+  color: #d1d5db !important;
+}
+
+/* Employee page */
 .employee-page {
   width: 100%;
 }
-
-/* HEADER */
 
 .employee-page .header {
   display: flex;
@@ -998,8 +1038,6 @@ body.modal-open {
   font-size: 1rem;
 }
 
-/* SUMMARY */
-
 .employee-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1016,6 +1054,7 @@ body.modal-open {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
 }
 
 .employee-summary .summary-box span {
@@ -1041,22 +1080,13 @@ body.modal-open {
   font-size: 0.95rem;
 }
 
-/* icon layout katulad ng Expenses */
-
-.employee-summary .summary-box {
-  position: relative;
-}
-
 .employee-summary .summary-icon {
   position: absolute;
   right: 25px;
   bottom: 25px;
-
   width: 70px;
   height: 70px;
-
   border-radius: 50%;
-
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1066,25 +1096,18 @@ body.modal-open {
   font-size: 34px;
 }
 
-/* color icons */
-/* Individual icon colors */
 .icon-blue i {
   color: #2563eb;
 }
-
 .icon-green i {
   color: #16a34a;
 }
-
 .icon-orange i {
   color: #f59e0b;
 }
-
 .icon-purple i {
   color: #9333ea;
 }
-
-/* FORM */
 
 .employee-form-card {
   background: #fff;
@@ -1092,13 +1115,6 @@ body.modal-open {
   padding: 28px;
   margin-bottom: 28px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-}
-
-.employee-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 40px; /* dagdag pagitan ng left at right */
-  row-gap: 24px;
 }
 
 .employee-form-grid {
@@ -1117,15 +1133,12 @@ body.modal-open {
 
 .employee-actions .btn,
 .employee-actions .outline-btn {
-  flex: 1;
-  max-width: 260px;
+  width: 280px;
   height: 52px;
   border-radius: 10px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   font-weight: 600;
   font-size: 15px;
 }
@@ -1149,11 +1162,6 @@ body.modal-open {
 .employee-actions .outline-btn i {
   margin-right: 8px;
 }
-.employee-actions .btn,
-.employee-actions .outline-btn {
-  width: 280px;
-  flex: none;
-}
 
 #btn-delete-role {
   width: 280px;
@@ -1162,38 +1170,44 @@ body.modal-open {
   justify-content: center;
   align-items: center;
   gap: 8px;
-  border: 2px solid #d1d5db;
-  border-radius: 10px;
   background: #fff !important;
-  color: #333 !important; /* Black text */
+  color: #333 !important;
+  border: 2px solid #f44336;
+  border-radius: 10px;
   font-weight: 600;
   font-size: 15px;
-  border: 2px solid #f44336; /* Red outline */
   transition: all 0.25s ease;
 }
 
 #btn-delete-role i {
-  color: #333 !important; /* Black icon */
+  color: #333 !important;
   margin-right: 8px;
 }
 
-#btn-delete-role:hover {
+/* Delete role employee hover */
+#btn-delete-role:not(:disabled):hover {
   background: #f5f5f5 !important;
   border-color: #ff0000;
   color: #ff0000 !important;
 }
 
-#btn-delete-role:hover i {
-  color: #ff0000 !important;
+/* disabled delete role */
+#btn-delete-role:disabled {
+  background: #fff !important;
+  color: #d1d5db !important;
+  border-color: #d1d5db !important;
+  opacity: 1 !important;
 }
 
-/* eye */
+#btn-delete-role:disabled i {
+  color: #d1d5db !important;
+}
+
 /* Password field */
 .password-field {
   position: relative;
 }
 
-/* Eye icon */
 .password-toggle-icon {
   position: absolute;
   right: 0;
@@ -1209,8 +1223,8 @@ body.modal-open {
 .password-toggle-icon:hover {
   color: #2563eb;
 }
-/* TABLE */
 
+/* Employee table */
 .employee-card {
   background: #fff;
   border-radius: 18px;
@@ -1248,24 +1262,23 @@ body.modal-open {
   background: #fafafa;
 }
 
-/* button action */
 .employee-card td:last-child {
-  display: flex;
+  display: flex !important;
   gap: 8px;
   white-space: nowrap;
+  justify-content: center;
+  align-items: center;
 }
 
 .employee-card td:last-child .btn {
-  width: 46px;
-  height: 40px;
-  min-width: 46px;
+  width: 46px !important;
+  height: 40px !important;
+  min-width: 46px !important;
   padding: 0 !important;
-
-  display: inline-flex;
+  margin: 0 !important;
+  display: inline-flex !important;
   justify-content: center;
   align-items: center;
-
-  margin: 0 !important;
   border-radius: 6px;
   line-height: 40px;
 }
@@ -1275,15 +1288,6 @@ body.modal-open {
   font-size: 18px;
   line-height: 1;
 }
-
-.employee-card td:last-child .edit-btn,
-.employee-card td:last-child .delete-btn {
-  margin-top: 0;
-  display: inline-flex;
-  align-items: center;
-}
-
-/* ROLE */
 
 .role-badge {
   display: inline-block;
@@ -1308,8 +1312,6 @@ body.modal-open {
   color: #15803d;
 }
 
-/* ACTION */
-
 .action-cell {
   display: flex;
   justify-content: center;
@@ -1332,146 +1334,44 @@ body.modal-open {
   margin: 0;
 }
 
-/* FOOTER */
-
 .employee-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #eceff5;
 }
 
 .employee-pagination {
   display: flex;
+  align-items: center;
   gap: 10px;
 }
 
-/* MOBILE RESPONSIVE */
-
+/* Mobile responsive */
 @media (max-width: 768px) {
-  .summary {
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    padding: 12px;
-    margin: 0;
-  }
-
-  .summary .card {
-    padding: 16px 12px;
-    min-height: 115px;
-  }
-
-  .summary .card h3 {
-    font-size: 1.65rem;
-  }
-  /*delete button for category in inv */
-
   .container {
     display: block;
-  }
-
-  .category-filter {
-    width: 100%;
-    margin-top: 10px;
-  }
-
-  .category-row {
-    padding: 12px 16px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .category-pills {
-    display: flex;
-    gap: 8px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding: 4px 0;
-  }
-
-  .category-pill {
-    padding: 11px 24px;
-    background: #f1f5f9;
-    color: #1e40af;
-    border: none;
-    border-radius: 9999px;
-    font-weight: 500;
-    font-size: 0.95rem;
-    white-space: nowrap;
-    cursor: pointer;
-    min-height: 46px;
-  }
-
-  .category-pill.active {
-    background: #2563eb;
-    color: white;
-  }
-
-  .add-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    padding: 0 12px; /* ← ito ang important (space sa gilid) */
-  }
-
-  .add-buttons .btn {
-    width: 100%;
-    min-height: 46px;
-    height: 46px;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    background: #2563eb;
-    color: white;
-    box-shadow: 0 3px 8px rgba(20, 184, 166, 0.3);
-  }
-
-  /* filter card */
-  .filter-card {
-    margin: 12px;
-    padding: 18px;
-    border-radius: 16px;
-  }
-  .filters {
-    display: block;
-    gap: 18px;
-  }
-
-  .filters input {
-    width: 100%;
-  }
-
-  .modal {
-    width: 90% !important;
-    max-width: 380px !important;
-    border-radius: 12px !important;
-  }
-
-  .modal-content {
-    padding: 20px 18px !important;
-  }
-
-  .modal .input-field,
-  .modal input,
-  .modal select {
-    margin-bottom: 12px !important;
-    font-size: 15.8px !important;
   }
 
   .main {
     margin-left: 0 !important;
     width: 100% !important;
     padding: 0 !important;
+    overflow-x: hidden;
+  }
+
+  #content {
+    overflow-x: hidden;
+    max-width: 100%;
   }
 
   .mobile-header {
     display: flex !important;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 12px;
     padding: 14px 16px;
     background: white;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -1492,15 +1392,18 @@ body.modal-open {
 
   #mobile-title {
     margin: 0;
+    margin-right: auto;
     font-size: 1.5rem;
     font-weight: 600;
     color: #111827;
     line-height: 1;
   }
 
-  .sidebar .logo,
-  .sidebar .role {
-    text-align: center;
+  .mobile-header > i {
+    font-size: 26px;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1;
   }
 
   .sidebar {
@@ -1513,11 +1416,16 @@ body.modal-open {
     z-index: 1000;
     transition: 0.3s ease;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    padding: 2px;
+    padding: 20px 16px;
   }
 
   .sidebar.active {
     left: 0;
+  }
+
+  .sidebar .logo,
+  .sidebar .role {
+    text-align: center;
   }
 
   .overlay {
@@ -1538,347 +1446,354 @@ body.modal-open {
     visibility: visible;
   }
 
-  /* Cards - Full width with minimal side space */
-  .card {
-    margin-left: 0;
-    margin-right: 0;
-    margin-bottom: 16px;
-    padding: 16px 14px;
-    /* Slightly reduced padding */
-    border-radius: 12px;
-  }
-
-  /* Header */
   .header {
     display: none;
   }
-  .header h1 {
-    display: none;
+
+  .card {
+    margin: 0 0 16px;
+    padding: 16px 14px;
+    border-radius: 12px;
   }
 
-  .header p {
-    display: none;
+  /* Modal */
+  .modal {
+    width: 90% !important;
+    max-width: 380px !important;
+    border-radius: 12px !important;
   }
 
-  /* Tables - Mobile friendly */
-  .table-container {
-    width: calc(100% + 32px);
-    margin: 20px -16px 0;
+  .modal-content {
+    padding: 20px 18px !important;
+  }
+
+  .modal .input-field,
+  .modal input,
+  .modal select {
+    margin-bottom: 12px !important;
+    font-size: 15.8px !important;
+  }
+
+  /* =====================
+     Inventory Mobile
+  ===================== */
+  .inventory-summary {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 16px;
+    max-width: calc(100% - 32px);
+  }
+
+  .inventory-summary .summary-box {
+    min-height: auto;
+    padding: 20px;
+  }
+
+  .inventory-summary .summary-icon {
+    width: 55px;
+    height: 55px;
+    right: 18px;
+    bottom: 18px;
+  }
+
+  .inventory-summary .summary-box h3 {
+    font-size: 2.2rem;
+    padding-right: 70px;
+  }
+
+  /* Category pills – keep horizontal scroll, no page shift */
+  .category-row {
+    margin: 0 16px 12px;
+    padding: 12px 0;
+    overflow: hidden;
+    max-width: calc(100% - 32px);
+  }
+
+  .category-pills {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    max-width: 100%;
+  }
+
+  .category-pill {
+    flex-shrink: 0;
+    padding: 11px 24px;
+    min-height: 46px;
+    font-size: 0.95rem;
+  }
+
+  /* Inventory action buttons */
+  .inventory-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px;
+    padding: 0;
+    max-width: calc(100% - 32px);
+  }
+
+  .inventory-actions > button {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 100% !important;
+    height: 50px !important;
+    margin: 0 !important;
+  }
+
+  .inventory-actions #btn-add-product {
+    order: 1;
+  }
+
+  .inventory-actions #btn-add-categories {
+    order: 2;
+  }
+
+  .inventory-actions #delete-category-btn {
+    order: 3;
+  }
+
+  /* Filter / Date */
+  .filter-card {
+    margin: 16px;
     padding: 16px;
-    border-radius: 0;
-    box-shadow: none;
+    max-width: calc(100% - 32px);
   }
 
-  .table-container table {
+  .filters {
+    display: block;
+  }
+
+  .filters input {
     width: 100%;
   }
 
-  .inventory-card,
-  .records-card {
-    overflow: visible;
+  /* Inventory table – card style */
+  .inventory-card {
+    margin: 16px;
+    padding: 16px;
+    overflow-x: hidden;
+    max-width: calc(100% - 32px);
   }
 
-  .inventory-card thead,
-  .records-card thead {
+  .inventory-card thead {
     display: none;
   }
 
   .inventory-card table,
-  .records-card table,
   .inventory-card tbody,
-  .records-card tbody,
   .inventory-card tr,
-  .records-card tr,
-  .inventory-card td,
-  .records-card td {
+  .inventory-card td {
     display: block;
     width: 100%;
   }
 
-  .inventory-card tr,
-  .records-card tr {
+  .inventory-card tr {
     background: #fff;
-    margin-bottom: 14px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    padding: 12px;
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 1.5px solid #111827;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    max-width: 100%;
+    overflow: hidden;
   }
 
-  .inventory-card td,
-  .records-card td {
+  .inventory-card td {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 12px;
-    border-bottom: 1px solid #eee;
-    font-size: 14.5px;
+    padding: 12px 0;
+    border-bottom: 1px solid #111827;
+    text-align: right;
+    word-break: break-word;
   }
 
-  .inventory-card td:last-child,
-  .records-card td:last-child {
-    border-bottom: none;
-    display: flex;
-    justify-content: flex-end;
-    /* align sa kanan */
-    align-items: center;
-    gap: 4px;
-  }
-
-  /* Align edit and delete buttons side by side */
-  .inventory-card td:last-child .edit-btn,
-  .inventory-card td:last-child .delete-btn {
-    margin-top: 0;
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .inventory-card td::before,
-  .records-card td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #444;
-  }
-
-  /*  Product Table Responsive */
-  .product-list-card thead {
-    display: none;
-  }
-
-  .product-list-card table,
-  .product-list-card tbody,
-  .product-list-card tr,
-  .product-list-card td {
-    display: block;
-    width: 100%;
-  }
-
-  .product-list-card tr {
-    background: #fff;
-    margin-bottom: 14px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    padding: 12px;
-  }
-
-  .product-list-card td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 12px;
-    border-bottom: 1px solid #eee;
-    font-size: 14.5px;
-  }
-
-  .product-list-card td:last-child {
+  .inventory-card td:last-child {
     border-bottom: none;
     justify-content: flex-end;
-    gap: 4px;
-    /* maliit na pagitan lang sa edit at delete */
-  }
-
-  .product-list-card td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #444;
-  }
-
-  /* Compact buttons for mobile */
-  .product-list-card .btn {
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 13px;
-  }
-
-  .product-list-card .edit-btn,
-  .product-list-card .delete-btn {
-    margin-top: 0;
-  }
-
-  /*product menu */
-  .save-btn-wrapper {
-    width: 100%;
-    margin-top: 20px;
-  }
-
-  .save-menu-btn {
-    width: 100%;
-    height: 54px;
-    border-radius: 14px !important;
-
-    font-size: 17px;
     gap: 8px;
   }
 
-  .save-menu-btn i {
-    font-size: 22px;
+  .inventory-card td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    margin-right: auto;
+    text-align: left;
   }
 
-  /*expenses */
-
-  .expenses-page .expense-summary {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin: 16px;
+  .inventory-card td:last-child::before {
+    content: attr(data-label);
+    margin-right: auto;
   }
 
-  .expenses-page .summary-card {
-    padding: 22px;
-    border-radius: 18px;
-    background: #fff;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  .inventory-card td:last-child .btn {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    justify-content: center;
+    align-items: center;
+    margin: 0 !important;
   }
 
-  .expenses-page .summary-title {
-    display: block;
-    font-size: 14px;
-    letter-spacing: 3px;
-    font-weight: 700;
-    color: #6d4c41;
-    margin-bottom: 20px;
-  }
-
-  .expenses-page .summary-content h2,
-  .expenses-page .summary-left h2 {
-    margin: 0;
-    font-size: 3rem;
-    font-weight: 700;
-  }
-
-  .expenses-page .summary-content p {
-    margin-top: 4px;
-    color: #777;
+  .inventory-card td:last-child .btn i {
+    margin: 0 !important;
     font-size: 18px;
   }
 
-  .expenses-page .summary-card:last-child {
-    display: flex;
+  /* Inventory footer / pagination */
+  .inventory-footer {
+    margin-top: 16px;
+    padding-top: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .pagination-controls {
+    width: 100%;
     justify-content: space-between;
-    align-items: center;
   }
 
-  .expenses-page .summary-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: #dfe7ff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .expenses-page .summary-icon i {
-    font-size: 30px;
-    color: #5f6778;
-  }
-
-  .expenses-page .expense-filter-card {
-    margin: 16px;
-  }
-
-  .expenses-page .expense-btn {
-    width: 100%;
-    height: 50px;
-    border-radius: 12px;
-  }
-
-  .expenses-page .expenses-card {
-    margin: 16px;
-  }
-
-  .expenses-page .card-header {
-    margin-bottom: 18px;
-  }
-
-  .expenses-page .card-header h4 {
-    font-size: 30px;
-  }
-  .expenses-card thead {
-    display: none;
-  }
-
-  .expenses-card table,
-  .expenses-card tbody,
-  .expenses-card tr,
-  .expenses-card td {
-    display: block;
-    width: 100%;
-  }
-
-  .expenses-card tr {
-    background: #fff;
-    margin-bottom: 14px;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-    padding: 12px;
-  }
-
-  .expenses-card td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 12px;
-    border-bottom: 1px solid #eee;
-    font-size: 14.5px;
-  }
-
-  .expenses-card td:last-child {
-    border-bottom: none;
-    justify-content: flex-end;
-    gap: 4px; /* maliit na pagitan lang sa edit at delete */
-  }
-
-  .expenses-card td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #444;
-  }
-
-  /* Compact buttons for mobile */
-  .expenses-card .btn {
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 13px;
-  }
-
-  .expenses-card .edit-btn,
-  .expenses-card .delete-btn {
-    margin-top: 0;
-  }
-
-  .expenses-page .filter-btn-wrapper {
-    justify-content: stretch;
-    margin-top: 10px;
-  }
-
-  .expenses-page .expense-btn {
-    width: 100%;
-  }
-
-  .expense-filter-card .filter-row {
-    display: block;
-  }
-
-  .expense-button-area {
-    margin-top: 18px;
-  }
-
-  .expense-btn {
-    width: 100%;
-  }
-
-  /* employee management */
-  .employee-page .header {
-    display: none;
-  }
-  .employee-summary {
+  /* =====================
+     Expenses Mobile
+  ===================== */
+  .expense-summary {
     grid-template-columns: 1fr;
     gap: 16px;
     margin: 16px;
   }
 
-  .employee-summary .summary-box {
-    font-size: 2.2rem;
+  .summary-card {
+    min-height: auto;
+    padding: 20px;
+  }
+
+  .expense-filter-card {
+    margin: 16px;
+    padding: 18px;
+  }
+
+  .expense-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .expense-actions .btn,
+  .expense-actions .outline-btn,
+  .expense-actions .delete-outline,
+  .expense-actions #btn-delete-category {
+    width: 100%;
+    max-width: none;
+    min-width: 100%;
+  }
+
+  .expense-actions .expense-btn {
+    order: 1;
+  }
+
+  .expense-actions .add-expenses-category {
+    order: 2;
+  }
+
+  .expense-actions #btn-delete-category {
+    order: 3;
+  }
+
+  .expenses-card {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  .expenses-card h4 {
+    font-size: 1.6rem;
+    margin-bottom: 18px;
+  }
+
+  #expenseTable {
+    min-width: 0;
+  }
+
+  #expenseTable thead {
+    display: none;
+  }
+
+  #expenseTable,
+  #expenseTable tbody,
+  #expenseTable tr,
+  #expenseTable td {
+    display: block;
+    width: 100%;
+  }
+
+  #expenseTable tr {
+    background: #fff;
+    margin-bottom: 16px;
+    padding: 16px;
+    border: 1.5px solid #111827;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  #expenseTable td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #111827;
+    text-align: right;
+  }
+
+  #expenseTable td:last-child {
+    border-bottom: none;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  #expenseTable td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+  }
+
+  #expenseTable td:last-child::before {
+    margin-right: auto;
+  }
+
+  #expenseTable td:last-child .btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #expenseTable td:last-child .btn i {
+    margin: 0;
+  }
+
+  /* =====================
+     Employee Mobile
+  ===================== */
+  .employee-page .header {
+    display: none;
+  }
+
+  .employee-summary {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 16px;
   }
 
   .employee-summary .summary-icon {
@@ -1888,7 +1803,6 @@ body.modal-open {
     bottom: 18px;
   }
 
-  /* Form */
   .employee-form-card {
     margin: 16px;
     padding: 20px;
@@ -1900,7 +1814,6 @@ body.modal-open {
     row-gap: 18px;
   }
 
-  /* Buttons */
   .employee-actions {
     flex-direction: column;
     gap: 12px;
@@ -1915,28 +1828,23 @@ body.modal-open {
     height: 50px;
   }
 
-  /* Add Employee unang lalabas */
   .employee-actions .btn[type="submit"] {
     order: 1;
   }
 
-  /* Add Role pangalawa */
   #btnAddRole {
     order: 2;
   }
 
-  /* Delete Role panghuli */
   #btn-delete-role {
     order: 3;
   }
 
-  /* Password */
   .password-toggle-icon {
     right: 10px;
     font-size: 20px;
   }
 
-  /* Employee Card */
   .employee-card {
     margin: 16px;
     padding: 16px;
@@ -1947,19 +1855,6 @@ body.modal-open {
     margin-bottom: 18px;
   }
 
-  .employee-card td:last-child {
-    justify-content: flex-end;
-    gap: 6px;
-  }
-
-  .employee-card td:last-child .btn {
-    width: 42px;
-    height: 38px;
-    min-width: 42px;
-  }
-
-  /*employee table*/
-  /* Employee Mobile Card */
   .employee-card thead {
     display: none;
   }
@@ -1978,6 +1873,7 @@ body.modal-open {
     padding: 16px;
     border-radius: 14px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1.5px solid #111827;
   }
 
   .employee-card td {
@@ -1985,7 +1881,7 @@ body.modal-open {
     justify-content: space-between;
     align-items: center;
     padding: 12px 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #111827;
   }
 
   .employee-card td::before {
@@ -1996,9 +1892,7 @@ body.modal-open {
 
   .employee-card td:last-child {
     border-bottom: none;
-    display: flex;
     justify-content: flex-end;
-    align-items: center;
     gap: 8px;
   }
 
@@ -2019,8 +1913,39 @@ body.modal-open {
   .employee-card td:last-child .btn i {
     margin: 0;
   }
+
+  .employee-footer {
+    margin: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .employee-pagination {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Product menu save */
+  .save-btn-wrapper {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .save-menu-btn {
+    width: 100%;
+    height: 54px;
+    border-radius: 14px !important;
+    font-size: 17px;
+    gap: 8px;
+  }
+
+  .save-menu-btn i {
+    font-size: 22px;
+  }
 }
 
+/* Very small screens */
 @media (max-width: 360px) {
   .modal {
     width: 94% !important;

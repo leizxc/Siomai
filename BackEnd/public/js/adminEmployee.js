@@ -421,11 +421,11 @@ export async function addEmployee(
 }
 
 //delete role
-// Delete role — only if no user is currently assigned to it
+// Delete role — only if no user is currently assigned to it, and only
+// after the user confirms via the shared modal-delete-category dialog.
 export async function deleteRole() {
   const roleSelect = document.getElementById("role");
   const roleName = roleSelect ? roleSelect.value : "";
-  console.log("DEBUG deleteRole roleName:", roleName);
 
   if (!roleName) {
     M.toast({ html: "Please select a role", classes: "red rounded" });
@@ -452,8 +452,44 @@ export async function deleteRole() {
     return;
   }
 
+  const confirmed = await confirmDeletion(
+    "Delete role?",
+    `"${roleName}" will be permanently deleted. This action cannot be undone.`,
+  );
+
+  if (!confirmed) return;
+
   await deleteDoc(roleDoc.docs[0].ref);
   M.toast({ html: "Role deleted", classes: "green rounded" });
+}
+
+// I-disable ang Delete Role button hangga't walang napiling role sa
+// #role select. Tawagin ito isang beses sa initEmployee() (o kung saan
+// pinopopulate ang #role select) para maka-bind ang change listener.
+export function bindDeleteRoleButton() {
+  const deleteRoleBtn = document.getElementById("btn-delete-role");
+  const roleSelect = document.getElementById("role");
+
+  if (!deleteRoleBtn || !roleSelect) return;
+
+  function syncState() {
+    deleteRoleBtn.disabled = !roleSelect.value;
+  }
+
+  syncState();
+
+  if (!roleSelect.dataset.deleteRoleSyncBound) {
+    roleSelect.dataset.deleteRoleSyncBound = "true";
+    roleSelect.addEventListener("change", syncState);
+  }
+
+  if (!deleteRoleBtn.dataset.deleteRoleBound) {
+    deleteRoleBtn.dataset.deleteRoleBound = "true";
+    deleteRoleBtn.addEventListener("click", () => {
+      if (deleteRoleBtn.disabled) return;
+      deleteRole();
+    });
+  }
 }
 
 //confirmation delete

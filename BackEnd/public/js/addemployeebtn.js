@@ -40,6 +40,10 @@ function loadRoleOptions() {
         addRoleSelect.value = previousValue;
       }
       M.FormSelect.init(addRoleSelect);
+
+      // Kung nabura ang currently-selected role (di na kasama sa bagong
+      // snapshot), balik dapat sa disabled ang Delete Role button.
+      syncDeleteRoleButtonState();
     }
 
     if (editRoleSelect && editRoleSelect.isConnected) {
@@ -107,20 +111,34 @@ function bindAddRoleButton() {
       created_at: serverTimestamp(),
     });
 
-    M.toast({ html: "Role added!", classes: "green rounded" });
+    M.toast({ html: "New Role successfully save!", classes: "green rounded" });
     newRoleInput.value = "";
     modalInstance.close();
   };
 }
 
+// Naka-disable ang Delete Role button hangga't walang napiling role.
+function syncDeleteRoleButtonState() {
+  const btnDeleteRole = document.getElementById("btn-delete-role");
+  const roleSelect = document.getElementById("role");
+
+  if (!btnDeleteRole || !roleSelect) return;
+
+  btnDeleteRole.disabled = !roleSelect.value;
+}
+
 // Delete Role button
 function bindDeleteRoleButton() {
   const btnDeleteRole = document.getElementById("btn-delete-role");
-  console.log("DEBUG btn-delete-role found:", btnDeleteRole);
-  if (!btnDeleteRole) return;
+  const roleSelect = document.getElementById("role");
+
+  if (!btnDeleteRole || !roleSelect) return;
+
+  syncDeleteRoleButtonState();
+  roleSelect.addEventListener("change", syncDeleteRoleButtonState);
 
   btnDeleteRole.onclick = async () => {
-    console.log("DEBUG delete role button clicked");
+    if (btnDeleteRole.disabled) return;
     await deleteRole();
   };
 }

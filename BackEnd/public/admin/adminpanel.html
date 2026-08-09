@@ -1,206 +1,242 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Panel Queen Cassy Food Cart</title>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+    <link rel="stylesheet" type="text/css" href="/css/admin.css" />
 
     <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet" />
     <script type="text/javascript" src="/js/materialize.min.js"></script>
 
     <!-- Manifest -->
-    <link rel="manifest" href="/manifest.json">
-</head>
+    <link rel="manifest" href="/manifest.json" />
+  </head>
 
-<body>
+  <body>
     <div class="container">
+      <!-- Side Bar -->
+      <aside class="sidebar">
+        <h2 class="logo">Queen Casy</h2>
+        <p class="role">Admin</p>
 
-        <!-- Side Bar -->
-        <aside class="sidebar">
-            <h2 class="logo">Queen Casy</h2>
-            <p class="role">Admin</p>
+        <ul class="nav">
+          <li>
+            <a href="../admin/adminpanel.html"
+              ><i class="material-icons">dashboard</i>Dashboard</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('inventory.html', this)"
+              ><i class="material-icons">inventory</i>Inventory</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('productMenu.html', this)"
+              ><i class="material-icons">restaurant_menu</i>Product Menu</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('product.html', this)"
+              ><i class="material-icons">assignment_ind</i>Assign Product</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('incomecart.html', this)"
+              ><i class="material-icons">bar_chart</i>Income Per Cart</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('expenses.html', this)"
+              ><i class="material-icons">payments</i>Expenses Records</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('EmployeeManagement.html', this)"
+              ><i class="material-icons">people</i>Employee Management</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('EmployeeMonitoring.html', this)"
+              ><i class="material-icons">monitor_heart</i>Employee Monitoring</a
+            >
+          </li>
+          <li>
+            <a href="../index.html"
+              ><i class="material-icons">logout</i>Logout</a
+            >
+          </li>
+        </ul>
+      </aside>
 
-            <ul class="nav">
-                <li><a href="../admin/adminpanel.html"><i class="material-icons">dashboard</i>Dashboard</a></li>
-                <li><a href="#" onclick="loadSection('inventory.html', this)"><i class="material-icons">inventory</i>Inventory</a></li>
-                <li><a href="#" onclick="loadSection('productMenu.html',this)"><i class="material-icons">restaurant_menu</i>Product Menu</a></li>
-                <li><a href="#" onclick="loadSection('product.html', this)"><i class="material-icons">assignment_ind</i>Assign Product</a></li>
-                <li><a href="#" onclick="loadSection('incomecart.html', this)"><i class="material-icons">bar_chart</i>Income Per Cart</a></li>
-                <li><a href="#" onclick="loadSection('expenses.html', this)"><i class="material-icons">payments</i>Expenses Records</a></li>
-                <li><a href="#" onclick="loadSection('EmployeeManagement.html', this)"><i class="material-icons">people</i>Employee Management</a></li>
-                <li><a href="#" onclick="loadSection('EmployeeMonitoring.html', this)"><i class="material-icons">monitor_heart</i>Employee Monitoring</a></li>
-                <li><a href="../index.html"><i class="material-icons">logout</i>Logout</a></li>
-            </ul>
-        </aside>
+      <div class="overlay"></div>
 
-        <div class="overlay"></div>
+      <!-- MAIN -->
+      <main class="main">
+        <div class="mobile-header">
+          <button id="menu-toggle">
+            <i class="material-icons">menu</i>
+          </button>
+          <h2 id="mobile-title">Dashboard</h2>
+          <i class="material-icons">notifications_none</i>
+          <i class="material-icons">account_circle </i>
+        </div>
 
-        <!-- MAIN -->
-        <main class="main">
+        <div id="content">
+          <!-- CARD -->
+          <section class="card income-card">
+            <div class="card-header">
+              <i class="material-icons">shopping_cart</i>
+              <h3>Network Income per Cart</h3>
+            </div>
+            <p class="subtitle">Average net income earned per cart</p>
+            <h2 class="value">₱ 1,250.00</h2>
+            <p class="date">As of May 22, 2026</p>
+          </section>
 
-            <div class="mobile-header">
-                <button id="menu-toggle">
-                    <i class="material-icons">menu</i>
-                </button>
-                <h2 id="mobile-title">Dashboard</h2>
-                <i class="material-icons">notifications_none</i>
+          <!-- INVENTORY -->
+          <section class="card inventory-card">
+            <div class="card-header">
+              <i class="material-icons">inventory</i>
+              <h3>Inventory</h3>
+            </div>
+            <p class="subtitle">Product List and Stocks</p>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Stock Quantity</th>
+                  <th>Unit Price (₱)</th>
+                  <th>Total Value (₱)</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr>
+                  <td data-label="Product">Siomai</td>
+                  <td data-label="Category">Food</td>
+                  <td data-label="Stock Quantity">200 pcs</td>
+                  <td data-label="Unit Price (₱)">6.00</td>
+                  <td data-label="Total Value (₱)">1,200.00</td>
+                </tr>
+
+                <tr>
+                  <td data-label="Product">Siomai Rice</td>
+                  <td data-label="Category">Food</td>
+                  <td data-label="Stock Quantity">150 pcs</td>
+                  <td data-label="Unit Price (₱)">20.00</td>
+                  <td data-label="Total Value (₱)">3,000.00</td>
+                </tr>
+
+                <tr>
+                  <td data-label="Product">Siomai Pork</td>
+                  <td data-label="Category">Food</td>
+                  <td data-label="Stock Quantity">120 pcs</td>
+                  <td data-label="Unit Price (₱)">7.00</td>
+                  <td data-label="Total Value (₱)">840.00</td>
+                </tr>
+
+                <tr>
+                  <td data-label="Product">Drinks</td>
+                  <td data-label="Category">Drinks</td>
+                  <td data-label="Stock Quantity">180 pcs</td>
+                  <td data-label="Unit Price (₱)">15.00</td>
+                  <td data-label="Total Value (₱)">2,700.00</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="total">
+              <p>Total Inventory Value: <span>₱ 7,740.00</span></p>
+              <a href="#" onclick="loadSection('inventory.html', this)"
+                >View Inventory</a
+              >
+            </div>
+          </section>
+
+          <!-- INCOME RECORDS -->
+          <section class="card records-card">
+            <div class="card-header">
+              <i class="material-icons">bar_chart</i>
+              <h3>Income Per Cart</h3>
             </div>
 
-            <div id="content">
+            <p class="subtitle">Income breakdown per time of day</p>
 
-                <!-- CARD -->
-                <section class="card income-card">
-                    <div class="card-header">
-                        <i class="material-icons">shopping_cart</i>
-                        <h3>Network Income per Cart</h3>
-                    </div>
-                    <p class="subtitle">Average net income earned per cart</p>
-                    <h2 class="value">₱ 1,250.00</h2>
-                    <p class="date">As of May 22, 2026</p>
-                </section>
-
-                <!-- INVENTORY -->
-                <section class="card inventory-card">
-                    <div class="card-header">
-                        <i class="material-icons">inventory</i>
-                        <h3>Inventory</h3>
-                    </div>
-                    <p class="subtitle">Product List and Stocks</p>
-
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Category</th>
-                                <th>Stock Quantity</th>
-                                <th>Unit Price (₱)</th>
-                                <th>Total Value (₱)</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <tr>
-                                <td data-label="Product">Siomai</td>
-                                <td data-label="Category">Food</td>
-                                <td data-label="Stock Quantity">200 pcs</td>
-                                <td data-label="Unit Price (₱)">6.00</td>
-                                <td data-label="Total Value (₱)">1,200.00</td>
-                            </tr>
-
-                            <tr>
-                                <td data-label="Product">Siomai Rice</td>
-                                <td data-label="Category">Food</td>
-                                <td data-label="Stock Quantity">150 pcs</td>
-                                <td data-label="Unit Price (₱)">20.00</td>
-                                <td data-label="Total Value (₱)">3,000.00</td>
-                            </tr>
-
-                            <tr>
-                                <td data-label="Product">Siomai Pork</td>
-                                <td data-label="Category">Food</td>
-                                <td data-label="Stock Quantity">120 pcs</td>
-                                <td data-label="Unit Price (₱)">7.00</td>
-                                <td data-label="Total Value (₱)">840.00</td>
-                            </tr>
-
-                            <tr>
-                                <td data-label="Product">Drinks</td>
-                                <td data-label="Category">Drinks</td>
-                                <td data-label="Stock Quantity">180 pcs</td>
-                                <td data-label="Unit Price (₱)">15.00</td>
-                                <td data-label="Total Value (₱)">2,700.00</td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <div class="total">
-                        <p>Total Inventory Value: <span>₱ 7,740.00</span></p>
-                        <a href="#" onclick="loadSection('inventory.html', this)">View Inventory</a>
-                    </div>
-                </section>
-
-                <!-- INCOME RECORDS -->
-                <section class="card records-card">
-
-                    <div class="card-header">
-                        <i class="material-icons">bar_chart</i>
-                        <h3>Income Per Cart</h3>
-                    </div>
-
-                    <p class="subtitle">Income breakdown per time of day</p>
-
-                    <div class="filters">
-                        <input type="date" value="2026-05-22">
-                        <select>
-                            <option>All Carts</option>
-                        </select>
-                    </div>
-
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Total sales (₱)</th>
-                                <th>Total Expenses (₱)</th>
-                                <th>Net Income (₱)</th>
-                                <th>Net Income per cart (₱)</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <tr>
-                                <td data-label="Time">Morning (6:00 AM - 11:59 AM)</td>
-                                <td data-label="Total sales">3,250.00</td>
-                                <td data-label="Total Expenses">1,950.00</td>
-                                <td data-label="Net Income">1,300.00</td>
-                                <td data-label="Net Income per cart">1,300.00</td>
-                            </tr>
-
-                            <tr>
-                                <td data-label="Time">Afternoon (12:00 PM - 4:59 PM)</td>
-                                <td data-label="Total sales">5,100.00</td>
-                                <td data-label="Total Expenses">2,950.00</td>
-                                <td data-label="Net Income">2,150.00</td>
-                                <td data-label="Net Income per cart">2,150.00</td>
-                            </tr>
-
-                            <tr>
-                                <td data-label="Time">Evening (5:00 PM - 10:00 PM)</td>
-                                <td data-label="Total sales">7,250.00</td>
-                                <td data-label="Total Expenses">4,450.00</td>
-                                <td data-label="Net Income">2,800.00</td>
-                                <td data-label="Net Income per cart">2,800.00</td>
-                            </tr>
-
-                            <tr class="total-row">
-                                <td data-label="Time">Total (All Day)</td>
-                                <td data-label="Total sales">15,600.00</td>
-                                <td data-label="Total Expenses">9,350.00</td>
-                                <td data-label="Net Income">6,250.00</td>
-                                <td data-label="Net Income per cart">1,250.00</td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <p class="note">* Net Income per Cart is the average per cart for the selected date.</p>
-
-                </section>
-
+            <div class="filters">
+              <input type="date" value="2026-05-22" />
+              <select>
+                <option>All Carts</option>
+              </select>
             </div>
-        </main>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Total sales (₱)</th>
+                  <th>Total Expenses (₱)</th>
+                  <th>Net Income (₱)</th>
+                  <th>Net Income per cart (₱)</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr>
+                  <td data-label="Time">Morning (6:00 AM - 11:59 AM)</td>
+                  <td data-label="Total sales">3,250.00</td>
+                  <td data-label="Total Expenses">1,950.00</td>
+                  <td data-label="Net Income">1,300.00</td>
+                  <td data-label="Net Income per cart">1,300.00</td>
+                </tr>
+
+                <tr>
+                  <td data-label="Time">Afternoon (12:00 PM - 4:59 PM)</td>
+                  <td data-label="Total sales">5,100.00</td>
+                  <td data-label="Total Expenses">2,950.00</td>
+                  <td data-label="Net Income">2,150.00</td>
+                  <td data-label="Net Income per cart">2,150.00</td>
+                </tr>
+
+                <tr>
+                  <td data-label="Time">Evening (5:00 PM - 10:00 PM)</td>
+                  <td data-label="Total sales">7,250.00</td>
+                  <td data-label="Total Expenses">4,450.00</td>
+                  <td data-label="Net Income">2,800.00</td>
+                  <td data-label="Net Income per cart">2,800.00</td>
+                </tr>
+
+                <tr class="total-row">
+                  <td data-label="Time">Total (All Day)</td>
+                  <td data-label="Total sales">15,600.00</td>
+                  <td data-label="Total Expenses">9,350.00</td>
+                  <td data-label="Net Income">6,250.00</td>
+                  <td data-label="Net Income per cart">1,250.00</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <p class="note">
+              * Net Income per Cart is the average per cart for the selected
+              date.
+            </p>
+          </section>
+        </div>
+      </main>
     </div>
+  </body>
 
-</body>
-
-<!-- JS Files -->
-<script src="/js/refresh.js"></script>
-<script src="/js/functionalnav.js"></script>
-<script type="module" src="/js/IndexDB.js"></script>
-
+  <!-- JS Files -->
+  <script src="/js/refresh.js"></script>
+  <script src="/js/functionalnav.js"></script>
+  <script type="module" src="/js/IndexDB.js"></script>
 </html>
