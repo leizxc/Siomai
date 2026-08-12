@@ -8,7 +8,7 @@
 
 body {
   background: #f8f9fc;
-  color: #333;
+  color: #000;
   overflow-x: hidden;
 }
 
@@ -24,7 +24,7 @@ body.modal-open {
   min-height: 100vh;
 }
 
-/* Sidebar links */
+/* Sidebar */
 .sidebar a,
 .sidebar .nav li a,
 .sidebar .nav li.active a,
@@ -33,11 +33,6 @@ body.modal-open {
 .sidebar .nav li a:focus {
   color: #333 !important;
   text-decoration: none;
-}
-
-/* Sidebar */
-.mobile-header {
-  display: none;
 }
 
 .overlay {
@@ -49,7 +44,7 @@ body.modal-open {
   top: 0;
   left: 0;
   width: 260px;
-  background: #ffffff;
+  background: #fff;
   border-right: 1px solid #e2e8f0;
   padding: 24px 20px;
   height: 100vh;
@@ -71,7 +66,6 @@ body.modal-open {
   margin-bottom: 20px;
 }
 
-/* Navigation */
 .sidebar .nav {
   list-style: none;
 }
@@ -107,12 +101,93 @@ body.modal-open {
   background: #f0f0f0;
 }
 
-/* Main content */
+/* Top header */
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 260px;
+  right: 0;
+  height: 78px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 45px;
+}
+
+#menu-toggle {
+  display: none !important;
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.header-title h2 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #000;
+}
+
+.header-title p {
+  margin: 4px 0 0;
+  font-size: 0.95rem;
+  color: #000;
+  opacity: 0.6;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.header-actions > .material-icons {
+  font-size: 26px;
+  color: #000;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.admin-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-profile > i {
+  font-size: 40px;
+  color: #8c1414;
+}
+
+.admin-profile div {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-profile strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #000;
+}
+
+.admin-profile small {
+  font-size: 0.78rem;
+  color: #000;
+  opacity: 0.55;
+}
+
+/* Main */
 .main {
   margin-left: 260px;
   width: calc(100% - 260px);
   min-height: 100vh;
-  padding: 25px 45px 40px;
+  padding: 103px 45px 40px;
   overflow-y: auto;
 }
 
@@ -132,21 +207,24 @@ body.modal-open {
 }
 
 .subtitle {
-  color: #777;
+  color: #000;
+  opacity: 0.6;
   font-size: 0.9rem;
 }
 
 .value {
   font-size: 2rem;
-  font-weight: bold;
+  font-weight: 700;
+  color: #000;
 }
 
 .date {
   font-size: 0.85rem;
-  color: #999;
+  color: #000;
+  opacity: 0.5;
 }
 
-/* Header */
+/* Page header */
 .header {
   display: flex;
   justify-content: space-between;
@@ -157,20 +235,432 @@ body.modal-open {
 
 .header h1 {
   font-size: 3rem;
-  font-weight: 500;
+  font-weight: 700;
   margin: 0;
-  color: #111827;
+  color: #000;
   line-height: 1.1;
 }
 
 .header p {
   margin-top: 10px;
   font-size: 1.15rem;
-  color: #6b7280;
+  color: #000;
+  opacity: 0.6;
 }
 
-/* Summary cards */
+/* Dashboard */
+.dashboard-content {
+  width: 100%;
+}
 
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.dashboard-kpi-card {
+  min-height: 130px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+}
+
+.kpi-icon {
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.kpi-icon i {
+  font-size: 26px;
+}
+
+/* Icon colors only */
+.income-kpi .kpi-icon i {
+  color: #ef4444;
+}
+
+.sales-kpi .kpi-icon i {
+  color: #16a34a;
+}
+
+.expense-kpi .kpi-icon i {
+  color: #f59e0b;
+}
+
+.profit-kpi .kpi-icon i {
+  color: #8b5cf6;
+}
+
+.kpi-info {
+  min-width: 0;
+}
+
+.kpi-info p {
+  margin: 0 0 5px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #000;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+.kpi-info h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #000;
+}
+
+.kpi-positive,
+.kpi-negative {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.kpi-positive {
+  color: #16a34a;
+}
+.kpi-negative {
+  color: #ef4444;
+}
+
+.kpi-positive i,
+.kpi-negative i {
+  font-size: 15px;
+}
+
+.dashboard-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
+  padding: 20px;
+  min-width: 0;
+}
+
+.dashboard-middle-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.85fr 1fr;
+  gap: 18px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 16px;
+}
+
+.panel-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+}
+
+/* Panel header icons – unique colors */
+.panel-header h3 i {
+  font-size: 20px;
+}
+
+/* Income Per Cart */
+.income-panel .panel-header h3 i {
+  color: #3b82f6; /* blue */
+}
+
+/* Inventory Summary */
+.inventory-summary-panel .panel-header h3 i {
+  color: #8b5cf6; /* purple */
+}
+
+/* Inventory table */
+.inventory-panel .panel-header h3 i {
+  color: #2563eb; /* blue */
+}
+
+.top-products-panel .panel-header h3 i {
+  color: #ef4444; /* red */
+}
+
+/* Recent Expenses */
+.expenses-panel .panel-header h3 i {
+  color: #f59e0b; /* orange/amber */
+}
+
+.panel-header p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #000;
+  opacity: 0.6;
+}
+
+.simple-header {
+  margin-bottom: 14px;
+}
+
+.panel-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-filters input,
+.panel-filters select {
+  width: 145px;
+  height: 36px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  color: #000;
+  box-sizing: border-box;
+}
+
+.dashboard-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.dashboard-panel table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard-panel th {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #000;
+  opacity: 0.65;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.dashboard-panel td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 13px;
+  font-weight: 400;
+  color: #000;
+  white-space: nowrap;
+}
+
+.dashboard-panel tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dashboard-total-row td {
+  background: #f8fafc;
+  font-weight: 700 !important;
+  color: #000;
+}
+
+.dashboard-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #000;
+  opacity: 0.5;
+}
+
+.inventory-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Inventory summary icons – force white bg + colored icon only */
+/* Inventory summary – layout fix */
+.inventory-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.inventory-stat {
+  min-height: 72px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: row; /* icon left, text right */
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.inventory-stat-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff !important;
+  border: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.inventory-stat-icon i {
+  font-size: 18px;
+  margin: 0;
+}
+
+.inventory-stat-icon.blue i {
+  color: #fff !important;
+}
+.inventory-stat-icon.green i {
+  color: #fff !important;
+}
+.inventory-stat-icon.orange i {
+  color: #ffff !important;
+}
+.inventory-stat-icon.red i {
+  color: #fff !important;
+}
+
+.inventory-stat > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.inventory-stat span {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #000;
+  opacity: 0.6;
+  line-height: 1.2;
+}
+
+.inventory-stat strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1.2;
+}
+
+.inventory-stat small {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  color: #000;
+  opacity: 0.5;
+  line-height: 1.2;
+}
+
+.dashboard-panel-link {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  color: #3b82f6;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dashboard-panel-link i {
+  font-size: 16px;
+}
+
+.dashboard-panel-link:hover {
+  color: #2563eb;
+}
+
+.top-product-list {
+  width: 100%;
+}
+
+.top-product {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 20px 36px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.top-product:last-child {
+  border-bottom: none;
+}
+
+.top-product > strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: #000;
+  opacity: 0.55;
+}
+
+.product-placeholder {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-placeholder i {
+  font-size: 16px;
+  color: #94a3b8;
+}
+
+.top-product span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #000;
+}
+
+.top-product b {
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+}
+
+/* Inventory summary */
 .inventory-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -180,16 +670,11 @@ body.modal-open {
 
 .inventory-summary .summary-box {
   position: relative;
-
   background: #fff;
   border-radius: 12px;
-
   padding: 25px;
-
   min-height: 165px;
-
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -197,16 +682,12 @@ body.modal-open {
 
 .inventory-summary .summary-box span {
   display: block;
-
-  font-size: 0.9rem;
-  letter-spacing: 2px;
-
-  color: #777;
-
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  color: #000;
+  opacity: 0.65;
   font-weight: 700;
-
   margin-bottom: 18px;
-
   text-transform: uppercase;
 }
 
@@ -214,33 +695,24 @@ body.modal-open {
   font-size: 2.6rem;
   font-weight: 700;
   margin: 0;
-  color: #111827;
-  /* Huwag pasakop sa icon */
+  color: #000;
   padding-right: 80px;
-  /* Prevent overflow */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* inventory summary icons */
 .inventory-summary .summary-icon {
   position: absolute;
-
   right: 25px;
   bottom: 25px;
-
   width: 70px;
   height: 70px;
-
   border-radius: 50%;
-
   display: flex;
   justify-content: center;
   align-items: center;
-
   background: #fff;
-
   border: 1px solid #e5e7eb;
 }
 
@@ -249,24 +721,19 @@ body.modal-open {
   margin: 0;
 }
 
-/* inventory summary icons color */
 .inventory-summary .icon-blue i {
   color: #2563eb;
 }
-
 .inventory-summary .icon-green i {
   color: #16a34a;
 }
-
 .inventory-summary .icon-orange i {
   color: #f59e0b;
 }
-
 .inventory-summary .icon-purple i {
   color: #9333ea;
 }
 
-/* Center icons inside Materialize buttons */
 .btn i.material-icons {
   vertical-align: middle;
   line-height: 1;
@@ -313,7 +780,7 @@ body.modal-open {
   font-weight: 600;
 }
 
-/* Modal - base (mobile first) */
+/* Modal */
 .modal {
   position: fixed !important;
   top: 50% !important;
@@ -369,7 +836,6 @@ body.modal-open {
   color: #333 !important;
 }
 
-/* Desktop modal size */
 @media (min-width: 769px) {
   .modal {
     width: 620px !important;
@@ -382,7 +848,7 @@ body.modal-open {
   }
 }
 
-/* Filter card */
+/* Filter */
 .filter-card {
   width: 100%;
   padding: 20px;
@@ -411,35 +877,35 @@ body.modal-open {
 
 .filter-group label {
   font-size: 0.85rem;
-  color: #64748b;
-  font-weight: 500;
+  color: #000;
+  opacity: 0.65;
+  font-weight: 600;
 }
 
 .filter-group input {
   width: 100%;
 }
 
-/* Category pills - with horizontal scroll */
+/* Category pills */
 .category-row {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 16px;
-  overflow: hidden; /* important */
+  overflow: hidden;
 }
 
 .category-pills {
   display: flex;
-  flex-wrap: nowrap; /* huwag mag-wrap */
+  flex-wrap: nowrap;
   gap: 8px;
-  overflow-x: auto; /* horizontal scroll */
+  overflow-x: auto;
   overflow-y: hidden;
-  -webkit-overflow-scrolling: touch; /* smooth sa mobile */
-  scrollbar-width: thin; /* Firefox */
-  padding-bottom: 6px; /* space para sa scrollbar */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding-bottom: 6px;
 }
 
-/* Optional: hide scrollbar pero naka-scroll pa rin */
 .category-pills::-webkit-scrollbar {
   height: 4px;
 }
@@ -454,7 +920,7 @@ body.modal-open {
 }
 
 .category-pill {
-  flex-shrink: 0; /* para di magsikip ang pill */
+  flex-shrink: 0;
   border: none;
   outline: none;
   border-radius: 999px;
@@ -485,15 +951,14 @@ body.modal-open {
 
 .category-pill.active {
   background-color: #2563eb;
-  color: #ffffff;
+  color: #fff;
 }
 
 .category-pill.active:hover {
   background-color: #1d4ed8;
 }
 
-/* Inventory action buttons */
-
+/* Inventory actions */
 .inventory-actions {
   width: 100%;
   display: flex;
@@ -504,7 +969,6 @@ body.modal-open {
   flex-wrap: wrap;
 }
 
-/* Common size for all inventory action buttons */
 .inventory-actions > button {
   width: 225px;
   height: 52px;
@@ -526,7 +990,6 @@ body.modal-open {
   font-size: 20px;
 }
 
-/* Add Product – solid blue (main action) */
 .inventory-actions #btn-add-product {
   background: #2563eb !important;
   color: #fff !important;
@@ -539,7 +1002,6 @@ body.modal-open {
   border-color: #1d4ed8 !important;
 }
 
-/* Add Category – outline style (same as Expenses / Employee) */
 .inventory-actions #btn-add-categories {
   background: #fff !important;
   color: #2563eb !important;
@@ -556,7 +1018,6 @@ body.modal-open {
   color: #fff !important;
 }
 
-/* Delete Category – red outline */
 .inventory-actions #delete-category-btn {
   width: 225px;
   background: #fff !important;
@@ -592,14 +1053,10 @@ body.modal-open {
 /* Status badge */
 .inventory-card .status {
   display: inline-block;
-
   padding: 6px 14px;
-
   border-radius: 30px;
-
   font-size: 0.78rem;
   font-weight: 600;
-
   white-space: nowrap;
 }
 
@@ -635,29 +1092,25 @@ body.modal-open {
 .inventory-card th {
   padding: 18px;
   text-align: left;
-
   text-transform: uppercase;
-  letter-spacing: 2px;
-
+  letter-spacing: 1px;
   font-size: 0.78rem;
   font-weight: 700;
-
-  color: #64748b;
-
+  color: #000;
+  opacity: 0.65;
   border-bottom: 1px solid #ececec;
 }
 
 .inventory-card td {
   padding: 18px;
   border-bottom: 1px solid #f3f4f6;
-  color: #374151;
+  color: #000;
 }
 
 .inventory-card tbody tr:hover {
   background: #fafafa;
 }
 
-/* Action buttons - strong override for Materialize */
 .inventory-card td:last-child {
   display: flex;
   justify-content: center;
@@ -684,7 +1137,6 @@ body.modal-open {
   line-height: 1;
 }
 
-/* inventory pagination */
 .inventory-footer {
   display: flex;
   justify-content: space-between;
@@ -700,7 +1152,7 @@ body.modal-open {
   gap: 10px;
 }
 
-/* Image upload (Product Menu) */
+/* Product Menu */
 .image-upload {
   width: 100%;
   max-width: 380px;
@@ -744,7 +1196,6 @@ body.modal-open {
   border-radius: 4px;
 }
 
-/* Product list table */
 .product-list-card td:last-child {
   display: flex !important;
   gap: 8px;
@@ -772,12 +1223,6 @@ body.modal-open {
   line-height: 1;
 }
 
-.product-list-card td:last-child .blue,
-.product-list-card td:last-child .red {
-  vertical-align: middle;
-}
-
-/* Product Menu save button */
 .save-btn-wrapper {
   display: flex;
   justify-content: flex-end;
@@ -804,7 +1249,7 @@ body.modal-open {
   font-size: 24px;
 }
 
-/* Expenses page */
+/* Expenses */
 .expenses-page .header {
   justify-content: space-between;
   align-items: flex-end;
@@ -816,14 +1261,15 @@ body.modal-open {
 .expenses-page .header h1 {
   margin: 0;
   font-size: 3rem;
-  font-weight: 500;
-  color: #111827;
+  font-weight: 700;
+  color: #000;
 }
 
 .expenses-page .header p {
   margin: 4px 0 0;
   font-size: 1rem;
-  color: #6b7280;
+  color: #000;
+  opacity: 0.6;
 }
 
 .expense-summary {
@@ -846,20 +1292,24 @@ body.modal-open {
   margin-bottom: 18px;
   font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 2px;
-  color: #64748b;
+  letter-spacing: 1px;
+  color: #000;
+  opacity: 0.65;
+  text-transform: uppercase;
 }
 
 .summary-content h2,
 .summary-left h2 {
   margin: 0;
   font-size: 2.7rem;
-  font-weight: 600;
+  font-weight: 700;
+  color: #000;
 }
 
 .summary-content p {
   margin-top: 8px;
-  color: #6b7280;
+  color: #000;
+  opacity: 0.6;
 }
 
 .summary-card:last-child {
@@ -929,7 +1379,8 @@ body.modal-open {
 .expenses-card h4 {
   margin: 0 0 20px;
   font-size: 2rem;
-  font-weight: 500;
+  font-weight: 700;
+  color: #000;
 }
 
 .table-container {
@@ -952,14 +1403,15 @@ body.modal-open {
   letter-spacing: 1px;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #64748b;
+  color: #000;
+  opacity: 0.65;
   border-bottom: 1px solid #eceff5;
 }
 
 #expenseTable td {
   padding: 18px;
   border-bottom: 1px solid #f3f4f6;
-  color: #374151;
+  color: #000;
 }
 
 #expenseTable tbody tr:hover {
@@ -970,7 +1422,7 @@ body.modal-open {
 #expenseTable td:last-child {
   text-align: center;
 }
-/* EXPENSES DELETE BTN */
+
 #btn-delete-category {
   width: 280px;
   height: 52px;
@@ -992,14 +1444,12 @@ body.modal-open {
   margin-right: 8px;
 }
 
-/* DELETE HOVER EXPENSES */
 #btn-delete-category:not(:disabled):hover {
   background: #f5f5f5 !important;
   border-color: #ff0000;
   color: #ff0000 !important;
 }
 
-/* DELETE DISABLED EXPENSES */
 #btn-delete-category:disabled {
   background: #fff !important;
   color: #d1d5db !important;
@@ -1011,7 +1461,7 @@ body.modal-open {
   color: #d1d5db !important;
 }
 
-/* Employee page */
+/* Employee */
 .employee-page {
   width: 100%;
 }
@@ -1028,13 +1478,14 @@ body.modal-open {
 .employee-page .header h1 {
   font-size: 3rem;
   font-weight: 700;
-  color: #111827;
+  color: #000;
   margin: 0;
 }
 
 .employee-page .header p {
   margin: 0;
-  color: #6b7280;
+  color: #000;
+  opacity: 0.6;
   font-size: 1rem;
 }
 
@@ -1059,9 +1510,10 @@ body.modal-open {
 
 .employee-summary .summary-box span {
   display: block;
-  font-size: 0.9rem;
-  letter-spacing: 2px;
-  color: #777;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  color: #000;
+  opacity: 0.65;
   font-weight: 700;
   margin-bottom: 18px;
   text-transform: uppercase;
@@ -1071,12 +1523,13 @@ body.modal-open {
   font-size: 3rem;
   font-weight: 700;
   margin: 0;
-  color: #111827;
+  color: #000;
 }
 
 .employee-summary .summary-box small {
   margin-top: 8px;
-  color: #666;
+  color: #000;
+  opacity: 0.55;
   font-size: 0.95rem;
 }
 
@@ -1184,14 +1637,12 @@ body.modal-open {
   margin-right: 8px;
 }
 
-/* Delete role employee hover */
 #btn-delete-role:not(:disabled):hover {
   background: #f5f5f5 !important;
   border-color: #ff0000;
   color: #ff0000 !important;
 }
 
-/* disabled delete role */
 #btn-delete-role:disabled {
   background: #fff !important;
   color: #d1d5db !important;
@@ -1203,7 +1654,6 @@ body.modal-open {
   color: #d1d5db !important;
 }
 
-/* Password field */
 .password-field {
   position: relative;
 }
@@ -1224,7 +1674,6 @@ body.modal-open {
   color: #2563eb;
 }
 
-/* Employee table */
 .employee-card {
   background: #fff;
   border-radius: 18px;
@@ -1236,6 +1685,8 @@ body.modal-open {
   margin-top: 0;
   margin-bottom: 25px;
   font-size: 2rem;
+  font-weight: 700;
+  color: #000;
 }
 
 .employee-card table {
@@ -1247,15 +1698,18 @@ body.modal-open {
   padding: 18px;
   text-align: left;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   font-size: 0.78rem;
-  color: #64748b;
+  font-weight: 700;
+  color: #000;
+  opacity: 0.65;
   border-bottom: 1px solid #ececec;
 }
 
 .employee-card td {
   padding: 18px;
   border-bottom: 1px solid #f3f4f6;
+  color: #000;
 }
 
 .employee-card tbody tr:hover {
@@ -1349,7 +1803,7 @@ body.modal-open {
   gap: 10px;
 }
 
-/* Mobile responsive */
+/* Mobile */
 @media (max-width: 768px) {
   .container {
     display: block;
@@ -1358,7 +1812,7 @@ body.modal-open {
   .main {
     margin-left: 0 !important;
     width: 100% !important;
-    padding: 0 !important;
+    padding: 64px 0 30px !important;
     overflow-x: hidden;
   }
 
@@ -1368,42 +1822,82 @@ body.modal-open {
   }
 
   .mobile-header {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 64px;
+    margin: 0 !important;
+    padding: 0 16px;
     display: flex !important;
     align-items: center;
-    justify-content: flex-start;
-    gap: 12px;
-    padding: 14px 16px;
-    background: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    justify-content: space-between;
+    background: #fff;
+    border: none;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    z-index: 1500;
   }
 
   #menu-toggle {
-    background: none;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    margin: 0;
+    background: transparent;
     border: none;
     cursor: pointer;
   }
 
   #menu-toggle i {
     font-size: 30px;
+    color: #000;
   }
 
-  #mobile-title {
+  .header-title {
+    flex: 1;
+    margin-left: 10px;
+  }
+
+  .header-title h2 {
     margin: 0;
-    margin-right: auto;
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #111827;
-    line-height: 1;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #000;
   }
 
-  .mobile-header > i {
-    font-size: 26px;
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1;
+  .header-title p {
+    display: none;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-actions > .material-icons {
+    font-size: 25px;
+    color: #000;
+    opacity: 0.7;
+  }
+
+  .admin-profile {
+    display: flex;
+    align-items: center;
+  }
+
+  .admin-profile > i {
+    font-size: 32px;
+    color: #8c1414;
+  }
+
+  .admin-profile div {
+    display: none;
   }
 
   .sidebar {
@@ -1412,20 +1906,14 @@ body.modal-open {
     left: -240px;
     width: 220px;
     height: 100vh;
+    z-index: 2000;
+    transition: left 0.3s ease;
     background: #fff;
-    z-index: 1000;
-    transition: 0.3s ease;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    padding: 20px 16px;
   }
 
   .sidebar.active {
     left: 0;
-  }
-
-  .sidebar .logo,
-  .sidebar .role {
-    text-align: center;
   }
 
   .overlay {
@@ -1438,16 +1926,15 @@ body.modal-open {
     background: rgba(0, 0, 0, 0.4);
     opacity: 0;
     visibility: hidden;
-    z-index: 999;
+    z-index: 1900;
+    transition:
+      opacity 0.25s ease,
+      visibility 0.25s ease;
   }
 
   .overlay.active {
     opacity: 1;
     visibility: visible;
-  }
-
-  .header {
-    display: none;
   }
 
   .card {
@@ -1456,7 +1943,6 @@ body.modal-open {
     border-radius: 12px;
   }
 
-  /* Modal */
   .modal {
     width: 90% !important;
     max-width: 380px !important;
@@ -1474,9 +1960,7 @@ body.modal-open {
     font-size: 15.8px !important;
   }
 
-  /* =====================
-     Inventory Mobile
-  ===================== */
+  /* Inventory mobile */
   .inventory-summary {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -1501,7 +1985,6 @@ body.modal-open {
     padding-right: 70px;
   }
 
-  /* Category pills – keep horizontal scroll, no page shift */
   .category-row {
     margin: 0 16px 12px;
     padding: 12px 0;
@@ -1527,7 +2010,6 @@ body.modal-open {
     font-size: 0.95rem;
   }
 
-  /* Inventory action buttons */
   .inventory-actions {
     display: flex;
     flex-direction: column;
@@ -1548,16 +2030,13 @@ body.modal-open {
   .inventory-actions #btn-add-product {
     order: 1;
   }
-
   .inventory-actions #btn-add-categories {
     order: 2;
   }
-
   .inventory-actions #delete-category-btn {
     order: 3;
   }
 
-  /* Filter / Date */
   .filter-card {
     margin: 16px;
     padding: 16px;
@@ -1572,7 +2051,6 @@ body.modal-open {
     width: 100%;
   }
 
-  /* Inventory table – card style */
   .inventory-card {
     margin: 16px;
     padding: 16px;
@@ -1649,7 +2127,6 @@ body.modal-open {
     font-size: 18px;
   }
 
-  /* Inventory footer / pagination */
   .inventory-footer {
     margin-top: 16px;
     padding-top: 16px;
@@ -1663,9 +2140,7 @@ body.modal-open {
     justify-content: space-between;
   }
 
-  /* =====================
-     Expenses Mobile
-  ===================== */
+  /* Expenses mobile */
   .expense-summary {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -1699,11 +2174,9 @@ body.modal-open {
   .expense-actions .expense-btn {
     order: 1;
   }
-
   .expense-actions .add-expenses-category {
     order: 2;
   }
-
   .expense-actions #btn-delete-category {
     order: 3;
   }
@@ -1783,9 +2256,7 @@ body.modal-open {
     margin: 0;
   }
 
-  /* =====================
-     Employee Mobile
-  ===================== */
+  /* Employee mobile */
   .employee-page .header {
     display: none;
   }
@@ -1831,11 +2302,9 @@ body.modal-open {
   .employee-actions .btn[type="submit"] {
     order: 1;
   }
-
   #btnAddRole {
     order: 2;
   }
-
   #btn-delete-role {
     order: 3;
   }
@@ -1926,7 +2395,6 @@ body.modal-open {
     justify-content: space-between;
   }
 
-  /* Product menu save */
   .save-btn-wrapper {
     width: 100%;
     margin-top: 20px;
@@ -1945,7 +2413,6 @@ body.modal-open {
   }
 }
 
-/* Very small screens */
 @media (max-width: 360px) {
   .modal {
     width: 94% !important;
@@ -1974,7 +2441,6 @@ body.modal-open {
   }
 }
 
-/* Landscape */
 @media (max-width: 1024px) and (orientation: landscape) {
   .main {
     padding: 10px 8px;
