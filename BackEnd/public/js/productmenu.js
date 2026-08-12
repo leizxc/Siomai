@@ -55,7 +55,7 @@ async function generateProductCode() {
     return next;
   });
 
-  return `QC-${String(nextNumber).padStart(6, "0")}`;
+  return QC-$;{String(nextNumber).padStart(6, "0")};
 }
 
 // Kailangan i-destroy at i-init ulit ang Materialize select, dahil hindi
@@ -86,7 +86,7 @@ export function loadInventoryOptions(role = "") {
   unsubscribeInventoryOptions = onSnapshot(q, (snapshot) => {
     if (!select.isConnected) return;
 
-    select.innerHTML = `<option value="" disabled selected>Inventory Allocation</option>`;
+    select.innerHTML = <option value="" disabled selected>Inventory Allocation</option>;
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
@@ -157,7 +157,7 @@ export async function loadroles() {
     }
   });
 
-  roleSelect.innerHTML = `<option value="" disabled selected>Select Role</option>`;
+  roleSelect.innerHTML = <option value="" disabled selected>Select Role</option>;
 
   // Hiwalay na option: hindi tied sa isang specific role, makikita sa
   // Assign Product page kahit anong role ang piliin doon.
@@ -195,7 +195,7 @@ function previewNextProductId() {
     const current = snap.exists() ? snap.data().lastNumber || 0 : 0;
     const next = current + 1;
 
-    productIdInput.value = `QC-${String(next).padStart(6, "0")}`;
+    productIdInput.value = QC-$;{String(next).padStart(6, "0")};
   });
 }
 
@@ -347,7 +347,7 @@ async function loadCategoryFilter() {
 
   const categories = new Set();
 
-  select.innerHTML = `<option value="">All Categories</option>`;
+  select.innerHTML = <option value="">All Categories</option>;
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
