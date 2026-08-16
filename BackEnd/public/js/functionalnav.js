@@ -26,10 +26,10 @@ function loadSection(page) {
 
       const pageTitles = {
         "dashboard.html": "Dashboard",
-        "inventory.html": "Inventory",
-        "product.html": "Products Assign",
-        "productMenu.html": "Add Product Menu",
-        "expenses.html": "Expenses Records",
+        "inventory.html": "Inventory Management",
+        "product.html": "Products Assign Management",
+        "productMenu.html": "Product menu Management",
+        "expenses.html": "Capital Management",
         "EmployeeManagement.html": "Employees Management",
         "EmployeeMonitoring.html": "Employee Monitoring",
       };

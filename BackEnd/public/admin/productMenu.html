@@ -1,5 +1,7 @@
 <!-- ================= ADD PRODUCT ================= -->
-<section class="card inventory-card">
+<section class="card inventory-card product-menu-form">
+  <h4>Add Product Form</h4>
+
   <form id="addProductMenu">
     <div class="row">
       <!-- Inventory Allocation -->
@@ -13,10 +15,32 @@
       <!-- Product Name -->
       <div class="input-field col s12 m6">
         <input type="text" id="inputProduct" />
-        <label for="inputProduct">Product Name (e.g Pork Siomai)</label>
+        <label for="inputProduct">Product Name (e.g. Pork Siomai)</label>
       </div>
 
-      <!-- Category -->
+      <!-- Kg counter to container -->
+      <div
+        class="input-field col s12 m6"
+        id="kg-used-field"
+        style="display: none"
+      >
+        <input type="number" name="kgUsed" id="KgUsed" step="0.01" min="0" />
+        <label for="kgUsed">Kilograms Used (as Ingredient) </label>
+      </div>
+
+      <!-- KALDER OR CONTAINER -->
+      <div
+        class="input-field col s12 m6"
+        id="kaldero-count-field"
+        style="display: none"
+      >
+        <input type="number" id="kalderocCount" min="0" />
+        <label for="kalderocCount"
+          >Number of kaldero or container Reached</label
+        >
+      </div>
+
+      <!-- Category / Role -->
       <div class="input-field col s12 m6">
         <select id="selectCategory">
           <option value="" disabled selected>Select Role</option>
@@ -25,7 +49,7 @@
       </div>
 
       <!-- Initial Stock -->
-      <div class="input-field col s12 m56">
+      <div class="input-field col s12 m6">
         <input type="number" id="stock" readonly />
         <label for="stock">Initial Stock</label>
       </div>
@@ -38,7 +62,7 @@
 
       <!-- Price -->
       <div class="input-field col s12 m6">
-        <input type="number" id="price" step="0.01" min="0" />
+        <input type="number" id="price" step="0.01" min="0" readonly />
         <label for="price">Product Price</label>
       </div>
 
@@ -51,7 +75,6 @@
       <!-- Image Upload -->
       <div class="col s12">
         <input type="file" id="inputImg" accept="image/*" hidden />
-
         <div class="image-upload" id="uploadBox">
           <img
             id="previewImage"
@@ -61,29 +84,29 @@
         </div>
       </div>
     </div>
+
     <div class="save-btn-wrapper">
-      <div class="add-buttons">
-        <button
-          id="save-menu"
-          type="submit"
-          class="btn btn-custom save-menu-btn waves-effect waves-light"
-        >
-          <i class="material-icons">add</i>
-          <span>Save Product Menu</span>
-        </button>
-      </div>
+      <button
+        id="save-menu"
+        type="submit"
+        class="btn btn-custom save-menu-btn waves-effect waves-light"
+      >
+        <i class="material-icons">add</i>
+        <span>Save Product Menu</span>
+      </button>
     </div>
   </form>
 </section>
 
 <!-- ================= PRODUCT MENU TABLE ================= -->
 <section class="card menu-card product-list-card">
+  <h4>Product List</h4>
+
   <div class="row">
     <div class="input-field col s12 m6">
       <select id="filterCategory">
         <option value="" selected>All Categories</option>
       </select>
-
       <label for="filterCategory">Filter by Category</label>
     </div>
   </div>
@@ -96,13 +119,13 @@
           <th>Inventory Allocation</th>
           <th>Product Name</th>
           <th>Role</th>
-          <th>Stock</th>
-          <th>Unit</th>
+          <th>Packs</th>
+          <th>Pieces</th>
+          <th>Container</th>
           <th>Price</th>
           <th>Action</th>
         </tr>
       </thead>
-
       <tbody>
         <!-- Products will appear here -->
       </tbody>
@@ -164,7 +187,6 @@
 </div>
 
 <script src="/js/photomenu.js"></script>
-
 <script type="module">
   import { initProductPage } from "/js/productmenu.js";
   initProductPage();

@@ -32,6 +32,33 @@ function reinitSelect(selectEl) {
   M.FormSelect.init(selectEl);
 }
 
+// current_stock stays in pieces for the assignment calculation. These extra
+// fields keep the Product Menu document readable as both packs and pieces.
+function buildCurrentQuantityFields(menuData, pieces) {
+  const isPack = menuData.unit === "pack";
+  const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+
+  return {
+    current_stock: pieces,
+    current_pieces: pieces,
+    current_packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
+  };
+}
+
+// Employee products keep pieces for sales, with packs shown alongside them.
+function buildAssignedQuantityFields(menuData, pieces) {
+  const isPack = menuData.unit === "pack";
+  const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+
+  return {
+    stock: pieces,
+    pieces,
+    packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
+    pieces_per_pack: piecesPerPack,
+    unit: menuData.unit || "piece",
+  };
+}
+
 function resetAssignProductForm() {
   if (unsubscribeProduct) {
     unsubscribeProduct();
@@ -44,8 +71,10 @@ function resetAssignProductForm() {
   form.reset();
 
   document.getElementById("productPrice").value = "";
+  document.getElementById("availablePacks").value = "";
   document.getElementById("availableStock").value = "";
-  document.getElementById("assignQuantity").value = "";
+  document.getElementById("assignPacks").value = "";
+  document.getElementById("assignPieces").value = "";
   const stockUnitEl = document.getElementById("availableStockUnit");
   if (stockUnitEl) stockUnitEl.textContent = "";
 
@@ -93,8 +122,15 @@ function loadInventoryOptions(role = "") {
 }
 
 // Keeps the linked "inventory" doc's stock in sync with productMenu.
-// delta: negative on assign, positive on restore/delete.
-async function adjustLinkedInventoryStock(inventoryId, delta) {
+// deltaPieces is ALWAYS expressed in pieces (that's the unit productMenu
+// tracks its stock in) — negative on assign, positive on restore/delete.
+//
+// IMPORTANT: for "pack" unit_type inventory items, inventory.quantity is
+// stored in PACKS, not pieces (see adminBE.js: stock_quantity = quantity *
+// pieces_per_pack). So deltaPieces must be converted to packs before it's
+// applied to inventory.quantity — applying it directly (as pieces) was the
+// bug that made inventory.quantity crash into deeply negative numbers.
+async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
   if (!inventoryId) return;
 
   const inventoryRef = doc(db, "inventory", inventoryId);
@@ -102,20 +138,25 @@ async function adjustLinkedInventoryStock(inventoryId, delta) {
   if (!inventorySnap.exists()) return;
 
   const invData = inventorySnap.data();
-  const newQuantity = (invData.quantity || 0) + delta;
 
-  let newStockQuantity;
+  let piecesPerPack = 1;
+  let deltaInInventoryUnit = deltaPieces;
+
   if (invData.unit_type === "pack") {
     const categorySnap = await getDoc(
       doc(db, "categoriesINV", invData.category_id),
     );
-    const piecesPerPack = categorySnap.exists()
+    piecesPerPack = categorySnap.exists()
       ? categorySnap.data().pieces_per_pack || 1
       : 1;
-    newStockQuantity = newQuantity * piecesPerPack;
-  } else {
-    newStockQuantity = newQuantity;
+    // Convert the pieces delta into packs before touching quantity.
+    deltaInInventoryUnit = deltaPieces / piecesPerPack;
   }
+
+  const newQuantity = (invData.quantity || 0) + deltaInInventoryUnit;
+
+  const newStockQuantity =
+    invData.unit_type === "pack" ? newQuantity * piecesPerPack : newQuantity;
 
   await updateDoc(inventoryRef, {
     quantity: newQuantity,
@@ -134,8 +175,10 @@ function bindProductFormListeners() {
     document.getElementById("productName").innerHTML =
       `<option value="" disabled selected>Choose Product</option>`;
     document.getElementById("productPrice").value = "";
+    document.getElementById("availablePacks").value = "";
     document.getElementById("availableStock").value = "";
-    document.getElementById("assignQuantity").value = "";
+    document.getElementById("assignPacks").value = "";
+    document.getElementById("assignPieces").value = "";
     const stockUnitEl = document.getElementById("availableStockUnit");
     if (stockUnitEl) stockUnitEl.textContent = "";
 
@@ -157,13 +200,29 @@ function bindProductFormListeners() {
       if (!snap.exists()) return;
 
       const data = snap.data();
+      const pieces = Number(data.current_pieces ?? data.current_stock) || 0;
+      const piecesPerPack = Number(data.pieces_per_pack) || 1;
       priceEl.value = data.price;
-      stockEl.value = data.current_stock;
+      stockEl.value = pieces;
+      document.getElementById("availablePacks").value =
+        data.unit === "pack" ? Math.ceil(pieces / piecesPerPack) : "";
+      const assignPacksInput = document.getElementById("assignPacks");
+      assignPacksInput.dataset.piecesPerPack = piecesPerPack;
+      assignPacksInput.dataset.unit = data.unit || "";
+      assignPacksInput.max =
+        data.unit === "pack" ? Math.floor(pieces / piecesPerPack) : pieces;
       if (stockUnitEl)
         stockUnitEl.textContent = data.unit ? data.unit.toUpperCase() : "";
 
       M.updateTextFields();
     });
+  });
+
+  document.getElementById("assignPacks").addEventListener("input", (e) => {
+    const packs = Number(e.target.value) || 0;
+    const piecesPerPack = Number(e.target.dataset.piecesPerPack) || 1;
+    document.getElementById("assignPieces").value = packs * piecesPerPack;
+    M.updateTextFields();
   });
 
   addProductForm.addEventListener("submit", async (e) => {
@@ -172,7 +231,7 @@ function bindProductFormListeners() {
     const menuId = document.getElementById("productName").value;
     const employeeId = document.getElementById("productEmployee").value;
     const role = document.getElementById("productRole").value;
-    const quantity = parseInt(document.getElementById("assignQuantity").value);
+    const packsToAssign = Number(document.getElementById("assignPacks").value);
 
     if (!menuId) return;
 
@@ -184,15 +243,33 @@ function bindProductFormListeners() {
     }
 
     const menuData = menuSnap.data();
+    const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+    const quantity = packsToAssign * piecesPerPack;
 
-    let employeeCount = 1;
+    if (!Number.isInteger(packsToAssign) || packsToAssign <= 0) {
+      M.toast({
+        html: "Enter a valid number of packs.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
+    let targetEmployees = [{ id: employeeId }];
     if (employeeId === "") {
       const q = query(collection(db, "employees"), where("role", "==", role));
       const employeeSnap = await getDocs(q);
-      employeeCount = employeeSnap.size;
+      targetEmployees = employeeSnap.docs;
     }
 
-    const totalAssigned = quantity * employeeCount;
+    if (targetEmployees.length === 0) {
+      M.toast({
+        html: "No employees found for this role.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
+    const totalAssigned = quantity * targetEmployees.length;
 
     if (menuData.current_stock < totalAssigned) {
       M.toast({ html: "Not enough stock!", classes: "red rounded" });
@@ -202,42 +279,55 @@ function bindProductFormListeners() {
     const newStock = menuData.current_stock - totalAssigned;
 
     await updateDoc(menuRef, {
-      current_stock: newStock,
+      ...buildCurrentQuantityFields(menuData, newStock),
       status: newStock <= 0 ? "On Selling" : "Available",
       assigned: true,
       last_updated: serverTimestamp(),
     });
 
+    // totalAssigned is in pieces — adjustLinkedInventoryStock converts it
+    // to the inventory item's own unit (packs, kg, liter, etc.) internally.
     await adjustLinkedInventoryStock(menuData.inventory_id, -totalAssigned);
 
-    if (employeeId === "") {
-      const employeeQuery = query(
-        collection(db, "employees"),
-        where("role", "==", role),
-      );
-      const employeeSnap = await getDocs(employeeQuery);
+    // Reuse an existing employee/product row instead of creating duplicates.
+    // One productMenu item may have only one row per employee.
+    const assignedProductsSnap = await getDocs(
+      query(collection(db, "products"), where("inventoryId", "==", menuId)),
+    );
+    const existingByEmployee = new Map();
+    assignedProductsSnap.forEach((productSnap) => {
+      const product = productSnap.data();
+      if (product.employeeId && !existingByEmployee.has(product.employeeId)) {
+        existingByEmployee.set(product.employeeId, productSnap);
+      }
+    });
 
-      for (const employee of employeeSnap.docs) {
+    for (const employee of targetEmployees) {
+      const existingProduct = existingByEmployee.get(employee.id);
+
+      if (existingProduct) {
+        const existingData = existingProduct.data();
+        const updatedPieces =
+          (Number(existingData.pieces ?? existingData.stock) || 0) + quantity;
+
+        await updateDoc(existingProduct.ref, {
+          name: menuData.product_name,
+          price: menuData.price,
+          role,
+          ...buildAssignedQuantityFields(menuData, updatedPieces),
+          last_updated: serverTimestamp(),
+        });
+      } else {
         await addDoc(collection(db, "products"), {
           name: menuData.product_name,
           price: menuData.price,
           role,
           employeeId: employee.id,
-          stock: quantity,
+          ...buildAssignedQuantityFields(menuData, quantity),
           inventoryId: menuId,
           assigned_at: serverTimestamp(),
         });
       }
-    } else {
-      await addDoc(collection(db, "products"), {
-        name: menuData.product_name,
-        price: menuData.price,
-        role,
-        employeeId,
-        stock: quantity,
-        inventoryId: menuId,
-        assigned_at: serverTimestamp(),
-      });
     }
 
     M.toast({
@@ -307,6 +397,9 @@ export async function loadProducts() {
             return;
           }
 
+          const restoredPieces =
+            Number(productData.pieces ?? productData.stock) || 0;
+
           await runTransaction(db, async (transaction) => {
             const menuSnap = await transaction.get(menuRef);
             if (!menuSnap.exists())
@@ -314,16 +407,24 @@ export async function loadProducts() {
 
             const menuData = menuSnap.data();
             const restoredStock =
-              (menuData.current_stock || 0) + productData.stock;
+              (menuData.current_stock || 0) + restoredPieces;
 
             transaction.update(menuRef, {
-              current_stock: restoredStock,
+              ...buildCurrentQuantityFields(menuData, restoredStock),
               status: restoredStock <= 0 ? "On Selling" : "Available",
               last_updated: serverTimestamp(),
             });
 
             transaction.delete(productRef);
           });
+
+          // Restore the same pieces back to the linked inventory item —
+          // this was missing before, which is why inventory never went
+          // back up after unassigning/deleting a product.
+          await adjustLinkedInventoryStock(
+            productData.inventoryId,
+            restoredPieces,
+          );
 
           const remainingQuery = query(
             collection(db, "products"),
@@ -361,7 +462,7 @@ export async function loadProducts() {
         document.getElementById("edit-price").value =
           row.children[1].textContent.replace("₱", "");
         document.getElementById("edit-stock").value =
-          row.children[2].textContent;
+          row.children[3].textContent;
 
         M.updateTextFields();
 
@@ -373,7 +474,7 @@ export async function loadProducts() {
         const productRef = doc(db, "products", id);
         const productSnap = await getDoc(productRef);
         const oldData = productSnap.data();
-        const oldStock = oldData.stock;
+        const oldStock = Number(oldData.pieces ?? oldData.stock) || 0;
         const saveBtn = document.getElementById("edit-save");
 
         saveBtn.onclick = async () => {
@@ -407,14 +508,21 @@ export async function loadProducts() {
           await updateDoc(doc(db, "products", id), {
             name: newName,
             price: newPrice,
-            stock: newStock,
+            ...buildAssignedQuantityFields(oldData, newStock),
           });
 
           await updateDoc(menuRef, {
-            current_stock: updatedStock,
+            ...buildCurrentQuantityFields(menuData, updatedStock),
             status: updatedStock <= 0 ? "On Selling" : "Available",
             last_updated: serverTimestamp(),
           });
+
+          // Mirror the same change onto the linked inventory item — an
+          // increase in assigned stock (diff > 0) pulls more from
+          // inventory; a decrease returns pieces back to inventory.
+          // This was missing before, so editing an assigned product's
+          // stock never touched inventory at all.
+          await adjustLinkedInventoryStock(oldData.inventoryId, -diff);
 
           if (unsubscribeProduct) {
             unsubscribeProduct();
@@ -462,7 +570,14 @@ export async function loadProducts() {
         row.innerHTML = `
           <td data-label="Product Name">${data.name}</td>
           <td data-label="Price">₱${parseFloat(data.price).toFixed(2)}</td>
-          <td data-label="Stock">${data.stock}</td>
+          <td data-label="Packs">${
+            data.unit === "pack"
+              ? Math.ceil(
+                  (data.pieces ?? data.stock) / (data.pieces_per_pack || 1),
+                )
+              : "-"
+          }</td>
+          <td data-label="Pieces">${data.pieces ?? data.stock}</td>
           <td data-label="Role">${data.role}</td>
           <td data-label="Employee">${empDisplay}</td>
           <td data-label="Action">
