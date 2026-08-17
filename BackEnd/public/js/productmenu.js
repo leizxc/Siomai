@@ -31,6 +31,10 @@ export async function refresh() {
   const previewImg = document.getElementById("previewImage");
   if (previewImg) previewImg.src = "/assets/upload-placeholder.png";
 
+  const kgUsedField = document.getElementById("kg-used-field");
+  const kalderoCountField = document.getElementById("kaldero-count-field");
+  if (kgUsedField) kgUsedField.style.display = "none";
+  if (kalderoCountField) kalderoCountField.style.display = "none";
   M.updateTextFields();
 
   reinitSelect(document.getElementById("employeeINV"));
@@ -55,7 +59,7 @@ async function generateProductCode() {
     return next;
   });
 
-  return QC-$;{String(nextNumber).padStart(6, "0")};
+  return `QC-${String(nextNumber).padStart(6, "0")}`;
 }
 
 // Kailangan i-destroy at i-init ulit ang Materialize select, dahil hindi
@@ -68,6 +72,41 @@ function reinitSelect(selectEl) {
     instance.destroy();
   }
   M.FormSelect.init(selectEl);
+}
+
+// Product-menu stock is stored in pieces for inventory calculations. For pack
+// items, save both values so the UI can display the same packs/pcs information.
+function buildPackQuantityFields(inventory, pieces) {
+  const isPack = inventory.unit_type === "pack";
+  const piecesPerPack =
+    isPack && Number(inventory.quantity) > 0
+      ? Number(inventory.stock_quantity) / Number(inventory.quantity)
+      : 1;
+
+  return {
+    pieces_per_pack: piecesPerPack,
+    current_pieces: pieces,
+    current_packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
+    initial_pieces: pieces,
+    initial_packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
+  };
+}
+
+function buildCurrentQuantityFields(menuData, pieces) {
+  const isPack = menuData.unit === "pack";
+  const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+
+  return {
+    current_stock: pieces, // Kept for existing assignment logic.
+    current_pieces: pieces,
+    current_packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
+  };
+}
+
+function formatQuantity(value) {
+  const quantity = Number(value);
+  if (!Number.isFinite(quantity)) return "-";
+  return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2);
 }
 
 //invetory allocation
@@ -86,7 +125,9 @@ export function loadInventoryOptions(role = "") {
   unsubscribeInventoryOptions = onSnapshot(q, (snapshot) => {
     if (!select.isConnected) return;
 
-    select.innerHTML = <option value="" disabled selected>Inventory Allocation</option>;
+    select.innerHTML = `
+  <option value="" disabled selected>Inventory Allocation</option>
+`;
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
@@ -102,12 +143,13 @@ export function loadInventoryOptions(role = "") {
   });
 }
 
-// Kapag pumili ng inventory item, i-auto-fill ang "stock" field base sa
-// available stock nung napiling item (pwede pa ring baguhin bago i-save).
+// Kapag pumili ng inventory item, i-auto-fill ang "stock" at "price" field
+// base sa nasa inventory (pwede pa ring baguhin bago i-save).
 function bindInventoryAllocationChange() {
   const select = document.getElementById("employeeINV");
   const stockInput = document.getElementById("stock");
   const stockUnit = document.getElementById("stockUnit");
+  const priceInput = document.getElementById("price");
   if (!select || !stockInput) return;
 
   select.onchange = async (e) => {
@@ -119,23 +161,45 @@ function bindInventoryAllocationChange() {
 
     const data = inventorySnap.data();
 
-    // pack = bilangin sa dami ng packs, hindi sa total pieces
+    // data.stock_quantity ay TOTAL PIECES na para sa "pack" unit type
+    // (quantity × pieces_per_pack) — ito ang dapat isave bilang stock,
+    // hindi yung raw pack count.
     let stock = data.stock_quantity;
     let unit = data.unit_type;
+    let unitLabel = "";
 
     if (unit === "pack") {
-      stock = data.quantity;
-      unit = "PACK";
+      unitLabel = `${data.quantity} PACKS = ${data.stock_quantity} PCS`;
     } else if (unit === "kg") {
       stock = data.quantity;
-      unit = "KG";
+      unitLabel = "KG";
     } else if (unit === "liter") {
       stock = data.quantity;
-      unit = "LITER";
+      unitLabel = "LITER";
+    } else {
+      unitLabel = (unit || "").toUpperCase();
     }
 
     stockInput.value = stock;
-    if (stockUnit) stockUnit.value = unit;
+    if (stockUnit) stockUnit.value = unitLabel;
+
+    // Kung ano ang nakalagay na unit_price sa inventory, iyon din agad
+    // ang lalabas dito — pwede pa ring i-adjust bago i-save.
+    if (priceInput) priceInput.value = data.unit_price ?? "";
+
+    const kgUsedField = document.getElementById("kg-used-field");
+    const kalderoCountField = document.getElementById("kaldero-count-field");
+
+    if (unit === "kg") {
+      kgUsedField.style.display = "block";
+      kalderoCountField.style.display = "block";
+    } else {
+      kgUsedField.style.display = "none";
+      kalderoCountField.style.display = "none";
+
+      document.getElementById("KgUsed").value = "";
+      document.getElementById("kalderocCount").value = "";
+    }
 
     M.updateTextFields();
   };
@@ -157,7 +221,9 @@ export async function loadroles() {
     }
   });
 
-  roleSelect.innerHTML = <option value="" disabled selected>Select Role</option>;
+  roleSelect.innerHTML = `
+  <option value="" disabled selected>Select Role</option>
+`;
 
   // Hiwalay na option: hindi tied sa isang specific role, makikita sa
   // Assign Product page kahit anong role ang piliin doon.
@@ -195,7 +261,7 @@ function previewNextProductId() {
     const current = snap.exists() ? snap.data().lastNumber || 0 : 0;
     const next = current + 1;
 
-    productIdInput.value = QC-$;{String(next).padStart(6, "0")};
+    productIdInput.value = `QC-${String(next).padStart(6, "0")}`;
   });
 }
 
@@ -250,8 +316,20 @@ export function addproductmenu() {
       const role = document.getElementById("selectCategory").value;
       const stock = Number(document.getElementById("stock").value);
       const price = Number(document.getElementById("price").value);
+      const kgused = Number(document.getElementById("KgUsed").value);
+      const kalderocount = Number(
+        document.getElementById("kalderocCount").value,
+      );
 
-      if (!inventoryId || !productName || !role || stock <= 0 || price <= 0) {
+      if (
+        !inventoryId ||
+        !productName ||
+        !role ||
+        stock <= 0 ||
+        price <= 0 ||
+        kgused <= 0 ||
+        kalderocount <= 0
+      ) {
         M.toast({
           html: "Please complete all fields.",
           classes: "red rounded",
@@ -291,17 +369,29 @@ export function addproductmenu() {
         return;
       }
 
-      const inventory = inventorySnap.data();
+      const kgUsedinput = document.getElementById("KgUsed");
+      const kalderocountinput = document.getElementById("kalderocCount");
+      const kgUsed1 = kgUsedinput ? Number(kgUsedinput.value) || null : null;
+      const kalderoCount1 = kalderocountinput
+        ? Number(kalderocountinput.value) || null
+        : null;
 
-      // Save Firestore
+      const inventory = inventorySnap.data();
+      const quantityFields = buildPackQuantityFields(inventory, stock);
+
+      // Save both packs and pieces in Firebase. current_stock remains in pieces
+      // because the assignment page already uses it for stock validation.
       await addDoc(collection(db, "productMenu"), {
         product_code: productCode,
         product_name: productName,
+        kg_used: kgused,
+        kaldero_count: kalderocount,
         category: role,
         inventory_id: inventoryId,
         inventory_name: inventory.product_name,
         initial_stock: stock,
         current_stock: stock,
+        ...quantityFields,
         unit: inventory.unit_type,
         price: price,
         image_url: imageURL,
@@ -347,7 +437,9 @@ async function loadCategoryFilter() {
 
   const categories = new Set();
 
-  select.innerHTML = <option value="">All Categories</option>;
+  select.innerHTML = `
+  <option value="">All Categories</option>
+`;
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
@@ -413,10 +505,6 @@ export async function loadmenu() {
         const id = btn.dataset.id;
 
         // Bawal tanggalin ang Product Menu entry kung naka-assign pa ito
-        // sa isa o higit pang empleyado. Direkta itong tinitingnan sa
-        // "products" collection (hindi lang sa "assigned" flag ng
-        // productMenu doc) para sigurado — ito rin ang parehong source
-        // of truth na ginagamit sa product.js pag-uunassign.
         const assignedQuery = query(
           collection(db, "products"),
           where("inventoryId", "==", id),
@@ -505,7 +593,7 @@ export async function loadmenu() {
           try {
             await updateDoc(menuRef, {
               product_name: newName,
-              current_stock: newStock,
+              ...buildCurrentQuantityFields(data, newStock),
               price: newPrice,
               last_updated: serverTimestamp(),
             });
@@ -539,10 +627,6 @@ export async function loadmenu() {
 
     if (selectedCategory) {
       // Match the exact category AND anything marked "ALL" (Shared
-      // Across All Roles) — shared items are meant to show up under
-      // every specific category filter, not just under "All
-      // Categories". Firestore's "in" operator lets us match either
-      // value in a single query without needing a composite index.
       q = query(
         collection(db, "productMenu"),
         where("category", "in", [selectedCategory, "ALL"]),
@@ -562,14 +646,41 @@ export async function loadmenu() {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
-    <td data-label="Product Code">${data.product_code}</td>
-    <td data-label="Inventory Name">${data.inventory_name}</td>
-    <td data-label="Product Name">${data.product_name}</td>
-    <td data-label="Category">${data.category}</td>
-    <td data-label="Stock">${data.current_stock}</td>
-    <td data-label="Unit">${data.unit ? data.unit.toUpperCase() : "-"}</td>
-    <td data-label="Price">₱${Number(data.price).toFixed(2)}</td>
-    <td data-label="Action">
+  <td data-label="Product Code">${data.product_code}</td>
+  <td data-label="Inventory Name">${data.inventory_name}</td>
+  <td data-label="Product Name">${data.product_name}</td>
+  <td data-label="Category">${data.category}</td>
+
+  <td data-label="Packs">
+    ${
+      data.unit === "pack"
+        ? formatQuantity(
+            Math.ceil(
+              (data.current_pieces ?? data.current_stock) /
+                (data.pieces_per_pack || 1),
+            ),
+          )
+        : "-"
+    }
+  </td>
+
+  <td data-label="Pieces">
+    ${
+      data.unit === "pack"
+        ? formatQuantity(data.current_pieces ?? data.current_stock)
+        : "-"
+    }
+  </td>
+
+  <td data-label="Container">
+    ${data.unit === "kg" ? formatQuantity(data.kaldero_count) : "-"}
+  </td>
+
+  <td data-label="Price">
+    ₱${Number(data.price).toFixed(2)}
+  </td>
+
+  <td data-label="Action">
               <button class="edit-btn btn blue" data-id="${docSnap.id}">
                 <i class="material-icons">edit</i>
               </button>
@@ -577,8 +688,8 @@ export async function loadmenu() {
                 <i class="material-icons">delete</i>
               </button>
             </td>
+  </td>
 `;
-
         tbody.appendChild(tr);
       });
 

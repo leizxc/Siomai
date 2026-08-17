@@ -12,15 +12,19 @@ export async function initProductModal() {
   const employeeSelect = document.getElementById("productEmployee");
   const productNameSelect = document.getElementById("productName");
 
+  if (!roleSelect || !employeeSelect || !productNameSelect) return;
+
+  // Keep this list aligned with product.html. filter(Boolean) prevents a
+  // missing optional field from crashing the form during page navigation.
   const inputs = [
     productNameSelect,
     document.getElementById("productPrice"),
+    document.getElementById("availablePacks"),
     document.getElementById("availableStock"),
-    document.getElementById("assignQuantity"),
+    document.getElementById("assignPacks"),
+    document.getElementById("assignPieces"),
     document.getElementById("addProductBtn"),
-  ];
-
-  console.log("Inputs:", inputs);
+  ].filter(Boolean);
 
   // Materialize caches a select's disabled state inside its ".select-wrapper"
   function resyncSelectWrapper(selectEl) {

@@ -1,4 +1,4 @@
-import { addEmployee, loadEmployees } from "/js/adminEmployee.js";
+import { addEmployee, loadEmployees, deleteRole } from "/js/adminEmployee.js";
 import { db } from "/js/firebase.js";
 import {
   collection,
@@ -12,7 +12,7 @@ import {
 
 let unsubscribeRoles = null;
 
-// Populates BOTH the Add Employee "#role" select and the Edit Employee
+// Populates the Add/Edit role selects, live from Firestore
 function loadRoleOptions() {
   const addRoleSelect = document.getElementById("role");
   const editRoleSelect = document.getElementById("edit-role");
@@ -20,64 +20,52 @@ function loadRoleOptions() {
 
   if (!addRoleSelect && !editRoleSelect) return;
 
-  if (unsubscribeRoles) {
-    unsubscribeRoles();
-  }
+  if (unsubscribeRoles) unsubscribeRoles();
 
   unsubscribeRoles = onSnapshot(collection(db, "roles"), (snapshot) => {
-    if (totalRolesEl) {
-      totalRolesEl.textContent = snapshot.size;
-    }
+    if (totalRolesEl) totalRolesEl.textContent = snapshot.size;
 
     if (addRoleSelect && addRoleSelect.isConnected) {
       const previousValue = addRoleSelect.value;
-
       addRoleSelect.innerHTML = `<option value="" disabled selected>Select Role</option>`;
 
       snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
         const option = document.createElement("option");
-        option.value = data.name;
-        option.textContent = data.name;
+        option.value = docSnap.data().name;
+        option.textContent = docSnap.data().name;
         addRoleSelect.appendChild(option);
       });
 
-      if (
-        previousValue &&
-        [...addRoleSelect.options].some((o) => o.value === previousValue)
-      ) {
+      if ([...addRoleSelect.options].some((o) => o.value === previousValue)) {
         addRoleSelect.value = previousValue;
       }
-
       M.FormSelect.init(addRoleSelect);
+
+      // Kung nabura ang currently-selected role (di na kasama sa bagong
+      // snapshot), balik dapat sa disabled ang Delete Role button.
+      syncDeleteRoleButtonState();
     }
 
     if (editRoleSelect && editRoleSelect.isConnected) {
       const previousValue = editRoleSelect.value;
-
       editRoleSelect.innerHTML = `<option value="" disabled selected>Select Role</option>`;
 
       snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
         const option = document.createElement("option");
-        option.value = data.name;
-        option.textContent = data.name;
+        option.value = docSnap.data().name;
+        option.textContent = docSnap.data().name;
         editRoleSelect.appendChild(option);
       });
 
-      if (
-        previousValue &&
-        [...editRoleSelect.options].some((o) => o.value === previousValue)
-      ) {
+      if ([...editRoleSelect.options].some((o) => o.value === previousValue)) {
         editRoleSelect.value = previousValue;
       }
-
       M.FormSelect.init(editRoleSelect);
     }
   });
 }
 
-// "Add New Role" button + modal — saves straight to the "roles"
+// Add New Role modal
 function bindAddRoleButton() {
   const btnAddRole = document.getElementById("btnAddRole");
   const modalElem = document.getElementById("modal-add-role");
@@ -87,9 +75,7 @@ function bindAddRoleButton() {
   if (!btnAddRole || !modalElem || !saveRoleBtn || !newRoleInput) return;
 
   let modalInstance = M.Modal.getInstance(modalElem);
-  if (!modalInstance) {
-    modalInstance = M.Modal.init(modalElem);
-  }
+  if (!modalInstance) modalInstance = M.Modal.init(modalElem);
 
   btnAddRole.onclick = () => {
     newRoleInput.value = "";
@@ -104,7 +90,6 @@ function bindAddRoleButton() {
       M.toast({ html: "Please enter a role name.", classes: "red rounded" });
       return;
     }
-
     if (roleName === "ADMIN") {
       M.toast({
         html: '"Admin" is already a built-in role.',
@@ -113,16 +98,11 @@ function bindAddRoleButton() {
       return;
     }
 
-    // Everything is stored uppercase, so an exact match here already
     const existing = await getDocs(
       query(collection(db, "roles"), where("name", "==", roleName)),
     );
-
     if (!existing.empty) {
-      M.toast({
-        html: "That role already exists.",
-        classes: "red rounded",
-      });
+      M.toast({ html: "That role already exists.", classes: "red rounded" });
       return;
     }
 
@@ -131,10 +111,35 @@ function bindAddRoleButton() {
       created_at: serverTimestamp(),
     });
 
-    M.toast({ html: "Role added!", classes: "green rounded" });
-
+    M.toast({ html: "New Role successfully save!", classes: "green rounded" });
     newRoleInput.value = "";
     modalInstance.close();
+  };
+}
+
+// Naka-disable ang Delete Role button hangga't walang napiling role.
+function syncDeleteRoleButtonState() {
+  const btnDeleteRole = document.getElementById("btn-delete-role");
+  const roleSelect = document.getElementById("role");
+
+  if (!btnDeleteRole || !roleSelect) return;
+
+  btnDeleteRole.disabled = !roleSelect.value;
+}
+
+// Delete Role button
+function bindDeleteRoleButton() {
+  const btnDeleteRole = document.getElementById("btn-delete-role");
+  const roleSelect = document.getElementById("role");
+
+  if (!btnDeleteRole || !roleSelect) return;
+
+  syncDeleteRoleButtonState();
+  roleSelect.addEventListener("change", syncDeleteRoleButtonState);
+
+  btnDeleteRole.onclick = async () => {
+    if (btnDeleteRole.disabled) return;
+    await deleteRole();
   };
 }
 
@@ -152,6 +157,14 @@ function bindAddEmployeeForm() {
     const role = document.getElementById("role").value;
     const password = document.getElementById("password").value;
 
+    if (!role) {
+      M.toast({
+        html: "Please select a role before adding the employee.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
     await addEmployee(fname, lname, email, username, role, password);
 
     form.reset();
@@ -160,7 +173,7 @@ function bindAddEmployeeForm() {
   };
 }
 
-// Eye icon next to the password field — toggles between hidden (dots)
+// Show/hide password toggle
 function bindPasswordToggle() {
   const toggleIcon = document.getElementById("togglePassword");
   const passwordInput = document.getElementById("password");
@@ -173,10 +186,10 @@ function bindPasswordToggle() {
   };
 }
 
-// Called by functionalnav.js every time EmployeeManagement.html load
 export function initEmployee() {
   loadRoleOptions();
   bindPasswordToggle();
   bindAddRoleButton();
+  bindDeleteRoleButton();
   bindAddEmployeeForm();
 }
