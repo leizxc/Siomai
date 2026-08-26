@@ -23,6 +23,10 @@ let unsubscribeProducts = null;
 let unsubscribeProduct = null;
 let unsubscribeRoleFilter = null;
 
+const PRODUCT_PAGE_SIZE = 10;
+let productCurrentPage = 1;
+let productListCache = [];
+
 function reinitSelect(selectEl) {
   if (!selectEl || !selectEl.isConnected) return;
 
@@ -75,8 +79,14 @@ function resetAssignProductForm() {
   document.getElementById("availableStock").value = "";
   document.getElementById("assignPacks").value = "";
   document.getElementById("assignPieces").value = "";
+  const containerEl = document.getElementById("container");
+  if (containerEl) containerEl.value = "";
   const stockUnitEl = document.getElementById("availableStockUnit");
   if (stockUnitEl) stockUnitEl.textContent = "";
+
+  // Reset label back to default
+  const stockLabel = document.getElementById("availableStockLabel");
+  if (stockLabel) stockLabel.textContent = "Available Pieces";
 
   const select = document.getElementById("productName");
   select.innerHTML = `<option value="" disabled selected>Choose Product</option>`;
@@ -124,12 +134,6 @@ function loadInventoryOptions(role = "") {
 // Keeps the linked "inventory" doc's stock in sync with productMenu.
 // deltaPieces is ALWAYS expressed in pieces (that's the unit productMenu
 // tracks its stock in) — negative on assign, positive on restore/delete.
-//
-// IMPORTANT: for "pack" unit_type inventory items, inventory.quantity is
-// stored in PACKS, not pieces (see adminBE.js: stock_quantity = quantity *
-// pieces_per_pack). So deltaPieces must be converted to packs before it's
-// applied to inventory.quantity — applying it directly (as pieces) was the
-// bug that made inventory.quantity crash into deeply negative numbers.
 async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
   if (!inventoryId) return;
 
@@ -149,8 +153,10 @@ async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
     piecesPerPack = categorySnap.exists()
       ? categorySnap.data().pieces_per_pack || 1
       : 1;
-    // Convert the pieces delta into packs before touching quantity.
     deltaInInventoryUnit = deltaPieces / piecesPerPack;
+  } else if (invData.unit_type === "kg" || invData.unit_type === "liter") {
+    // kg at liter — direktang delta, walang conversion
+    deltaInInventoryUnit = deltaPieces;
   }
 
   const newQuantity = (invData.quantity || 0) + deltaInInventoryUnit;
@@ -179,8 +185,14 @@ function bindProductFormListeners() {
     document.getElementById("availableStock").value = "";
     document.getElementById("assignPacks").value = "";
     document.getElementById("assignPieces").value = "";
+    const containerEl = document.getElementById("container");
+    if (containerEl) containerEl.value = "";
     const stockUnitEl = document.getElementById("availableStockUnit");
     if (stockUnitEl) stockUnitEl.textContent = "";
+
+    // Reset label
+    const stockLabel = document.getElementById("availableStockLabel");
+    if (stockLabel) stockLabel.textContent = "Available Pieces";
 
     M.updateTextFields();
     loadInventoryOptions(e.target.value);
@@ -190,41 +202,238 @@ function bindProductFormListeners() {
     const id = e.target.value;
     if (!id) return;
 
-    if (unsubscribeProduct) unsubscribeProduct();
+    if (unsubscribeProduct) {
+      unsubscribeProduct();
+      unsubscribeProduct = null;
+    }
 
     unsubscribeProduct = onSnapshot(doc(db, "productMenu", id), (snap) => {
       const priceEl = document.getElementById("productPrice");
       const stockEl = document.getElementById("availableStock");
       const stockUnitEl = document.getElementById("availableStockUnit");
+      const containerEl = document.getElementById("container");
+      const stockLabel = document.getElementById("availableStockLabel");
+
+      const assignPacksInput = document.getElementById("assignPacks");
+      const assignPiecesInput = document.getElementById("assignPieces");
+
       if (!priceEl || !priceEl.isConnected) return;
       if (!snap.exists()) return;
 
       const data = snap.data();
+      const unit = (data.unit || "piece").toLowerCase();
+
+      /*
+       * IMPORTANT:
+       * Lahat ng available stock ay manggagaling
+       * mismo sa productMenu document.
+       */
       const pieces = Number(data.current_pieces ?? data.current_stock) || 0;
+      const currentStock = Number(data.current_stock ?? 0) || 0;
       const piecesPerPack = Number(data.pieces_per_pack) || 1;
+
       priceEl.value = data.price;
-      stockEl.value = pieces;
-      document.getElementById("availablePacks").value =
-        data.unit === "pack" ? Math.ceil(pieces / piecesPerPack) : "";
-      const assignPacksInput = document.getElementById("assignPacks");
-      assignPacksInput.dataset.piecesPerPack = piecesPerPack;
-      assignPacksInput.dataset.unit = data.unit || "";
-      assignPacksInput.max =
-        data.unit === "pack" ? Math.floor(pieces / piecesPerPack) : pieces;
-      if (stockUnitEl)
-        stockUnitEl.textContent = data.unit ? data.unit.toUpperCase() : "";
+
+      /*
+       * =========================
+       * PACK PRODUCT
+       * =========================
+       */
+      if (unit === "pack") {
+        const availablePacks = Math.floor(pieces / piecesPerPack);
+
+        stockEl.value = pieces;
+        document.getElementById("availablePacks").value = availablePacks;
+
+        if (stockLabel) stockLabel.textContent = "Available Pieces";
+
+        if (assignPacksInput) {
+          assignPacksInput.style.display = "";
+          assignPacksInput.disabled = false;
+
+          assignPacksInput.dataset.unit = "pack";
+          assignPacksInput.dataset.piecesPerPack = piecesPerPack;
+          assignPacksInput.dataset.maxPacks = availablePacks;
+
+          assignPacksInput.max = availablePacks;
+          assignPacksInput.step = "1";
+          assignPacksInput.value = "";
+        }
+
+        if (assignPiecesInput) {
+          assignPiecesInput.value = "";
+          assignPiecesInput.readOnly = true;
+        }
+
+        if (stockUnitEl) {
+          stockUnitEl.textContent = "PACK";
+        }
+      } else if (unit === "kg") {
+        /*
+         * =========================
+         * KG PRODUCT
+         * =========================
+         */
+        stockEl.value = currentStock;
+        document.getElementById("availablePacks").value = "";
+
+        // Change label to Available Stock (KG)
+        if (stockLabel) {
+          stockLabel.textContent = "Available Stock (KG)";
+        }
+
+        if (stockUnitEl) {
+          stockUnitEl.textContent = "KG";
+        }
+
+        const kalderoCount = Number(data.kaldero_count) || 0;
+
+        if (assignPacksInput) {
+          assignPacksInput.style.display = "";
+          assignPacksInput.disabled = false;
+
+          assignPacksInput.dataset.unit = "kg";
+          assignPacksInput.dataset.maxKg = currentStock;
+          assignPacksInput.dataset.maxKaldero = kalderoCount;
+
+          // Limit by the smaller of stock or kaldero
+          if (kalderoCount > 0) {
+            assignPacksInput.max = Math.min(currentStock, kalderoCount);
+          } else {
+            assignPacksInput.max = currentStock;
+          }
+
+          assignPacksInput.step = "0.01";
+          assignPacksInput.value = "";
+        }
+
+        if (assignPiecesInput) {
+          assignPiecesInput.value = "";
+          assignPiecesInput.readOnly = true;
+        }
+
+        // Show kaldero/container info
+        if (containerEl) {
+          containerEl.value = kalderoCount > 0 ? kalderoCount : "";
+        }
+      } else {
+        /*
+         * =========================
+         * PIECE PRODUCT
+         * =========================
+         */
+        stockEl.value = currentStock;
+        document.getElementById("availablePacks").value = "";
+
+        if (stockLabel) stockLabel.textContent = "Available Pieces";
+
+        if (assignPacksInput) {
+          assignPacksInput.style.display = "";
+          assignPacksInput.disabled = false;
+
+          assignPacksInput.dataset.unit = "piece";
+          assignPacksInput.dataset.maxPieces = currentStock;
+
+          assignPacksInput.max = currentStock;
+          assignPacksInput.step = "1";
+          assignPacksInput.value = "";
+        }
+
+        if (assignPiecesInput) {
+          assignPiecesInput.value = "";
+          assignPiecesInput.readOnly = true;
+        }
+
+        if (stockUnitEl) {
+          stockUnitEl.textContent = "PIECE";
+        }
+      }
+
+      /*
+       * KG informational container (already handled above for kg)
+       */
+      if (containerEl && unit !== "kg") {
+        containerEl.value = "";
+      }
 
       M.updateTextFields();
     });
   });
 
+  // ==================== QUANTITY INPUT LISTENER ====================
   document.getElementById("assignPacks").addEventListener("input", (e) => {
-    const packs = Number(e.target.value) || 0;
-    const piecesPerPack = Number(e.target.dataset.piecesPerPack) || 1;
-    document.getElementById("assignPieces").value = packs * piecesPerPack;
+    const input = e.target;
+    const unit = input.dataset.unit || "";
+    const assignPiecesInput = document.getElementById("assignPieces");
+
+    /*
+     * =========================
+     * PACK
+     * =========================
+     */
+    if (unit === "pack") {
+      const packs = Number(input.value) || 0;
+      const piecesPerPack = Number(input.dataset.piecesPerPack) || 1;
+      const maxPacks = Number(input.dataset.maxPacks) || 0;
+
+      if (packs > maxPacks) {
+        input.value = maxPacks;
+      }
+
+      const finalPacks = Number(input.value) || 0;
+      const totalPieces = finalPacks * piecesPerPack;
+
+      if (assignPiecesInput) {
+        assignPiecesInput.value = totalPieces;
+      }
+    } else if (unit === "kg") {
+
+    /*
+     * =========================
+     * KG
+     * =========================
+     */
+      const maxKg = Number(input.dataset.maxKg) || 0;
+      const maxKaldero = Number(input.dataset.maxKaldero) || 0;
+
+      let kg = Number(input.value) || 0;
+
+      // Limit by the smaller of stock or kaldero
+      const hardLimit = maxKaldero > 0 ? Math.min(maxKg, maxKaldero) : maxKg;
+
+      if (kg > hardLimit) {
+        kg = hardLimit;
+        input.value = hardLimit;
+      }
+
+      // KG does NOT convert to pieces
+      if (assignPiecesInput) {
+        assignPiecesInput.value = "";
+      }
+    } else if (unit === "piece") {
+
+    /*
+     * =========================
+     * PIECE
+     * =========================
+     */
+      const maxPieces = Number(input.dataset.maxPieces) || 0;
+      let pieces = Number(input.value) || 0;
+
+      if (pieces > maxPieces) {
+        pieces = maxPieces;
+        input.value = maxPieces;
+      }
+
+      if (assignPiecesInput) {
+        assignPiecesInput.value = pieces;
+      }
+    }
+
     M.updateTextFields();
   });
 
+  // ==================== FORM SUBMIT ====================
   addProductForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -244,11 +453,18 @@ function bindProductFormListeners() {
 
     const menuData = menuSnap.data();
     const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
-    const quantity = packsToAssign * piecesPerPack;
+    const isKg = (menuData.unit || "").toLowerCase() === "kg";
+    const quantity = isKg ? packsToAssign : packsToAssign * piecesPerPack;
 
-    if (!Number.isInteger(packsToAssign) || packsToAssign <= 0) {
+    const isValidQty = isKg
+      ? !isNaN(packsToAssign) && packsToAssign > 0
+      : Number.isInteger(packsToAssign) && packsToAssign > 0;
+
+    if (!isValidQty) {
       M.toast({
-        html: "Enter a valid number of packs.",
+        html: isKg
+          ? "Enter a valid kg amount."
+          : "Enter a valid number of packs.",
         classes: "red rounded",
       });
       return;
@@ -387,7 +603,6 @@ export async function loadProducts() {
           const menuRef = doc(db, "productMenu", productData.inventoryId);
           const menuCheckSnap = await getDoc(menuRef);
 
-          // Orphaned reference — linked menu entry is already gone
           if (!menuCheckSnap.exists()) {
             await deleteDoc(productRef);
             M.toast({
@@ -418,9 +633,6 @@ export async function loadProducts() {
             transaction.delete(productRef);
           });
 
-          // Restore the same pieces back to the linked inventory item —
-          // this was missing before, which is why inventory never went
-          // back up after unassigning/deleting a product.
           await adjustLinkedInventoryStock(
             productData.inventoryId,
             restoredPieces,
@@ -482,9 +694,11 @@ export async function loadProducts() {
           const newPrice = parseFloat(
             document.getElementById("edit-price").value,
           );
-          const newStock = parseInt(
-            document.getElementById("edit-stock").value,
-          );
+          const rawStock = document.getElementById("edit-stock").value;
+          const newStock =
+            oldData.unit === "kg"
+              ? parseFloat(rawStock)
+              : parseInt(rawStock, 10);
           const diff = newStock - oldStock;
 
           const menuRef = doc(db, "productMenu", oldData.inventoryId);
@@ -517,11 +731,6 @@ export async function loadProducts() {
             last_updated: serverTimestamp(),
           });
 
-          // Mirror the same change onto the linked inventory item — an
-          // increase in assigned stock (diff > 0) pulls more from
-          // inventory; a decrease returns pieces back to inventory.
-          // This was missing before, so editing an assigned product's
-          // stock never touched inventory at all.
           await adjustLinkedInventoryStock(oldData.inventoryId, -diff);
 
           if (unsubscribeProduct) {
@@ -538,6 +747,133 @@ export async function loadProducts() {
     });
   }
 
+  function renderProductPage() {
+    if (!tbody.isConnected) return;
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(productListCache.length / PRODUCT_PAGE_SIZE),
+    );
+
+    // Keep current page within valid range
+    if (productCurrentPage > totalPages) {
+      productCurrentPage = totalPages;
+    }
+
+    if (productCurrentPage < 1) {
+      productCurrentPage = 1;
+    }
+
+    const start = (productCurrentPage - 1) * PRODUCT_PAGE_SIZE;
+    const end = start + PRODUCT_PAGE_SIZE;
+
+    const pageItems = productListCache.slice(start, end);
+
+    tbody.innerHTML = "";
+
+    pageItems.forEach(({ id, data, empDisplay }) => {
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+      <td data-label="Product Name">${data.name}</td>
+
+      <td data-label="Price">
+        ₱${parseFloat(data.price).toFixed(2)}
+      </td>
+
+      <td data-label="Packs">
+  ${
+    data.unit === "pack"
+      ? Math.ceil((data.pieces ?? data.stock) / (data.pieces_per_pack || 1))
+      : data.unit === "kg"
+        ? (data.pieces ?? data.stock)
+        : "-"
+  }
+</td>
+
+      <td data-label="Pieces">
+        ${data.pieces ?? data.stock}
+      </td>
+
+      <td data-label="Role">
+        ${data.role}
+      </td>
+
+      <td data-label="Employee">
+        ${empDisplay}
+      </td>
+
+      <td data-label="Action">
+        <button
+          class="btn blue edit-btn"
+          data-id="${id}"
+        >
+          <i class="material-icons">edit</i>
+        </button>
+
+        <button
+          class="btn red delete-btn"
+          data-id="${id}"
+        >
+          <i class="material-icons">delete</i>
+        </button>
+      </td>
+    `;
+
+      tbody.appendChild(row);
+    });
+
+    // Showing count
+    const showingCountEl = document.getElementById("productShowingCount");
+
+    if (showingCountEl) {
+      showingCountEl.textContent = pageItems.length;
+    }
+
+    // Pagination buttons
+    const paginationLinks = document.querySelectorAll("#productPagination a");
+
+    const prevBtn = paginationLinks[0];
+    const nextBtn = paginationLinks[1];
+
+    // Previous
+    if (prevBtn) {
+      prevBtn.classList.toggle("disabled", productCurrentPage <= 1);
+
+      prevBtn.onclick = (e) => {
+        e.preventDefault();
+
+        if (productCurrentPage <= 1) return;
+
+        productCurrentPage--;
+        renderProductPage();
+      };
+    }
+
+    // Next
+    if (nextBtn) {
+      nextBtn.classList.toggle("disabled", productCurrentPage >= totalPages);
+
+      nextBtn.onclick = (e) => {
+        e.preventDefault();
+
+        if (productCurrentPage >= totalPages) return;
+
+        productCurrentPage++;
+        renderProductPage();
+      };
+    }
+
+    // Optional page number display
+    const pageNumberEl = document.getElementById("productPageNumber");
+
+    if (pageNumberEl) {
+      pageNumberEl.textContent = `Page ${productCurrentPage} of ${totalPages}`;
+    }
+
+    bindRowButtons();
+  }
+
   function renderProducts(employeeId = "", role = "") {
     if (unsubscribeProducts) {
       unsubscribeProducts();
@@ -545,9 +881,13 @@ export async function loadProducts() {
     }
 
     let q = collection(db, "products");
+
     if (employeeId) {
-      const empRole = employeesMap[employeeId].role;
-      q = query(collection(db, "products"), where("role", "==", empRole));
+      const empRole = employeesMap[employeeId]?.role;
+
+      if (empRole) {
+        q = query(collection(db, "products"), where("role", "==", empRole));
+      }
     } else if (role) {
       q = query(collection(db, "products"), where("role", "==", role));
     }
@@ -555,43 +895,37 @@ export async function loadProducts() {
     unsubscribeProducts = onSnapshot(q, (querySnapshot) => {
       if (!tbody.isConnected) return;
 
-      tbody.innerHTML = "";
+      productListCache = [];
+
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        if (employeeId && data.employeeId && data.employeeId !== employeeId)
+
+        // Employee filter
+        if (employeeId && data.employeeId && data.employeeId !== employeeId) {
           return;
+        }
 
         const empData = employeesMap[data.employeeId] || {};
+
         const empDisplay = empData.fname
           ? `${empData.fname} ${empData.lname}`
           : "-";
 
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td data-label="Product Name">${data.name}</td>
-          <td data-label="Price">₱${parseFloat(data.price).toFixed(2)}</td>
-          <td data-label="Packs">${
-            data.unit === "pack"
-              ? Math.ceil(
-                  (data.pieces ?? data.stock) / (data.pieces_per_pack || 1),
-                )
-              : "-"
-          }</td>
-          <td data-label="Pieces">${data.pieces ?? data.stock}</td>
-          <td data-label="Role">${data.role}</td>
-          <td data-label="Employee">${empDisplay}</td>
-          <td data-label="Action">
-            <button class="btn blue edit-btn" data-id="${docSnap.id}"><i class="material-icons">edit</i></button>
-            <button class="btn red delete-btn" data-id="${docSnap.id}"><i class="material-icons">delete</i></button>
-          </td>
-        `;
-        tbody.appendChild(row);
+        // Store data in cache
+        productListCache.push({
+          id: docSnap.id,
+          data,
+          empDisplay,
+        });
       });
 
-      bindRowButtons();
+      // Reset to first page whenever data/filter changes
+      productCurrentPage = 1;
+
+      // Render only current page
+      renderProductPage();
     });
   }
-
   renderProducts();
 
   filterRole.addEventListener("change", () => {

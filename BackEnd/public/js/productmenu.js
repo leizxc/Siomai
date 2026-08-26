@@ -74,21 +74,34 @@ function reinitSelect(selectEl) {
   M.FormSelect.init(selectEl);
 }
 
-// Product-menu stock is stored in pieces for inventory calculations. For pack
-// items, save both values so the UI can display the same packs/pcs information.
-function buildPackQuantityFields(inventory, pieces) {
+function buildPackQuantityFields(inventory, stock) {
   const isPack = inventory.unit_type === "pack";
+
+  // NON-PACK: lahat ng pack-specific fields = null
+  if (!isPack) {
+    return {
+      stock_quantity: null,
+      pieces_per_pack: null,
+      current_pieces: null,
+      current_packs: null,
+      initial_pieces: null,
+      initial_packs: null,
+    };
+  }
+
+  // PACK
   const piecesPerPack =
-    isPack && Number(inventory.quantity) > 0
+    Number(inventory.quantity) > 0
       ? Number(inventory.stock_quantity) / Number(inventory.quantity)
       : 1;
 
   return {
+    stock_quantity: stock,
     pieces_per_pack: piecesPerPack,
-    current_pieces: pieces,
-    current_packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
-    initial_pieces: pieces,
-    initial_packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
+    current_pieces: stock,
+    current_packs: Math.ceil(stock / piecesPerPack),
+    initial_pieces: stock,
+    initial_packs: Math.ceil(stock / piecesPerPack),
   };
 }
 
