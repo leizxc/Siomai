@@ -8,7 +8,7 @@
     <link rel="stylesheet" type="text/css" href="/css/employee.css" />
 
     <link rel="stylesheet" href="/css/employee.css" />
-<link rel="stylesheet" href="/css/materialize.min.css">
+    <link rel="stylesheet" href="/css/materialize.min.css" />
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
@@ -35,39 +35,21 @@
         </li>
 
         <li>
-          <a
-            href="#"
-            onclick="
-              loadSection('stock.html');
-              return false;
-            "
-          >
+          <a href="#" onclick="loadSection('stock.html', this)">
             <i class="material-icons">inventory</i>
             Inventory
           </a>
         </li>
 
         <li>
-          <a
-            href="#"
-            onclick="
-              loadSection('qouta.html');
-              return false;
-            "
-          >
+          <a href="#" onclick="loadSection('qouta.html')">
             <i class="material-icons">bar_chart</i>
             Income Per Cart
           </a>
         </li>
 
         <li>
-          <a
-            href="#"
-            onclick="
-              loadSection('sales.html');
-              return false;
-            "
-          >
+          <a href="#" onclick="loadSection('sales.html')">
             <i class="material-icons">payments</i>
             Expenses Records
           </a>
@@ -91,9 +73,8 @@
         <i class="material-icons">notifications_none</i>
         <i class="material-icons">account_circle</i>
       </div>
-      
-      <div id="content">
 
+      <div id="content">
         <!-- Search -->
         <section class="search-section">
           <div class="search-box">
@@ -157,32 +138,32 @@
             Proceed to Checkout
           </button>
         </section>
-
-        <!-- Bottom Navigation -->
-
-        <nav class="bottom-nav">
-          <a class="active">
-            <i class="material-icons">point_of_sale</i>
-            <span>POS</span>
-          </a>
-
-          <a>
-            <i class="material-icons">inventory_2</i>
-            <span>Inventory</span>
-          </a>
-
-          <a>
-            <i class="material-icons">history</i>
-            <span>History</span>
-          </a>
-
-          <a>
-            <i class="material-icons">logout</i>
-            <span>Logout</span>
-          </a>
-        </nav>
       </div>
     </main>
+
+    <!-- Bottom Navigation -->
+
+    <nav class="bottom-nav">
+      <a class="active">
+        <i class="material-icons">point_of_sale</i>
+        <span>POS</span>
+      </a>
+
+      <a>
+        <i class="material-icons">inventory_2</i>
+        <span>Inventory</span>
+      </a>
+
+      <a>
+        <i class="material-icons">history</i>
+        <span>History</span>
+      </a>
+
+      <a>
+        <i class="material-icons">logout</i>
+        <span>Logout</span>
+      </a>
+    </nav>
 
     <script src="/js/refresh.js"></script>
 

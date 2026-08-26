@@ -20,6 +20,8 @@ import { loadProductsOffline } from "./IndexDB.js";
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+let unsubscribePOS = null ;
+
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
 function formatQuantity(value) {
