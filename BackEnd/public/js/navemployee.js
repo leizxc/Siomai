@@ -1,7 +1,4 @@
 // navemployee.js
-// ================================
-// BOTTOM NAVIGATION
-// ================================
 
 function loadSection(page) {
   fetch(page)
@@ -114,7 +111,6 @@ function loadSection(page) {
 // Make function available to HTML
 window.loadSection = loadSection;
 
-
 // ================================
 // BOTTOM NAV ACTIVE STATE
 // ================================
@@ -128,24 +124,18 @@ function updateBottomNav(page) {
 
   if (page === "userpanel.html") {
     navItems[0]?.classList.add("active");
-  }
-
-  else if (page === "stock.html") {
+  } else if (page === "stock.html") {
     navItems[1]?.classList.add("active");
-  }
-
-  else if (page === "sales.html") {
+  } else if (page === "sales.html") {
     navItems[2]?.classList.add("active");
   }
 }
-
 
 // ================================
 // BOTTOM NAV CLICK EVENTS
 // ================================
 
 document.addEventListener("DOMContentLoaded", () => {
-
   const bottomNav = document.querySelector(".bottom-nav");
 
   if (!bottomNav) {
@@ -176,16 +166,19 @@ document.addEventListener("DOMContentLoaded", () => {
     loadSection("sales.html");
   });
 
-});
+   // Logout
+    navItems[3]?.addEventListener("click", (event)=> {
+      event.preventDefault();
 
+        window.location.href = "/index.html";
+    });
+});
 
 // ================================
 // INITIAL PAGE
 // ================================
 
 document.addEventListener("DOMContentLoaded", () => {
-
   // POS is the default page
   updateBottomNav("userpanel.html");
-
 });

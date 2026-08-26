@@ -56,7 +56,6 @@ async function completeCheckout() {
 }
 
 // RENDER ORDER
-
 function renderOrder() {
   orderList.innerHTML = "";
 
@@ -65,14 +64,13 @@ function renderOrder() {
 
   if (cart.length === 0) {
     orderList.innerHTML = `
-            <h5 style="text-align:center;margin-top:80px;">
-                No orders yet.
-            </h5>
-        `;
+      <h5 style="text-align:center;margin-top:80px;">
+        No orders yet.
+      </h5>
+    `;
 
     totalItems.textContent = "0";
     orderTotal.textContent = "0.00";
-
     return;
   }
 
@@ -83,38 +81,31 @@ function renderOrder() {
     items += item.qty;
 
     const card = document.createElement("div");
-
     card.className = "order-item";
 
     card.innerHTML = `
-            <img
-                class="order-image"
-                src="${item.image || "/images/no-image.png"}">
+      <img class="order-image" src="${item.image || "/images/no-image.png"}">
 
-            <div class="order-info">
-                <small>Product</small>
-                <h6>${item.name}</h6>
-                <p>₱${item.price.toFixed(2)}</p>
-            </div>
+      <div class="order-info">
+        <small>Product</small>
+        <h6>${item.name}</h6>
+        <p>₱${item.price.toFixed(2)}</p>
+      </div>
 
-            <div class="qty-control">
+      <div class="qty-control">
+        <button class="minus-btn" data-index="${index}">
+          <i class="material-icons">remove</i>
+        </button>
+        <span class="qty">${item.qty}</span>
+        <button class="plus-btn" data-index="${index}">
+          <i class="material-icons">add</i>
+        </button>
+      </div>
 
-                <button class="minus-btn" data-index="${index}">
-                    <i class="material-icons">remove</i>
-                </button>
-
-                <span class="qty">${item.qty}</span>
-
-                <button class="plus-btn" data-index="${index}">
-                    <i class="material-icons">add</i>
-                </button>
-
-            </div>
-
-            <div class="order-price">
-                ₱${subtotal.toFixed(2)}
-            </div>
-        `;
+      <div class="order-price">
+        ₱${subtotal.toFixed(2)}
+      </div>
+    `;
 
     orderList.appendChild(card);
   });
@@ -123,13 +114,12 @@ function renderOrder() {
   orderTotal.textContent = total.toFixed(2);
 
   // PLUS BUTTON
-
   document.querySelectorAll(".plus-btn").forEach((btn) => {
     btn.onclick = () => {
       const index = btn.dataset.index;
 
       if (cart[index].qty >= cart[index].stock) {
-        alert("Not enough stock!");
+        M.toast({ html: "Not enough stock!", classes: "red rounded" });
         return;
       }
 
@@ -141,7 +131,6 @@ function renderOrder() {
   });
 
   // MINUS BUTTON
-
   document.querySelectorAll(".minus-btn").forEach((btn) => {
     btn.onclick = () => {
       const index = btn.dataset.index;
@@ -153,61 +142,58 @@ function renderOrder() {
       }
 
       localStorage.setItem("cart", JSON.stringify(cart));
-
       renderOrder();
     };
   });
 }
 
 // PAYMENT
-
 cashBtn.onclick = () => {
   paymentMethod = "Cash";
-
   cashBtn.classList.add("active");
   cashlessBtn.classList.remove("active");
 };
 
 cashlessBtn.onclick = () => {
   paymentMethod = "Cashless";
-
   cashlessBtn.classList.add("active");
   cashBtn.classList.remove("active");
 };
 
 // BACK
-
 backBtn.onclick = () => {
   window.history.back();
 };
 
 // CHECKOUT
-
 checkoutBtn.onclick = async () => {
   if (cart.length === 0) {
-    alert("Cart is empty!");
+    M.toast({ html: "Cart is empty!", classes: "red rounded" });
     return;
   }
 
   checkoutBtn.disabled = true;
+
   try {
     await completeCheckout();
   } catch (error) {
     console.error("Checkout error:", error);
-    alert(error.message || "Unable to complete checkout.");
+    M.toast({
+      html: error.message || "Unable to complete checkout.",
+      classes: "red rounded",
+    });
     checkoutBtn.disabled = false;
     return;
   }
 
-  alert(`Checkout Success!\nPayment Method: ${paymentMethod}`);
-
-  
+  M.toast({
+    html: `Checkout Success! Payment: ${paymentMethod}`,
+    classes: "green rounded",
+  });
 
   cart = [];
   localStorage.setItem("cart", JSON.stringify(cart));
   renderOrder();
-
-  window.location.href = "/employee/siomai/userpanel.html";
 };
 
 renderOrder();

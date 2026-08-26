@@ -30,7 +30,7 @@ function formatQuantity(value) {
 
 // INIT POS
 export async function initPOS() {
-  cart = JSON.parse(localStorage.getItem("get")) || [];
+  cart = JSON.parse(localStorage.getItem("cart")) || [];
 
   // Firebase Auth restores the session asynchronously — auth.currentUser
   // can still be null right after page load even if the person is
@@ -96,9 +96,8 @@ async function loadProducts() {
     const product = docSnap.data();
     const pieces = Number(product.pieces ?? product.stock) || 0;
     const piecesPerPack = Number(product.pieces_per_pack) || 1;
-    const packs = product.unit === "pack"
-      ? Math.ceil(pieces / piecesPerPack)
-      : null;
+    const packs =
+      product.unit === "pack" ? Math.ceil(pieces / piecesPerPack) : null;
 
     const card = document.createElement("div");
     card.classList.add("product-card");
@@ -113,9 +112,11 @@ async function loadProducts() {
 
         <h4>${product.name}</h4>
 
-        <span class="product-stock">${product.unit === "pack"
-          ? `${formatQuantity(packs)} packs · ${formatQuantity(pieces)} pcs`
-          : `${formatQuantity(pieces)} ${product.unit || "pcs"}`}</span>
+        <span class="product-stock">${
+          product.unit === "pack"
+            ? `${formatQuantity(packs)} packs · ${formatQuantity(pieces)} pcs`
+            : `${formatQuantity(pieces)} ${product.unit || "pcs"}`
+        }</span>
 
         <span class="price">
             ₱${Number(product.price).toFixed(2)}
@@ -166,9 +167,14 @@ function addToCart(product) {
     if (existing.qty < product.stock) {
       existing.qty += 1;
     } else {
-      alert("Not enough stock!");
+      M.toast({ html: "Not enough stock!", classes: "red rounded" });
+      return;
     }
   } else {
+    if (product.stock <= 0) {
+      M.toast({ html: "Out of stock!", classes: "red rounded" });
+      return;
+    }
     cart.push({ ...product, qty: 1 });
   }
   saveCart();
@@ -183,7 +189,8 @@ function identifyCart() {
     renderCart();
   }
 }
-//mobile
+
+// mobile
 function renderMobileCart() {
   let total = 0;
   let items = 0;
@@ -197,7 +204,7 @@ function renderMobileCart() {
   document.getElementById("grandTotal").textContent = total.toFixed(2);
 }
 
-//desktop
+// desktop
 function renderCart() {
   const tbody = document.querySelector("#cartTable tbody");
   tbody.innerHTML = "";
@@ -214,7 +221,7 @@ function renderCart() {
       <td><input type="number" min="1" max="${item.stock}" value="${item.qty}" data-index="${index}" class="qty-input"></td>
       <td>₱${item.price.toFixed(2)}</td>
       <td>₱${total.toFixed(2)}</td>
-      <td><button class="btn red remove-btn" data-index="${index}">Remove</button></td>
+      <td><button class="btn red remove-btn" data-index="${index}"><i class="material-icons">delete</i></button></td>
     `;
     tbody.appendChild(row);
   });
@@ -257,20 +264,21 @@ async function addOrder(orderItems) {
     await updateDoc(productRef, {
       stock: item.stock - item.qty,
       pieces: item.stock - item.qty,
-      packs: item.unit === "pack"
-        ? Math.ceil((item.stock - item.qty) / item.pieces_per_pack)
-        : null,
+      packs:
+        item.unit === "pack"
+          ? Math.ceil((item.stock - item.qty) / item.pieces_per_pack)
+          : null,
     });
   }
 
-  alert("Order placed successfully!");
+  M.toast({ html: "Order placed successfully!", classes: "green rounded" });
   return orderRef.id;
 }
 
 // CHECKOUT
 async function checkout() {
   if (cart.length === 0) {
-    alert("Cart is empty!");
+    M.toast({ html: "Cart is empty!", classes: "red rounded" });
     return;
   }
 
@@ -285,7 +293,7 @@ function setupCartEvents() {
 
   checkoutBtn.addEventListener("click", () => {
     if (cart.length === 0) {
-      alert("Cart is empty!");
+      M.toast({ html: "Cart is empty!", classes: "red rounded" });
       return;
     }
 
@@ -298,6 +306,5 @@ function setupCartEvents() {
 
 window.addEventListener("pageshow", () => {
   cart = JSON.parse(localStorage.getItem("cart")) || [];
-
   identifyCart();
 });
