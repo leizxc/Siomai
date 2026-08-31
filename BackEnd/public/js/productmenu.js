@@ -17,16 +17,12 @@ import {
 
 //global listener state
 let unsubscribeInventoryOptions = null;
-let unsubscribeProductIdPreview = null; //global listener state para sa live preview ng susunod na Product ID
+let unsubscribeProductIdPreview = null;
 let unsubscribeMenu = null;
 
-//refresh
 export async function refresh() {
   const form = document.getElementById("addProductMenu");
-
-  if (form) {
-    form.reset();
-  }
+  if (form) form.reset();
 
   const previewImg = document.getElementById("previewImage");
   if (previewImg) previewImg.src = "/assets/upload-placeholder.png";
@@ -43,8 +39,6 @@ export async function refresh() {
   previewNextProductId();
 }
 
-// Kada tawag, tumataas ang counter (walang duplicate na product code).
-// Tinatawag lang ito pag-Save, hindi pag-preview.
 async function generateProductCode() {
   const counterRef = doc(db, "counters", "productCode");
 
@@ -62,22 +56,16 @@ async function generateProductCode() {
   return `QC-${String(nextNumber).padStart(6, "0")}`;
 }
 
-// Kailangan i-destroy at i-init ulit ang Materialize select, dahil hindi
-// ito automatic nag-re-refresh kapag dumagdag ng options after i-init.
 function reinitSelect(selectEl) {
   if (!selectEl || !selectEl.isConnected) return;
-
   const instance = M.FormSelect.getInstance(selectEl);
-  if (instance) {
-    instance.destroy();
-  }
+  if (instance) instance.destroy();
   M.FormSelect.init(selectEl);
 }
 
 function buildPackQuantityFields(inventory, stock) {
   const isPack = inventory.unit_type === "pack";
 
-  // NON-PACK: lahat ng pack-specific fields = null
   if (!isPack) {
     return {
       stock_quantity: null,
@@ -89,7 +77,6 @@ function buildPackQuantityFields(inventory, stock) {
     };
   }
 
-  // PACK
   const piecesPerPack =
     Number(inventory.quantity) > 0
       ? Number(inventory.stock_quantity) / Number(inventory.quantity)
@@ -110,7 +97,7 @@ function buildCurrentQuantityFields(menuData, pieces) {
   const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
 
   return {
-    current_stock: pieces, // Kept for existing assignment logic.
+    current_stock: pieces,
     current_pieces: pieces,
     current_packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
   };
@@ -122,14 +109,12 @@ function formatQuantity(value) {
   return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2);
 }
 
-//invetory allocation
 export function loadInventoryOptions(role = "") {
   const select = document.getElementById("employeeINV");
   if (!select) return;
 
-  if (unsubscribeInventoryOptions) {
-    unsubscribeInventoryOptions();
-  }
+  if (unsubscribeInventoryOptions) unsubscribeInventoryOptions();
+
   let q = collection(db, "inventory");
   if (role) {
     q = query(collection(db, "inventory"), where("role", "==", role));
@@ -138,9 +123,7 @@ export function loadInventoryOptions(role = "") {
   unsubscribeInventoryOptions = onSnapshot(q, (snapshot) => {
     if (!select.isConnected) return;
 
-    select.innerHTML = `
-  <option value="" disabled selected>Inventory Allocation</option>
-`;
+    select.innerHTML = `<option value="" disabled selected>Inventory Allocation</option>`;
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
@@ -156,8 +139,6 @@ export function loadInventoryOptions(role = "") {
   });
 }
 
-// Kapag pumili ng inventory item, i-auto-fill ang "stock" at "price" field
-// base sa nasa inventory (pwede pa ring baguhin bago i-save).
 function bindInventoryAllocationChange() {
   const select = document.getElementById("employeeINV");
   const stockInput = document.getElementById("stock");
@@ -174,9 +155,6 @@ function bindInventoryAllocationChange() {
 
     const data = inventorySnap.data();
 
-    // data.stock_quantity ay TOTAL PIECES na para sa "pack" unit type
-    // (quantity × pieces_per_pack) — ito ang dapat isave bilang stock,
-    // hindi yung raw pack count.
     let stock = data.stock_quantity;
     let unit = data.unit_type;
     let unitLabel = "";
@@ -195,9 +173,6 @@ function bindInventoryAllocationChange() {
 
     stockInput.value = stock;
     if (stockUnit) stockUnit.value = unitLabel;
-
-    // Kung ano ang nakalagay na unit_price sa inventory, iyon din agad
-    // ang lalabas dito — pwede pa ring i-adjust bago i-save.
     if (priceInput) priceInput.value = data.unit_price ?? "";
 
     const kgUsedField = document.getElementById("kg-used-field");
@@ -209,7 +184,6 @@ function bindInventoryAllocationChange() {
     } else {
       kgUsedField.style.display = "none";
       kalderoCountField.style.display = "none";
-
       document.getElementById("KgUsed").value = "";
       document.getElementById("kalderocCount").value = "";
     }
@@ -218,28 +192,20 @@ function bindInventoryAllocationChange() {
   };
 }
 
-//load roles
 export async function loadroles() {
   const roleSelect = document.getElementById("selectCategory");
-
   if (!roleSelect) return;
+
   const snap = await getDocs(collection(db, "employees"));
   const roles = new Set();
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
-
-    if (data.role) {
-      roles.add(data.role.trim());
-    }
+    if (data.role) roles.add(data.role.trim());
   });
 
-  roleSelect.innerHTML = `
-  <option value="" disabled selected>Select Role</option>
-`;
+  roleSelect.innerHTML = `<option value="" disabled selected>Select Role</option>`;
 
-  // Hiwalay na option: hindi tied sa isang specific role, makikita sa
-  // Assign Product page kahit anong role ang piliin doon.
   const sharedOption = document.createElement("option");
   sharedOption.value = "ALL";
   sharedOption.textContent = "Shared Across All Roles";
@@ -255,47 +221,34 @@ export async function loadroles() {
   reinitSelect(roleSelect);
 }
 
-// "Preview" lang ito ng susunod na ID (hindi tumataas ang counter dito).
-// Kada may na-save na product (kahit ibang admin), live na nag-uupdate ito
-// dahil naka-onSnapshot sa counter doc mismo.
 function previewNextProductId() {
   const productIdInput = document.getElementById("productId");
   if (!productIdInput) return;
 
-  if (unsubscribeProductIdPreview) {
-    unsubscribeProductIdPreview();
-  }
+  if (unsubscribeProductIdPreview) unsubscribeProductIdPreview();
 
   const counterRef = doc(db, "counters", "productCode");
 
   unsubscribeProductIdPreview = onSnapshot(counterRef, (snap) => {
     if (!productIdInput.isConnected) return;
-
     const current = snap.exists() ? snap.data().lastNumber || 0 : 0;
     const next = current + 1;
-
     productIdInput.value = `QC-${String(next).padStart(6, "0")}`;
   });
 }
 
-//img function to firebase
 async function uploadProductImage() {
   const fileInput = document.getElementById("inputImg");
   const file = fileInput.files[0];
-
   if (!file) return "";
 
   const formData = new FormData();
-
   formData.append("file", file);
   formData.append("upload_preset", "Queen_Cassy_Product_Menu");
 
   const response = await fetch(
     "https://api.cloudinary.com/v1_1/ht5i99mv/image/upload",
-    {
-      method: "POST",
-      body: formData,
-    },
+    { method: "POST", body: formData },
   );
 
   if (!response.ok) {
@@ -305,14 +258,11 @@ async function uploadProductImage() {
   }
 
   const data = await response.json();
-
   return data.secure_url;
 }
 
-//save button
 export function addproductmenu() {
   const form = document.getElementById("addProductMenu");
-
   if (!form) return;
 
   form.addEventListener("submit", async (e) => {
@@ -329,20 +279,10 @@ export function addproductmenu() {
       const role = document.getElementById("selectCategory").value;
       const stock = Number(document.getElementById("stock").value);
       const price = Number(document.getElementById("price").value);
-      const kgused = Number(document.getElementById("KgUsed").value);
-      const kalderocount = Number(
-        document.getElementById("kalderocCount").value,
-      );
 
-      if (
-        !inventoryId ||
-        !productName ||
-        !role ||
-        stock <= 0 ||
-        price <= 0 ||
-        kgused <= 0 ||
-        kalderocount <= 0
-      ) {
+      // Basic fields only — kg fields are checked below, only if this
+      // inventory item is actually a "kg" item.
+      if (!inventoryId || !productName || !role || stock <= 0 || price <= 0) {
         M.toast({
           html: "Please complete all fields.",
           classes: "red rounded",
@@ -352,7 +292,35 @@ export function addproductmenu() {
 
       if (saveBtn) saveBtn.disabled = true;
 
-      //checking kung may kaparehas na name product
+      // Need unit_type BEFORE validating kg fields — previously this
+      // fetch happened much later, so the kg-only check ran for every
+      // product regardless of unit, and always failed for Siomai/Pares
+      // since their hidden KgUsed/kalderocCount inputs are empty.
+      const inventorySnap = await getDoc(doc(db, "inventory", inventoryId));
+
+      if (!inventorySnap.exists()) {
+        M.toast({ html: "Inventory not found.", classes: "red rounded" });
+        return;
+      }
+
+      const inventory = inventorySnap.data();
+
+      let kgused = null;
+      let kalderocount = null;
+
+      if (inventory.unit_type === "kg") {
+        kgused = Number(document.getElementById("KgUsed").value);
+        kalderocount = Number(document.getElementById("kalderocCount").value);
+
+        if (kgused <= 0 || kalderocount <= 0) {
+          M.toast({
+            html: "Please complete all fields.",
+            classes: "red rounded",
+          });
+          return;
+        }
+      }
+
       const existingProduct = await getDocs(
         query(
           collection(db, "productMenu"),
@@ -368,32 +336,10 @@ export function addproductmenu() {
         return;
       }
 
-      // Permanent Product Code
       const productCode = await generateProductCode();
-
-      //img
       const imageURL = await uploadProductImage();
-
-      // Inventory Details
-      const inventorySnap = await getDoc(doc(db, "inventory", inventoryId));
-
-      if (!inventorySnap.exists()) {
-        M.toast({ html: "Inventory not found.", classes: "red rounded" });
-        return;
-      }
-
-      const kgUsedinput = document.getElementById("KgUsed");
-      const kalderocountinput = document.getElementById("kalderocCount");
-      const kgUsed1 = kgUsedinput ? Number(kgUsedinput.value) || null : null;
-      const kalderoCount1 = kalderocountinput
-        ? Number(kalderocountinput.value) || null
-        : null;
-
-      const inventory = inventorySnap.data();
       const quantityFields = buildPackQuantityFields(inventory, stock);
 
-      // Save both packs and pieces in Firebase. current_stock remains in pieces
-      // because the assignment page already uses it for stock validation.
       await addDoc(collection(db, "productMenu"), {
         product_code: productCode,
         product_name: productName,
@@ -418,21 +364,15 @@ export function addproductmenu() {
       refresh();
     } catch (error) {
       console.error(error);
-
-      M.toast({
-        html: "Error saving product.",
-        classes: "red rounded",
-      });
+      M.toast({ html: "Error saving product.", classes: "red rounded" });
     } finally {
       if (saveBtn) saveBtn.disabled = false;
     }
   });
 }
 
-//gawing upper case din habang nag ttype
 function initUppercaseProductName() {
   const input = document.getElementById("inputProduct");
-
   if (!input) return;
 
   input.addEventListener("input", () => {
@@ -440,19 +380,13 @@ function initUppercaseProductName() {
   });
 }
 
-//filter function
 async function loadCategoryFilter() {
   const select = document.getElementById("filterCategory");
-
   if (!select) return;
 
   const snap = await getDocs(collection(db, "employees"));
 
   const categories = new Set();
-
-  select.innerHTML = `
-  <option value="">All Categories</option>
-`;
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
@@ -462,20 +396,34 @@ async function loadCategoryFilter() {
     }
   });
 
+  select.innerHTML = "";
+
+  let siomaiCategory = null;
+
   categories.forEach((category) => {
     const option = document.createElement("option");
 
     option.value = category;
     option.textContent = category;
 
+    if (category.toUpperCase() === "SIOMAI") {
+      option.selected = true;
+      siomaiCategory = category;
+    }
+
     select.appendChild(option);
   });
 
   reinitSelect(select);
+
+  // SIOMAI ang default
+  if (siomaiCategory) {
+    select.value = siomaiCategory;
+  }
+
+  return siomaiCategory;
 }
 
-// Parehong modal na ginagamit din sa Inventory/Product Assign pages
-// (modal-delete-category) — reused dito, hindi na gumawa ng bago.
 function confirmDeletion(title, message) {
   const modalElement = document.getElementById("modal-delete-category");
   if (!modalElement) return Promise.resolve(window.confirm(message));
@@ -495,21 +443,17 @@ function confirmDeletion(title, message) {
       modalInstance.close();
       resolve(false);
     };
-
     confirmButton.onclick = () => {
       modalInstance.close();
       resolve(true);
     };
-
     modalInstance.open();
   });
 }
 
-//table function
 export async function loadmenu() {
   const tbody = document.querySelector("#menutable tbody");
   const filterCategory = document.getElementById("filterCategory");
-
   if (!tbody || !filterCategory) return;
 
   function bindRowButtons() {
@@ -517,7 +461,6 @@ export async function loadmenu() {
       btn.onclick = async () => {
         const id = btn.dataset.id;
 
-        // Bawal tanggalin ang Product Menu entry kung naka-assign pa ito
         const assignedQuery = query(
           collection(db, "products"),
           where("inventoryId", "==", id),
@@ -538,9 +481,6 @@ export async function loadmenu() {
         if (!confirmed) return;
 
         try {
-          // Tandaan: hindi binabawasan ng addproductmenu() ang linked
-          // inventory doc pag-Save, kaya walang dapat i-restore pag-Delete
-          // — burahin lang natin ang productMenu doc mismo.
           await deleteDoc(doc(db, "productMenu", id));
           M.toast({
             html: "Product menu entry deleted.",
@@ -577,9 +517,7 @@ export async function loadmenu() {
         if (!modalElem) return;
 
         let modalInstance = M.Modal.getInstance(modalElem);
-        if (!modalInstance) {
-          modalInstance = M.Modal.init(modalElem);
-        }
+        if (!modalInstance) modalInstance = M.Modal.init(modalElem);
         modalInstance.open();
 
         const saveBtn = document.getElementById("edit-menu-save");
@@ -629,80 +567,157 @@ export async function loadmenu() {
   }
 
   function renderMenu() {
-    // Stop previous listener
-    if (unsubscribeMenu) {
-      unsubscribeMenu();
-    }
+    if (unsubscribeMenu) unsubscribeMenu();
 
     const selectedCategory = filterCategory.value;
 
     let q = collection(db, "productMenu");
 
     if (selectedCategory) {
-      // Match the exact category AND anything marked "ALL" (Shared
       q = query(
         collection(db, "productMenu"),
-        where("category", "in", [selectedCategory, "ALL"]),
+        where("category", "==", selectedCategory),
       );
     }
-    // When selectedCategory is "" (All Categories), leave q unfiltered —
-    // that already returns every entry, "ALL"-tagged or not.
 
     unsubscribeMenu = onSnapshot(q, (snapshot) => {
       if (!tbody.isConnected) return;
 
       tbody.innerHTML = "";
 
+      // ==========================================
+      // DETERMINE WHICH UNIT IS CURRENTLY DISPLAYED
+      // ==========================================
+
+      let currentUnit = null;
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+
+        if (!currentUnit && data.unit) {
+          currentUnit = data.unit;
+        }
+      });
+
+      // ==========================================
+      // UPDATE TABLE HEADERS
+      // ==========================================
+
+      const thPacks = document.getElementById("th-packs");
+      const thPieces = document.getElementById("th-pieces");
+      const thContainer = document.getElementById("th-container");
+
+      if (currentUnit === "pack") {
+        // PACK
+        thPacks.style.display = "";
+        thPieces.style.display = "";
+        thContainer.style.display = "none";
+
+        thPacks.textContent = "Packs";
+        thPieces.textContent = "Pieces";
+      } else if (currentUnit === "kg" || currentUnit === "liter") {
+        // KG / LITER
+        thPacks.style.display = "none";
+        thPieces.style.display = "none";
+        thContainer.style.display = "";
+
+        thContainer.textContent = "Container";
+      } else {
+        // NOTHING SELECTED / UNKNOWN UNIT
+        thPacks.style.display = "none";
+        thPieces.style.display = "none";
+        thContainer.style.display = "none";
+      }
+
+      // ==========================================
+      // RENDER PRODUCTS
+      // ==========================================
+
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
 
         const tr = document.createElement("tr");
 
+        let quantityColumns = "";
+
+        // ========================================
+        // PACK
+        // ========================================
+
+        if (data.unit === "pack") {
+          const packs = Math.ceil(
+            (data.current_pieces ?? data.current_stock) /
+              (data.pieces_per_pack || 1),
+          );
+
+          const pieces = data.current_pieces ?? data.current_stock ?? 0;
+
+          quantityColumns = `
+          <td data-label="Packs">
+            ${formatQuantity(packs)}
+          </td>
+
+          <td data-label="Pieces">
+            ${formatQuantity(pieces)}
+          </td>
+        `;
+        }
+
+        // ========================================
+        // KG / LITER
+        // ========================================
+        else if (data.unit === "kg" || data.unit === "liter") {
+          quantityColumns = `
+          <td data-label="Container">
+            ${formatQuantity(data.kaldero_count)}
+          </td>
+        `;
+        }
+
+        // ========================================
+        // TABLE ROW
+        // ========================================
+
         tr.innerHTML = `
-  <td data-label="Product Code">${data.product_code}</td>
-  <td data-label="Inventory Name">${data.inventory_name}</td>
-  <td data-label="Product Name">${data.product_name}</td>
-  <td data-label="Category">${data.category}</td>
+        <td data-label="Product Code">
+          ${data.product_code || "-"}
+        </td>
 
-  <td data-label="Packs">
-    ${
-      data.unit === "pack"
-        ? formatQuantity(
-            Math.ceil(
-              (data.current_pieces ?? data.current_stock) /
-                (data.pieces_per_pack || 1),
-            ),
-          )
-        : "-"
-    }
-  </td>
+        <td data-label="Inventory Name">
+          ${data.inventory_name || "-"}
+        </td>
 
-  <td data-label="Pieces">
-    ${
-      data.unit === "pack"
-        ? formatQuantity(data.current_pieces ?? data.current_stock)
-        : "-"
-    }
-  </td>
+        <td data-label="Product Name">
+          ${data.product_name || "-"}
+        </td>
 
-  <td data-label="Container">
-    ${data.unit === "kg" ? formatQuantity(data.kaldero_count) : "-"}
-  </td>
+        <td data-label="Category">
+          ${data.category || "-"}
+        </td>
 
-  <td data-label="Price">
-    ₱${Number(data.price).toFixed(2)}
-  </td>
+        ${quantityColumns}
 
-  <td data-label="Action">
-              <button class="edit-btn btn blue" data-id="${docSnap.id}">
-                <i class="material-icons">edit</i>
-              </button>
-              <button class="delete-btn btn red" data-id="${docSnap.id}">
-                <i class="material-icons">delete</i>
-              </button>
-            </td>
-  </td>
-`;
+        <td data-label="Price">
+          ₱${Number(data.price || 0).toFixed(2)}
+        </td>
+
+        <td data-label="Action">
+          <button
+            class="edit-btn btn blue"
+            data-id="${docSnap.id}"
+          >
+            <i class="material-icons">edit</i>
+          </button>
+
+          <button
+            class="delete-btn btn red"
+            data-id="${docSnap.id}"
+          >
+            <i class="material-icons">delete</i>
+          </button>
+        </td>
+      `;
+
         tbody.appendChild(tr);
       });
 
@@ -710,14 +725,11 @@ export async function loadmenu() {
     });
   }
 
-  // Initial load
   renderMenu();
 
-  // Reload kapag nag-filter
   filterCategory.addEventListener("change", renderMenu);
 }
 
-// Call this BEFORE navigating away from productMenu.html
 export function cleanupProductMenuPage() {
   if (unsubscribeInventoryOptions) {
     unsubscribeInventoryOptions();
@@ -733,11 +745,13 @@ export function cleanupProductMenuPage() {
   }
 }
 
-//export function to functionalnav.js
 export async function initProductPage() {
   loadInventoryOptions();
   loadroles();
-  loadCategoryFilter();
+
+  // Hintayin munang ma-load ang categories
+  await loadCategoryFilter();
+
   previewNextProductId();
   addproductmenu();
   loadmenu();

@@ -1,4 +1,43 @@
-/* Reset */
+:root {
+  --bg-body: #f8f9fc;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-header: #ffffff;
+  --text-primary: #000000;
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-muted: rgba(0, 0, 0, 0.5);
+  --border: #e5e7eb;
+  --border-soft: #f1f5f9;
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --danger: #ef4444;
+  --sidebar-hover: #f0f0f0;
+  --input-bg: #ffffff;
+  --table-hover: #fafafa;
+  --logo: #8c1414;
+}
+
+html.dark {
+  --bg-body: #0a0a0a;
+  --bg-card: #141414;
+  --bg-sidebar: #111111;
+  --bg-header: #111111;
+  --text-primary: #f5f5f5;
+  --text-secondary: #a3a3a3;
+  --text-muted: #737373;
+  --border: #262626;
+  --border-soft: #1f1f1f;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --danger: #f87171;
+  --sidebar-hover: #1a1a1a;
+  --input-bg: #0a0a0a;
+  --table-hover: #1a1a1a;
+  --logo: #f87171;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -6,10 +45,279 @@
   font-family: "Segoe UI", sans-serif;
 }
 
+/* Core surfaces */
+
 body {
-  background: #f8f9fc;
+  background: var(--bg-body);
+  color: var(--text-primary);
+}
+
+.sidebar {
+  background: #fff;
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  padding: 24px 20px;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.sidebar .logo {
+  color: #8c1414;
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.sidebar .role {
+  color: #777;
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+}
+
+.sidebar .nav li a,
+.sidebar .nav li i {
+  color: var(--text-primary) !important;
+}
+
+.sidebar .nav li.active,
+.sidebar .nav li:hover {
+  background: #f0f0f0;
+}
+
+.mobile-header {
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  position: fixed;
+  top: 0;
+  left: 260px;
+  right: 0;
+  height: 78px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 45px;
+}
+
+.header-title h2,
+.header-title p,
+.header-actions > .material-icons,
+.admin-profile strong,
+.admin-profile small {
+  color: var(--text-primary);
+}
+
+.header-title p,
+.admin-profile small {
+  opacity: 1;
+  color: var(--text-secondary);
+}
+
+.admin-profile > i {
+  color: #8c1414;
+  font-size: 40px;
+}
+
+.main {
+  background: var(--bg-body);
+  margin-left: 260px;
+  width: calc(100% - 260px);
+  min-height: 100vh;
+  padding: 103px 45px 40px;
+  overflow-y: auto;
+}
+
+.card,
+.dashboard-panel,
+.dashboard-kpi-card,
+.inventory-card,
+.product-list-card,
+.menu-card,
+.filter-card,
+.expenses-card,
+.employee-card,
+.employee-form-card,
+.summary-card {
+  background: var(--bg-card);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+  color: var(--text-primary);
+}
+
+.header h1,
+.header p,
+.panel-header h3,
+.panel-header p,
+.kpi-info h2,
+.kpi-info p,
+.product-menu-form h4,
+.product-list-card h4,
+.assign-product-form h4 {
+  color: var(--text-primary);
+}
+
+.header p,
+.panel-header p,
+.kpi-info p {
+  color: var(--text-secondary);
+}
+
+.header {
+  border-bottom-color: var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -10px 0 35px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Tables */
+
+.dashboard-panel th,
+.inventory-card th,
+#menutable th,
+#productTable th,
+#expenseTable th,
+.employee-card th {
+  color: var(--text-primary);
+  border-bottom-color: var(--border);
+}
+
+.dashboard-panel td,
+.inventory-card td,
+#menutable td,
+#productTable td,
+#expenseTable td,
+.employee-card td {
+  color: var(--text-primary);
+  border-bottom-color: var(--border-soft);
+}
+
+.dashboard-panel tbody tr:hover,
+.inventory-card tbody tr:hover,
+#menutable tbody tr:hover,
+#productTable tbody tr:hover,
+#expenseTable tbody tr:hover,
+.employee-card tbody tr:hover {
+  background: var(--table-hover);
+}
+
+.dashboard-total-row td {
+  background: #f8fafc;
   color: #000;
-  overflow-x: hidden;
+  font-weight: 700 !important;
+}
+
+/* Links */
+
+.dashboard-panel-link,
+.inventory-footer a {
+  color: var(--accent);
+}
+
+.dashboard-panel-link:hover,
+.inventory-footer a:hover {
+  color: var(--accent-hover);
+}
+
+/* Inputs (basic) */
+
+.input-field input,
+.input-field select,
+.panel-filters input,
+.panel-filters select {
+  background: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+.input-field label {
+  color: var(--text-secondary) !important;
+}
+
+/* Modal */
+
+.modal {
+  background: var(--bg-card) !important;
+  color: var(--text-primary);
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: 92% !important;
+  max-width: 420px !important;
+  max-height: 92vh !important;
+  overflow-y: auto !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+  z-index: 10000 !important;
+}
+
+.modal-content h4,
+.modal-content p {
+  color: var(--text-primary);
+}
+
+.modal-footer {
+  border-top-color: var(--border);
+  margin-top: 10px !important;
+  padding: 12px 0 8px !important;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Inventory summary icons keep colored backgrounds */
+
+.inventory-stat {
+  border-color: var(--border);
+  background: var(--bg-card);
+  min-height: 72px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.inventory-stat span,
+.inventory-stat strong,
+.inventory-stat small {
+  color: var(--text-primary);
+}
+
+.inventory-stat span,
+.inventory-stat small {
+  opacity: 0.7;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle i {
+  font-size: 26px;
+  color: var(--text-primary);
+  opacity: 0.7;
+}
+
+.theme-toggle:hover i {
+  opacity: 1;
 }
 
 body.modal-open {
@@ -25,6 +333,7 @@ body.modal-open {
 }
 
 /* Sidebar */
+
 .sidebar a,
 .sidebar .nav li a,
 .sidebar .nav li.active a,
@@ -37,33 +346,6 @@ body.modal-open {
 
 .overlay {
   display: none;
-}
-
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 260px;
-  background: #fff;
-  border-right: 1px solid #e2e8f0;
-  padding: 24px 20px;
-  height: 100vh;
-  overflow-y: auto;
-  z-index: 100;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
-}
-
-.sidebar .logo {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #8c1414;
-  margin-bottom: 6px;
-}
-
-.sidebar .role {
-  font-size: 1.4rem;
-  color: #777;
-  margin-bottom: 20px;
 }
 
 .sidebar .nav {
@@ -94,27 +376,6 @@ body.modal-open {
 .sidebar .nav li i {
   font-size: 22px;
   color: #333 !important;
-}
-
-.sidebar .nav li.active,
-.sidebar .nav li:hover {
-  background: #f0f0f0;
-}
-
-/* Top header */
-.mobile-header {
-  position: fixed;
-  top: 0;
-  left: 260px;
-  right: 0;
-  height: 78px;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 45px;
 }
 
 #menu-toggle {
@@ -160,11 +421,6 @@ body.modal-open {
   gap: 10px;
 }
 
-.admin-profile > i {
-  font-size: 40px;
-  color: #8c1414;
-}
-
 .admin-profile div {
   display: flex;
   flex-direction: column;
@@ -182,15 +438,6 @@ body.modal-open {
   opacity: 0.55;
 }
 
-/* Main */
-.main {
-  margin-left: 260px;
-  width: calc(100% - 260px);
-  min-height: 100vh;
-  padding: 103px 45px 40px;
-  overflow-y: auto;
-}
-
 #content {
   width: 100%;
   max-width: none;
@@ -198,6 +445,7 @@ body.modal-open {
 }
 
 /* Cards */
+
 .card {
   background: #fff;
   border-radius: 12px;
@@ -224,15 +472,6 @@ body.modal-open {
   opacity: 0.5;
 }
 
-/* Page header */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: -10px 0 35px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
 .header h1 {
   font-size: 3rem;
   font-weight: 700;
@@ -249,6 +488,7 @@ body.modal-open {
 }
 
 /* Dashboard */
+
 .dashboard-content {
   width: 100%;
 }
@@ -289,6 +529,7 @@ body.modal-open {
 }
 
 /* Icon colors only */
+
 .income-kpi .kpi-icon i {
   color: #ef4444;
 }
@@ -339,6 +580,7 @@ body.modal-open {
 .kpi-positive {
   color: #16a34a;
 }
+
 .kpi-negative {
   color: #ef4444;
 }
@@ -389,32 +631,126 @@ body.modal-open {
 }
 
 /* Panel header icons – unique colors */
+
 .panel-header h3 i {
   font-size: 20px;
 }
 
 /* Income Per Cart */
+
 .income-panel .panel-header h3 i {
-  color: #3b82f6; /* blue */
+  color: #3b82f6;
 }
 
 /* Inventory Summary */
+
 .inventory-summary-panel .panel-header h3 i {
-  color: #8b5cf6; /* purple */
+  color: #8b5cf6;
 }
 
 /* Inventory table */
+
 .inventory-panel .panel-header h3 i {
-  color: #2563eb; /* blue */
+  color: #2563eb;
 }
 
 .top-products-panel .panel-header h3 i {
-  color: #ef4444; /* red */
+  color: #ef4444;
 }
 
 /* Recent Expenses */
+
+.expense-filter-card .row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -10px;
+  margin-right: -10px;
+}
+
+.expense-filter-card .input-field {
+  position: relative !important;
+  margin-top: 28px !important;
+  margin-bottom: 0;
+  padding-left: 10px;
+  padding-right: 10px;
+  box-sizing: border-box;
+}
+
+.expense-filter-card .input-field > label {
+  position: absolute !important;
+  top: -18px !important;
+  left: 0 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #6b7280 !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  pointer-events: none;
+}
+
+/* Same box for date + select */
+
+.expense-filter-card input[type="date"],
+.expense-filter-card input[type="text"],
+.expense-filter-card .select-wrapper input.select-dropdown {
+  width: 100% !important;
+  height: 45px !important;
+  margin: 0 !important;
+  padding: 0 14px !important;
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  border-bottom: 1px solid #d1d5db !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  font-size: 15px !important;
+  line-height: 45px !important;
+  color: #111 !important;
+}
+
+.expense-filter-card .select-wrapper {
+  width: 100% !important;
+  position: relative !important;
+}
+
+.expense-filter-card .select-wrapper input.select-dropdown {
+  padding-right: 40px !important;
+}
+
+.expense-filter-card input[type="date"] {
+  padding-right: 40px !important;
+  color-scheme: light;
+}
+
+.expense-filter-card input:focus,
+.expense-filter-card .select-wrapper input.select-dropdown:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* Dark */
+
+html.dark .expense-filter-card .input-field > label {
+  color: #a3a3a3 !important;
+}
+
+html.dark .expense-filter-card input[type="date"],
+html.dark .expense-filter-card .select-wrapper input.select-dropdown {
+  background: #0a0a0a !important;
+  border-color: #333 !important;
+  color: #f5f5f5 !important;
+  color-scheme: dark;
+}
+
+html.dark
+  .expense-filter-card
+  input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+  opacity: 0.85;
+}
+
 .expenses-panel .panel-header h3 i {
-  color: #f59e0b; /* orange/amber */
+  color: #f59e0b;
 }
 
 .panel-header p {
@@ -484,12 +820,6 @@ body.modal-open {
   border-bottom: none;
 }
 
-.dashboard-total-row td {
-  background: #f8fafc;
-  font-weight: 700 !important;
-  color: #000;
-}
-
 .dashboard-note {
   margin: 12px 0 0;
   font-size: 12px;
@@ -501,26 +831,6 @@ body.modal-open {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-}
-
-/* Inventory summary icons – force white bg + colored icon only */
-/* Inventory summary – layout fix */
-.inventory-summary-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.inventory-stat {
-  min-height: 72px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 12px;
-  display: flex;
-  flex-direction: row; /* icon left, text right */
-  align-items: center;
-  gap: 12px;
-  box-sizing: border-box;
 }
 
 .inventory-stat-icon {
@@ -544,12 +854,15 @@ body.modal-open {
 .inventory-stat-icon.blue i {
   color: #fff !important;
 }
+
 .inventory-stat-icon.green i {
   color: #fff !important;
 }
+
 .inventory-stat-icon.orange i {
   color: #ffff !important;
 }
+
 .inventory-stat-icon.red i {
   color: #fff !important;
 }
@@ -661,6 +974,7 @@ body.modal-open {
 }
 
 /* Inventory summary */
+
 .inventory-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -724,12 +1038,15 @@ body.modal-open {
 .inventory-summary .icon-blue i {
   color: #2563eb;
 }
+
 .inventory-summary .icon-green i {
   color: #16a34a;
 }
+
 .inventory-summary .icon-orange i {
   color: #f59e0b;
 }
+
 .inventory-summary .icon-purple i {
   color: #9333ea;
 }
@@ -747,6 +1064,7 @@ body.modal-open {
 }
 
 /* Toast */
+
 .toast {
   position: fixed !important;
   top: 0 !important;
@@ -780,21 +1098,6 @@ body.modal-open {
   font-weight: 600;
 }
 
-/* Modal */
-.modal {
-  position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  width: 92% !important;
-  max-width: 420px !important;
-  max-height: 92vh !important;
-  overflow-y: auto !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
-  z-index: 10000 !important;
-}
-
 .modal-content {
   padding: 20px 18px !important;
   overflow-y: visible !important;
@@ -815,15 +1118,6 @@ body.modal-open {
 
 .modal .input-field:last-child {
   margin-bottom: 0 !important;
-}
-
-.modal-footer {
-  margin-top: 10px !important;
-  padding: 12px 0 8px !important;
-  border-top: 1px solid #eee;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
 }
 
 .modal-footer .btn {
@@ -849,6 +1143,7 @@ body.modal-open {
 }
 
 /* Filter */
+
 .filter-card {
   width: 100%;
   padding: 20px;
@@ -887,6 +1182,7 @@ body.modal-open {
 }
 
 /* Category pills */
+
 .category-row {
   display: flex;
   align-items: center;
@@ -959,6 +1255,7 @@ body.modal-open {
 }
 
 /* Inventory actions */
+
 .inventory-actions {
   width: 100%;
   display: flex;
@@ -1051,6 +1348,7 @@ body.modal-open {
 }
 
 /* Status badge */
+
 .inventory-card .status {
   display: inline-block;
   padding: 6px 14px;
@@ -1076,6 +1374,7 @@ body.modal-open {
 }
 
 /* Inventory table */
+
 .inventory-card {
   background: #fff;
   border-radius: 18px;
@@ -1153,7 +1452,9 @@ body.modal-open {
 }
 
 /* product menu */
+
 /* Product Menu form – force 2 columns */
+
 .product-menu-form .row {
   display: flex;
   flex-wrap: wrap;
@@ -1200,15 +1501,19 @@ body.modal-open {
   overflow: hidden;
   cursor: pointer;
   background: #f8f9fb;
-  border: 2px dashed #e2e8f0;
+  border: 2px dashed #d1d5db;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: border-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .image-upload:hover {
   border-color: #2563eb;
+  background: #f0f7ff;
 }
 
 .image-upload img {
@@ -1218,19 +1523,14 @@ body.modal-open {
 }
 
 .GeneratedId {
-  color: #000;
+  color: #6b7280 !important;
   opacity: 0.5;
-  font-size: 0.8rem;
-  margin: 0 0 4px;
-  font-weight: 600;
-}
-
-.save-btn-wrapper {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 10px;
-  width: 100%;
-  padding: 0 12px;
+  font-size: 12px !important;
+  margin: 0 0 6px !important;
+  font-weight: 600 !important;
+  display: block !important;
+  position: static !important;
+  transform: none !important;
 }
 
 .save-btn-wrapper {
@@ -1278,8 +1578,10 @@ button.save-menu-btn,
   line-height: 1 !important;
 }
 
-/*assign product */
+/* assign product */
+
 /* Assign Product form */
+
 .assign-product-form h4,
 .product-list-card h4 {
   margin: 0 0 20px;
@@ -1334,6 +1636,7 @@ button.save-menu-btn,
 }
 
 /* Product table */
+
 #productTable {
   width: 100%;
   border-collapse: collapse;
@@ -1388,6 +1691,7 @@ button.save-menu-btn,
 }
 
 /* Expenses */
+
 .expenses-page .header {
   justify-content: space-between;
   align-items: flex-end;
@@ -1476,10 +1780,6 @@ button.save-menu-btn,
   padding: 24px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   margin-bottom: 25px;
-}
-
-.expense-filter-card .input-field {
-  margin-bottom: 0;
 }
 
 .expense-actions {
@@ -1600,6 +1900,7 @@ button.save-menu-btn,
 }
 
 /* Employee */
+
 .employee-page {
   width: 100%;
 }
@@ -1644,6 +1945,7 @@ button.save-menu-btn,
   flex-direction: column;
   justify-content: space-between;
   position: relative;
+  border: 1px solid #e5e7eb;
 }
 
 .employee-summary .summary-box span {
@@ -1690,12 +1992,15 @@ button.save-menu-btn,
 .icon-blue i {
   color: #2563eb;
 }
+
 .icon-green i {
   color: #16a34a;
 }
+
 .icon-orange i {
   color: #f59e0b;
 }
+
 .icon-purple i {
   color: #9333ea;
 }
@@ -1942,6 +2247,7 @@ button.save-menu-btn,
 }
 
 /* Mobile */
+
 @media (max-width: 768px) {
   .container {
     display: block;
@@ -1965,17 +2271,18 @@ button.save-menu-btn,
     left: 0;
     right: 0;
     width: 100%;
-    height: 64px;
+    height: 56px;
     margin: 0 !important;
-    padding: 0 16px;
+    padding: 0 12px;
     display: flex !important;
     align-items: center;
     justify-content: space-between;
-    background: #fff;
+    background: var(--bg-header);
     border: none;
-    border-bottom: 1px solid #e5e7eb;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     z-index: 1500;
+    gap: 8px;
   }
 
   #menu-toggle {
@@ -1986,36 +2293,47 @@ button.save-menu-btn,
     height: 40px;
     padding: 0;
     margin: 0;
-    background: transparent;
+    background: transparent !important;
     border: none;
     cursor: pointer;
+    min-width: 40px;
+    flex-shrink: 0;
   }
 
   #menu-toggle i {
-    font-size: 30px;
-    color: #000;
+    font-size: 26px !important;
+    color: var(--text-primary) !important;
+    opacity: 1 !important;
+    line-height: 1;
   }
 
   .header-title {
     flex: 1;
-    margin-left: 10px;
+    margin-left: 4px;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .header-title h2 {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.05rem;
     font-weight: 700;
-    color: #000;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
   }
 
   .header-title p {
-    display: none;
+    display: none !important;
   }
 
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    flex-shrink: 0;
   }
 
   .header-actions > .material-icons {
@@ -2030,12 +2348,12 @@ button.save-menu-btn,
   }
 
   .admin-profile > i {
-    font-size: 32px;
-    color: #8c1414;
+    font-size: 28px !important;
+    color: var(--logo) !important;
   }
 
   .admin-profile div {
-    display: none;
+    display: none !important;
   }
 
   .sidebar {
@@ -2099,6 +2417,7 @@ button.save-menu-btn,
   }
 
   /* dashboard mobile */
+
   .dashboard-content {
     padding: 0;
   }
@@ -2187,6 +2506,7 @@ button.save-menu-btn,
   }
 
   /* Inventory Summary stats */
+
   .inventory-summary-grid {
     grid-template-columns: 1fr;
     gap: 10px;
@@ -2248,6 +2568,7 @@ button.save-menu-btn,
   }
 
   /* Top products */
+
   .top-product {
     grid-template-columns: 18px 32px 1fr auto;
     gap: 6px;
@@ -2259,13 +2580,14 @@ button.save-menu-btn,
   }
 
   /* Inventory footer */
+
   .inventory-footer {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-    margin-top: 14px;
-    padding-top: 12px;
+    gap: 14px;
+    margin-top: 16px;
+    padding-top: 16px;
     border-top: 1px solid #f1f5f9;
   }
 
@@ -2290,6 +2612,7 @@ button.save-menu-btn,
     text-decoration: none;
     line-height: 1;
     align-self: flex-end;
+    margin-left: 0;
   }
 
   .inventory-footer a i {
@@ -2307,6 +2630,7 @@ button.save-menu-btn,
   }
 
   /* Panel links – right aligned */
+
   .dashboard-panel-link {
     display: inline-flex;
     align-items: center;
@@ -2337,28 +2661,7 @@ button.save-menu-btn,
   }
 
   /* Recent Expenses */
-  .expenses-panel .dashboard-table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
 
-  .expenses-panel table {
-    min-width: 420px;
-  }
-
-  /* Inventory footer mobile */
-  .inventory-footer {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .inventory-footer a {
-    margin-left: 0;
-    align-self: flex-end; /* right side, same as Go to Inventory */
-  }
-
-  /* Recent Expenses mobile */
   .expenses-panel .dashboard-table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -2373,6 +2676,7 @@ button.save-menu-btn,
   }
 
   /* Inventory mobile */
+
   .inventory-summary {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -2442,9 +2746,11 @@ button.save-menu-btn,
   .inventory-actions #btn-add-product {
     order: 1;
   }
+
   .inventory-actions #btn-add-categories {
     order: 2;
   }
+
   .inventory-actions #delete-category-btn {
     order: 3;
   }
@@ -2539,20 +2845,13 @@ button.save-menu-btn,
     font-size: 18px;
   }
 
-  .inventory-footer {
-    margin-top: 16px;
-    padding-top: 16px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-  }
-
   .pagination-controls {
     width: 100%;
     justify-content: space-between;
   }
 
   /* Expenses mobile */
+
   .expense-summary {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -2566,7 +2865,7 @@ button.save-menu-btn,
 
   .expense-filter-card {
     margin: 16px;
-    padding: 18px;
+    padding: 16px;
   }
 
   .expense-actions {
@@ -2586,9 +2885,11 @@ button.save-menu-btn,
   .expense-actions .expense-btn {
     order: 1;
   }
+
   .expense-actions .add-expenses-category {
     order: 2;
   }
+
   .expense-actions #btn-delete-category {
     order: 3;
   }
@@ -2669,6 +2970,7 @@ button.save-menu-btn,
   }
 
   /* Employee mobile */
+
   .employee-page .header {
     display: none;
   }
@@ -2714,9 +3016,11 @@ button.save-menu-btn,
   .employee-actions .btn[type="submit"] {
     order: 1;
   }
+
   #btnAddRole {
     order: 2;
   }
+
   #btn-delete-role {
     order: 3;
   }
@@ -2809,7 +3113,9 @@ button.save-menu-btn,
 
   .save-btn-wrapper {
     width: 100%;
-    margin-top: 20px;
+    margin-top: 12px;
+    justify-content: stretch;
+    padding: 0;
   }
 
   .save-menu-btn {
@@ -2825,7 +3131,9 @@ button.save-menu-btn,
   }
 
   /* product menu */
+
   /* Product Menu mobile */
+
   .product-menu-form,
   .product-list-card {
     margin: 16px;
@@ -2860,12 +3168,6 @@ button.save-menu-btn,
     margin: 10px 0 16px;
   }
 
-  .save-btn-wrapper {
-    justify-content: stretch;
-    padding: 0;
-    margin-top: 12px;
-  }
-
   .save-menu-btn,
   button.save-menu-btn,
   #save-menu.save-menu-btn {
@@ -2877,6 +3179,7 @@ button.save-menu-btn,
   }
 
   /* Product list table → cards */
+
   .product-list-card .table-container {
     overflow: visible;
   }
@@ -2942,7 +3245,9 @@ button.save-menu-btn,
   }
 
   /* Assign product */
+
   /* Assign Product mobile */
+
   .assign-product-form,
   .product-list-card {
     margin: 16px;
@@ -3018,6 +3323,215 @@ button.save-menu-btn,
     height: 38px !important;
     min-width: 38px !important;
   }
+
+  /* DARK MODE ALL TABLE */
+
+  html.dark .inventory-card tr,
+  html.dark #menutable tr,
+  html.dark #productTable tr,
+  html.dark #expenseTable tr,
+  html.dark .employee-card tr {
+    background: #141414 !important;
+    border: 1.5px solid #333 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  html.dark .inventory-card td,
+  html.dark #menutable td,
+  html.dark #productTable td,
+  html.dark #expenseTable td,
+  html.dark .employee-card td {
+    color: #f5f5f5 !important;
+    border-bottom: 1px solid #262626 !important;
+  }
+
+  html.dark .inventory-card td::before,
+  html.dark #menutable td::before,
+  html.dark #productTable td::before,
+  html.dark #expenseTable td::before,
+  html.dark .employee-card td::before {
+    color: #a3a3a3 !important;
+    font-weight: 600;
+  }
+
+  html.dark .inventory-card td:last-child,
+  html.dark #menutable td:last-child,
+  html.dark #productTable td:last-child,
+  html.dark #expenseTable td:last-child,
+  html.dark .employee-card td:last-child {
+    border-bottom: none !important;
+  }
+
+  /* Action buttons inside mobile cards */
+
+  html.dark .inventory-card td:last-child .btn,
+  html.dark #menutable td:last-child .btn,
+  html.dark #productTable td:last-child .btn,
+  html.dark #expenseTable td:last-child .btn,
+  html.dark .employee-card td:last-child .btn {
+    color: #fff !important;
+  }
+
+  /* Mobile cards / sections background */
+
+  html.dark .inventory-card,
+  html.dark .product-list-card,
+  html.dark .product-menu-form,
+  html.dark .assign-product-form,
+  html.dark .expenses-card,
+  html.dark .employee-card,
+  html.dark .employee-form-card,
+  html.dark .filter-card,
+  html.dark .expense-filter-card {
+    background: #141414 !important;
+    border-color: #262626 !important;
+    color: #f5f5f5 !important;
+  }
+
+  html.dark .inventory-card h4,
+  html.dark .product-list-card h4,
+  html.dark .expenses-card h4,
+  html.dark .employee-card h4 {
+    color: #f5f5f5 !important;
+  }
+
+  /* Summary boxes mobile */
+
+  html.dark .inventory-summary .summary-box,
+  html.dark .employee-summary .summary-box,
+  html.dark .expense-summary .summary-card {
+    background: #141414 !important;
+    border: 1px solid #262626 !important;
+  }
+
+  html.dark .inventory-summary .summary-box span,
+  html.dark .employee-summary .summary-box span,
+  html.dark .summary-title {
+    color: #a3a3a3 !important;
+  }
+
+  html.dark .inventory-summary .summary-box h3,
+  html.dark .employee-summary .summary-box h3,
+  html.dark .summary-content h2 {
+    color: #f5f5f5 !important;
+  }
+
+  /* Category pills mobile */
+
+  html.dark .category-pill {
+    background: #1a1a1a !important;
+    color: #f5f5f5 !important;
+    border-color: #333 !important;
+  }
+
+  html.dark .category-pill.active {
+    background: #2563eb !important;
+    color: #fff !important;
+  }
+
+  /* Footer / pagination */
+
+  html.dark .inventory-footer,
+  html.dark .employee-footer {
+    border-top-color: #262626 !important;
+    color: #a3a3a3 !important;
+  }
+
+  html.dark .inventory-footer strong,
+  html.dark .employee-footer strong {
+    color: #f5f5f5 !important;
+  }
+
+  .header-actions > .material-icons,
+  .theme-toggle i {
+    font-size: 22px !important;
+    color: var(--text-primary) !important;
+    opacity: 0.85 !important;
+  }
+
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Dark mode – force visible icons */
+
+  html.dark .mobile-header {
+    background: #111 !important;
+    border-bottom-color: #262626 !important;
+  }
+
+  html.dark #menu-toggle i {
+    color: #f5f5f5 !important;
+  }
+
+  html.dark .header-title h2 {
+    color: #f5f5f5 !important;
+  }
+
+  html.dark .header-actions > .material-icons,
+  html.dark .theme-toggle i {
+    color: #f5f5f5 !important;
+    opacity: 0.9 !important;
+  }
+
+  html.dark .admin-profile > i {
+    color: #f87171 !important;
+  }
+
+  /* Inventory summary icons – same colors as light mode */
+
+  html.dark .inventory-summary .summary-icon {
+    background: #0a0a0a !important;
+    border: 1px solid #262626 !important;
+  }
+
+  html.dark .inventory-summary .icon-blue i {
+    color: #2563eb !important;
+  }
+
+  html.dark .inventory-summary .icon-green i {
+    color: #16a34a !important;
+  }
+
+  html.dark .inventory-summary .icon-orange i {
+    color: #f59e0b !important;
+  }
+
+  html.dark .inventory-summary .icon-purple i {
+    color: #9333ea !important;
+  }
+
+  .expense-filter-card .row {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .expense-filter-card .input-field {
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .expense-filter-card .input-field > label {
+    left: 0 !important;
+  }
+
+  .expense-filter-card input[type="date"],
+  .expense-filter-card .select-wrapper input.select-dropdown {
+    height: 45px !important;
+    width: 100% !important;
+  }
+
+  .expense-actions .btn,
+  .expense-actions .outline-btn,
+  .expense-actions #btn-delete-category {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
 }
 
 @media (max-width: 360px) {
@@ -3057,4 +3571,1213 @@ button.save-menu-btn,
     padding: 14px;
     margin-bottom: 12px;
   }
+}
+
+/* OVERIDE DARK MODE */
+
+/*DARK MODE */
+
+html.dark body {
+  background: var(--bg-body) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .sidebar {
+  background: var(--bg-sidebar) !important;
+  border-right: 1px solid var(--border) !important;
+}
+
+html.dark .sidebar .logo {
+  color: var(--logo) !important;
+}
+
+html.dark .sidebar .role {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .sidebar .nav li a,
+html.dark .sidebar .nav li i {
+  color: var(--text-primary) !important;
+}
+
+html.dark .sidebar .nav li.active,
+html.dark .sidebar .nav li:hover {
+  background: var(--sidebar-hover) !important;
+}
+
+html.dark .mobile-header {
+  background: var(--bg-header) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+html.dark .header-title h2,
+html.dark .header-actions > .material-icons,
+html.dark .theme-toggle i,
+html.dark .admin-profile strong {
+  color: var(--text-primary) !important;
+}
+
+html.dark .header-title p,
+html.dark .admin-profile small {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .admin-profile > i {
+  color: var(--logo) !important;
+}
+
+html.dark .main {
+  background: var(--bg-body) !important;
+}
+
+/* Cards */
+
+html.dark .card,
+html.dark .dashboard-panel,
+html.dark .dashboard-kpi-card,
+html.dark .inventory-card,
+html.dark .product-list-card,
+html.dark .menu-card,
+html.dark .filter-card,
+html.dark .expenses-card,
+html.dark .employee-card,
+html.dark .employee-form-card,
+html.dark .summary-card,
+html.dark .inventory-summary .summary-box {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .header {
+  border-bottom-color: var(--border) !important;
+}
+
+html.dark .header h1,
+html.dark .kpi-info h2,
+html.dark .panel-header h3,
+html.dark .product-menu-form h4,
+html.dark .product-list-card h4,
+html.dark .assign-product-form h4 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .header p,
+html.dark .kpi-info p,
+html.dark .panel-header p {
+  color: var(--text-secondary) !important;
+}
+
+/* KPI icons */
+
+html.dark .kpi-icon {
+  background: #0a0a0a !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Inventory mini stats */
+
+html.dark .inventory-stat {
+  background: #0a0a0a !important;
+  border: 1px solid var(--border) !important;
+}
+
+html.dark .inventory-stat span,
+html.dark .inventory-stat strong,
+html.dark .inventory-stat small {
+  color: var(--text-primary) !important;
+}
+
+html.dark .inventory-stat span,
+html.dark .inventory-stat small {
+  color: var(--text-secondary) !important;
+}
+
+/* TABLE TEXT FIX */
+
+html.dark table,
+html.dark th,
+html.dark td {
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .dashboard-panel th,
+html.dark .inventory-card th,
+html.dark #menutable th,
+html.dark #productTable th,
+html.dark #expenseTable th,
+html.dark .employee-card th {
+  color: var(--text-secondary) !important;
+  opacity: 1 !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+html.dark .dashboard-panel td,
+html.dark .inventory-card td,
+html.dark #menutable td,
+html.dark #productTable td,
+html.dark #expenseTable td,
+html.dark .employee-card td {
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-soft) !important;
+}
+
+html.dark tbody tr:hover {
+  background: var(--table-hover) !important;
+}
+
+html.dark .dashboard-total-row td {
+  background: #1a1a1a !important;
+  color: var(--text-primary) !important;
+  font-weight: 700 !important;
+}
+
+html.dark .dashboard-note {
+  color: var(--text-muted) !important;
+}
+
+/* DATE / INPUT FIX */
+
+html.dark input,
+html.dark select,
+html.dark textarea,
+html.dark .panel-filters input,
+html.dark .panel-filters select,
+html.dark .input-field input,
+html.dark .input-field select {
+  background: #0a0a0a !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px;
+  color-scheme: dark;
+}
+
+html.dark input[type="date"] {
+  background: #0a0a0a !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border) !important;
+  color-scheme: dark;
+}
+
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+html.dark .input-field label,
+html.dark label {
+  color: var(--text-secondary) !important;
+}
+
+/* Links */
+
+html.dark .dashboard-panel-link,
+html.dark .inventory-footer a {
+  color: var(--accent) !important;
+}
+
+html.dark .dashboard-panel-link:hover,
+html.dark .inventory-footer a:hover {
+  color: var(--accent-hover) !important;
+}
+
+/* Modal */
+
+html.dark .modal {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .modal-content h4,
+html.dark .modal-content p {
+  color: var(--text-primary) !important;
+}
+
+html.dark .modal-footer {
+  border-top-color: var(--border) !important;
+}
+
+html.dark .modal-footer .btn-flat {
+  background: #1a1a1a !important;
+  color: var(--text-primary) !important;
+}
+
+/* TOP PRODUCT TABLE */
+
+/* Top Products – force white text in dark mode */
+
+html.dark .top-products-panel,
+html.dark .top-products-panel * {
+  color: var(--text-primary);
+}
+
+html.dark .top-products-panel .panel-header h3,
+html.dark .top-products-panel .panel-header p {
+  color: var(--text-primary) !important;
+}
+
+html.dark .top-products-panel .panel-header p {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .top-product > strong {
+  color: var(--text-secondary) !important;
+  opacity: 1 !important;
+}
+
+html.dark .top-product span {
+  color: var(--text-primary) !important;
+}
+
+html.dark .top-product b {
+  color: var(--text-primary) !important;
+}
+
+html.dark .product-placeholder {
+  background: #0a0a0a !important;
+  border: 1px solid var(--border);
+}
+
+html.dark .product-placeholder i {
+  color: var(--text-muted) !important;
+}
+
+html.dark .top-product {
+  border-bottom-color: var(--border) !important;
+}
+
+/* INVENTORY DARK MODE */
+
+/* Summary cards */
+
+html.dark .inventory-summary .summary-box {
+  background: #141414 !important;
+  border: 1px solid #262626 !important;
+  box-shadow: none !important;
+}
+
+html.dark .inventory-summary .summary-box span {
+  color: #a3a3a3 !important;
+  opacity: 1 !important;
+}
+
+html.dark .inventory-summary .summary-box h3 {
+  color: #f5f5f5 !important;
+}
+
+html.dark .inventory-summary .summary-icon {
+  background: #0a0a0a !important;
+  border: 1px solid #262626 !important;
+}
+
+/* Category pills */
+
+html.dark .category-pill {
+  background: #1a1a1a !important;
+  color: #f5f5f5 !important;
+  border: 1px solid #262626;
+}
+
+html.dark .category-pill:hover {
+  background: #262626 !important;
+}
+
+html.dark .category-pill.active {
+  background: #2563eb !important;
+  color: #fff !important;
+  border-color: #2563eb !important;
+}
+
+/* Action buttons */
+
+html.dark .inventory-actions #delete-category-btn {
+  background: #141414 !important;
+  color: #f5f5f5 !important;
+  border: 2px solid #ef4444 !important;
+}
+
+html.dark .inventory-actions #delete-category-btn i {
+  color: #f5f5f5 !important;
+}
+
+html.dark .inventory-actions #btn-add-categories {
+  background: #141414 !important;
+  color: #3b82f6 !important;
+  border: 2px solid #3b82f6 !important;
+}
+
+html.dark .inventory-actions #btn-add-product {
+  background: #2563eb !important;
+  color: #fff !important;
+  border: 2px solid #2563eb !important;
+}
+
+/* Inventory table card */
+
+html.dark .inventory-card {
+  background: #141414 !important;
+  border: 1px solid #262626 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .inventory-card h4 {
+  color: #f5f5f5 !important;
+}
+
+/* Table headers + cells */
+
+html.dark .inventory-card th {
+  color: #a3a3a3 !important;
+  opacity: 1 !important;
+  border-bottom: 1px solid #262626 !important;
+}
+
+html.dark .inventory-card td {
+  color: #f5f5f5 !important;
+  border-bottom: 1px solid #1f1f1f !important;
+}
+
+html.dark .inventory-card tbody tr:hover {
+  background: #1a1a1a !important;
+}
+
+/* Date filter */
+
+html.dark .filter-card,
+html.dark .inventory-card .input-field input,
+html.dark .inventory-card input[type="date"] {
+  background: #0a0a0a !important;
+  color: #f5f5f5 !important;
+  border-color: #262626 !important;
+  color-scheme: dark;
+}
+
+html.dark
+  .inventory-card
+  input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.7;
+}
+
+html.dark .filter-group label,
+html.dark .inventory-card label {
+  color: #a3a3a3 !important;
+}
+
+/* Status badges – keep readable */
+
+html.dark .inventory-card .status.available {
+  background: #14532d !important;
+  color: #86efac !important;
+}
+
+html.dark .inventory-card .status.low-stock {
+  background: #dda827 !important;
+  color: #fff !important;
+}
+
+html.dark .inventory-card .status.on-selling {
+  background: #164e63 !important;
+  color: #a5f3fc !important;
+}
+
+/* SELECT  NORMAL INPUT + DOWN ARROW */
+
+/* Kill Materialize underline */
+
+.input-field.select-wrapper,
+.input-field .select-wrapper {
+  margin-top: 0;
+}
+
+.select-wrapper input.select-dropdown {
+  height: 45px !important;
+  margin: 0 !important;
+  padding: 0 40px 0 14px !important;
+  background-color: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  border-bottom: 1px solid #d1d5db !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: #111 !important;
+  font-size: 15px !important;
+  line-height: 45px !important;
+  box-sizing: border-box !important;
+  padding-right: 40px !important;
+}
+
+.select-wrapper input.select-dropdown:focus {
+  border: 1px solid #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Down arrow (▼) */
+
+.select-wrapper .caret {
+  position: absolute !important;
+  right: 14px !important;
+  top: 50% !important;
+  margin-top: 0 !important;
+  transform: translateY(-40%) !important;
+  z-index: 3;
+  border: none !important;
+  width: auto !important;
+  height: auto !important;
+  font-size: 0 !important;
+  background: transparent !important;
+  opacity: 0 !important;
+  display: none !important;
+}
+
+/* CSS triangle arrow */
+
+.select-wrapper::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 14px !important;
+  top: 50% !important;
+  transform: translateY(-30%) !important;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent !important;
+  border-right: 5px solid transparent !important;
+  border-top: 6px solid #6b7280 !important;
+  pointer-events: none !important;
+  z-index: 5 !important;
+}
+
+/* Label position – above field */
+
+.input-field > label {
+  transform: translateY(-14px) scale(0.85) !important;
+  transform-origin: 0 0;
+  left: 0 !important;
+  color: #6b7280 !important;
+}
+
+.input-field > label.active {
+  transform: translateY(-14px) scale(0.85) !important;
+}
+
+/* Dropdown panel */
+
+ul.dropdown-content.select-dropdown {
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  padding: 4px 0 !important;
+}
+
+ul.dropdown-content.select-dropdown li > span {
+  color: #111 !important;
+  font-size: 14px !important;
+  padding: 12px 16px !important;
+  display: block !important;
+}
+
+ul.dropdown-content.select-dropdown li:hover {
+  background: #f3f4f6 !important;
+}
+
+ul.dropdown-content.select-dropdown li.selected {
+  background: #eff6ff !important;
+}
+
+/* Same look for native text inputs */
+
+.input-field input[type="text"],
+.input-field input[type="number"],
+.input-field input[type="password"],
+.input-field input:not([type]) {
+  height: 45px !important;
+  margin: 0 !important;
+  padding: 0 14px !important;
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  border-bottom: 1px solid #d1d5db !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+}
+
+.input-field input:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+}
+
+html.dark .select-wrapper input.select-dropdown,
+html.dark .input-field input[type="text"],
+html.dark .input-field input[type="number"],
+html.dark .input-field input:not([type]) {
+  background: #0a0a0a !important;
+  border-color: #333 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .select-wrapper::after {
+  border-top-color: #a3a3a3 !important;
+}
+
+html.dark ul.dropdown-content.select-dropdown {
+  background: #141414 !important;
+  border-color: #333 !important;
+  border: 1px solid #333 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark ul.dropdown-content.select-dropdown li > span {
+  color: #f5f5f5 !important;
+}
+
+html.dark ul.dropdown-content.select-dropdown li:hover {
+  background: #1a1a1a !important;
+}
+
+/* LABEL FIX */
+
+/* GLOBAL LABEL ALIGNMENT */
+
+.input-field {
+  position: relative !important;
+  margin-top: 28px !important;
+  margin-bottom: 12px !important;
+  padding-top: 0 !important;
+}
+
+/* Force ALL labels to same place above the box */
+
+.input-field > label,
+.input-field > label.active,
+.input-field label:not(.label-icon) {
+  position: absolute !important;
+  top: -18px !important;
+  left: 0 !important;
+  width: 100% !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  color: #6b7280 !important;
+  transform: none !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  transition: none !important;
+  pointer-events: none !important;
+  opacity: 1 !important;
+  height: auto !important;
+}
+
+/* Disable Materialize floating animation completely */
+
+.input-field input + label,
+.input-field textarea + label,
+.input-field .select-wrapper + label {
+  transform: none !important;
+  -webkit-transform: none !important;
+}
+
+/* Inputs & selects – same height, same padding */
+
+.input-field input[type="text"],
+.input-field input[type="number"],
+.input-field input[type="password"],
+.input-field input[type="email"],
+.input-field input:not([type]),
+.select-wrapper input.select-dropdown {
+  height: 45px !important;
+  margin: 0 !important;
+  padding: 0 14px !important;
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  border-bottom: 1px solid #d1d5db !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  font-size: 15px !important;
+  line-height: 45px !important;
+  color: #111 !important;
+}
+
+.input-field input:focus,
+.select-wrapper input.select-dropdown:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12) !important;
+}
+
+/* Select arrow */
+
+.select-wrapper {
+  position: relative !important;
+}
+
+/* Columns – keep equal top spacing */
+
+.row .input-field.col {
+  margin-top: 28px !important;
+}
+
+/* darkmode label */
+
+html.dark .input-field > label,
+html.dark .input-field > label.active,
+html.dark .GeneratedId {
+  color: #a3a3a3 !important;
+}
+
+html.dark .input-field input,
+html.dark .select-wrapper input.select-dropdown {
+  background: #0a0a0a !important;
+  border-color: #333 !important;
+  color: #f5f5f5 !important;
+}
+
+/* FILTER DROPDOWN FIX LIGHT AND DARKMODE */
+
+/* FILTER DROPDOWN */
+
+/* Filter field width – full of its column, aligned under label */
+
+.product-list-card .input-field,
+.product-list-card .row .input-field.col {
+  margin-top: 28px !important;
+  width: 100%;
+}
+
+.product-list-card .select-wrapper,
+.product-list-card .select-wrapper input.select-dropdown {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.product-list-card .select-wrapper input.select-dropdown {
+  height: 45px !important;
+  min-width: 280px;
+  padding: 0 40px 0 14px !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #111 !important;
+  font-size: 15px !important;
+  line-height: 45px !important;
+}
+
+/* Dropdown list – same width as the input */
+
+.product-list-card ul.dropdown-content.select-dropdown,
+ul.dropdown-content.select-dropdown {
+  width: 100% !important;
+  min-width: 280px !important;
+  background: #fff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  padding: 6px 0 !important;
+  margin-top: 4px !important;
+  overflow: hidden;
+}
+
+ul.dropdown-content.select-dropdown li {
+  min-height: 44px !important;
+}
+
+/* Light mode hover */
+
+ul.dropdown-content.select-dropdown li:hover,
+ul.dropdown-content.select-dropdown li.active {
+  background: #f3f4f6 !important;
+}
+
+ul.dropdown-content.select-dropdown li.selected > span {
+  color: #1d4ed8 !important;
+}
+
+/* DARK MODE FILTER + HOVER */
+
+html.dark .product-list-card .select-wrapper input.select-dropdown {
+  background: #0a0a0a !important;
+  border-color: #333 !important;
+  color: #f5f5f5 !important;
+}
+
+/* Dark hover – clear gray, readable */
+
+html.dark ul.dropdown-content.select-dropdown li:hover,
+html.dark ul.dropdown-content.select-dropdown li.active {
+  background: #262626 !important;
+}
+
+html.dark ul.dropdown-content.select-dropdown li:hover > span,
+html.dark ul.dropdown-content.select-dropdown li.active > span {
+  color: #fff !important;
+}
+
+html.dark ul.dropdown-content.select-dropdown li.selected {
+  background: #1e3a5f !important;
+}
+
+html.dark ul.dropdown-content.select-dropdown li.selected > span {
+  color: #93c5fd !important;
+}
+
+html.dark ul.dropdown-content.select-dropdown li.selected:hover {
+  background: #1e40af !important;
+}
+
+/* CAPITAL MANAGEMENT DARK MODE */
+
+html.dark .expense-summary .summary-card,
+html.dark .expenses-page .summary-card {
+  background: #141414 !important;
+  border: 1px solid #262626 !important;
+  box-shadow: none !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .summary-title {
+  color: #a3a3a3 !important;
+  opacity: 1 !important;
+}
+
+html.dark .summary-content h2,
+html.dark .summary-left h2,
+html.dark .summary-card h2 {
+  color: #f5f5f5 !important;
+}
+
+html.dark .summary-content p,
+html.dark .summary-card p {
+  color: #a3a3a3 !important;
+}
+
+html.dark .summary-icon {
+  background: #0a0a0a !important;
+  border: 1px solid #262626 !important;
+}
+
+html.dark .summary-icon i {
+  color: #3b82f6 !important;
+}
+
+/* CAPITAL FILTER CARD */
+
+html.dark .expense-filter-card {
+  background: #141414 !important;
+  border: 1px solid #262626 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .expense-filter-card label,
+html.dark .expense-filter-card .input-field > label {
+  color: #a3a3a3 !important;
+}
+
+html.dark .expense-filter-card input,
+html.dark .expense-filter-card select,
+html.dark .expense-filter-card .select-wrapper input.select-dropdown {
+  background: #0a0a0a !important;
+  border: 1px solid #333 !important;
+  color: #f5f5f5 !important;
+}
+
+/* ACTION BUTTONS DARK MODE EXPENSE */
+
+html.dark .expense-actions #btn-delete-category,
+html.dark .expense-actions .delete-outline {
+  background: #141414 !important;
+  color: #f5f5f5 !important;
+  border: 2px solid #ef4444 !important;
+}
+
+html.dark .expense-actions .expense-btn,
+html.dark
+  .expense-actions
+  .btn:not(.outline-btn):not(.delete-outline):not(#btn-delete-category) {
+  background: #2563eb !important;
+  color: #fff !important;
+  border: 2px solid #2563eb !important;
+}
+
+.expense-actions .btn,
+.expense-actions .outline-btn,
+.expense-actions .delete-outline,
+.expense-actions #btn-delete-category {
+  min-width: 220px;
+  height: 52px;
+  border-radius: 10px;
+  display: inline-flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0 !important;
+  padding: 0 20px !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  line-height: 1 !important;
+}
+
+.expense-actions .btn i,
+.expense-actions .outline-btn i,
+.expense-actions #btn-delete-category i {
+  margin: 0 !important;
+  font-size: 20px;
+}
+
+/* Light mode */
+
+.expense-actions #btn-delete-category,
+.expense-actions .delete-outline {
+  background: #fff !important;
+  color: #333 !important;
+  border: 2px solid #ef4444 !important;
+}
+
+.expense-actions #btn-delete-category i {
+  color: #333 !important;
+}
+
+.expense-actions .outline-btn,
+.expense-actions .add-expenses-category {
+  background: #fff !important;
+  color: #2563eb !important;
+  border: 2px solid #2563eb !important;
+}
+
+.expense-actions .expense-btn,
+.expense-actions #btn-add-expense {
+  background: #2563eb !important;
+  color: #fff !important;
+  border: 2px solid #2563eb !important;
+}
+
+html.dark .expense-actions #btn-delete-category i,
+html.dark .expense-actions .delete-outline i {
+  color: #f5f5f5 !important;
+}
+
+html.dark .expense-actions .outline-btn,
+html.dark .expense-actions .add-expenses-category {
+  background: #141414 !important;
+  color: #3b82f6 !important;
+  border: 2px solid #3b82f6 !important;
+}
+
+html.dark .expense-actions .outline-btn i,
+html.dark .expense-actions .add-expenses-category i {
+  color: #3b82f6 !important;
+}
+
+html.dark .expense-actions .expense-btn,
+html.dark .expense-actions #btn-add-expense,
+html.dark .expense-actions .btn.blue {
+  background: #2563eb !important;
+  color: #fff !important;
+  border: 2px solid #2563eb !important;
+}
+
+html.dark .expense-actions .expense-btn i,
+html.dark .expense-actions #btn-add-expense i {
+  color: #fff !important;
+}
+
+/* Expense table card */
+
+html.dark .expenses-card {
+  background: #141414 !important;
+  border: 1px solid #262626 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .expenses-card h4 {
+  color: #f5f5f5 !important;
+}
+
+html.dark #expenseTable th {
+  color: #a3a3a3 !important;
+  opacity: 1 !important;
+  border-bottom: 1px solid #262626 !important;
+}
+
+html.dark #expenseTable td {
+  color: #f5f5f5 !important;
+  border-bottom: 1px solid #1f1f1f !important;
+}
+
+html.dark #expenseTable tbody tr:hover {
+  background: #1a1a1a !important;
+}
+
+/* Page header */
+
+html.dark .expenses-page .header h1 {
+  color: #f5f5f5 !important;
+}
+
+html.dark .expenses-page .header p {
+  color: #a3a3a3 !important;
+}
+
+.expense-filter-card input,
+.expense-filter-card .select-wrapper input.select-dropdown {
+  height: 45px !important;
+  padding: 0 14px !important;
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  color: #111 !important;
+}
+
+html.dark .employee-summary .summary-box {
+  background: #141414 !important;
+  border: 1px solid #262626 !important;
+  box-shadow: none !important;
+}
+
+html.dark .employee-summary .summary-box span {
+  color: #a3a3a3 !important;
+  opacity: 1 !important;
+}
+
+html.dark .employee-summary .summary-box h3 {
+  color: #f5f5f5 !important;
+}
+
+html.dark .employee-summary .summary-box small {
+  color: #a3a3a3 !important;
+}
+
+html.dark .employee-summary .summary-icon {
+  background: #0a0a0a !important;
+  border: 1px solid #262626 !important;
+}
+
+html.dark .employee-summary .icon-blue i {
+  color: #3b82f6 !important;
+}
+
+html.dark .employee-summary .icon-green i {
+  color: #22c55e !important;
+}
+
+html.dark .employee-summary .icon-orange i {
+  color: #f59e0b !important;
+}
+
+html.dark .employee-summary .icon-purple i {
+  color: #a78bfa !important;
+}
+
+/* Form card */
+
+html.dark .employee-form-card {
+  background: #141414 !important;
+  border: 1px solid #262626 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .employee-form-card .input-field > label {
+  color: #a3a3a3 !important;
+}
+
+html.dark .employee-form-card input,
+html.dark .employee-form-card .select-wrapper input.select-dropdown {
+  background: #0a0a0a !important;
+  border: 1px solid #333 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .employee-form-card .select-wrapper::after {
+  border-top-color: #a3a3a3 !important;
+}
+
+html.dark .password-toggle-icon {
+  color: #a3a3a3 !important;
+}
+
+/* Action buttons – same as Inventory / Capital */
+
+.employee-actions .btn,
+.employee-actions .outline-btn,
+.employee-actions #btn-delete-role {
+  min-width: 220px;
+  height: 52px;
+  border-radius: 10px;
+  display: inline-flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0 !important;
+  padding: 0 20px !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  line-height: 1 !important;
+}
+
+.employee-actions .btn i,
+.employee-actions .outline-btn i,
+.employee-actions #btn-delete-role i {
+  margin: 0 !important;
+  font-size: 20px;
+}
+
+/* Light */
+
+.employee-actions #btn-delete-role {
+  background: #fff !important;
+  color: #333 !important;
+  border: 2px solid #ef4444 !important;
+}
+
+.employee-actions #btn-delete-role i {
+  color: #333 !important;
+}
+
+.employee-actions .outline-btn,
+.employee-actions #btnAddRole {
+  background: #fff !important;
+  color: #2563eb !important;
+  border: 2px solid #2563eb !important;
+}
+
+.employee-actions .btn[type="submit"],
+.employee-actions .btn.blue {
+  background: #2563eb !important;
+  color: #fff !important;
+  border: 2px solid #2563eb !important;
+}
+
+/* Dark */
+
+html.dark .employee-actions #btn-delete-role {
+  background: #141414 !important;
+  color: #f5f5f5 !important;
+  border: 2px solid #ef4444 !important;
+}
+
+html.dark .employee-actions #btn-delete-role i {
+  color: #f5f5f5 !important;
+}
+
+html.dark .employee-actions .outline-btn,
+html.dark .employee-actions #btnAddRole {
+  background: #141414 !important;
+  color: #3b82f6 !important;
+  border: 2px solid #3b82f6 !important;
+}
+
+html.dark .employee-actions .outline-btn i,
+html.dark .employee-actions #btnAddRole i {
+  color: #3b82f6 !important;
+}
+
+html.dark .employee-actions .btn[type="submit"],
+html.dark .employee-actions .btn.blue {
+  background: #2563eb !important;
+  color: #fff !important;
+  border: 2px solid #2563eb !important;
+}
+
+html.dark .employee-actions .btn[type="submit"] i,
+html.dark .employee-actions .btn.blue i {
+  color: #fff !important;
+}
+
+/* Employee table */
+
+html.dark .employee-card {
+  background: #141414 !important;
+  border: 1px solid #262626 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .employee-card h4 {
+  color: #f5f5f5 !important;
+}
+
+html.dark .employee-card th {
+  color: #a3a3a3 !important;
+  opacity: 1 !important;
+  border-bottom: 1px solid #262626 !important;
+}
+
+html.dark .employee-card td {
+  color: #f5f5f5 !important;
+  border-bottom: 1px solid #1f1f1f !important;
+}
+
+html.dark .employee-card tbody tr:hover {
+  background: #1a1a1a !important;
+}
+
+html.dark .employee-card td:last-child .btn {
+  color: #fff !important;
+}
+
+html.dark .employee-footer {
+  border-top-color: #262626 !important;
+  color: #a3a3a3 !important;
+}
+
+/* Role badges – readable in dark */
+
+html.dark .role-admin {
+  background: #1e3a5f !important;
+  color: #93c5fd !important;
+}
+
+html.dark .role-siomai {
+  background: #713f12 !important;
+  color: #fde68a !important;
+}
+
+html.dark .role-pares {
+  background: #14532d !important;
+  color: #86efac !important;
+}
+
+/* Page header */
+
+html.dark .employee-page .header h1 {
+  color: #f5f5f5 !important;
+}
+
+html.dark .employee-page .header p {
+  color: #a3a3a3 !important;
+}
+
+/* IMG-UPLOAD DARK  AND LIGHT*/
+html.dark .image-upload {
+  background: #0a0a0a !important;
+  border: 2px dashed #333 !important;
+}
+
+html.dark .image-upload:hover {
+  border-color: #3b82f6 !important;
+  background: #111 !important;
+}
+
+/* Text / icons inside upload box */
+html.dark .image-upload,
+html.dark .image-upload p,
+html.dark .image-upload span,
+html.dark .image-upload small {
+  color: #a3a3a3 !important;
+}
+
+html.dark .image-upload i,
+html.dark .image-upload .material-icons {
+  color: #737373 !important;
+}
+
+html.dark .image-upload:hover i,
+html.dark .image-upload:hover .material-icons {
+  color: #3b82f6 !important;
 }

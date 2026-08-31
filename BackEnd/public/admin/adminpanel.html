@@ -18,6 +18,18 @@
 
     <!-- Manifest -->
     <link rel="manifest" href="/manifest.json" />
+
+    <script>
+      (function () {
+        const t = localStorage.getItem("theme");
+        if (
+          t === "dark" ||
+          (!t && matchMedia("(prefers-color-scheme: dark)").matches)
+        ) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
   </head>
 
   <body>
@@ -91,6 +103,17 @@
           </div>
 
           <div class="header-actions">
+            <div class="darktheme">
+              <button
+                id="theme-toggle"
+                type="button"
+                class="theme-toggle"
+                title="Toggle dark mode"
+              >
+                <i class="material-icons" id="theme-icon">dark_mode</i>
+              </button>
+            </div>
+
             <i class="material-icons">notifications_none</i>
 
             <div class="admin-profile">
@@ -561,4 +584,5 @@
   <script src="/js/refresh.js"></script>
   <script src="/js/functionalnav.js"></script>
   <script type="module" src="/js/IndexDB.js"></script>
+  <script src="/js/theme.js"></script>
 </html>
