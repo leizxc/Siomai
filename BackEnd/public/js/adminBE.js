@@ -80,6 +80,42 @@ function confirmDeletion(title, message) {
   });
 }
 
+function confirmRecover(
+  title = "Recover product?",
+  message = "This will restore the product back to Inventory.",
+) {
+  const modalElement = document.getElementById("modal-recover-product");
+  const confirmButton = document.getElementById("confirm-recover-product");
+  const cancelButton = document.getElementById("cancel-recover-product");
+  const titleElement = document.getElementById("recover-confirmation-title");
+  const messageElement = document.getElementById(
+    "recover-confirmation-message",
+  );
+
+  if (!modalElement || !confirmButton || !cancelButton) {
+    return Promise.resolve(false);
+  }
+
+  let modalInstance = M.Modal.getInstance(modalElement);
+  if (modalInstance) modalInstance.destroy();
+  modalInstance = M.Modal.init(modalElement, { dismissible: false });
+
+  if (titleElement) titleElement.textContent = title;
+  if (messageElement) messageElement.textContent = message;
+
+  return new Promise((resolve) => {
+    cancelButton.onclick = () => {
+      modalInstance.close();
+      resolve(false);
+    };
+    confirmButton.onclick = () => {
+      modalInstance.close();
+      resolve(true);
+    };
+    modalInstance.open();
+  });
+}
+
 export function loadInventory() {
   const tbody = document.getElementById("inventory-table-body");
   const dateInput = document.getElementById("filter-date");
@@ -587,12 +623,12 @@ export async function addProduct(
 export async function deleteProduct(id) {
   const linkedMenuQuery = query(
     collection(db, "productMenu"),
-    where("inventory_id", "==", id),
+    where("inventory_id", "==", id), // FIXED: may id na
   );
   const linkedMenuSnap = await getDocs(linkedMenuQuery);
   if (!linkedMenuSnap.empty) {
     M.toast({
-      html: "Cannot delete: this item is still linked to Product Menu entries. Delete those first.",
+      html: "Cannot archive: this item is still linked to Product Menu entries. Delete those first.",
       classes: "red rounded",
     });
     return;
@@ -600,14 +636,32 @@ export async function deleteProduct(id) {
 
   if (
     !(await confirmDeletion(
-      "Delete product?",
-      "This product will be permanently removed from the inventory.",
+      "Archive product?",
+      "This product will be moved to Archive. You can recover it within 7 days.",
     ))
   )
     return;
 
-  await deleteDoc(doc(db, "inventory", id));
-  M.toast({ html: "Product deleted successfully!", classes: "green rounded" });
+  const productRef = doc(db, "inventory", id);
+  const productSnap = await getDoc(productRef);
+  if (!productSnap.exists()) {
+    M.toast({ html: "Product not found.", classes: "red rounded" });
+    return;
+  }
+
+  const data = productSnap.data();
+  await addDoc(collection(db, "archivedInventory"), {
+    ...data,
+    original_id: id,
+    archived_at: serverTimestamp(),
+    archived_by: "Manager",
+  });
+  await deleteDoc(productRef);
+
+  M.toast({
+    html: "Product archived. Recoverable for 7 days.",
+    classes: "green rounded",
+  });
 }
 
 // ==================== CATEGORIES ==================== //
@@ -924,6 +978,7 @@ function bindInventoryPageButtons() {
   bindFilterDateInput();
   bindNewCategoryUnitSelect();
   bindProductCategorySelect();
+  bindArchiveHistoryButtons(); // ← ADD THIS
 
   bindLiveUppercase(document.getElementById("new-category-name"));
   bindLiveUppercase(document.getElementById("product-plastic-color"));
@@ -958,8 +1013,457 @@ export async function loadRoles() {
   M.FormSelect.init(roleSelect);
 }
 
+// ARCHIVE/PRODUCT
+const ARCHIVE_DAYS = 7;
+
+function daysSince(timestamp) {
+  if (!timestamp || typeof timestamp.toDate !== "function") return Infinity;
+  const ms = Date.now() - timestamp.toDate().getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24)); // IMPORTANT: 1000 not 100
+}
+
+async function moveArchiveToHistory(archiveId, data) {
+  const { original_id, archived_at, archived_by, ...productData } = data;
+  await addDoc(collection(db, "productHistory"), {
+    ...productData,
+    original_id: original_id || null,
+    archived_at: archived_at || null,
+    permanently_removed_at: serverTimestamp(),
+    archived_by: archived_by || "Manager",
+  });
+  await deleteDoc(doc(db, "archivedInventory", archiveId));
+}
+
+export async function processExpiredArchives() {
+  try {
+    const snap = await getDocs(collection(db, "archivedInventory"));
+    let moved = 0;
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data();
+      if (daysSince(data.archived_at) > ARCHIVE_DAYS) {
+        await moveArchiveToHistory(docSnap.id, data);
+        moved++;
+      }
+    }
+    if (moved > 0) {
+      M.toast({
+        html: `${moved} expired archive(s) moved to Product History.`,
+        classes: "blue rounded",
+      });
+    }
+  } catch (err) {
+    console.error("processExpiredArchives error:", err);
+  }
+}
+
+export async function recoverArchivedProduct(archiveId) {
+  const archiveRef = doc(db, "archivedInventory", archiveId);
+  const snap = await getDoc(archiveRef);
+  if (!snap.exists()) {
+    M.toast({ html: "Archived item not found.", classes: "red rounded" });
+    return;
+  }
+
+  const data = snap.data();
+  const age = daysSince(data.archived_at);
+  if (age > ARCHIVE_DAYS) {
+    M.toast({
+      html: "Recovery period expired. Moving to Product History.",
+      classes: "red rounded",
+    });
+    await moveArchiveToHistory(archiveId, data); // FIXED: was archiveId.data
+    return;
+  }
+
+  const { original_id, archived_at, archived_by, ...productData } = data;
+
+  const dupQuery = query(
+    collection(db, "inventory"),
+    where("category_id", "==", productData.category_id),
+    where("product_name", "==", productData.product_name),
+  );
+  const dupResult = await getDocs(dupQuery);
+  if (!dupResult.empty) {
+    M.toast({
+      html: "Cannot recover: same product name already exists in this category.",
+      classes: "red rounded",
+    });
+    return;
+  }
+
+  await addDoc(collection(db, "inventory"), {
+    ...productData,
+    last_updated: serverTimestamp(),
+    status: productData.quantity <= 0 ? "On Selling" : "Available",
+  });
+  await deleteDoc(archiveRef);
+
+  M.toast({
+    html: "Product recovered to Inventory!",
+    classes: "green rounded",
+  });
+}
+
+// ---------- Archive History ----------
+let unsubscribeArchive = null;
+let archiveRowsCache = [];
+let archiveCurrentPage = 1;
+
+export function loadArchiveHistory() {
+  const tbody = document.getElementById("archive-table-body");
+  if (!tbody) {
+    console.warn("archive-table-body not found");
+    return;
+  }
+
+  if (unsubscribeArchive) {
+    unsubscribeArchive();
+    unsubscribeArchive = null;
+  }
+
+  processExpiredArchives().catch(console.error);
+
+  unsubscribeArchive = onSnapshot(
+    collection(db, "archivedInventory"), // FIXED spelling
+    (querySnapshot) => {
+      const tbodyNow = document.getElementById("archive-table-body");
+      if (!tbodyNow) {
+        if (unsubscribeArchive) {
+          unsubscribeArchive();
+          unsubscribeArchive = null;
+        }
+        return;
+      }
+
+      const rowsHtml = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const age = daysSince(data.archived_at);
+        const canRecover = age <= ARCHIVE_DAYS;
+        const daysLeft = Math.max(0, ARCHIVE_DAYS - age);
+
+        const dateArchived = data.archived_at
+          ? data.archived_at.toDate().toLocaleDateString("en-PH", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "-";
+
+        let totalDisplay = "";
+        if (data.unit_type === "pack") {
+          totalDisplay = `${data.stock_quantity} pcs`;
+        } else if (data.unit_type === "kg") {
+          totalDisplay = `${(data.quantity * 2.2).toFixed(2)} lb`;
+        } else if (data.unit_type === "liter") {
+          totalDisplay = `${data.quantity} L`;
+        } else {
+          totalDisplay = `${data.stock_quantity ?? 0}`;
+        }
+
+        rowsHtml.push(`
+          <tr>
+            <td>${data.product_name || "-"}${
+              data.plasticColor
+                ? ` <span class="plastic-color-badge">(${data.plasticColor} Plastic)</span>`
+                : ""
+            }</td>
+            <td>${data.category || "-"}</td>
+            <td>${data.quantity ?? 0} ${data.unit_type || ""}</td>
+            <td>${totalDisplay}</td>
+            <td>₱${(data.unit_price || 0).toFixed(2)}</td>
+            <td>₱${(data.total_value || 0).toFixed(2)}</td>
+            <td>${dateArchived}</td>
+            <td>
+              <span class="status ${canRecover ? "available" : "low-stock"}">
+                ${canRecover ? `${daysLeft} day(s) left` : "Expired"}
+              </span>
+            </td>
+            <td>
+              ${
+                canRecover
+                  ? `<button class="recover-btn btn green waves-effect" data-id="${docSnap.id}" title="Recover">
+                       <i class="material-icons">restore</i>
+                     </button>`
+                  : `<button class="btn grey" disabled title="Expired">
+                       <i class="material-icons">block</i>
+                     </button>`
+              }
+            </td>
+          </tr>
+        `);
+      });
+
+      archiveRowsCache = rowsHtml;
+      archiveCurrentPage = 1;
+      renderArchivePage();
+    },
+  );
+}
+
+function renderArchivePage() {
+  const tbody = document.getElementById("archive-table-body");
+  if (!tbody) return;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(archiveRowsCache.length / PAGE_SIZE),
+  );
+  if (archiveCurrentPage > totalPages) archiveCurrentPage = totalPages;
+  if (archiveCurrentPage < 1) archiveCurrentPage = 1;
+
+  const start = (archiveCurrentPage - 1) * PAGE_SIZE;
+  const pageRows = archiveRowsCache.slice(start, start + PAGE_SIZE);
+
+  tbody.innerHTML =
+    pageRows.join("") ||
+    `<tr><td colspan="9" class="center-align grey-text">No archived products</td></tr>`;
+
+  document.querySelectorAll(".recover-btn").forEach((btn) => {
+    btn.onclick = async (e) => {
+      const id = e.target.closest("button").dataset.id;
+      const ok = await confirmRecover(); // ← bagong modal
+      if (ok) await recoverArchivedProduct(id);
+    };
+  });
+
+  const prev = document.getElementById("archive-prev");
+  const next = document.getElementById("archive-next");
+  const pageLabel = document.getElementById("archive-page");
+  const infoLabel = document.getElementById("archive-info");
+
+  if (prev && next) {
+    prev.disabled = archiveCurrentPage === 1;
+    next.disabled = archiveCurrentPage === totalPages;
+    if (pageLabel) {
+      pageLabel.textContent = `Page ${archiveCurrentPage} of ${totalPages}`;
+      pageLabel.style.display = "inline";
+    }
+    prev.onclick = () => {
+      if (archiveCurrentPage > 1) {
+        archiveCurrentPage--;
+        renderArchivePage();
+      }
+    };
+    next.onclick = () => {
+      if (archiveCurrentPage < totalPages) {
+        archiveCurrentPage++;
+        renderArchivePage();
+      }
+    };
+  }
+
+  if (infoLabel) {
+    infoLabel.textContent =
+      archiveRowsCache.length === 0
+        ? "0 archived"
+        : `${archiveRowsCache.length} archived item(s)`;
+  }
+}
+
+export function stopLoadingArchive() {
+  if (unsubscribeArchive) {
+    unsubscribeArchive();
+    unsubscribeArchive = null;
+  }
+}
+
+// ---------- Product History ----------
+let unsubscribeHistory = null;
+let historyRowsCache = [];
+let historyCurrentPage = 1;
+
+export function loadProductHistory() {
+  const tbody = document.getElementById("history-table-body");
+  if (!tbody) {
+    console.warn("history-table-body not found");
+    return;
+  }
+
+  if (unsubscribeHistory) {
+    unsubscribeHistory();
+    unsubscribeHistory = null;
+  }
+
+  unsubscribeHistory = onSnapshot(
+    collection(db, "productHistory"),
+    (querySnapshot) => {
+      const tbodyNow = document.getElementById("history-table-body");
+      if (!tbodyNow) {
+        if (unsubscribeHistory) {
+          unsubscribeHistory();
+          unsubscribeHistory = null;
+        }
+        return;
+      }
+
+      const rowsHtml = [];
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const dateRemoved = data.permanently_removed_at
+          ? data.permanently_removed_at.toDate().toLocaleDateString("en-PH", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "-";
+        const dateArchived = data.archived_at
+          ? data.archived_at.toDate().toLocaleDateString("en-PH", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })
+          : "-";
+
+        let totalDisplay = "";
+        if (data.unit_type === "pack") {
+          totalDisplay = `${data.stock_quantity} pcs`;
+        } else if (data.unit_type === "kg") {
+          totalDisplay = `${(data.quantity * 2.2).toFixed(2)} lb`;
+        } else if (data.unit_type === "liter") {
+          totalDisplay = `${data.quantity} L`;
+        } else {
+          totalDisplay = `${data.stock_quantity ?? 0}`;
+        }
+
+        rowsHtml.push(`
+          <tr>
+            <td>${data.product_name || "-"}${
+              data.plasticColor
+                ? ` <span class="plastic-color-badge">(${data.plasticColor} Plastic)</span>`
+                : ""
+            }</td>
+            <td>${data.category || "-"}</td>
+            <td>${data.quantity ?? 0} ${data.unit_type || ""}</td>
+            <td>${totalDisplay}</td>
+            <td>₱${(data.unit_price || 0).toFixed(2)}</td>
+            <td>₱${(data.total_value || 0).toFixed(2)}</td>
+            <td>${dateArchived}</td>
+            <td>${dateRemoved}</td>
+          </tr>
+        `);
+      });
+
+      historyRowsCache = rowsHtml;
+      historyCurrentPage = 1;
+      renderHistoryPage();
+    },
+  );
+}
+
+function renderHistoryPage() {
+  const tbody = document.getElementById("history-table-body");
+  if (!tbody) return;
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(historyRowsCache.length / PAGE_SIZE),
+  );
+  if (historyCurrentPage > totalPages) historyCurrentPage = totalPages;
+  if (historyCurrentPage < 1) historyCurrentPage = 1;
+
+  const start = (historyCurrentPage - 1) * PAGE_SIZE;
+  const pageRows = historyRowsCache.slice(start, start + PAGE_SIZE);
+
+  tbody.innerHTML =
+    pageRows.join("") ||
+    `<tr><td colspan="8" class="center-align grey-text">No permanent product history yet</td></tr>`;
+
+  const prev = document.getElementById("history-prev");
+  const next = document.getElementById("history-next");
+  const pageLabel = document.getElementById("history-page");
+  const infoLabel = document.getElementById("history-info");
+
+  if (prev && next) {
+    prev.disabled = historyCurrentPage === 1;
+    next.disabled = historyCurrentPage === totalPages;
+    if (pageLabel) {
+      pageLabel.textContent = `Page ${historyCurrentPage} of ${totalPages}`;
+      pageLabel.style.display = "inline";
+    }
+    prev.onclick = () => {
+      if (historyCurrentPage > 1) {
+        historyCurrentPage--;
+        renderHistoryPage();
+      }
+    };
+    next.onclick = () => {
+      if (historyCurrentPage < totalPages) {
+        historyCurrentPage++;
+        renderHistoryPage();
+      }
+    };
+  }
+
+  if (infoLabel) {
+    infoLabel.textContent =
+      historyRowsCache.length === 0
+        ? "0 records"
+        : `${historyRowsCache.length} record(s)`;
+  }
+}
+
+export function stopLoadingHistory() {
+  if (unsubscribeHistory) {
+    unsubscribeHistory();
+    unsubscribeHistory = null;
+  }
+}
+
+function bindArchiveHistoryButtons() {
+  const archiveBtn = document.getElementById("btn-archive-history");
+  if (archiveBtn) {
+    archiveBtn.onclick = () => {
+      const modalEl = document.getElementById("modal-archive-history");
+      if (!modalEl) {
+        console.error("modal-archive-history not found");
+        return;
+      }
+      let instance = M.Modal.getInstance(modalEl);
+      if (!instance) {
+        instance = M.Modal.init(modalEl, {
+          dismissible: true,
+          onCloseEnd() {
+            stopLoadingArchive();
+          },
+        });
+      }
+      loadArchiveHistory();
+      instance.open();
+    };
+  } else {
+    console.warn("btn-archive-history not found");
+  }
+
+  const historyBtn = document.getElementById("btn-product-history");
+  if (historyBtn) {
+    historyBtn.onclick = () => {
+      const modalEl = document.getElementById("modal-product-history");
+      if (!modalEl) {
+        console.error("modal-product-history not found");
+        return;
+      }
+      let instance = M.Modal.getInstance(modalEl);
+      if (!instance) {
+        instance = M.Modal.init(modalEl, {
+          dismissible: true,
+          onCloseEnd() {
+            stopLoadingHistory();
+          },
+        });
+      }
+      loadProductHistory();
+      instance.open();
+    };
+  } else {
+    console.warn("btn-product-history not found");
+  }
+}
+
+
 export async function initInventoryPage() {
   currentPage = 1;
+  processExpiredArchives().catch(console.error); // ← ADD THIS
   loadInventory();
   loadCategories();
   bindInventoryPageButtons();

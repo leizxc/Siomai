@@ -78,10 +78,29 @@
 <!-- TABLE (labas na ng filter-card) -->
 <section class="inventory-card">
   <h4>Inventory Table</h4>
-  <hr style="margin-bottom: 5px" />
+  <div class="inventory-button">
+    <!-- ARCHIVE HISTORY BUTTON -->
+    <button
+      id="btn-archive-history"
+      type="button"
+      class="btn btn-custom waves-effect waves-light amber darken-2"
+    >
+      <i class="material-icons left">archive</i>
+      Archive History
+    </button>
+    <!-- PRODUCT HISTORY BUTTON -->
+    <button
+      id="btn-product-history"
+      type="button"
+      class="btn btn-custom waves-effect waves-light blue-grey"
+    >
+      <i class="material-icons left">history</i>
+      Product History
+    </button>
+  </div>
   <div class="filters">
     <!-- DATE -->
-    <div class="filter-group">
+    <div class="filter-group col s12 m6">
       <label>Date</label>
       <input type="date" id="filter-date" />
     </div>
@@ -263,6 +282,116 @@
   </div>
 </div>
 
+<!-- ARCHIVE HISTORY MODAL -->
+<div
+  id="modal-archive-history"
+  class="modal modal-fixed-footer"
+  style="width: 95%; max-width: 1200px; height: 90%; max-height: 90%"
+>
+  <div
+    class="modal-content"
+    style="height: calc(100% - 56px); overflow-y: auto"
+  >
+    <h4>
+      <i class="material-icons left">archive</i>
+      Archive History
+    </h4>
+    <p class="grey-text" style="margin-top: -8px">
+      Recoverable for <strong>7 days</strong>. After that, items move to Product
+      History.
+    </p>
+    <hr />
+    <table class="striped highlight responsive-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Quantity</th>
+          <th>Total</th>
+          <th>Unit Price</th>
+          <th>Total Value</th>
+          <th>Archived</th>
+          <th>Days Left</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="archive-table-body">
+        <!-- INJECT BY JS -->
+      </tbody>
+    </table>
+    <div class="inventory-footer" style="margin-top: 16px">
+      <div><strong id="archive-info">0 archived</strong></div>
+      <div class="pagination-controls">
+        <button id="archive-prev" class="btn-flat waves-effect">
+          Previous
+        </button>
+        <span id="archive-page" style="margin: 0 12px"></span>
+        <button id="archive-next" class="btn-flat waves-effect">Next</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="modal-close btn-flat waves-effect">
+      close
+    </button>
+  </div>
+</div>
+
+<!-- PRODUCT HISTORY MODAL -->
+<div
+  id="modal-product-history"
+  class="modal modal-fixed-footer"
+  style="width: 95%; max-width: 1200px; height: 90%; max-height: 90%"
+>
+  <div
+    class="modal-content"
+    style="height: calc(100% - 56px); overflow-y: auto"
+  >
+    <h4>
+      <i class="material-icons left">history</i>
+      Product History
+    </h4>
+    <p class="grey-text" style="margin-top: -8px">
+      Permanently removed products
+    </p>
+    <hr />
+
+    <table class="striped highlight responsive-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Quantity</th>
+          <th>Total</th>
+          <th>Unit Price</th>
+          <th>Total Value</th>
+          <th>Archived On</th>
+          <th>Removed On</th>
+        </tr>
+      </thead>
+      <tbody id="history-table-body">
+        <!-- INJECT BY JS -->
+      </tbody>
+    </table>
+
+    <div class="inventory-footer" style="margin-top: 16px">
+      <div><strong id="history-info">0 records</strong></div>
+      <div class="pagination-controls">
+        <button id="history-prev" class="btn-flat waves-effect">
+          Previous
+        </button>
+        <span id="history-page" style="margin: 0 12px"></span>
+        <button id="history-next" class="btn-flat waves-effect">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="modal-close btn-flat waves-effect">
+      close
+    </button>
+  </div>
+</div>
 <!-- DELETE CATEGORY CONFIRMATION -->
 <div id="modal-delete-category" class="modal">
   <div class="modal-content">
@@ -287,6 +416,28 @@
   </div>
 </div>
 
+<!-- RECOVER CONFIRMATION MODAL -->
+<div id="modal-recover-product" class="modal">
+  <div class="modal-content">
+    <h4 id="recover-confirmation-title">Recover product?</h4>
+    <p id="recover-confirmation-message">
+      This will restore the product back to Inventory.
+    </p>
+  </div>
+  <div class="modal-footer">
+    <button
+      id="cancel-recover-product"
+      type="button"
+      class="modal-close btn-flat"
+    >
+      Cancel
+    </button>
+    <button id="confirm-recover-product" type="button" class="btn green">
+      Yes
+    </button>
+  </div>
+</div>
+
 <!-- Shared suggestions for plastic color -->
 <datalist id="plastic-color-suggestions">
   <option value="Red"></option>
@@ -304,7 +455,6 @@
 <script src="/js/functionalnav.js"></script>
 <script type="module" src="/js/firebase.js"></script>
 <script type="module">
-  import { loadInventory, loadCategories, loadRoles } from "/js/adminBE.js";
-  loadInventory();
-  loadCategories();
+  import { initInventoryPage } from "/js/adminBE.js";
+  initInventoryPage();
 </script>

@@ -1451,6 +1451,111 @@ html.dark
   gap: 10px;
 }
 
+/* INVENTORY DATE */
+/* Inventory date filter – same as other date inputs */
+.inventory-card .filters {
+  margin: 16px 0 20px;
+}
+
+.inventory-card .filter-group {
+  position: relative;
+  margin-top: 28px;
+  margin-bottom: 8px;
+  max-width: 320px;
+}
+
+.inventory-card .filter-group > label {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.inventory-card .filter-group input[type="date"],
+.inventory-card #filter-date {
+  width: 100%;
+  height: 45px !important;
+  margin: 0 !important;
+  padding: 0 14px !important;
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  border-bottom: 1px solid #d1d5db !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  font-size: 15px !important;
+  line-height: 45px !important;
+  color: #111 !important;
+  color-scheme: light;
+}
+
+.inventory-card .filter-group input[type="date"]:focus,
+.inventory-card #filter-date:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12) !important;
+  outline: none !important;
+}
+
+/* Dark mode */
+html.dark .inventory-card .filter-group > label {
+  color: #a3a3a3 !important;
+}
+
+html.dark .inventory-card .filter-group input[type="date"],
+html.dark .inventory-card #filter-date {
+  background: #0a0a0a !important;
+  border-color: #333 !important;
+  color: #f5f5f5 !important;
+  color-scheme: dark;
+}
+
+html.dark .inventory-card #filter-date::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+/* History buttons spacing */
+.inventory-button {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.inventory-card .filters {
+  margin: 16px 0 20px;
+  width: 100%;
+}
+
+.inventory-card .filter-group {
+  position: relative;
+  margin-top: 28px;
+  margin-bottom: 8px;
+  width: 100%;
+  max-width: none; /* full width, not 320px */
+}
+
+.inventory-card .filter-group input[type="date"],
+.inventory-card #filter-date {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 45px !important;
+  margin: 0 !important;
+  padding: 0 14px !important;
+  background: #fff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  font-size: 15px !important;
+  line-height: 45px !important;
+  color: #111 !important;
+}
+
 /* product menu */
 
 /* Product Menu form – force 2 columns */
@@ -2244,6 +2349,399 @@ button.save-menu-btn,
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* DELETE BUTTON LOGIC IF WALANG LAMAN NA DATA DUN LANG LALABAS YUNG OUTLINE */
+.inventory-actions #delete-category-btn,
+.expense-actions #btn-delete-category,
+.expense-actions .delete-outline,
+.employee-actions #btn-delete-role {
+  min-width: 220px;
+  height: 52px;
+  border-radius: 10px;
+  display: inline-flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 0 !important;
+  padding: 0 20px !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  line-height: 1 !important;
+  cursor: pointer;
+}
+
+/* Light – enabled: red outline */
+.inventory-actions #delete-category-btn:not(:disabled),
+.expense-actions #btn-delete-category:not(:disabled),
+.expense-actions .delete-outline:not(:disabled),
+.employee-actions #btn-delete-role:not(:disabled) {
+  background: #fff !important;
+  color: #ef4444 !important;
+  border: 2px solid #ef4444 !important;
+}
+
+.inventory-actions #delete-category-btn:not(:disabled) i,
+.expense-actions #btn-delete-category:not(:disabled) i,
+.expense-actions .delete-outline:not(:disabled) i,
+.employee-actions #btn-delete-role:not(:disabled) i {
+  color: #ef4444 !important;
+}
+
+/* Light – disabled: no red outline */
+.inventory-actions #delete-category-btn:disabled,
+.expense-actions #btn-delete-category:disabled,
+.expense-actions .delete-outline:disabled,
+.employee-actions #btn-delete-role:disabled {
+  background: #fff !important;
+  color: #d1d5db !important;
+  border: 1.5px solid #e5e7eb !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+
+.inventory-actions #delete-category-btn:disabled i,
+.expense-actions #btn-delete-category:disabled i,
+.employee-actions #btn-delete-role:disabled i {
+  color: #d1d5db !important;
+}
+
+/* MODAL */
+.modal .modal-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-top: 16px !important;
+  padding: 16px 0 0 !important;
+  border-top: 1px solid #e5e7eb !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Kill Materialize gray footer bar */
+.modal .modal-footer:before,
+.modal .modal-footer:after {
+  display: none !important;
+  content: none !important;
+}
+
+.modal .modal-footer .btn,
+.modal .modal-footer .btn-flat,
+.modal .modal-footer button {
+  height: 44px !important;
+  min-width: 120px;
+  margin: 0 !important;
+  padding: 0 20px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  line-height: 1 !important;
+}
+
+/* Cancel */
+.modal .modal-footer .btn-flat,
+.modal .modal-footer .modal-close {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.modal .modal-footer .btn-flat:hover,
+.modal .modal-footer .modal-close:hover {
+  background: #e5e7eb !important;
+  color: #111 !important;
+}
+
+/* Primary (Update / Save / Confirm) */
+.modal .modal-footer .btn,
+.modal .modal-footer .btn.blue,
+.modal .modal-footer #edit-save,
+.modal .modal-footer #edit-menu-save,
+.modal .modal-footer #confirm-delete-category {
+  background: #2563eb !important;
+  color: #fff !important;
+  border: 2px solid #2563eb !important;
+}
+
+.modal .modal-footer .btn:hover,
+.modal .modal-footer .btn.blue:hover {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+/* Delete confirm – red */
+.modal .modal-footer .btn.red,
+.modal .modal-footer #confirm-delete-category.btn.red {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+}
+
+/* MODAL ACRVHICE AND PRODUCT HISTORY (INVENTORY) */
+#modal-archive-history.modal,
+#modal-product-history.modal {
+  width: 92% !important;
+  max-width: 1100px !important;
+  height: 88vh !important;
+  max-height: 88vh !important;
+  top: 6% !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+#modal-archive-history .modal-content,
+#modal-product-history .modal-content {
+  height: calc(100% - 64px) !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  padding: 24px 28px !important;
+}
+
+#modal-archive-history .modal-content h4,
+#modal-product-history .modal-content h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #111);
+}
+
+#modal-archive-history .modal-content h4 i,
+#modal-product-history .modal-content h4 i {
+  margin: 0;
+}
+
+#modal-archive-history table,
+#modal-product-history table {
+  width: 100%;
+  min-width: 800px;
+}
+
+#modal-archive-history .modal-footer,
+#modal-product-history .modal-footer {
+  height: 64px !important;
+  padding: 12px 24px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  border-top: 1px solid #e5e7eb;
+  background: transparent !important;
+}
+
+#modal-archive-history .modal-footer .btn-flat,
+#modal-product-history .modal-footer .btn-flat {
+  height: 40px !important;
+  min-width: 100px;
+  border-radius: 8px !important;
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+#modal-archive-history.modal,
+#modal-product-history.modal {
+  width: 92% !important;
+  max-width: 1100px !important;
+  height: 85vh !important;
+  max-height: 85vh !important;
+
+  /* Center */
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) scaleX(1) !important;
+  bottom: auto !important;
+  right: auto !important;
+  margin: 0 !important;
+
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+/* Kapag open, Materialize minsan naglalagay ng inline top – override */
+#modal-archive-history.modal.open,
+#modal-product-history.modal.open {
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) scaleX(1) !important;
+}
+
+#modal-archive-history .modal-content,
+#modal-product-history .modal-content {
+  height: calc(100% - 64px) !important;
+  overflow-y: auto !important;
+  padding: 24px 28px !important;
+}
+
+#modal-archive-history .modal-footer,
+#modal-product-history .modal-footer {
+  height: 64px !important;
+  padding: 12px 24px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+}
+
+/* RECOVER CONFIRM MODAL */
+#modal-recover-product.modal {
+  width: 420px !important;
+  max-width: 92% !important;
+  height: auto !important;
+  max-height: none !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  z-index: 1003 !important; /* above archive modal */
+}
+
+#modal-recover-product.modal.open {
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+#modal-recover-product .modal-content {
+  padding: 28px 24px 12px !important;
+  overflow: visible !important;
+  height: auto !important;
+}
+
+#modal-recover-product .modal-content h4 {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #111;
+}
+
+#modal-recover-product .modal-content p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+#modal-recover-product .modal-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+  height: auto !important;
+  padding: 16px 24px 20px !important;
+  border-top: 1px solid #e5e7eb !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#modal-recover-product .modal-footer .btn-flat,
+#modal-recover-product #cancel-recover-product {
+  height: 42px !important;
+  min-width: 100px;
+  margin: 0 !important;
+  padding: 0 18px !important;
+  border-radius: 8px !important;
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+#modal-recover-product .modal-footer .btn,
+#modal-recover-product #confirm-recover-product {
+  height: 42px !important;
+  min-width: 100px;
+  margin: 0 !important;
+  padding: 0 18px !important;
+  border-radius: 8px !important;
+  background: #16a34a !important; /* green – recover */
+  color: #fff !important;
+  border: 2px solid #16a34a !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+#modal-recover-product #confirm-recover-product:hover {
+  background: #15803d !important;
+  border-color: #15803d !important;
+}
+
+/* Archive History stays normal */
+#modal-archive-history.modal,
+#modal-product-history.modal {
+  z-index: 1003 !important;
+}
+
+/* Recover confirm – ABOVE archive */
+#modal-recover-product.modal {
+  z-index: 1010 !important;
+  width: 420px !important;
+  max-width: 92% !important;
+  height: auto !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  border-radius: 12px !important;
+}
+
+#modal-recover-product.modal.open {
+  z-index: 1010 !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  display: block !important;
+  opacity: 1 !important;
+}
+
+/* Overlay for 2nd modal – darker, higher */
+.modal-overlay:nth-of-type(2),
+#modal-recover-product + .modal-overlay,
+body > .modal-overlay:last-of-type {
+  z-index: 1009 !important;
+}
+
+/* Hidden by default */
+#modal-recover-product.modal {
+  display: none !important;
+  opacity: 0 !important;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  width: 420px !important;
+  max-width: 92vw !important;
+  height: auto !important;
+  z-index: 1010 !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+/* Show only when open */
+#modal-recover-product.modal.open {
+  display: block !important;
+  opacity: 1 !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 1010 !important;
 }
 
 /* Mobile */
@@ -3532,6 +4030,21 @@ button.save-menu-btn,
     width: 100% !important;
     min-width: 100% !important;
   }
+
+  /* MODAL MOBILE ARCHIVE AND PRODUCT */
+  #modal-archive-history.modal,
+  #modal-product-history.modal {
+    width: 96% !important;
+    max-width: none !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
+    top: 4% !important;
+  }
+
+  #modal-archive-history table,
+  #modal-product-history table {
+    min-width: 640px;
+  }
 }
 
 @media (max-width: 360px) {
@@ -4780,4 +5293,265 @@ html.dark .image-upload .material-icons {
 html.dark .image-upload:hover i,
 html.dark .image-upload:hover .material-icons {
   color: #3b82f6 !important;
+}
+
+/* Page-level delete buttons – no red outline in dark mode */
+html.dark .inventory-actions #delete-category-btn,
+html.dark .expense-actions #btn-delete-category,
+html.dark .expense-actions .delete-outline,
+html.dark .employee-actions #btn-delete-role {
+  background: #141414 !important;
+  color: #a3a3a3 !important;
+  border: 1.5px solid #333 !important;
+  box-shadow: none !important;
+}
+
+html.dark .inventory-actions #delete-category-btn i,
+html.dark .expense-actions #btn-delete-category i,
+html.dark .expense-actions .delete-outline i,
+html.dark .employee-actions #btn-delete-role i {
+  color: #a3a3a3 !important;
+}
+
+/* Hover – slight highlight, still no red */
+html.dark .inventory-actions #delete-category-btn:not(:disabled):hover,
+html.dark .expense-actions #btn-delete-category:not(:disabled):hover,
+html.dark .expense-actions .delete-outline:not(:disabled):hover,
+html.dark .employee-actions #btn-delete-role:not(:disabled):hover {
+  background: #1a1a1a !important;
+  border-color: #444 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .inventory-actions #delete-category-btn:not(:disabled):hover i,
+html.dark .expense-actions #btn-delete-category:not(:disabled):hover i,
+html.dark .employee-actions #btn-delete-role:not(:disabled):hover i {
+  color: #f5f5f5 !important;
+}
+
+/* Disabled delete button darkmode*/
+html.dark .inventory-actions #delete-category-btn:disabled,
+html.dark .expense-actions #btn-delete-category:disabled,
+html.dark .employee-actions #btn-delete-role:disabled {
+  background: #141414 !important;
+  color: #555 !important;
+  border-color: #2a2a2a !important;
+  opacity: 1 !important;
+}
+
+html.dark .inventory-actions #delete-category-btn:disabled i,
+html.dark .expense-actions #btn-delete-category:disabled i,
+html.dark .employee-actions #btn-delete-role:disabled i {
+  color: #555 !important;
+}
+
+/* Dark – enabled: red outline */
+html.dark .inventory-actions #delete-category-btn:not(:disabled),
+html.dark .expense-actions #btn-delete-category:not(:disabled),
+html.dark .expense-actions .delete-outline:not(:disabled),
+html.dark .employee-actions #btn-delete-role:not(:disabled) {
+  background: #141414 !important;
+  color: #f87171 !important;
+  border: 2px solid #ef4444 !important;
+}
+
+html.dark .inventory-actions #delete-category-btn:not(:disabled) i,
+html.dark .expense-actions #btn-delete-category:not(:disabled) i,
+html.dark .expense-actions .delete-outline:not(:disabled) i,
+html.dark .employee-actions #btn-delete-role:not(:disabled) i {
+  color: #f87171 !important;
+}
+
+/* Dark – disabled: no red outline */
+html.dark .inventory-actions #delete-category-btn:disabled,
+html.dark .expense-actions #btn-delete-category:disabled,
+html.dark .expense-actions .delete-outline:disabled,
+html.dark .employee-actions #btn-delete-role:disabled {
+  background: #141414 !important;
+  color: #555 !important;
+  border: 1.5px solid #2a2a2a !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+
+html.dark .inventory-actions #delete-category-btn:disabled i,
+html.dark .expense-actions #btn-delete-category:disabled i,
+html.dark .employee-actions #btn-delete-role:disabled i {
+  color: #555 !important;
+}
+
+/* Theme toggle – no green focus/active */
+.theme-toggle,
+.theme-toggle:focus,
+.theme-toggle:active,
+.theme-toggle:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.theme-toggle i,
+.theme-toggle:focus i,
+.theme-toggle:active i {
+  color: var(--text-primary) !important;
+  opacity: 0.7;
+}
+
+.theme-toggle:hover i {
+  opacity: 1 !important;
+}
+
+/* Kung button may .btn class */
+button.theme-toggle.btn,
+button#theme-toggle.btn,
+button#theme-toggle {
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+button#theme-toggle:focus,
+button#theme-toggle:active,
+button#theme-toggle:focus-visible {
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.theme-toggle .waves-ripple,
+#theme-toggle .waves-ripple {
+  display: none !important;
+}
+
+/* INVENTORY ICON COLOR DARKMODE */
+/* Inventory summary icons – match light mode colors */
+html.dark .inventory-summary .summary-icon {
+  background: #0a0a0a !important;
+  border: 1px solid #262626 !important;
+}
+
+html.dark .inventory-summary .icon-blue i {
+  color: #2563eb !important;
+}
+
+html.dark .inventory-summary .icon-green i {
+  color: #16a34a !important;
+}
+
+html.dark .inventory-summary .icon-orange i {
+  color: #f59e0b !important;
+}
+
+html.dark .inventory-summary .icon-purple i {
+  color: #9333ea !important;
+}
+
+/* DARK MODE MODAL */
+html.dark .modal {
+  background: #141414 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .modal .modal-content h4,
+html.dark .modal .modal-content p {
+  color: #f5f5f5 !important;
+}
+
+html.dark .modal .modal-footer {
+  border-top-color: #262626 !important;
+  background: transparent !important;
+}
+
+html.dark .modal .modal-footer .btn-flat,
+html.dark .modal .modal-footer .modal-close {
+  background: #1a1a1a !important;
+  color: #f5f5f5 !important;
+  border: 1px solid #333 !important;
+}
+
+html.dark .modal .modal-footer .btn-flat:hover {
+  background: #262626 !important;
+}
+
+html.dark .modal .modal-footer .btn,
+html.dark .modal .modal-footer .btn.blue,
+html.dark .modal .modal-footer #edit-save {
+  background: #2563eb !important;
+  color: #fff !important;
+  border-color: #2563eb !important;
+}
+
+/* Modal inputs dark */
+html.dark .modal .input-field input,
+html.dark .modal .select-wrapper input.select-dropdown {
+  background: #0a0a0a !important;
+  border: 1px solid #333 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .modal .input-field > label {
+  color: #a3a3a3 !important;
+}
+
+html.dark #modal-archive-history.modal,
+html.dark #modal-product-history.modal {
+  background: #141414 !important;
+}
+
+html.dark #modal-archive-history .modal-content h4,
+html.dark #modal-product-history .modal-content h4,
+html.dark #modal-archive-history .modal-content,
+html.dark #modal-product-history .modal-content {
+  color: #f5f5f5 !important;
+}
+
+html.dark #modal-archive-history .modal-footer,
+html.dark #modal-product-history .modal-footer {
+  border-top-color: #262626 !important;
+  background: #141414 !important;
+}
+
+html.dark #modal-archive-history .modal-footer .btn-flat,
+html.dark #modal-product-history .modal-footer .btn-flat {
+  background: #1a1a1a !important;
+  color: #f5f5f5 !important;
+  border-color: #333 !important;
+}
+
+html.dark #modal-archive-history th,
+html.dark #modal-product-history th {
+  color: #a3a3a3 !important;
+}
+
+html.dark #modal-archive-history td,
+html.dark #modal-product-history td {
+  color: #f5f5f5 !important;
+}
+html.dark #modal-recover-product.modal {
+  background: #141414 !important;
+}
+
+html.dark #modal-recover-product .modal-content h4 {
+  color: #f5f5f5 !important;
+}
+
+html.dark #modal-recover-product .modal-content p {
+  color: #a3a3a3 !important;
+}
+
+html.dark #modal-recover-product .modal-footer {
+  border-top-color: #262626 !important;
+}
+
+html.dark #modal-recover-product #cancel-recover-product {
+  background: #1a1a1a !important;
+  color: #f5f5f5 !important;
+  border-color: #333 !important;
+}
+
+html.dark #modal-recover-product #confirm-recover-product {
+  background: #16a34a !important;
+  border-color: #16a34a !important;
+  color: #fff !important;
 }
