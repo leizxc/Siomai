@@ -26,9 +26,9 @@ function loadSection(page){
 
     const pageTitles = {
       "userpanel.html" : "Point of Sale",
-      "Report.html" : "Report",
+      "report.html" : "Report",
       "stock.html" : "Inventory",
-      "Attendace.html" : "Attendance",
+      "attendance.html" : "Attendance",
     };
     if(title) title.textContent = pageTitles [page] || "Employee";
 
@@ -93,8 +93,10 @@ function updateBottomNav(page) {
     navItems[0]?.classList.add("active");
   } else if (page === "stock.html") {
     navItems[1]?.classList.add("active");
-  } else if (page === "sales.html") {
+  } else if (page === "attendance.html") {
     navItems[2]?.classList.add("active");
+  } else if (page === "report.html") {
+    navItems[3]?.classList.add("active");   
   }
 }
 
@@ -126,15 +128,22 @@ document.addEventListener("DOMContentLoaded", () => {
     loadSection("stock.html");
   });
 
-  // HISTORY
+  // ATTENDANCE
   navItems[2]?.addEventListener("click", (event) => {
     event.preventDefault();
 
-    loadSection("sales.html");
+    loadSection("attendance.html");
+  });
+
+  // REPORT 
+  navItems[3]?.addEventListener("click", (event) => {
+    event.preventDefault();
+
+    loadSection("report.html");
   });
 
    // Logout
-    navItems[3]?.addEventListener("click", (event)=> {
+    navItems[4]?.addEventListener("click", (event)=> {
       event.preventDefault();
 
         window.location.href = "/index.html";
