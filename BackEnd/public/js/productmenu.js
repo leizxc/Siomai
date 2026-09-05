@@ -173,7 +173,9 @@ function bindInventoryAllocationChange() {
 
     stockInput.value = stock;
     if (stockUnit) stockUnit.value = unitLabel;
-    if (priceInput) priceInput.value = data.unit_price ?? "";
+
+    // TANGGALIN ANG AUTO-FILL NG PRICE - hayaan si user mag-input
+    // if (priceInput) priceInput.value = data.unit_price ?? "";
 
     const kgUsedField = document.getElementById("kg-used-field");
     const kalderoCountField = document.getElementById("kaldero-count-field");
@@ -282,7 +284,8 @@ export function addproductmenu() {
 
       // Basic fields only — kg fields are checked below, only if this
       // inventory item is actually a "kg" item.
-      if (!inventoryId || !productName || !role || stock <= 0 || price <= 0) {
+
+      if (!inventoryId || !productName || !role || stock <= 0) {
         M.toast({
           html: "Please complete all fields.",
           classes: "red rounded",
@@ -290,12 +293,18 @@ export function addproductmenu() {
         return;
       }
 
+      // Hiwalay na check para sa price
+      if (price <= 0) {
+        M.toast({
+          html: "Please enter a valid price.",
+          classes: "red rounded",
+        });
+        return;
+      }
+
       if (saveBtn) saveBtn.disabled = true;
 
-      // Need unit_type BEFORE validating kg fields — previously this
-      // fetch happened much later, so the kg-only check ran for every
-      // product regardless of unit, and always failed for Siomai/Pares
-      // since their hidden KgUsed/kalderocCount inputs are empty.
+      // Need unit_type BEFORE validating kg fields
       const inventorySnap = await getDoc(doc(db, "inventory", inventoryId));
 
       if (!inventorySnap.exists()) {
@@ -454,7 +463,16 @@ function confirmDeletion(title, message) {
 export async function loadmenu() {
   const tbody = document.querySelector("#menutable tbody");
   const filterCategory = document.getElementById("filterCategory");
+  const searchInput = document.getElementById("searchProductMenu");
+  const clearBtn = document.getElementById("clearSearchBtn");
+
   if (!tbody || !filterCategory) return;
+
+  // PAGINATION VARIABLES
+  const PAGE_SIZE = 10;
+  let currentPage = 1;
+  let menuRowsCache = [];
+  let allMenuData = []; // Store all data for search/filter
 
   function bindRowButtons() {
     tbody.querySelectorAll(".delete-btn").forEach((btn) => {
@@ -566,168 +584,285 @@ export async function loadmenu() {
     });
   }
 
-  function renderMenu() {
-    if (unsubscribeMenu) unsubscribeMenu();
-
+  // FILTER AND SEARCH FUNCTION
+  function filterAndSearchData() {
+    const searchTerm = searchInput
+      ? searchInput.value.toLowerCase().trim()
+      : "";
     const selectedCategory = filterCategory.value;
 
-    let q = collection(db, "productMenu");
+    let filteredData = allMenuData;
 
-    if (selectedCategory) {
-      q = query(
-        collection(db, "productMenu"),
-        where("category", "==", selectedCategory),
+    // Filter by category
+    if (selectedCategory && selectedCategory !== "ALL") {
+      filteredData = filteredData.filter(
+        (item) => item.data.category === selectedCategory,
       );
     }
 
-    unsubscribeMenu = onSnapshot(q, (snapshot) => {
+    // Filter by search term
+    if (searchTerm) {
+      filteredData = filteredData.filter((item) => {
+        const productCode = (item.data.product_code || "").toLowerCase();
+        const productName = (item.data.product_name || "").toLowerCase();
+        const inventoryName = (item.data.inventory_name || "").toLowerCase();
+        const category = (item.data.category || "").toLowerCase();
+        const inventoryId = (item.inventoryProductId || "").toLowerCase();
+
+        return (
+          productCode.includes(searchTerm) ||
+          productName.includes(searchTerm) ||
+          inventoryName.includes(searchTerm) ||
+          category.includes(searchTerm) ||
+          inventoryId.includes(searchTerm)
+        );
+      });
+    }
+
+    return filteredData;
+  }
+
+  // RENDER CURRENT PAGE
+  function renderMenuPage() {
+    const filteredData = filterAndSearchData();
+    const totalRecords = filteredData.length;
+    const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
+
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageData = filteredData.slice(start, start + PAGE_SIZE);
+
+    // Build rows
+    let rowsHtml = "";
+    for (const item of pageData) {
+      rowsHtml += item.html;
+    }
+
+    tbody.innerHTML =
+      rowsHtml ||
+      `
+      <tr>
+        <td colspan="10" class="center-align grey-text">
+          No products found matching your criteria.
+        </td>
+      </tr>
+    `;
+
+    bindRowButtons();
+    updateMenuPagination(totalPages, totalRecords);
+  }
+
+  // UPDATE PAGINATION CONTROLS
+  function updateMenuPagination(totalPages, totalRecords) {
+    const prevBtn = document.getElementById("menu-prev");
+    const nextBtn = document.getElementById("menu-next");
+    const pageLabel = document.getElementById("menu-page");
+    const infoLabel = document.getElementById("menu-info");
+
+    if (!prevBtn || !nextBtn) return;
+
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+
+    if (pageLabel) {
+      pageLabel.textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+
+    prevBtn.onclick = null;
+    nextBtn.onclick = null;
+
+    prevBtn.onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderMenuPage();
+      }
+    };
+
+    nextBtn.onclick = () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderMenuPage();
+      }
+    };
+
+    if (infoLabel) {
+      if (totalRecords === 0) {
+        infoLabel.textContent = "Showing: 0 Product Menu records";
+      } else {
+        const start = (currentPage - 1) * PAGE_SIZE + 1;
+        const end = Math.min(currentPage * PAGE_SIZE, totalRecords);
+        infoLabel.textContent = `Showing: ${start} - ${end} of ${totalRecords} Product Menu records`;
+      }
+    }
+  }
+
+  // GENERATE ROW HTML
+  function generateRowHtml(id, data, inventoryProductId) {
+    let quantityColumns = "";
+
+    // PACK
+    if (data.unit === "pack") {
+      const packs = Math.ceil(
+        (data.current_pieces ?? data.current_stock) /
+          (data.pieces_per_pack || 1),
+      );
+      const pieces = data.current_pieces ?? data.current_stock ?? 0;
+
+      quantityColumns = `
+        <td data-label="Packs">${formatQuantity(packs)}</td>
+        <td data-label="Pieces">${formatQuantity(pieces)}</td>
+      `;
+    }
+    // KG / LITER
+    else if (data.unit === "kg" || data.unit === "liter") {
+      quantityColumns = `
+        <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
+      `;
+    }
+
+    return `
+      <tr>
+        <td data-label="Product Code"><strong>${data.product_code || "-"}</strong></td>
+        <td data-label="Inventory ID">${inventoryProductId}</td>
+        <td data-label="Inventory Name">${data.inventory_name || "-"}</td>
+        <td data-label="Product Name">${data.product_name || "-"}</td>
+        <td data-label="Category">${data.category || "-"}</td>
+        ${quantityColumns}
+        <td data-label="Price">₱${Number(data.price || 0).toFixed(2)}</td>
+        <td data-label="Action">
+          <button class="edit-btn btn blue waves-effect waves-light" data-id="${id}">
+            <i class="material-icons">edit</i>
+          </button>
+          <button class="delete-btn btn red waves-effect waves-light" data-id="${id}">
+            <i class="material-icons">delete</i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
+  function renderMenu() {
+    if (unsubscribeMenu) unsubscribeMenu();
+
+    let q = collection(db, "productMenu");
+
+    unsubscribeMenu = onSnapshot(q, async (snapshot) => {
       if (!tbody.isConnected) return;
 
-      tbody.innerHTML = "";
-
-      // ==========================================
       // DETERMINE WHICH UNIT IS CURRENTLY DISPLAYED
-      // ==========================================
-
       let currentUnit = null;
-
+      const menuDocs = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
-
+        menuDocs.push({ id: docSnap.id, data });
         if (!currentUnit && data.unit) {
           currentUnit = data.unit;
         }
       });
 
-      // ==========================================
       // UPDATE TABLE HEADERS
-      // ==========================================
-
       const thPacks = document.getElementById("th-packs");
       const thPieces = document.getElementById("th-pieces");
       const thContainer = document.getElementById("th-container");
 
       if (currentUnit === "pack") {
-        // PACK
         thPacks.style.display = "";
         thPieces.style.display = "";
         thContainer.style.display = "none";
-
         thPacks.textContent = "Packs";
         thPieces.textContent = "Pieces";
       } else if (currentUnit === "kg" || currentUnit === "liter") {
-        // KG / LITER
         thPacks.style.display = "none";
         thPieces.style.display = "none";
         thContainer.style.display = "";
-
         thContainer.textContent = "Container";
       } else {
-        // NOTHING SELECTED / UNKNOWN UNIT
         thPacks.style.display = "none";
         thPieces.style.display = "none";
         thContainer.style.display = "none";
       }
 
-      // ==========================================
-      // RENDER PRODUCTS
-      // ==========================================
-
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-
-        const tr = document.createElement("tr");
-
-        let quantityColumns = "";
-
-        // ========================================
-        // PACK
-        // ========================================
-
-        if (data.unit === "pack") {
-          const packs = Math.ceil(
-            (data.current_pieces ?? data.current_stock) /
-              (data.pieces_per_pack || 1),
-          );
-
-          const pieces = data.current_pieces ?? data.current_stock ?? 0;
-
-          quantityColumns = `
-          <td data-label="Packs">
-            ${formatQuantity(packs)}
-          </td>
-
-          <td data-label="Pieces">
-            ${formatQuantity(pieces)}
-          </td>
-        `;
+      // COLLECT ALL INVENTORY IDs
+      const inventoryIds = new Set();
+      menuDocs.forEach(({ data }) => {
+        if (data.inventory_id) {
+          inventoryIds.add(data.inventory_id);
         }
-
-        // ========================================
-        // KG / LITER
-        // ========================================
-        else if (data.unit === "kg" || data.unit === "liter") {
-          quantityColumns = `
-          <td data-label="Container">
-            ${formatQuantity(data.kaldero_count)}
-          </td>
-        `;
-        }
-
-        // ========================================
-        // TABLE ROW
-        // ========================================
-
-        tr.innerHTML = `
-        <td data-label="Product Code">
-          ${data.product_code || "-"}
-        </td>
-
-        <td data-label="Inventory Name">
-          ${data.inventory_name || "-"}
-        </td>
-
-        <td data-label="Product Name">
-          ${data.product_name || "-"}
-        </td>
-
-        <td data-label="Category">
-          ${data.category || "-"}
-        </td>
-
-        ${quantityColumns}
-
-        <td data-label="Price">
-          ₱${Number(data.price || 0).toFixed(2)}
-        </td>
-
-        <td data-label="Action">
-          <button
-            class="edit-btn btn blue"
-            data-id="${docSnap.id}"
-          >
-            <i class="material-icons">edit</i>
-          </button>
-
-          <button
-            class="delete-btn btn red"
-            data-id="${docSnap.id}"
-          >
-            <i class="material-icons">delete</i>
-          </button>
-        </td>
-      `;
-
-        tbody.appendChild(tr);
       });
 
-      bindRowButtons();
+      // FETCH ALL INVENTORY DOCUMENTS
+      const inventoryMap = new Map();
+      for (const invId of inventoryIds) {
+        try {
+          const invRef = doc(db, "inventory", invId);
+          const invSnap = await getDoc(invRef);
+          if (invSnap.exists()) {
+            inventoryMap.set(invId, invSnap.data());
+          }
+        } catch (err) {
+          console.error("Error fetching inventory:", err);
+        }
+      }
+
+      // BUILD ALL DATA WITH HTML
+      allMenuData = [];
+      for (const { id, data } of menuDocs) {
+        let inventoryProductId = "-";
+        if (data.inventory_id && inventoryMap.has(data.inventory_id)) {
+          const invData = inventoryMap.get(data.inventory_id);
+          inventoryProductId = invData.product_id || "-";
+        }
+
+        const html = generateRowHtml(id, data, inventoryProductId);
+        allMenuData.push({
+          id,
+          data,
+          inventoryProductId,
+          html,
+        });
+      }
+
+      currentPage = 1;
+      renderMenuPage();
     });
   }
 
   renderMenu();
 
-  filterCategory.addEventListener("change", renderMenu);
+  // SEARCH EVENT LISTENERS
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      currentPage = 1;
+      renderMenuPage();
+
+      // Show/hide clear button
+      if (clearBtn) {
+        clearBtn.style.display = searchInput.value.length > 0 ? "flex" : "none";
+      }
+    });
+  }
+
+  // CLEAR SEARCH BUTTON
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      if (searchInput) {
+        searchInput.value = "";
+        searchInput.focus();
+        clearBtn.style.display = "none";
+        currentPage = 1;
+        renderMenuPage();
+      }
+    });
+  }
+
+  // CATEGORY FILTER EVENT
+  filterCategory.removeEventListener("change", renderMenu);
+  filterCategory.addEventListener("change", () => {
+    currentPage = 1;
+    renderMenuPage();
+  });
 }
 
 export function cleanupProductMenuPage() {
@@ -743,6 +878,28 @@ export function cleanupProductMenuPage() {
     unsubscribeMenu();
     unsubscribeMenu = null;
   }
+
+  // Cleanup pagination event listeners
+  const prevBtn = document.getElementById("menu-prev");
+  const nextBtn = document.getElementById("menu-next");
+  if (prevBtn) {
+    prevBtn.onclick = null;
+    prevBtn.disabled = true;
+  }
+  if (nextBtn) {
+    nextBtn.onclick = null;
+    nextBtn.disabled = true;
+  }
+
+  // Cleanup search listeners
+  const searchInput = document.getElementById("searchProductMenu");
+  const clearBtn = document.getElementById("clearSearchBtn");
+  if (searchInput) {
+    searchInput.oninput = null;
+  }
+  if (clearBtn) {
+    clearBtn.onclick = null;
+  }
 }
 
 export async function initProductPage() {
@@ -757,4 +914,16 @@ export async function initProductPage() {
   loadmenu();
   initUppercaseProductName();
   bindInventoryAllocationChange();
+
+  // Initialize pagination display
+  const infoLabel = document.getElementById("menu-info");
+  if (infoLabel) {
+    infoLabel.textContent = "Showing: 0 Product Menu records";
+  }
+
+  // Initialize search clear button
+  const clearBtn = document.getElementById("clearSearchBtn");
+  if (clearBtn) {
+    clearBtn.style.display = "none";
+  }
 }

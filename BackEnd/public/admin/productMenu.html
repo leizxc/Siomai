@@ -62,7 +62,7 @@
 
       <!-- Price -->
       <div class="input-field col s12 m6">
-        <input type="number" id="price" step="0.01" min="0" readonly />
+        <input type="number" id="price" step="0.01" min="0" />
         <label for="price">Product Price</label>
       </div>
 
@@ -102,6 +102,17 @@
 <section class="card menu-card product-list-card">
   <h4>Product List</h4>
 
+  <!-- SEARCH CATALOG -->
+   <div class="search-catalog-wrapper">
+    <div class="search-container">
+      <i class="material-icon search-icon">search</i>
+      <input type="text" id="searchProducMenu" placeholder="Search products..." class="search-input">
+      <button id="clearSearchBtn" class="clear-search-btn" style="display: none;">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+   </div>
+
   <div class="row">
     <div class="input-field col s12 m6">
       <select id="filterCategory">
@@ -112,25 +123,41 @@
   </div>
 
   <div class="table-container">
-    <table id="menutable">
+    <table id="menutable" class="striped responsive-table">
       <thead>
         <tr>
-          <th>Product ID</th>
-          <th>Inventory Allocation</th>
-          <th>Product Name</th>
-          <th>Role</th>
-          <th id="th-packs">Packs</th>
-          <th id="th-pieces">Pieces</th>
-          <th id="th-container">Container</th>
-          <th>Price</th>
-          <th>Action</th>
+          <th id="th-product-code">Product Code</th>
+          <th id="th-inventory-id">Inventory ID</th>
+          <th id="th-inventory-name">Inventory Name</th>
+          <th id="th-product-name">Product Name</th>
+          <th id="th-category">Category</th>
+          <th id="th-packs" style="display: none">Packs</th>
+          <th id="th-pieces" style="display: none">Pieces</th>
+          <th id="th-container" style="display: none">Container</th>
+          <th id="th-price">Price</th>
+          <th id="th-action">Action</th>
         </tr>
       </thead>
       <tbody>
-        <!-- Products will appear here -->
+        <!-- Dynamically loaded -->
       </tbody>
     </table>
-  </div>
+
+    <!-- PAGINATION CONTROL -->
+    <div class="productmenu-footer">
+      <div>
+        <strong id="menu-info"></strong>
+      </div>
+    <div class="pagination-controls">
+      <button id="menu-prev" class="btn-flat waves-effect">
+        Previous
+      </button>
+      <span id="menu-page">Page 1 of 1</span>
+      <button id="menu-next" class="btn-flat waves-effect">
+        Next
+      </button>
+    </div>
+    </div>
 </section>
 
 <!-- ================= EDIT PRODUCT MENU MODAL ================= -->

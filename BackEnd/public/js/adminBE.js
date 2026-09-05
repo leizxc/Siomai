@@ -208,20 +208,18 @@ export function loadInventory() {
               day: "numeric",
             })
           : "-";
+        const productId = data.product_id || "-";
 
         rowsHtml.push(`
   <tr data-category-id="${docSnap.data().category_id}">
-    <td data-label="Product Name">${data.product_name}${
-      data.plasticColor
-        ? ` <span class="plastic-color-badge">(${data.plasticColor} Plastic)</span>`
-        : ""
-    }</td>
+    <td data-label="Product ID"><strong>${productId}</strong></td>
+    <td data-label="Product Name">${data.product_name}${data.plasticColor ? ` <span class="plastic-color-badge">(${data.plasticColor} Plastic)</span>` : ""}</td>
     <td data-label="Category">${data.category}</td>
     <td data-label="Quantity">${data.quantity} ${data.unit_type}</td>
     <td data-label="${totalLabel}">${totalDisplay}</td>
     <td data-label="Unit Price">₱${data.unit_price.toFixed(2)}</td>
     <td data-label="Total Value">₱${data.total_value.toFixed(2)}</td>
-     <td data-label="Date">${dateAdded}</td> 
+    <td data-label="Date">${dateAdded}</td> 
     <td data-label="Status">
         <span class="status ${status.toLowerCase().replace(/\s/g, "-")}">
         ${status}
@@ -543,6 +541,14 @@ export async function deleteCategory(categoryId) {
   M.toast({ html: "Category Deleted", classes: "green rounded" });
 }
 
+// Helper function para mag-generate ng product ID
+function generateProductId() {
+  const prefix = "PRD";
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${prefix}-${timestamp}-${random}`;
+}
+
 export async function addProduct(
   productName,
   categoryId,
@@ -590,7 +596,11 @@ export async function addProduct(
     return;
   }
 
+  // Generate unique product ID
+  const productId = generateProductId();
+
   const productData = {
+    product_id: productId, // ← ID na ito ang lalabas sa table
     product_name: normalizedProductName,
     category_id: categoryId,
     category: categoryData.name,
@@ -615,7 +625,7 @@ export async function addProduct(
 
   await addDoc(collection(db, "inventory"), productData);
   M.toast({
-    html: "New product added successfully!",
+    html: `New product added successfully! ID: ${productId}`,
     classes: "green rounded",
   });
 }
@@ -623,7 +633,7 @@ export async function addProduct(
 export async function deleteProduct(id) {
   const linkedMenuQuery = query(
     collection(db, "productMenu"),
-    where("inventory_id", "==", id), // FIXED: may id na
+    where("inventory_id", "==", id),
   );
   const linkedMenuSnap = await getDocs(linkedMenuQuery);
   if (!linkedMenuSnap.empty) {
@@ -642,26 +652,35 @@ export async function deleteProduct(id) {
   )
     return;
 
-  const productRef = doc(db, "inventory", id);
-  const productSnap = await getDoc(productRef);
-  if (!productSnap.exists()) {
-    M.toast({ html: "Product not found.", classes: "red rounded" });
-    return;
+  try {
+    const productRef = doc(db, "inventory", id);
+    const productSnap = await getDoc(productRef);
+    if (!productSnap.exists()) {
+      M.toast({ html: "Product not found.", classes: "red rounded" });
+      return;
+    }
+
+    const data = productSnap.data();
+    await addDoc(collection(db, "archivedInventory"), {
+      ...data,
+      original_id: id,
+      product_id: data.product_id || generateProductId(),
+      archived_at: serverTimestamp(),
+      archived_by: "Manager",
+    });
+    await deleteDoc(productRef);
+
+    M.toast({
+      html: "Product archived. Recoverable for 7 days.",
+      classes: "green rounded",
+    });
+  } catch (error) {
+    console.error("Error archiving product:", error);
+    M.toast({
+      html: "Error: Failed to archive product. Please try again.",
+      classes: "red rounded",
+    });
   }
-
-  const data = productSnap.data();
-  await addDoc(collection(db, "archivedInventory"), {
-    ...data,
-    original_id: id,
-    archived_at: serverTimestamp(),
-    archived_by: "Manager",
-  });
-  await deleteDoc(productRef);
-
-  M.toast({
-    html: "Product archived. Recoverable for 7 days.",
-    classes: "green rounded",
-  });
 }
 
 // ==================== CATEGORIES ==================== //
@@ -1023,15 +1042,26 @@ function daysSince(timestamp) {
 }
 
 async function moveArchiveToHistory(archiveId, data) {
-  const { original_id, archived_at, archived_by, ...productData } = data;
-  await addDoc(collection(db, "productHistory"), {
-    ...productData,
-    original_id: original_id || null,
-    archived_at: archived_at || null,
-    permanently_removed_at: serverTimestamp(),
-    archived_by: archived_by || "Manager",
-  });
-  await deleteDoc(doc(db, "archivedInventory", archiveId));
+  try {
+    const { original_id, archived_at, archived_by, ...productData } = data;
+    await addDoc(collection(db, "productHistory"), {
+      ...productData,
+      original_id: original_id || null,
+      product_id: productData.product_id || generateProductId(),
+      archived_at: archived_at || null,
+      permanently_removed_at: serverTimestamp(),
+      archived_by: archived_by || "Manager",
+    });
+    await deleteDoc(doc(db, "archivedInventory", archiveId));
+    return true;
+  } catch (error) {
+    console.error("Error moving archive to history:", error);
+    M.toast({
+      html: `Error moving archive to history: ${error.message}`,
+      classes: "red rounded",
+    });
+    return false;
+  }
 }
 
 export async function processExpiredArchives() {
@@ -1071,7 +1101,7 @@ export async function recoverArchivedProduct(archiveId) {
       html: "Recovery period expired. Moving to Product History.",
       classes: "red rounded",
     });
-    await moveArchiveToHistory(archiveId, data); // FIXED: was archiveId.data
+    await moveArchiveToHistory(archiveId, data);
     return;
   }
 
@@ -1091,17 +1121,64 @@ export async function recoverArchivedProduct(archiveId) {
     return;
   }
 
+  // Preserve the product_id
   await addDoc(collection(db, "inventory"), {
     ...productData,
+    product_id: productData.product_id || generateProductId(),
     last_updated: serverTimestamp(),
     status: productData.quantity <= 0 ? "On Selling" : "Available",
   });
   await deleteDoc(archiveRef);
 
   M.toast({
-    html: "Product recovered to Inventory!",
+    html: `Product recovered to Inventory! ID: ${productData.product_id || "N/A"}`,
     classes: "green rounded",
   });
+}
+
+// delete button in arhcive history
+export async function permanentlyDeleteArchivedProduct(archiveId) {
+  const archiveRef = doc(db, "archivedInventory", archiveId);
+  const snap = await getDoc(archiveRef);
+  if (!snap.exists()) {
+    M.toast({ html: "Archived item not found.", classes: "red rounded" });
+    return;
+  }
+
+  const data = snap.data();
+
+  const confirmed = await confirmDeletion(
+    "Permanently Delete?",
+    "This product will be permanently deleted and moved to Product History. This action cannot be undone.",
+  );
+  if (!confirmed) return;
+
+  try {
+    // Ilipat muna sa productHistory
+    const { original_id, archived_at, archived_by, ...productData } = data;
+    await addDoc(collection(db, "productHistory"), {
+      ...productData,
+      original_id: original_id || null,
+      archived_at: archived_at || null,
+      permanently_removed_at: serverTimestamp(),
+      archived_by: archived_by || "Manager",
+      deleted_manually: true,
+    });
+
+    // Pagkatapos i-delete sa archive
+    await deleteDoc(archiveRef);
+
+    M.toast({
+      html: "Product permanently deleted and moved to Product History.",
+      classes: "green rounded",
+    });
+  } catch (error) {
+    console.error("Error permanently deleting product:", error);
+    M.toast({
+      html: "Error: Failed to permanently delete product. Please try again.",
+      classes: "red rounded",
+    });
+  }
 }
 
 // ---------- Archive History ----------
@@ -1161,37 +1238,33 @@ export function loadArchiveHistory() {
           totalDisplay = `${data.stock_quantity ?? 0}`;
         }
 
+        const productId = data.product_id || "-";
+
         rowsHtml.push(`
-          <tr>
-            <td>${data.product_name || "-"}${
-              data.plasticColor
-                ? ` <span class="plastic-color-badge">(${data.plasticColor} Plastic)</span>`
-                : ""
-            }</td>
-            <td>${data.category || "-"}</td>
-            <td>${data.quantity ?? 0} ${data.unit_type || ""}</td>
-            <td>${totalDisplay}</td>
-            <td>₱${(data.unit_price || 0).toFixed(2)}</td>
-            <td>₱${(data.total_value || 0).toFixed(2)}</td>
-            <td>${dateArchived}</td>
-            <td>
-              <span class="status ${canRecover ? "available" : "low-stock"}">
-                ${canRecover ? `${daysLeft} day(s) left` : "Expired"}
-              </span>
-            </td>
-            <td>
-              ${
-                canRecover
-                  ? `<button class="recover-btn btn green waves-effect" data-id="${docSnap.id}" title="Recover">
-                       <i class="material-icons">restore</i>
-                     </button>`
-                  : `<button class="btn grey" disabled title="Expired">
-                       <i class="material-icons">block</i>
-                     </button>`
-              }
-            </td>
-          </tr>
-        `);
+  <tr>
+    <td><strong>${productId}</strong></td>
+    <td>${data.product_name || "-"}${data.plasticColor ? ` <span class="plastic-color-badge">(${data.plasticColor} Plastic)</span>` : ""}</td>
+    <td>${data.category || "-"}</td>
+    <td>${data.quantity ?? 0} ${data.unit_type || ""}</td>
+    <td>${totalDisplay}</td>
+    <td>₱${(data.unit_price || 0).toFixed(2)}</td>
+    <td>₱${(data.total_value || 0).toFixed(2)}</td>
+    <td>${dateArchived}</td>
+    <td>
+      <span class="status ${canRecover ? "available" : "low-stock"}">
+        ${canRecover ? `${daysLeft} day(s) left` : "Expired"}
+      </span>
+    </td>
+    <td>
+      <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+        ${canRecover ? `<button class="recover-btn btn green waves-effect" data-id="${docSnap.id}" title="Recover"><i class="material-icons">restore</i></button>` : `<button class="btn grey" disabled title="Expired"><i class="material-icons">block</i></button>`}
+        <button class="delete-permanent-btn btn red waves-effect" data-id="${docSnap.id}" title="Delete Permanently">
+          <i class="material-icons">delete_forever</i>
+        </button>
+      </div>
+    </td>
+  </tr>
+`);
       });
 
       archiveRowsCache = rowsHtml;
@@ -1224,6 +1297,14 @@ function renderArchivePage() {
       const id = e.target.closest("button").dataset.id;
       const ok = await confirmRecover(); // ← bagong modal
       if (ok) await recoverArchivedProduct(id);
+    };
+  });
+
+  // Permanent Delete buttons
+  document.querySelectorAll(".delete-permanent-btn").forEach((btn) => {
+    btn.onclick = async (e) => {
+      const id = e.target.closest("button").dataset.id;
+      await permanentlyDeleteArchivedProduct(id);
     };
   });
 
@@ -1326,22 +1407,21 @@ export function loadProductHistory() {
           totalDisplay = `${data.stock_quantity ?? 0}`;
         }
 
+        const productId = data.product_id || "-";
+
         rowsHtml.push(`
-          <tr>
-            <td>${data.product_name || "-"}${
-              data.plasticColor
-                ? ` <span class="plastic-color-badge">(${data.plasticColor} Plastic)</span>`
-                : ""
-            }</td>
-            <td>${data.category || "-"}</td>
-            <td>${data.quantity ?? 0} ${data.unit_type || ""}</td>
-            <td>${totalDisplay}</td>
-            <td>₱${(data.unit_price || 0).toFixed(2)}</td>
-            <td>₱${(data.total_value || 0).toFixed(2)}</td>
-            <td>${dateArchived}</td>
-            <td>${dateRemoved}</td>
-          </tr>
-        `);
+  <tr>
+    <td><strong>${productId}</strong></td>
+    <td>${data.product_name || "-"}${data.plasticColor ? ` <span class="plastic-color-badge">(${data.plasticColor} Plastic)</span>` : ""}</td>
+    <td>${data.category || "-"}</td>
+    <td>${data.quantity ?? 0} ${data.unit_type || ""}</td>
+    <td>${totalDisplay}</td>
+    <td>₱${(data.unit_price || 0).toFixed(2)}</td>
+    <td>₱${(data.total_value || 0).toFixed(2)}</td>
+    <td>${dateArchived}</td>
+    <td>${dateRemoved}</td>
+  </tr>
+`);
       });
 
       historyRowsCache = rowsHtml;
@@ -1459,7 +1539,6 @@ function bindArchiveHistoryButtons() {
     console.warn("btn-product-history not found");
   }
 }
-
 
 export async function initInventoryPage() {
   currentPage = 1;

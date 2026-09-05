@@ -79,6 +79,7 @@ export function initInventoryModal() {
       const unitPrice = parseFloat(priceStr);
 
       try {
+        // TAMA na: walang 'id' parameter
         await addProduct(name, category, packs, unitPrice, plasticColor);
 
         document.getElementById("product-name").value = "";
@@ -95,7 +96,7 @@ export function initInventoryModal() {
         modalInstance.close();
       } catch (err) {
         console.error("SAVE ERROR:", err);
-        alert("Failed to save product");
+        alert("Failed to save product: " + err.message);
       } finally {
         saveBtn.disabled = false;
       }
