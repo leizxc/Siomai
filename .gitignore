@@ -9,6 +9,11 @@ BackEnd/node_modules/
 BackEnd/*.json
 BackEnd/*.key
 
+# Firebase Hosting
+.firebase/
+.firebaserc
+firebase.json
+
 # OS junk
 .DS_Store
 Thumbs.db
