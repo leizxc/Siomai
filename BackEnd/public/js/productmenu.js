@@ -471,8 +471,8 @@ export async function loadmenu() {
   // PAGINATION VARIABLES
   const PAGE_SIZE = 10;
   let currentPage = 1;
-  let menuRowsCache = [];
   let allMenuData = []; // Store all data for search/filter
+  let searchTimeout = null;
 
   function bindRowButtons() {
     tbody.querySelectorAll(".delete-btn").forEach((btn) => {
@@ -585,7 +585,7 @@ export async function loadmenu() {
   }
 
   // FILTER AND SEARCH FUNCTION
-  function filterAndSearchData() {
+  function getFilteredData() {
     const searchTerm = searchInput
       ? searchInput.value.toLowerCase().trim()
       : "";
@@ -594,7 +594,11 @@ export async function loadmenu() {
     let filteredData = allMenuData;
 
     // Filter by category
-    if (selectedCategory && selectedCategory !== "ALL") {
+    if (
+      selectedCategory &&
+      selectedCategory !== "ALL" &&
+      selectedCategory !== ""
+    ) {
       filteredData = filteredData.filter(
         (item) => item.data.category === selectedCategory,
       );
@@ -624,7 +628,7 @@ export async function loadmenu() {
 
   // RENDER CURRENT PAGE
   function renderMenuPage() {
-    const filteredData = filterAndSearchData();
+    const filteredData = getFilteredData();
     const totalRecords = filteredData.length;
     const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
 
@@ -640,22 +644,25 @@ export async function loadmenu() {
       rowsHtml += item.html;
     }
 
-    tbody.innerHTML =
-      rowsHtml ||
-      `
-      <tr>
-        <td colspan="10" class="center-align grey-text">
-          No products found matching your criteria.
-        </td>
-      </tr>
-    `;
+    if (!rowsHtml) {
+      const searchTerm = searchInput ? searchInput.value : "";
+      rowsHtml = `
+        <tr>
+          <td colspan="10" class="center-align grey-text" style="padding: 30px 0;">
+            <i class="material-icons" style="font-size: 48px; display: block; margin-bottom: 10px;">search</i>
+            ${searchTerm ? `No products found matching "<strong>${searchTerm}</strong>"` : "No products found in this category."}
+          </td>
+        </tr>
+      `;
+    }
 
+    tbody.innerHTML = rowsHtml;
     bindRowButtons();
-    updateMenuPagination(totalPages, totalRecords);
+    updatePaginationControls(totalPages, totalRecords);
   }
 
   // UPDATE PAGINATION CONTROLS
-  function updateMenuPagination(totalPages, totalRecords) {
+  function updatePaginationControls(totalPages, totalRecords) {
     const prevBtn = document.getElementById("menu-prev");
     const nextBtn = document.getElementById("menu-next");
     const pageLabel = document.getElementById("menu-page");
@@ -670,6 +677,7 @@ export async function loadmenu() {
       pageLabel.textContent = `Page ${currentPage} of ${totalPages}`;
     }
 
+    // Remove old listeners to prevent duplicates
     prevBtn.onclick = null;
     nextBtn.onclick = null;
 
@@ -743,6 +751,7 @@ export async function loadmenu() {
     `;
   }
 
+  // MAIN RENDER FUNCTION - loads data from Firestore
   function renderMenu() {
     if (unsubscribeMenu) unsubscribeMenu();
 
@@ -824,16 +833,60 @@ export async function loadmenu() {
         });
       }
 
+      // Reset to page 1 and render
       currentPage = 1;
       renderMenuPage();
     });
   }
 
+  // START LISTENING
   renderMenu();
 
+  // ============================================
   // SEARCH EVENT LISTENERS
+  // ============================================
+
   if (searchInput) {
-    searchInput.addEventListener("input", () => {
+    // Remove old listeners
+    searchInput.removeEventListener("input", handleSearch);
+    searchInput.removeEventListener("keypress", handleKeyPress);
+
+    // Input event - automatic search habang nagta-type
+    searchInput.addEventListener("input", handleSearch);
+
+    // Keypress event - pag nag-enter
+    searchInput.addEventListener("keypress", handleKeyPress);
+  }
+
+  function handleSearch() {
+    // Clear previous timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Debounce search for better performance
+    searchTimeout = setTimeout(() => {
+      currentPage = 1; // Reset to first page
+      renderMenuPage(); // Re-render table with new search results
+
+      // Show/hide clear button
+      if (clearBtn) {
+        clearBtn.style.display = searchInput.value.length > 0 ? "flex" : "none";
+      }
+    }, 300); // 300ms delay
+  }
+
+  function handleKeyPress(e) {
+    // Kapag nag-enter, mag-search agad (walang debounce)
+    if (e.key === "Enter") {
+      e.preventDefault(); // Prevent form submission
+
+      // Cancel pending timeout
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+        searchTimeout = null;
+      }
+
       currentPage = 1;
       renderMenuPage();
 
@@ -841,28 +894,33 @@ export async function loadmenu() {
       if (clearBtn) {
         clearBtn.style.display = searchInput.value.length > 0 ? "flex" : "none";
       }
-    });
+    }
   }
 
   // CLEAR SEARCH BUTTON
   if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-      if (searchInput) {
-        searchInput.value = "";
-        searchInput.focus();
-        clearBtn.style.display = "none";
-        currentPage = 1;
-        renderMenuPage();
-      }
-    });
+    clearBtn.removeEventListener("click", handleClearSearch);
+    clearBtn.addEventListener("click", handleClearSearch);
+  }
+
+  function handleClearSearch() {
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.focus();
+      clearBtn.style.display = "none";
+      currentPage = 1;
+      renderMenuPage(); // Re-render with cleared search
+    }
   }
 
   // CATEGORY FILTER EVENT
-  filterCategory.removeEventListener("change", renderMenu);
-  filterCategory.addEventListener("change", () => {
+  filterCategory.removeEventListener("change", handleCategoryChange);
+  filterCategory.addEventListener("change", handleCategoryChange);
+
+  function handleCategoryChange() {
     currentPage = 1;
-    renderMenuPage();
-  });
+    renderMenuPage(); // Re-render with new category filter
+  }
 }
 
 export function cleanupProductMenuPage() {
@@ -896,6 +954,7 @@ export function cleanupProductMenuPage() {
   const clearBtn = document.getElementById("clearSearchBtn");
   if (searchInput) {
     searchInput.oninput = null;
+    searchInput.onkeypress = null;
   }
   if (clearBtn) {
     clearBtn.onclick = null;
@@ -925,5 +984,11 @@ export async function initProductPage() {
   const clearBtn = document.getElementById("clearSearchBtn");
   if (clearBtn) {
     clearBtn.style.display = "none";
+  }
+
+  // Focus search input on load (optional)
+  const searchInput = document.getElementById("searchProductMenu");
+  if (searchInput) {
+    // Hindi na kailangan mag-focus para hindi annoying
   }
 }

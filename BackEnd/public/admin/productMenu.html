@@ -25,7 +25,7 @@
         style="display: none"
       >
         <input type="number" name="kgUsed" id="KgUsed" step="0.01" min="0" />
-        <label for="kgUsed">Kilograms Used (as Ingredient) </label>
+        <label for="KgUsed">Kilograms Used (as Ingredient)</label>
       </div>
 
       <!-- KALDER OR CONTAINER -->
@@ -103,22 +103,32 @@
   <h4>Product List</h4>
 
   <!-- SEARCH CATALOG -->
-   <div class="search-catalog-wrapper">
+  <div class="search-catalog-wrapper">
     <div class="search-container">
-      <i class="material-icon search-icon">search</i>
-      <input type="text" id="searchProducMenu" placeholder="Search products..." class="search-input">
-      <button id="clearSearchBtn" class="clear-search-btn" style="display: none;">
-        <i class="material-icons">close</i>
-      </button>
+      <div class="search-input-wrapper">
+        <i class="material-icons search-icon">search</i>
+        <input
+          type="text"
+          id="searchProductMenu"
+          placeholder="Search products..."
+          class="search-input"
+          autocomplete="off"
+        />
+        <button
+          id="clearSearchBtn"
+          class="clear-search-btn"
+          style="display: none"
+        >
+          <i class="material-icons">close</i>
+        </button>
+      </div>
     </div>
-   </div>
 
-  <div class="row">
-    <div class="input-field col s12 m6">
-      <select id="filterCategory">
-        <option value="" disabled selected>Choose Category</option>
-      </select>
+    <div class="filter-category-wrapper">
       <label for="filterCategory">Filter by Category</label>
+      <select id="filterCategory" class="browser-default">
+        <option value="ALL">All Categories</option>
+      </select>
     </div>
   </div>
 
@@ -146,18 +156,19 @@
     <!-- PAGINATION CONTROL -->
     <div class="productmenu-footer">
       <div>
-        <strong id="menu-info"></strong>
+        <strong id="menu-info">Showing: 0 Product Menu records</strong>
       </div>
-    <div class="pagination-controls">
-      <button id="menu-prev" class="btn-flat waves-effect">
-        Previous
-      </button>
-      <span id="menu-page">Page 1 of 1</span>
-      <button id="menu-next" class="btn-flat waves-effect">
-        Next
-      </button>
+      <div class="pagination-controls">
+        <button id="menu-prev" class="btn-flat waves-effect" disabled>
+          <i class="material-icons">chevron_left</i> PREVIOUS
+        </button>
+        <span id="menu-page">Page 1 of 1</span>
+        <button id="menu-next" class="btn-flat waves-effect" disabled>
+          NEXT <i class="material-icons">chevron_right</i>
+        </button>
+      </div>
     </div>
-    </div>
+  </div>
 </section>
 
 <!-- ================= EDIT PRODUCT MENU MODAL ================= -->

@@ -76,67 +76,84 @@
 </div>
 
 <!-- TABLE (labas na ng filter-card) -->
-<section class="inventory-card">
-  <h4>Inventory Table</h4>
-  <div class="inventory-button">
-    <!-- ARCHIVE HISTORY BUTTON -->
-    <button
-      id="btn-archive-history"
-      type="button"
-      class="btn btn-custom waves-effect waves-light amber darken-2"
-    >
-      <i class="material-icons left">archive</i>
-      Archive History
-    </button>
-    <!-- PRODUCT HISTORY BUTTON -->
-    <button
-      id="btn-product-history"
-      type="button"
-      class="btn btn-custom waves-effect waves-light blue-grey"
-    >
-      <i class="material-icons left">history</i>
-      Product History
-    </button>
-  </div>
-  <div class="filters">
-    <!-- DATE -->
-    <div class="filter-group col s12 m6">
-      <label>Date</label>
-      <input type="date" id="filter-date" />
+<!-- ================= INVENTORY TABLE ================= -->
+<section class="card inventory-card">
+  <!-- Inventory Header with Archive and Product History buttons -->
+  <div class="inventory-header">
+    <h4>Inventory Table</h4>
+    <div class="inventory-header-actions">
+      <button id="btn-archive-history" class="btn waves-effect waves-light">
+        <i class="material-icons left">archive</i> Archive
+      </button>
+      <button id="btn-product-history" class="btn waves-effect waves-light">
+        <i class="material-icons left">history</i> Product History
+      </button>
     </div>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Item Id</th>
-        <th>Product</th>
-        <th>Category</th>
-        <th>Total Quantity/Weight</th>
-        <th>Total Pieces/Sub-unit</th>
-        <th>Unit Price</th>
-        <th>Total Value</th>
-        <th>Date Added</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="inventory-table-body">
-      <!-- Firestore data will be injected here -->
-    </tbody>
-  </table>
-  <!-- FOOTER -->
+  <!-- SEARCH CATALOG -->
+  <div class="search-catalog-wrapper">
+    <div class="search-container">
+      <div class="search-input-wrapper">
+        <i class="material-icons search-icon">search</i>
+        <input
+          type="text"
+          id="searchInventory"
+          placeholder="Search inventory..."
+          class="search-input"
+          autocomplete="off"
+        />
+        <button
+          id="clearInventorySearch"
+          class="clear-search-btn"
+          style="display: none"
+        >
+          <i class="material-icons">close</i>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-category-wrapper">
+      <label>Filter by Date</label>
+      <input type="date" id="filter-date" class="date-filter-input" />
+    </div>
+  </div>
+  <!-- TABLE -->
+  <div class="table-container">
+    <table id="inventory-table" class="striped responsive-table">
+      <thead>
+        <tr>
+          <th>Product ID</th>
+          <th>Product Name</th>
+          <th>Category</th>
+          <th>Quantity</th>
+          <th>Total Stock</th>
+          <th>Unit Price</th>
+          <th>Total Value</th>
+          <th>Date Added</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="inventory-table-body">
+        <!-- Dynamically loaded -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINATION -->
   <div class="inventory-footer">
-    <div>
-      <strong id="inventory-info">0</strong>
+    <div id="inventory-info" class="pagination-info">
+      Showing: 0 Inventory data records
     </div>
-
     <div class="pagination-controls">
-      <button id="inventory-prev" class="btn-flat waves-effect">
-        Previous
+      <button id="inventory-prev" class="btn-flat waves-effect" disabled>
+        <i class="material-icons">chevron_left</i> PREVIOUS
       </button>
       <span id="inventory-page">Page 1 of 1</span>
-      <button id="inventory-next" class="btn-flat waves-effect">Next</button>
+      <button id="inventory-next" class="btn-flat waves-effect" disabled>
+        NEXT <i class="material-icons">chevron_right</i>
+      </button>
     </div>
   </div>
 </section>
