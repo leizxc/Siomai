@@ -178,10 +178,12 @@ checkoutBtn.onclick = async () => {
     await completeCheckout();
   } catch (error) {
     console.error("Checkout error:", error);
+
     M.toast({
       html: error.message || "Unable to complete checkout.",
       classes: "red rounded",
     });
+
     checkoutBtn.disabled = false;
     return;
   }
@@ -194,6 +196,10 @@ checkoutBtn.onclick = async () => {
   cart = [];
   localStorage.setItem("cart", JSON.stringify(cart));
   renderOrder();
+
+  setTimeout(() => {
+    window.location.href = "/employee/siomai/userpanel.html";
+  }, 1500);
 };
 
 renderOrder();
