@@ -354,7 +354,9 @@ export function addproductmenu() {
         product_name: productName,
         kg_used: kgused,
         kaldero_count: kalderocount,
-        category: role,
+        category: role, // role-based (SIOMAI/PARES)
+        inv_category:
+          inventory.inv_category || inventory.category || "Uncategorized", // BAGONG FIELD
         inventory_id: inventoryId,
         inventory_name: inventory.product_name,
         initial_stock: stock,
@@ -389,25 +391,28 @@ function initUppercaseProductName() {
   });
 }
 
+// FIXED: build the filter dropdown from the category NAME (inv_category),
+// not from the employee "role" field — inv_category is what getFilteredData()
+// actually compares against, so the dropdown values must match that.
 async function loadCategoryFilter() {
   const select = document.getElementById("filterCategory");
   if (!select) return;
 
-  const snap = await getDocs(collection(db, "employees"));
+  const snap = await getDocs(collection(db, "categoriesINV"));
 
   const categories = new Set();
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
 
-    if (data.role) {
-      categories.add(data.role.trim());
+    if (data.name) {
+      categories.add(data.name.trim());
     }
   });
 
   select.innerHTML = "";
 
-  let siomaiCategory = null;
+  let defaultCategory = null;
 
   categories.forEach((category) => {
     const option = document.createElement("option");
@@ -415,9 +420,9 @@ async function loadCategoryFilter() {
     option.value = category;
     option.textContent = category;
 
-    if (category.toUpperCase() === "SIOMAI") {
+    if (!defaultCategory) {
       option.selected = true;
-      siomaiCategory = category;
+      defaultCategory = category;
     }
 
     select.appendChild(option);
@@ -425,12 +430,11 @@ async function loadCategoryFilter() {
 
   reinitSelect(select);
 
-  // SIOMAI ang default
-  if (siomaiCategory) {
-    select.value = siomaiCategory;
+  if (defaultCategory) {
+    select.value = defaultCategory;
   }
 
-  return siomaiCategory;
+  return defaultCategory;
 }
 
 function confirmDeletion(title, message) {
@@ -600,7 +604,7 @@ export async function loadmenu() {
       selectedCategory !== ""
     ) {
       filteredData = filteredData.filter(
-        (item) => item.data.category === selectedCategory,
+        (item) => item.data.inv_category === selectedCategory,
       );
     }
 
@@ -610,6 +614,7 @@ export async function loadmenu() {
         const productCode = (item.data.product_code || "").toLowerCase();
         const productName = (item.data.product_name || "").toLowerCase();
         const inventoryName = (item.data.inventory_name || "").toLowerCase();
+        const invCategory = (item.data.inv_category || "").toLowerCase();
         const category = (item.data.category || "").toLowerCase();
         const inventoryId = (item.inventoryProductId || "").toLowerCase();
 
@@ -617,6 +622,7 @@ export async function loadmenu() {
           productCode.includes(searchTerm) ||
           productName.includes(searchTerm) ||
           inventoryName.includes(searchTerm) ||
+          invCategory.includes(searchTerm) ||
           category.includes(searchTerm) ||
           inventoryId.includes(searchTerm)
         );
@@ -719,36 +725,36 @@ export async function loadmenu() {
       const pieces = data.current_pieces ?? data.current_stock ?? 0;
 
       quantityColumns = `
-        <td data-label="Packs">${formatQuantity(packs)}</td>
-        <td data-label="Pieces">${formatQuantity(pieces)}</td>
-      `;
+      <td data-label="Packs">${formatQuantity(packs)}</td>
+      <td data-label="Pieces">${formatQuantity(pieces)}</td>
+    `;
     }
     // KG / LITER
     else if (data.unit === "kg" || data.unit === "liter") {
       quantityColumns = `
-        <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
-      `;
+      <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
+    `;
     }
 
     return `
-      <tr>
-        <td data-label="Product Code"><strong>${data.product_code || "-"}</strong></td>
-        <td data-label="Inventory ID">${inventoryProductId}</td>
-        <td data-label="Inventory Name">${data.inventory_name || "-"}</td>
-        <td data-label="Product Name">${data.product_name || "-"}</td>
-        <td data-label="Category">${data.category || "-"}</td>
-        ${quantityColumns}
-        <td data-label="Price">₱${Number(data.price || 0).toFixed(2)}</td>
-        <td data-label="Action">
-          <button class="edit-btn btn blue waves-effect waves-light" data-id="${id}">
-            <i class="material-icons">edit</i>
-          </button>
-          <button class="delete-btn btn red waves-effect waves-light" data-id="${id}">
-            <i class="material-icons">delete</i>
-          </button>
-        </td>
-      </tr>
-    `;
+    <tr>
+      <td data-label="Product Code"><strong>${data.product_code || "-"}</strong></td>
+      <td data-label="Inventory ID">${inventoryProductId}</td>
+      <td data-label="Inventory Name">${data.inventory_name || "-"}</td>
+      <td data-label="Product Name">${data.product_name || "-"}</td>
+      <td data-label="Category">${data.inv_category || data.category || "-"}</td>
+      ${quantityColumns}
+      <td data-label="Price">₱${Number(data.price || 0).toFixed(2)}</td>
+      <td data-label="Action">
+        <button class="edit-btn btn blue waves-effect waves-light" data-id="${id}">
+          <i class="material-icons">edit</i>
+        </button>
+        <button class="delete-btn btn red waves-effect waves-light" data-id="${id}">
+          <i class="material-icons">delete</i>
+        </button>
+      </td>
+    </tr>
+  `;
   }
 
   // MAIN RENDER FUNCTION - loads data from Firestore

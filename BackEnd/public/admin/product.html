@@ -1,10 +1,10 @@
-<!-- ==================== ADD PRODUCT FORM ==================== -->
+<!-- Add product form -->
 <section class="card inventory-card assign-product-form">
   <h4>Assign Product Form</h4>
 
   <form id="addProductForm">
+    <!-- Row 1: Role | Employee -->
     <div class="row">
-      <!-- Role Selection -->
       <div class="input-field col s12 m6">
         <select id="productRole" required>
           <option value="" disabled selected>Choose Role</option>
@@ -12,7 +12,6 @@
         <label for="productRole">Employee Role</label>
       </div>
 
-      <!-- Employee Selection -->
       <div class="input-field col s12 m6">
         <select id="productEmployee">
           <option value="" selected>All Employees (Shared)</option>
@@ -21,32 +20,66 @@
       </div>
     </div>
 
+    <!-- Row 2: Product Name (full width) -->
     <div class="row">
       <div class="input-field col s12">
         <select id="productName" required>
           <option value="" disabled selected>Choose Product</option>
         </select>
-        <label for="productName">Product Name</label>
+        <label for="productName">Product</label>
       </div>
     </div>
 
+    <!-- Row 3: Quantity inputs -->
+    <div class="row" id="quantity-inputs-wrapper">
+      <div class="input-field col s12 m6" id="packs-input-field">
+        <input type="number" id="assignPacks" min="1" step="1" required />
+        <label for="assignPacks">Number of Packs</label>
+      </div>
+
+      <div
+        class="input-field col s12 m6"
+        id="container-input-field"
+        style="display: none"
+      >
+        <input type="number" id="assignContainer" min="1" step="1" required />
+        <label for="assignContainer">Number of Containers</label>
+      </div>
+
+      <div
+        class="input-field col s12 m6"
+        id="pieces-input-field"
+        style="display: none"
+      >
+        <input type="number" id="assignPieces" min="1" step="1" required />
+        <label for="assignPieces">Number of Pieces</label>
+      </div>
+
+      <div class="input-field col s12 m6" id="equivalent-field">
+        <input type="number" id="assignEquivalent" readonly />
+        <label for="assignEquivalent">Equivalent Total</label>
+      </div>
+    </div>
+
+    <!-- Row 4: Price | Available Packs -->
     <div class="row">
       <div class="input-field col s12 m6">
         <input type="number" id="productPrice" step="0.01" min="0" readonly />
         <label for="productPrice">Product Price (₱)</label>
       </div>
 
-      <div class="input-field col s12 m6">
-        <input type="number" id="container" readonly />
-        <label for="container">Stock Container</label>
-      </div>
-
-      <div class="input-field col s12 m6">
+      <div class="input-field col s12 m6" id="available-packs-box">
         <input type="number" id="availablePacks" readonly />
         <label for="availablePacks">Available Packs</label>
       </div>
+    </div>
 
-      <div class="input-field col s12 m6 stock-with-unit">
+    <!-- Row 5: Available Stock -->
+    <div class="row">
+      <div
+        class="input-field col s12 m6 stock-with-unit"
+        id="available-stock-box"
+      >
         <input type="number" id="availableStock" readonly />
         <label for="availableStock" id="availableStockLabel"
           >Available Pieces</label
@@ -55,25 +88,8 @@
       </div>
     </div>
 
-    <div class="row">
-      <div class="input-field col s12 m6">
-        <input type="number" id="assignPacks" min="1" step="1" required />
-        <label for="assignPacks">Quantity of the Product</label>
-      </div>
-
-      <div class="input-field col s12 m6">
-        <input type="number" id="assignPieces" readonly />
-        <label for="assignPieces">Equivalent of the assign total product</label>
-      </div>
-    </div>
-
     <div class="save-btn-wrapper">
-      <button
-        type="submit"
-        class="btn save-menu-btn"
-        id="addProductBtn"
-        disabled
-      >
+      <button type="submit" class="btn save-menu-btn" id="addProductBtn">
         <i class="material-icons">add</i>
         <span>Add Product</span>
       </button>
@@ -83,14 +99,43 @@
 
 <!-- ==================== PRODUCT LIST ==================== -->
 <section class="card inventory-card product-list-card">
-  <h4>Product List</h4>
+  <div class="product-list-header">
+    <h4>Product List</h4>
+    <button
+      id="btn-product-history-assign"
+      class="btn waves-effect waves-light"
+      style="background: #2196f3"
+    >
+      <i class="material-icons left">history</i> Product History
+    </button>
+  </div>
 
-  <div class="row">
-    <div class="input-field col s12 m6">
-      <select id="filterRole">
-        <option value="" selected>All Roles</option>
+  <!-- SEARCH CATALOG -->
+  <div class="search-catalog-wrapper">
+    <div class="search-container">
+      <div class="search-input-wrapper">
+        <i class="material-icons search-icon">search</i>
+        <input
+          type="text"
+          id="searchAssignProduct"
+          placeholder="Search products..."
+          class="search-input"
+          autocomplete="off"
+        />
+        <button
+          id="clearAssignSearch"
+          class="clear-search-btn"
+          style="display: none"
+        >
+          <i class="material-icons">close</i>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-category-wrapper">
+      <label for="filterRole">Filter by Role</label>
+      <select id="filterRole" class="browser-default">
       </select>
-      <label>Filter by Role</label>
     </div>
   </div>
 
@@ -104,16 +149,26 @@
           <th>Pieces</th>
           <th>Role</th>
           <th>Employee</th>
+          <th>Expected Income</th>
           <th>Actions</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody>
+        <!-- Dynamically loaded -->
+      </tbody>
     </table>
     <div class="employee-footer">
       <div>Showing <strong id="productShowingCount">0</strong> Products</div>
       <div class="employee-pagination" id="productPagination">
-        <a class="btn-flat disabled">Previous</a>
-        <a class="btn-flat">Next</a>
+        <a class="btn-flat disabled"
+          ><i class="material-icons">chevron_left</i> PREVIOUS</a
+        >
+        <span
+          id="productPageNumber"
+          style="font-weight: 600; min-width: 100px; text-align: center"
+          >Page 1 of 1</span
+        >
+        <a class="btn-flat">NEXT <i class="material-icons">chevron_right</i></a>
       </div>
     </div>
   </div>
@@ -123,29 +178,24 @@
 <div id="modal-edit-product" class="modal">
   <div class="modal-content">
     <h4>Update Product</h4>
-
     <form id="updateProductForm">
       <input type="hidden" id="updateProductId" />
-
       <div class="row">
         <div class="input-field col s12">
           <input type="text" id="edit-name" required />
           <label for="edit-name">Product Name</label>
         </div>
       </div>
-
       <div class="row">
         <div class="input-field col s12 m6">
           <input type="number" id="edit-price" step="0.01" min="0" required />
           <label for="edit-price">Product Price (₱)</label>
         </div>
-
         <div class="input-field col s12 m6">
-          <input type="number" id="edit-stock" min="0" required />
+          <input type="number" id="edit-stock" min="0" step="0.01" required />
           <label for="edit-stock">Stock</label>
         </div>
       </div>
-
       <div class="modal-footer">
         <button type="button" id="edit-cancel" class="modal-close btn-flat">
           Cancel
@@ -158,7 +208,81 @@
   </div>
 </div>
 
-<!-- DELETE CONFIRMATION -->
+<!-- ==================== PRODUCT HISTORY MODAL ==================== -->
+<div id="modal-product-history-assign" class="modal modal-fixed-footer">
+  <div class="modal-content">
+    <h4>
+      <i class="material-icons left">history</i> Product History (Completed)
+    </h4>
+    <p style="color: var(--text-secondary); margin-bottom: 20px">
+      Products that have been fully sold out (stock = 0).
+    </p>
+    <div class="table-container">
+      <table class="striped responsive-table">
+        <thead>
+          <tr>
+            <th>Product Name</th>
+            <th>Role</th>
+            <th>Employee</th>
+            <th>Stock</th>
+            <th>Price</th>
+            <th>Total Income</th>
+            <th>Date Completed</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="history-assign-table-body"></tbody>
+      </table>
+    </div>
+    <div
+      class="pagination-wrapper"
+      style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        flex-wrap: wrap;
+        gap: 10px;
+        border-top: 1px solid var(--border);
+        margin-top: 15px;
+      "
+    >
+      <div
+        id="history-assign-info"
+        style="font-size: 14px; color: var(--text-secondary)"
+      >
+        Showing: 0 records
+      </div>
+      <div
+        class="pagination-controls"
+        style="display: flex; align-items: center; gap: 10px"
+      >
+        <button id="history-assign-prev" class="btn-flat waves-effect" disabled>
+          <i class="material-icons">chevron_left</i> PREVIOUS
+        </button>
+        <span
+          id="history-assign-page"
+          style="
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+            min-width: 100px;
+            text-align: center;
+          "
+          >Page 1 of 1</span
+        >
+        <button id="history-assign-next" class="btn-flat waves-effect" disabled>
+          NEXT <i class="material-icons">chevron_right</i>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="modal-close btn-flat">Close</button>
+  </div>
+</div>
+
+<!-- ==================== DELETE CONFIRMATION ==================== -->
 <div id="modal-delete-category" class="modal">
   <div class="modal-content">
     <h4 id="delete-confirmation-title">Delete category?</h4>
@@ -166,7 +290,6 @@
       This category will be permanently deleted. You cannot delete a category
       that still has products.
     </p>
-
     <div class="modal-footer">
       <button
         id="cancel-delete-category"

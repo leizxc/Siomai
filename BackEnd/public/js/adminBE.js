@@ -668,14 +668,14 @@ export async function addProduct(
     return;
   }
 
-  // Generate unique product ID
   const productId = generateProductId();
 
   const productData = {
-    product_id: productId, // ← ID na ito ang lalabas sa table
+    product_id: productId,
     product_name: normalizedProductName,
     category_id: categoryId,
-    category: categoryData.name,
+    category: categoryData.name, // ✅ IDAGDAG ITO (category name)
+    inv_category: categoryData.name, // ✅ IDAGDAG DIN ITO para sa Product Menu
     role: categoryData.role,
     unit_type: unitType,
     quantity: quantity,
