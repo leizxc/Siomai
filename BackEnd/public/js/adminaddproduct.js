@@ -18,27 +18,49 @@ import { SyncProductFromFirebase } from "/js/IndexDB.js";
 
 await SyncProductFromFirebase();
 
-// global listeners state
 let unsubscribeInventoryOptions = null;
 let unsubscribeProducts = null;
 let unsubscribeProduct = null;
 let unsubscribeRoleFilter = null;
 
-// correctly instead of stacking a broken duplicate dropdown UI.
+const PRODUCT_PAGE_SIZE = 10;
+let productCurrentPage = 1;
+let productListCache = [];
+
 function reinitSelect(selectEl) {
-  if (!selectEl) return;
-  // If the section was navigated away from, functionalnav.js already
-  // replaced #content's innerHTML, so this element may be a detached
-  // node still referenced by a lingering onSnapshot closure. Touching a
-  // detached node is exactly what threw "Cannot set properties of null
-  // (setting 'tabIndex')" — bail out instead of calling into Materialize.
-  if (!selectEl.isConnected) return;
+  if (!selectEl || !selectEl.isConnected) return;
 
   const instance = M.FormSelect.getInstance(selectEl);
-  if (instance) {
-    instance.destroy();
-  }
+  if (instance) instance.destroy();
+
   M.FormSelect.init(selectEl);
+}
+
+// current_stock stays in pieces for the assignment calculation. These extra
+// fields keep the Product Menu document readable as both packs and pieces.
+function buildCurrentQuantityFields(menuData, pieces) {
+  const isPack = menuData.unit === "pack";
+  const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+
+  return {
+    current_stock: pieces,
+    current_pieces: pieces,
+    current_packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
+  };
+}
+
+// Employee products keep pieces for sales, with packs shown alongside them.
+function buildAssignedQuantityFields(menuData, pieces) {
+  const isPack = menuData.unit === "pack";
+  const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+
+  return {
+    stock: pieces,
+    pieces,
+    packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
+    pieces_per_pack: piecesPerPack,
+    unit: menuData.unit || "piece",
+  };
 }
 
 function resetAssignProductForm() {
@@ -53,8 +75,18 @@ function resetAssignProductForm() {
   form.reset();
 
   document.getElementById("productPrice").value = "";
+  document.getElementById("availablePacks").value = "";
   document.getElementById("availableStock").value = "";
-  document.getElementById("assignQuantity").value = "";
+  document.getElementById("assignPacks").value = "";
+  document.getElementById("assignPieces").value = "";
+  const containerEl = document.getElementById("container");
+  if (containerEl) containerEl.value = "";
+  const stockUnitEl = document.getElementById("availableStockUnit");
+  if (stockUnitEl) stockUnitEl.textContent = "";
+
+  // Reset label back to default
+  const stockLabel = document.getElementById("availableStockLabel");
+  if (stockLabel) stockLabel.textContent = "Available Pieces";
 
   const select = document.getElementById("productName");
   select.innerHTML = `<option value="" disabled selected>Choose Product</option>`;
@@ -69,26 +101,25 @@ function loadInventoryOptions(role = "") {
   const select = document.getElementById("productName");
   if (!select) return;
 
-  if (unsubscribeInventoryOptions) {
-    unsubscribeInventoryOptions();
-  }
+  if (unsubscribeInventoryOptions) unsubscribeInventoryOptions();
 
-  let q = collection(db, "inventory");
+  // "ALL" = shared across every role
+  let q = collection(db, "productMenu");
   if (role) {
-    q = query(collection(db, "inventory"), where("role", "==", role));
+    q = query(
+      collection(db, "productMenu"),
+      where("category", "in", [role, "ALL"]),
+    );
   }
 
   unsubscribeInventoryOptions = onSnapshot(q, (snapshot) => {
-    // Guard against a stale snapshot firing after the user navigated away
-    // from product.html — the element still exists in memory (closure)
-    // but is no longer attached to the live DOM.
     if (!select.isConnected) return;
 
     select.innerHTML = `<option value="" disabled selected>Choose Product</option>`;
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data.status === "On Selling") return;
+      if (data.status !== "Available") return;
 
       const option = document.createElement("option");
       option.value = docSnap.id;
@@ -100,27 +131,71 @@ function loadInventoryOptions(role = "") {
   });
 }
 
-// ---------------------------------------------------------
-// all DOM-dependent listeners live in one place and get
-// re-attached every time initProductPage() runs (i.e. every
-// time this section is loaded via loadSection()).
-// ---------------------------------------------------------
+// Keeps the linked "inventory" doc's stock in sync with productMenu.
+// deltaPieces is ALWAYS expressed in pieces (that's the unit productMenu
+// tracks its stock in) — negative on assign, positive on restore/delete.
+async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
+  if (!inventoryId) return;
+
+  const inventoryRef = doc(db, "inventory", inventoryId);
+  const inventorySnap = await getDoc(inventoryRef);
+  if (!inventorySnap.exists()) return;
+
+  const invData = inventorySnap.data();
+
+  let piecesPerPack = 1;
+  let deltaInInventoryUnit = deltaPieces;
+
+  if (invData.unit_type === "pack") {
+    const categorySnap = await getDoc(
+      doc(db, "categoriesINV", invData.category_id),
+    );
+    piecesPerPack = categorySnap.exists()
+      ? categorySnap.data().pieces_per_pack || 1
+      : 1;
+    deltaInInventoryUnit = deltaPieces / piecesPerPack;
+  } else if (invData.unit_type === "kg" || invData.unit_type === "liter") {
+    // kg at liter — direktang delta, walang conversion
+    deltaInInventoryUnit = deltaPieces;
+  }
+
+  const newQuantity = (invData.quantity || 0) + deltaInInventoryUnit;
+
+  const newStockQuantity =
+    invData.unit_type === "pack" ? newQuantity * piecesPerPack : newQuantity;
+
+  await updateDoc(inventoryRef, {
+    quantity: newQuantity,
+    stock_quantity: newStockQuantity,
+    status: newQuantity <= 0 ? "On Selling" : "Available",
+    last_updated: serverTimestamp(),
+  });
+}
+
 function bindProductFormListeners() {
   const productRole = document.getElementById("productRole");
   const productName = document.getElementById("productName");
   const addProductForm = document.getElementById("addProductForm");
 
   productRole.addEventListener("change", (e) => {
-    const role = e.target.value;
-
     document.getElementById("productName").innerHTML =
       `<option value="" disabled selected>Choose Product</option>`;
     document.getElementById("productPrice").value = "";
+    document.getElementById("availablePacks").value = "";
     document.getElementById("availableStock").value = "";
-    document.getElementById("assignQuantity").value = "";
+    document.getElementById("assignPacks").value = "";
+    document.getElementById("assignPieces").value = "";
+    const containerEl = document.getElementById("container");
+    if (containerEl) containerEl.value = "";
+    const stockUnitEl = document.getElementById("availableStockUnit");
+    if (stockUnitEl) stockUnitEl.textContent = "";
+
+    // Reset label
+    const stockLabel = document.getElementById("availableStockLabel");
+    if (stockLabel) stockLabel.textContent = "Available Pieces";
 
     M.updateTextFields();
-    loadInventoryOptions(role);
+    loadInventoryOptions(e.target.value);
   });
 
   productName.addEventListener("change", (e) => {
@@ -129,126 +204,346 @@ function bindProductFormListeners() {
 
     if (unsubscribeProduct) {
       unsubscribeProduct();
+      unsubscribeProduct = null;
     }
 
-    unsubscribeProduct = onSnapshot(doc(db, "inventory", id), (snap) => {
+    unsubscribeProduct = onSnapshot(doc(db, "productMenu", id), (snap) => {
       const priceEl = document.getElementById("productPrice");
       const stockEl = document.getElementById("availableStock");
-      // Same stale-listener guard as elsewhere: bail if the page was
-      // navigated away from before this snapshot callback fired.
+      const stockUnitEl = document.getElementById("availableStockUnit");
+      const containerEl = document.getElementById("container");
+      const stockLabel = document.getElementById("availableStockLabel");
+
+      const assignPacksInput = document.getElementById("assignPacks");
+      const assignPiecesInput = document.getElementById("assignPieces");
+
       if (!priceEl || !priceEl.isConnected) return;
       if (!snap.exists()) return;
 
       const data = snap.data();
-      priceEl.value = data.unit_price;
+      const unit = (data.unit || "piece").toLowerCase();
 
-      if (data.unit_type === "pack") {
-        stockEl.value = data.quantity;
+      /*
+       * IMPORTANT:
+       * Lahat ng available stock ay manggagaling
+       * mismo sa productMenu document.
+       */
+      const pieces = Number(data.current_pieces ?? data.current_stock) || 0;
+      const currentStock = Number(data.current_stock ?? 0) || 0;
+      const piecesPerPack = Number(data.pieces_per_pack) || 1;
+
+      priceEl.value = data.price;
+
+      /*
+       * =========================
+       * PACK PRODUCT
+       * =========================
+       */
+      if (unit === "pack") {
+        const availablePacks = Math.floor(pieces / piecesPerPack);
+
+        stockEl.value = pieces;
+        document.getElementById("availablePacks").value = availablePacks;
+
+        if (stockLabel) stockLabel.textContent = "Available Pieces";
+
+        if (assignPacksInput) {
+          assignPacksInput.style.display = "";
+          assignPacksInput.disabled = false;
+
+          assignPacksInput.dataset.unit = "pack";
+          assignPacksInput.dataset.piecesPerPack = piecesPerPack;
+          assignPacksInput.dataset.maxPacks = availablePacks;
+
+          assignPacksInput.max = availablePacks;
+          assignPacksInput.step = "1";
+          assignPacksInput.value = "";
+        }
+
+        if (assignPiecesInput) {
+          assignPiecesInput.value = "";
+          assignPiecesInput.readOnly = true;
+        }
+
+        if (stockUnitEl) {
+          stockUnitEl.textContent = "PACK";
+        }
+      } else if (unit === "kg") {
+        /*
+         * =========================
+         * KG PRODUCT
+         * =========================
+         */
+        stockEl.value = currentStock;
+        document.getElementById("availablePacks").value = "";
+
+        // Change label to Available Stock (KG)
+        if (stockLabel) {
+          stockLabel.textContent = "Available Stock (KG)";
+        }
+
+        if (stockUnitEl) {
+          stockUnitEl.textContent = "KG";
+        }
+
+        const kalderoCount = Number(data.kaldero_count) || 0;
+
+        if (assignPacksInput) {
+          assignPacksInput.style.display = "";
+          assignPacksInput.disabled = false;
+
+          assignPacksInput.dataset.unit = "kg";
+          assignPacksInput.dataset.maxKg = currentStock;
+          assignPacksInput.dataset.maxKaldero = kalderoCount;
+
+          // Limit by the smaller of stock or kaldero
+          if (kalderoCount > 0) {
+            assignPacksInput.max = Math.min(currentStock, kalderoCount);
+          } else {
+            assignPacksInput.max = currentStock;
+          }
+
+          assignPacksInput.step = "0.01";
+          assignPacksInput.value = "";
+        }
+
+        if (assignPiecesInput) {
+          assignPiecesInput.value = "";
+          assignPiecesInput.readOnly = true;
+        }
+
+        // Show kaldero/container info
+        if (containerEl) {
+          containerEl.value = kalderoCount > 0 ? kalderoCount : "";
+        }
       } else {
-        stockEl.value = data.stock_quantity;
+        /*
+         * =========================
+         * PIECE PRODUCT
+         * =========================
+         */
+        stockEl.value = currentStock;
+        document.getElementById("availablePacks").value = "";
+
+        if (stockLabel) stockLabel.textContent = "Available Pieces";
+
+        if (assignPacksInput) {
+          assignPacksInput.style.display = "";
+          assignPacksInput.disabled = false;
+
+          assignPacksInput.dataset.unit = "piece";
+          assignPacksInput.dataset.maxPieces = currentStock;
+
+          assignPacksInput.max = currentStock;
+          assignPacksInput.step = "1";
+          assignPacksInput.value = "";
+        }
+
+        if (assignPiecesInput) {
+          assignPiecesInput.value = "";
+          assignPiecesInput.readOnly = true;
+        }
+
+        if (stockUnitEl) {
+          stockUnitEl.textContent = "PIECE";
+        }
+      }
+
+      /*
+       * KG informational container (already handled above for kg)
+       */
+      if (containerEl && unit !== "kg") {
+        containerEl.value = "";
       }
 
       M.updateTextFields();
     });
   });
 
+  // ==================== QUANTITY INPUT LISTENER ====================
+  document.getElementById("assignPacks").addEventListener("input", (e) => {
+    const input = e.target;
+    const unit = input.dataset.unit || "";
+    const assignPiecesInput = document.getElementById("assignPieces");
+
+    /*
+     * =========================
+     * PACK
+     * =========================
+     */
+    if (unit === "pack") {
+      const packs = Number(input.value) || 0;
+      const piecesPerPack = Number(input.dataset.piecesPerPack) || 1;
+      const maxPacks = Number(input.dataset.maxPacks) || 0;
+
+      if (packs > maxPacks) {
+        input.value = maxPacks;
+      }
+
+      const finalPacks = Number(input.value) || 0;
+      const totalPieces = finalPacks * piecesPerPack;
+
+      if (assignPiecesInput) {
+        assignPiecesInput.value = totalPieces;
+      }
+    } else if (unit === "kg") {
+
+    /*
+     * =========================
+     * KG
+     * =========================
+     */
+      const maxKg = Number(input.dataset.maxKg) || 0;
+      const maxKaldero = Number(input.dataset.maxKaldero) || 0;
+
+      let kg = Number(input.value) || 0;
+
+      // Limit by the smaller of stock or kaldero
+      const hardLimit = maxKaldero > 0 ? Math.min(maxKg, maxKaldero) : maxKg;
+
+      if (kg > hardLimit) {
+        kg = hardLimit;
+        input.value = hardLimit;
+      }
+
+      // KG does NOT convert to pieces
+      if (assignPiecesInput) {
+        assignPiecesInput.value = "";
+      }
+    } else if (unit === "piece") {
+
+    /*
+     * =========================
+     * PIECE
+     * =========================
+     */
+      const maxPieces = Number(input.dataset.maxPieces) || 0;
+      let pieces = Number(input.value) || 0;
+
+      if (pieces > maxPieces) {
+        pieces = maxPieces;
+        input.value = maxPieces;
+      }
+
+      if (assignPiecesInput) {
+        assignPiecesInput.value = pieces;
+      }
+    }
+
+    M.updateTextFields();
+  });
+
+  // ==================== FORM SUBMIT ====================
   addProductForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const inventoryId = document.getElementById("productName").value;
+    const menuId = document.getElementById("productName").value;
     const employeeId = document.getElementById("productEmployee").value;
     const role = document.getElementById("productRole").value;
-    const quantity = parseInt(document.getElementById("assignQuantity").value);
+    const packsToAssign = Number(document.getElementById("assignPacks").value);
 
-    if (!inventoryId) {
-      console.error("inventoryId is empty");
+    if (!menuId) return;
+
+    const menuRef = doc(db, "productMenu", menuId);
+    const menuSnap = await getDoc(menuRef);
+    if (!menuSnap.exists()) {
+      M.toast({ html: "Product not found.", classes: "red rounded" });
       return;
     }
 
-    const invRef = doc(db, "inventory", inventoryId);
-    const invSnap = await getDoc(invRef);
-    const invData = invSnap.data();
+    const menuData = menuSnap.data();
+    const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+    const isKg = (menuData.unit || "").toLowerCase() === "kg";
+    const quantity = isKg ? packsToAssign : packsToAssign * piecesPerPack;
 
-    let employeeCount = 1;
+    const isValidQty = isKg
+      ? !isNaN(packsToAssign) && packsToAssign > 0
+      : Number.isInteger(packsToAssign) && packsToAssign > 0;
+
+    if (!isValidQty) {
+      M.toast({
+        html: isKg
+          ? "Enter a valid kg amount."
+          : "Enter a valid number of packs.",
+        classes: "red rounded",
+      });
+      return;
+    }
+
+    let targetEmployees = [{ id: employeeId }];
     if (employeeId === "") {
       const q = query(collection(db, "employees"), where("role", "==", role));
       const employeeSnap = await getDocs(q);
-      employeeCount = employeeSnap.size;
+      targetEmployees = employeeSnap.docs;
     }
 
-    const totalAssigned = quantity * employeeCount;
-
-    if (invData.unit_type === "pack") {
-      if (invData.quantity < totalAssigned) {
-        M.toast({ html: "Not enough stock!", classes: "red rounded" });
-        return;
-      }
-    } else {
-      if (invData.stock_quantity < totalAssigned) {
-        M.toast({ html: "Not enough stock!", classes: "red rounded" });
-        return;
-      }
+    if (targetEmployees.length === 0) {
+      M.toast({
+        html: "No employees found for this role.",
+        classes: "red rounded",
+      });
+      return;
     }
 
-    let newQuantity;
-    let newStockQuantity;
+    const totalAssigned = quantity * targetEmployees.length;
 
-    if (invData.unit_type === "pack") {
-      const categorySnap = await getDoc(
-        doc(db, "categoriesINV", invData.category_id),
-      );
-      const piecesPerPack = categorySnap.data().pieces_per_pack;
-
-      newQuantity = invData.quantity - totalAssigned;
-      newStockQuantity = newQuantity * piecesPerPack;
-    } else {
-      newQuantity = invData.quantity - totalAssigned;
-      newStockQuantity = newQuantity;
+    if (menuData.current_stock < totalAssigned) {
+      M.toast({ html: "Not enough stock!", classes: "red rounded" });
+      return;
     }
 
-    await updateDoc(invRef, {
-      quantity: newQuantity,
-      stock_quantity: newStockQuantity,
-      status: newQuantity <= 0 ? "On Selling" : "Available",
-      // Marks this item as "currently assigned to an employee" the
-      // moment ANY quantity is assigned — regardless of how much
-      // warehouse stock is left. adminBE.js's inventory table uses
-      // this (not `status` above) to decide when to show "On Selling",
-      // and keeps showing it even once quantity hits 0.
+    const newStock = menuData.current_stock - totalAssigned;
+
+    await updateDoc(menuRef, {
+      ...buildCurrentQuantityFields(menuData, newStock),
+      status: newStock <= 0 ? "On Selling" : "Available",
       assigned: true,
       last_updated: serverTimestamp(),
     });
 
-    if (employeeId === "") {
-      const employeeQuery = query(
-        collection(db, "employees"),
-        where("role", "==", role),
-      );
-      const employeeSnap = await getDocs(employeeQuery);
+    // totalAssigned is in pieces — adjustLinkedInventoryStock converts it
+    // to the inventory item's own unit (packs, kg, liter, etc.) internally.
+    await adjustLinkedInventoryStock(menuData.inventory_id, -totalAssigned);
 
-      for (const employee of employeeSnap.docs) {
+    // Reuse an existing employee/product row instead of creating duplicates.
+    // One productMenu item may have only one row per employee.
+    const assignedProductsSnap = await getDocs(
+      query(collection(db, "products"), where("inventoryId", "==", menuId)),
+    );
+    const existingByEmployee = new Map();
+    assignedProductsSnap.forEach((productSnap) => {
+      const product = productSnap.data();
+      if (product.employeeId && !existingByEmployee.has(product.employeeId)) {
+        existingByEmployee.set(product.employeeId, productSnap);
+      }
+    });
+
+    for (const employee of targetEmployees) {
+      const existingProduct = existingByEmployee.get(employee.id);
+
+      if (existingProduct) {
+        const existingData = existingProduct.data();
+        const updatedPieces =
+          (Number(existingData.pieces ?? existingData.stock) || 0) + quantity;
+
+        await updateDoc(existingProduct.ref, {
+          name: menuData.product_name,
+          price: menuData.price,
+          role,
+          ...buildAssignedQuantityFields(menuData, updatedPieces),
+          last_updated: serverTimestamp(),
+        });
+      } else {
         await addDoc(collection(db, "products"), {
-          name: invData.product_name,
-          price: invData.unit_price,
+          name: menuData.product_name,
+          price: menuData.price,
           role,
           employeeId: employee.id,
-          stock: quantity,
-          inventoryId,
-          unit_type: invData.unit_type,
+          ...buildAssignedQuantityFields(menuData, quantity),
+          inventoryId: menuId,
           assigned_at: serverTimestamp(),
         });
       }
-    } else {
-      await addDoc(collection(db, "products"), {
-        name: invData.product_name,
-        price: invData.unit_price,
-        role,
-        employeeId,
-        stock: quantity,
-        inventoryId,
-        unit_type: invData.unit_type,
-        assigned_at: serverTimestamp(),
-      });
     }
 
     M.toast({
@@ -276,11 +571,308 @@ export async function loadProducts() {
     employeesMap[docSnap.id] = docSnap.data();
   });
 
-  // Populate "Filter by Role" with only the roles that currently have
-  // at least one assigned product. Live-updates via onSnapshot so a
-  // newly-assigned role appears (or an emptied-out role disappears)
-  // without needing to refresh the page.
   loadRoleFilterOptions(filterRole);
+
+  function bindRowButtons() {
+    tbody.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.onclick = async () => {
+        const id = btn.dataset.id;
+
+        const confirmed = await confirmDeletion(
+          "Delete Product?",
+          "This product will be permanently deleted.",
+        );
+        if (!confirmed) return;
+
+        try {
+          const productRef = doc(db, "products", id);
+          const productSnap = await getDoc(productRef);
+          if (!productSnap.exists()) throw new Error("Product Not Found!");
+
+          const productData = productSnap.data();
+
+          if (!productData.inventoryId) {
+            await deleteDoc(productRef);
+            M.toast({
+              html: "Product deleted but stock cannot be restored.",
+              classes: "orange rounded",
+            });
+            return;
+          }
+
+          const menuRef = doc(db, "productMenu", productData.inventoryId);
+          const menuCheckSnap = await getDoc(menuRef);
+
+          if (!menuCheckSnap.exists()) {
+            await deleteDoc(productRef);
+            M.toast({
+              html: "Product deleted (stock not restored — menu entry was gone).",
+              classes: "orange rounded",
+            });
+            return;
+          }
+
+          const restoredPieces =
+            Number(productData.pieces ?? productData.stock) || 0;
+
+          await runTransaction(db, async (transaction) => {
+            const menuSnap = await transaction.get(menuRef);
+            if (!menuSnap.exists())
+              throw new Error("Product menu entry not found");
+
+            const menuData = menuSnap.data();
+            const restoredStock =
+              (menuData.current_stock || 0) + restoredPieces;
+
+            transaction.update(menuRef, {
+              ...buildCurrentQuantityFields(menuData, restoredStock),
+              status: restoredStock <= 0 ? "On Selling" : "Available",
+              last_updated: serverTimestamp(),
+            });
+
+            transaction.delete(productRef);
+          });
+
+          await adjustLinkedInventoryStock(
+            productData.inventoryId,
+            restoredPieces,
+          );
+
+          const remainingQuery = query(
+            collection(db, "products"),
+            where("inventoryId", "==", productData.inventoryId),
+          );
+          const remainingSnap = await getDocs(remainingQuery);
+          if (remainingSnap.empty) {
+            await updateDoc(menuRef, { assigned: false });
+          }
+
+          await SyncProductFromFirebase();
+
+          M.toast({
+            html: "Product deleted successfully!",
+            classes: "green rounded",
+          });
+          resetAssignProductForm();
+        } catch (err) {
+          console.error("Delete error:", err);
+          M.toast({
+            html: "Failed to delete Product.",
+            classes: "red rounded",
+          });
+        }
+      };
+    });
+
+    tbody.querySelectorAll(".edit-btn").forEach((btn) => {
+      btn.onclick = async (e) => {
+        const id = e.target.closest("button").dataset.id;
+        const row = e.target.closest("tr");
+
+        document.getElementById("edit-name").value =
+          row.children[0].textContent;
+        document.getElementById("edit-price").value =
+          row.children[1].textContent.replace("₱", "");
+        document.getElementById("edit-stock").value =
+          row.children[3].textContent;
+
+        M.updateTextFields();
+
+        const modalElem = document.getElementById("modal-edit-product");
+        let modalInstance = M.Modal.getInstance(modalElem);
+        if (!modalInstance) modalInstance = M.Modal.init(modalElem);
+        modalInstance.open();
+
+        const productRef = doc(db, "products", id);
+        const productSnap = await getDoc(productRef);
+        const oldData = productSnap.data();
+        const oldStock = Number(oldData.pieces ?? oldData.stock) || 0;
+        const saveBtn = document.getElementById("edit-save");
+
+        saveBtn.onclick = async () => {
+          const newName = document.getElementById("edit-name").value;
+          const newPrice = parseFloat(
+            document.getElementById("edit-price").value,
+          );
+          const rawStock = document.getElementById("edit-stock").value;
+          const newStock =
+            oldData.unit === "kg"
+              ? parseFloat(rawStock)
+              : parseInt(rawStock, 10);
+          const diff = newStock - oldStock;
+
+          const menuRef = doc(db, "productMenu", oldData.inventoryId);
+          const menuSnap = await getDoc(menuRef);
+          const menuData = menuSnap.data();
+
+          let updatedStock;
+          if (diff > 0) {
+            if (menuData.current_stock < diff) {
+              M.toast({
+                html: "Not enough inventory stock!",
+                classes: "red rounded",
+              });
+              return;
+            }
+            updatedStock = menuData.current_stock - diff;
+          } else {
+            updatedStock = menuData.current_stock + Math.abs(diff);
+          }
+
+          await updateDoc(doc(db, "products", id), {
+            name: newName,
+            price: newPrice,
+            ...buildAssignedQuantityFields(oldData, newStock),
+          });
+
+          await updateDoc(menuRef, {
+            ...buildCurrentQuantityFields(menuData, updatedStock),
+            status: updatedStock <= 0 ? "On Selling" : "Available",
+            last_updated: serverTimestamp(),
+          });
+
+          await adjustLinkedInventoryStock(oldData.inventoryId, -diff);
+
+          if (unsubscribeProduct) {
+            unsubscribeProduct();
+            unsubscribeProduct = null;
+          }
+
+          loadInventoryOptions(document.getElementById("productRole").value);
+
+          M.toast({ html: "Successfully Updated!", classes: "green rounded" });
+          modalInstance.close();
+        };
+      };
+    });
+  }
+
+  function renderProductPage() {
+    if (!tbody.isConnected) return;
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(productListCache.length / PRODUCT_PAGE_SIZE),
+    );
+
+    // Keep current page within valid range
+    if (productCurrentPage > totalPages) {
+      productCurrentPage = totalPages;
+    }
+
+    if (productCurrentPage < 1) {
+      productCurrentPage = 1;
+    }
+
+    const start = (productCurrentPage - 1) * PRODUCT_PAGE_SIZE;
+    const end = start + PRODUCT_PAGE_SIZE;
+
+    const pageItems = productListCache.slice(start, end);
+
+    tbody.innerHTML = "";
+
+    pageItems.forEach(({ id, data, empDisplay }) => {
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+      <td data-label="Product Name">${data.name}</td>
+
+      <td data-label="Price">
+        ₱${parseFloat(data.price).toFixed(2)}
+      </td>
+
+      <td data-label="Packs">
+  ${
+    data.unit === "pack"
+      ? Math.ceil((data.pieces ?? data.stock) / (data.pieces_per_pack || 1))
+      : data.unit === "kg"
+        ? (data.pieces ?? data.stock)
+        : "-"
+  }
+</td>
+
+      <td data-label="Pieces">
+        ${data.pieces ?? data.stock}
+      </td>
+
+      <td data-label="Role">
+        ${data.role}
+      </td>
+
+      <td data-label="Employee">
+        ${empDisplay}
+      </td>
+
+      <td data-label="Action">
+        <button
+          class="btn blue edit-btn"
+          data-id="${id}"
+        >
+          <i class="material-icons">edit</i>
+        </button>
+
+        <button
+          class="btn red delete-btn"
+          data-id="${id}"
+        >
+          <i class="material-icons">delete</i>
+        </button>
+      </td>
+    `;
+
+      tbody.appendChild(row);
+    });
+
+    // Showing count
+    const showingCountEl = document.getElementById("productShowingCount");
+
+    if (showingCountEl) {
+      showingCountEl.textContent = pageItems.length;
+    }
+
+    // Pagination buttons
+    const paginationLinks = document.querySelectorAll("#productPagination a");
+
+    const prevBtn = paginationLinks[0];
+    const nextBtn = paginationLinks[1];
+
+    // Previous
+    if (prevBtn) {
+      prevBtn.classList.toggle("disabled", productCurrentPage <= 1);
+
+      prevBtn.onclick = (e) => {
+        e.preventDefault();
+
+        if (productCurrentPage <= 1) return;
+
+        productCurrentPage--;
+        renderProductPage();
+      };
+    }
+
+    // Next
+    if (nextBtn) {
+      nextBtn.classList.toggle("disabled", productCurrentPage >= totalPages);
+
+      nextBtn.onclick = (e) => {
+        e.preventDefault();
+
+        if (productCurrentPage >= totalPages) return;
+
+        productCurrentPage++;
+        renderProductPage();
+      };
+    }
+
+    // Optional page number display
+    const pageNumberEl = document.getElementById("productPageNumber");
+
+    if (pageNumberEl) {
+      pageNumberEl.textContent = `Page ${productCurrentPage} of ${totalPages}`;
+    }
+
+    bindRowButtons();
+  }
 
   function renderProducts(employeeId = "", role = "") {
     if (unsubscribeProducts) {
@@ -291,282 +883,69 @@ export async function loadProducts() {
     let q = collection(db, "products");
 
     if (employeeId) {
-      const empRole = employeesMap[employeeId].role;
-      q = query(collection(db, "products"), where("role", "==", empRole));
+      const empRole = employeesMap[employeeId]?.role;
+
+      if (empRole) {
+        q = query(collection(db, "products"), where("role", "==", empRole));
+      }
     } else if (role) {
       q = query(collection(db, "products"), where("role", "==", role));
     }
 
     unsubscribeProducts = onSnapshot(q, (querySnapshot) => {
-      // Stale-listener guard: if we navigated away from product.html,
-      // #productTable's tbody no longer exists in the live DOM.
       if (!tbody.isConnected) return;
 
-      tbody.innerHTML = "";
+      productListCache = [];
+
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
 
-        if (!employeeId || !data.employeeId || data.employeeId === employeeId) {
-          const empData = employeesMap[data.employeeId] || {};
-          const empDisplay = empData.fname
-            ? `${empData.fname} ${empData.lname} (${empData.role})`
-            : "-";
-
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td data-label="Product Name">${data.name}</td>
-            <td data-label="Price">₱${parseFloat(data.price).toFixed(2)}</td>
-            <td data-label="Stock">${data.stock}</td>
-            <td data-label="Role">${data.role}</td>
-            <td data-label="Employee">${empDisplay}</td>
-            <td data-label="Action">
-              <button class="btn blue edit-btn" data-id="${docSnap.id}">
-                <i class="material-icons">edit</i>
-              </button>
-              <button class="btn red delete-btn" data-id="${docSnap.id}">
-                <i class="material-icons">delete</i>
-              </button>
-            </td>
-          `;
-          tbody.appendChild(row);
+        // Employee filter
+        if (employeeId && data.employeeId && data.employeeId !== employeeId) {
+          return;
         }
+
+        const empData = employeesMap[data.employeeId] || {};
+
+        const empDisplay = empData.fname
+          ? `${empData.fname} ${empData.lname}`
+          : "-";
+
+        // Store data in cache
+        productListCache.push({
+          id: docSnap.id,
+          data,
+          empDisplay,
+        });
       });
 
-      document.querySelectorAll(".delete-btn").forEach((btn) => {
-        btn.onclick = async () => {
-          const id = btn.dataset.id;
+      // Reset to first page whenever data/filter changes
+      productCurrentPage = 1;
 
-          const confirmed = await confirmDeletion(
-            "Delete Product?",
-            "This product will be permanently deleted.",
-          );
-
-          if (confirmed) {
-            try {
-              const productRef = doc(db, "products", id);
-              const productSnap = await getDoc(productRef);
-              if (!productSnap.exists()) {
-                throw new Error("Product Not Found!");
-              }
-
-              const productData = productSnap.data();
-
-              if (!productData.inventoryId) {
-                await deleteDoc(productRef);
-                M.toast({
-                  html: "Product deleted but stock cannot be restored.",
-                  classes: "orange rounded",
-                });
-                return;
-              }
-
-              const inventoryRef = doc(
-                db,
-                "inventory",
-                productData.inventoryId,
-              );
-
-              await runTransaction(db, async (transaction) => {
-                const inventorySnap = await transaction.get(inventoryRef);
-                if (!inventorySnap.exists()) {
-                  throw new Error("Inventory not found");
-                }
-
-                const invData = inventorySnap.data();
-                let restoreQuantity = invData.quantity + productData.stock;
-                let restoreStockQuantity;
-
-                if (invData.unit_type === "pack") {
-                  const categorySnap = await getDoc(
-                    doc(db, "categoriesINV", invData.category_id),
-                  );
-                  const piecesPerPack = categorySnap.data().pieces_per_pack;
-                  restoreStockQuantity = restoreQuantity * piecesPerPack;
-                } else {
-                  restoreStockQuantity = restoreQuantity;
-                }
-
-                transaction.update(inventoryRef, {
-                  quantity: restoreQuantity,
-                  stock_quantity: restoreStockQuantity,
-                  status: restoreQuantity <= 0 ? "On Selling" : "Available",
-                  last_updated: serverTimestamp(),
-                });
-
-                transaction.delete(productRef);
-              });
-
-              // Only revert "assigned" back to false once NO other
-              // assignment still references this inventory item —
-              // deleting one employee's assignment shouldn't turn off
-              // "On Selling" for an item that's still assigned to
-              // other employees.
-              const remainingAssignmentsQuery = query(
-                collection(db, "products"),
-                where("inventoryId", "==", productData.inventoryId),
-              );
-              const remainingAssignmentsSnap = await getDocs(
-                remainingAssignmentsQuery,
-              );
-
-              if (remainingAssignmentsSnap.empty) {
-                await updateDoc(inventoryRef, { assigned: false });
-              }
-
-              await SyncProductFromFirebase();
-
-              M.toast({
-                html: "Product deleted successfully!",
-                classes: "green rounded",
-              });
-              resetAssignProductForm();
-            } catch (err) {
-              console.error("Delete error:", err);
-              M.toast({
-                html: "Failed to delete Product.",
-                classes: "red rounded",
-              });
-            }
-          }
-        };
-      });
-
-      document.querySelectorAll(".edit-btn").forEach((btn) => {
-        btn.onclick = async (e) => {
-          const id = e.target.closest("button").dataset.id;
-          const row = e.target.closest("tr");
-
-          document.getElementById("edit-name").value =
-            row.children[0].textContent;
-          document.getElementById("edit-price").value =
-            row.children[1].textContent.replace("₱", "");
-          document.getElementById("edit-stock").value =
-            row.children[2].textContent;
-
-          M.updateTextFields();
-
-          const modalElem = document.getElementById("modal-edit-product");
-          // Reuse the existing instance instead of re-initializing — a
-          // fresh M.Modal.init() on an already-initialized modal creates
-          // a duplicate overlay and desyncs open/close (same class of
-          // bug that hit the Add Product modal in adminBE.js).
-          let modalInstance = M.Modal.getInstance(modalElem);
-          if (!modalInstance) {
-            modalInstance = M.Modal.init(modalElem);
-          }
-          modalInstance.open();
-
-          const productRef = doc(db, "products", id);
-          const productSnap = await getDoc(productRef);
-          const oldData = productSnap.data();
-          const oldStock = oldData.stock;
-          const saveBtn = document.getElementById("edit-save");
-
-          saveBtn.onclick = async () => {
-            const newName = document.getElementById("edit-name").value;
-            const newPrice = parseFloat(
-              document.getElementById("edit-price").value,
-            );
-            const newStock = parseInt(
-              document.getElementById("edit-stock").value,
-            );
-            const diff = newStock - oldStock;
-
-            const inventoryRef = doc(db, "inventory", oldData.inventoryId);
-            const inventorySnap = await getDoc(inventoryRef);
-            const inventoryData = inventorySnap.data();
-
-            let updatedQuantity;
-
-            if (diff > 0) {
-              if (inventoryData.quantity < diff) {
-                M.toast({
-                  html: "Not enough inventory stock!",
-                  classes: "red rounded",
-                });
-                return;
-              }
-              updatedQuantity = inventoryData.quantity - diff;
-            } else {
-              updatedQuantity = inventoryData.quantity + Math.abs(diff);
-            }
-
-            let updatedStockQuantity;
-
-            if (inventoryData.unit_type === "pack") {
-              const categorySnap = await getDoc(
-                doc(db, "categoriesINV", inventoryData.category_id),
-              );
-              const piecesPerPack = categorySnap.data().pieces_per_pack;
-              updatedStockQuantity = updatedQuantity * piecesPerPack;
-            } else {
-              updatedStockQuantity = updatedQuantity;
-            }
-
-            await updateDoc(doc(db, "products", id), {
-              name: newName,
-              price: newPrice,
-              stock: newStock,
-            });
-
-            await updateDoc(inventoryRef, {
-              quantity: updatedQuantity,
-              stock_quantity: updatedStockQuantity,
-              status: updatedQuantity <= 0 ? "On Selling" : "Available",
-              last_updated: serverTimestamp(),
-            });
-
-            if (unsubscribeProduct) {
-              unsubscribeProduct();
-              unsubscribeProduct = null;
-            }
-
-            loadInventoryOptions(document.getElementById("productRole").value);
-
-            M.toast({
-              html: "Successfully Updated!",
-              classes: "green rounded",
-            });
-            modalInstance.close();
-          };
-        };
-      });
+      // Render only current page
+      renderProductPage();
     });
   }
-
   renderProducts();
 
   filterRole.addEventListener("change", () => {
-    const selectedRole = document.getElementById("filterRole").value;
-    renderProducts("", selectedRole);
+    renderProducts("", document.getElementById("filterRole").value);
   });
 }
 
-// Keeps the "Filter by Role" dropdown in sync with the roles that
-// actually have at least one assigned product right now, updating
-// live whenever the "products" collection changes.
 function loadRoleFilterOptions(filterRoleSelect) {
-  if (unsubscribeRoleFilter) {
-    unsubscribeRoleFilter();
-  }
+  if (unsubscribeRoleFilter) unsubscribeRoleFilter();
 
   unsubscribeRoleFilter = onSnapshot(collection(db, "products"), (snapshot) => {
-    // Stale-listener guard: skip if the dropdown was removed from the
-    // DOM because the user navigated to a different section.
     if (!filterRoleSelect.isConnected) return;
 
     const roles = new Set();
-
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data.role) {
-        roles.add(data.role.trim());
-      }
+      if (data.role) roles.add(data.role.trim());
     });
 
-    // preserve the currently selected filter value across re-renders
     const previousValue = filterRoleSelect.value;
-
     filterRoleSelect.innerHTML = `<option value="" selected>All Roles</option>`;
     roles.forEach((role) => {
       filterRoleSelect.innerHTML += `<option value="${role}">${role}</option>`;
@@ -588,7 +967,6 @@ function confirmDeletion(title, message) {
   const messageElement = document.getElementById("delete-confirmation-message");
 
   const modalInstance = M.Modal.getInstance(modalElement);
-
   titleElement.textContent = title;
   messageElement.textContent = message;
 
@@ -597,44 +975,43 @@ function confirmDeletion(title, message) {
       modalInstance.close();
       resolve(false);
     };
-
     confirmButton.onclick = () => {
       modalInstance.close();
       resolve(true);
     };
-
     modalInstance.open();
   });
 }
 
-// ---------------------------------------------------------
-// This is the entry point called every single time
-// loadSection('product.html') runs. It now re-binds all
-// the listeners against the freshly-injected DOM elements.
-// ---------------------------------------------------------
-export async function initProductPage() {
-  M.Modal.init(document.querySelectorAll(".modal"), {
-    dismissible: false,
+async function loadRoles() {
+  const roleSelect = document.getElementById("productRole");
+  const snap = await getDocs(collection(db, "employees"));
+  const roles = new Set();
+
+  roleSelect.innerHTML = `<option value="" disabled selected>Choose Role</option>`;
+
+  snap.forEach((docSnap) => {
+    const data = docSnap.data();
+    if (data.role) roles.add(data.role.trim());
   });
+
+  roles.forEach((role) => {
+    roleSelect.innerHTML += `<option value="${role}">${role}</option>`;
+  });
+
+  reinitSelect(roleSelect);
+}
+
+export async function initProductPage() {
+  M.Modal.init(document.querySelectorAll(".modal"), { dismissible: false });
 
   await loadRoles();
 
-  bindProductFormListeners(); // <-- re-attach listeners to the new DOM
-  resetAssignProductForm(); // <-- reset + load dropdown options
-
-  console.log("✅ Product page initialized");
+  bindProductFormListeners();
+  resetAssignProductForm();
 }
 
-// ---------------------------------------------------------
-// Call this BEFORE navigating away from product.html (i.e. right
-// before functionalnav.js replaces #content's innerHTML with a
-// different page). It stops every Firestore listener this module
-// started, so none of them can fire against detached DOM nodes.
-// The isConnected guards above are a safety net; this is the real fix
-// — without it these listeners keep running (and keep re-syncing
-// Firestore data) for as long as the tab stays open, even on pages
-// that have nothing to do with products.
-// ---------------------------------------------------------
+// Call before navigating away from product.html
 export function cleanupProductPage() {
   if (unsubscribeInventoryOptions) {
     unsubscribeInventoryOptions();
@@ -652,25 +1029,4 @@ export function cleanupProductPage() {
     unsubscribeRoleFilter();
     unsubscribeRoleFilter = null;
   }
-}
-
-async function loadRoles() {
-  const roleSelect = document.getElementById("productRole");
-  const snap = await getDocs(collection(db, "employees"));
-  const roles = new Set();
-
-  roleSelect.innerHTML = `<option value="" disabled selected>Choose Role</option>`;
-
-  snap.forEach((docSnap) => {
-    const data = docSnap.data();
-    if (data.role) {
-      roles.add(data.role.trim());
-    }
-  });
-
-  roles.forEach((role) => {
-    roleSelect.innerHTML += `<option value="${role}">${role}</option>`;
-  });
-
-  reinitSelect(roleSelect);
 }

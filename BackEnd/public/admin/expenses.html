@@ -1,153 +1,348 @@
-    <header class="header">
-      <h1>Expenses Record</h1>
-      <p>Track Daily and Monthly Expenses</p>
-    </header>
+<div class="expenses-page">
+  <!--SUMMARY-->
+  <section class="expense-summary">
+    <div class="summary-card">
+      <span class="summary-title">TODAY</span>
 
-    <!-- FILTERS -->
-    <div class="filters">
-      <input type="date" id="filter-date">
-
-      <select id="filter-category">
-        <option value="all">All Categories</option>
-        <option value="Siomai">Siomai</option>
-        <option value="Drinks">Drinks</option>
-        <option value="Condiments">Condiments</option>
-        <option value="Utilities">Utilities</option>
-      </select>
-
-      <button type="button" class="btn-add waves-effect waves-light btn">Add Expense</button>
+      <div class="summary-content">
+        <h2 id="total-today">₱0.00</h2>
+        <p>Total Expenses</p>
+      </div>
     </div>
 
-    <!-- SUMMARY -->
-    <section class="summary">
-      <div class="card">
-        <h3 id="total-today">₱0.00</h3>
-        <p>Total Expenses (Today)</p>
+    <div class="summary-card">
+      <span class="summary-title">THIS MONTH</span>
+
+      <div class="summary-content">
+        <h2 id="total-month">₱0.00</h2>
+        <p>Total Expenses</p>
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="summary-left">
+        <span class="summary-title">DAILY AVERAGE</span>
+        <h2 id="avg-daily">₱0.00</h2>
       </div>
 
-      <div class="card">
-        <h3 id="total-month">₱0.00</h3>
-        <p>Total Expenses (This Month)</p>
+      <div class="summary-icon icon-blue">
+        <i class="material-icons">analytics</i>
+      </div>
+    </div>
+  </section>
+
+  <!--FILTER-->
+  <section class="card inventory-card expense-filter-card">
+    <div class="row filter-row">
+      <div class="input-field col s12 m6">
+        <input type="date" id="filter-date" />
+        <label for="filter-date" class="active">Date</label>
       </div>
 
-      <div class="card">
-        <h3 id="avg-daily">₱0.00</h3>
-        <p>Average Daily Expense</p>
-      </div>
-    </section>
+      <div class="input-field col s12 m6">
+        <select id="filter-category">
+          <option value="all" selected>All Categories</option>
+        </select>
 
-    <!-- TABLE -->
-    <section class="expenses-card">
-      <table>
+        <label>Category</label>
+      </div>
+    </div>
+
+    <div class="employee-actions expense-actions">
+      <!-- Delete Category -->
+      <button
+        type="button"
+        id="btn-delete-category"
+        class="btn-flat delete-outline waves-effect"
+      >
+        <i class="material-icons">clear</i>
+        Delete Category
+      </button>
+
+      <!-- Add Expense Category -->
+      <button
+        type="button"
+        class="btn-flat outline-btn add-expenses-category waves-effect waves-light"
+      >
+        <i class="material-icons left">add_circle_outline</i>
+        Add Expense Category
+      </button>
+
+      <!-- Add Expense -->
+      <button
+        type="button"
+        class="btn blue expense-btn waves-effect waves-light"
+      >
+        <i class="material-icons left">add</i>
+        Add Expense
+      </button>
+    </div>
+  </section>
+
+  <!--EXPENSE TABLE-->
+
+  <!-- ==================== TABLE ==================== -->
+  <section class="card inventory-card expenses-card">
+    <h4>Expense Table</h4>
+    <hr style="margin-bottom: 5px" />
+    <div class="table-container">
+      <table id="expenseTable" class="highlight responsive-table">
         <thead>
           <tr>
+            <th>#</th>
             <th>Date</th>
             <th>Category</th>
             <th>Description</th>
             <th>Amount (₱)</th>
             <th>Status</th>
-            <th>Action</th>
+            <th style="text-align: center">Action</th>
           </tr>
         </thead>
 
         <tbody id="expenses-table-body">
-          <!-- Firestore data will be injected here -->
+          <!-- Firestore Render -->
         </tbody>
       </table>
-    </section>
-
-    <!-- ADD EXPENSE MODAL -->
-    <div class="modal" id="modal-expenses">
-      <div class="modal-content">
-        <h4 id="modal-title">Add Expense</h4>
-
-        <div class="input-field">
-          <input type="date" id="expenses-date">
-          <label for="expenses-date">Date</label>
-        </div>
-
-        <div class="input-field">
-          <select id="expenses-category">
-            <option value="" disabled selected>Choose Category</option>
-            <option value="Siomai">Siomai</option>
-            <option value="Drinks">Drinks</option>
-            <option value="Condiments">Condiments</option>
-            <option value="Utilities">Utilities</option>
-          </select>
-          <label>Category</label>
-        </div>
-
-        <div class="input-field">
-          <input type="text" id="expenses-description" placeholder="Description">
-        </div>
-
-        <div class="input-field">
-          <input type="text" id="expenses-amount" placeholder="Amount">
-        </div>
-
-        <div class="input-field">
-          <select id="expenses-status">
-            <option value="" disabled selected>Choose Status</option>
-            <option value="Paid">Paid</option>
-            <option value="Pending">Pending</option>
-          </select>
-          <label>Status</label>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button id="save-expense" class="waves-effect waves-green btn">Save Expense</button>
-      </div>
     </div>
 
-    <!-- EDIT EXPENSE MODAL -->
-    <div class="modal" id="modal-edit">
-      <div class="modal-content">
-        <h4>Edit Expense</h4>
+    <!-- Footer -->
+    <div class="employee-footer">
+      <div>
+        <strong id="expense-info">0</strong>
+      </div>
 
-        <div class="input-field">
-          <input type="date" id="edit-expenses-date">
-          <label for="edit-expenses-date">Date</label>
+      <div class="employee-pagination">
+        <button id="expense-prev" class="btn-flat waves-effect">
+          Previous
+        </button>
+
+        <span id="expense-page" style="display: none"></span>
+
+        <button id="expense-next" class="btn-flat waves-effect">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== ADD CATEGORY MODAL ==================== -->
+
+  <div class="modal" id="modal-add-category">
+    <div class="modal-content">
+      <h4 id="category-modal-title">Add Expense Category</h4>
+
+      <div class="row">
+        <div class="input-field col s12">
+          <input
+            type="text"
+            id="add-new-category"
+            autocomplete="off"
+            maxlength="50"
+          />
+
+          <label for="add-new-category"> Expense Category Name </label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="modal-close btn-flat">Cancel</button>
+
+        <button
+          id="save-new-category"
+          class="btn blue waves-effect waves-light"
+        >
+          Save Category
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ADD EXPENSE MODAL ==================== -->
+
+  <div class="modal" id="modal-expenses">
+    <div class="modal-content">
+      <h4 id="expense-modal-title">Add Expense</h4>
+
+      <div class="row">
+        <div class="input-field col s12 m6">
+          <input type="date" id="expenses-date" />
+
+          <label for="expenses-date" class="active"> Date </label>
         </div>
 
-        <div class="input-field">
-          <select id="edit-expenses-category">
+        <div class="input-field col s12 m6">
+          <select id="expenses-category">
             <option value="" disabled selected>Choose Category</option>
-            <option value="Siomai">Siomai</option>
-            <option value="Drinks">Drinks</option>
-            <option value="Condiments">Condiments</option>
-            <option value="Utilities">Utilities</option>
           </select>
+
           <label>Category</label>
         </div>
+      </div>
 
-        <div class="input-field">
-          <input type="text" id="edit-expenses-description" placeholder="Description">
+      <div class="row">
+        <div class="input-field col s12">
+          <input
+            type="text"
+            id="expenses-description"
+            maxlength="100"
+            autocomplete="off"
+          />
+
+          <label for="expenses-description"> Description </label>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="input-field col s12 m6">
+          <input type="number" id="expenses-amount" min="0" step="0.01" />
+
+          <label for="expenses-amount"> Amount </label>
         </div>
 
-        <div class="input-field">
-          <input type="text" id="edit-expenses-amount" placeholder="Amount">
-        </div>
-
-        <div class="input-field">
-          <select id="edit-expenses-status">
+        <div class="input-field col s12 m6">
+          <select id="expenses-status">
             <option value="" disabled selected>Choose Status</option>
+
             <option value="Paid">Paid</option>
+
             <option value="Pending">Pending</option>
           </select>
+
           <label>Status</label>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button id="edit-save" class="waves-effect waves-light btn blue">Update Expense</button>
+        <button type="button" class="modal-close btn-flat">Cancel</button>
+
+        <button id="save-expense" class="btn waves-effect waves-light">
+          Save Expense
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT EXPENSE MODAL -->
+
+  <div class="modal" id="modal-edit">
+    <div class="modal-content">
+      <h4>Edit Expense</h4>
+
+      <div class="row">
+        <div class="input-field col s12 m6">
+          <input type="date" id="edit-expenses-date" />
+
+          <label for="edit-expenses-date" class="active"> Date </label>
+        </div>
+
+        <div class="input-field col s12 m6">
+          <select id="edit-expenses-category">
+            <option value="" disabled selected>Choose Category</option>
+          </select>
+
+          <label>Category</label>
+        </div>
       </div>
 
-  <script src="/js/functionalnav.js"></script>
-  <script src="/js/refresh.js"></script>
-  <script type="module">
-    import { initExpensesModal } from "/js/addExpensesbtn.js";
-    initExpensesModal();
-  </script>
-</body>
-</html>
+      <div class="row">
+        <div class="input-field col s12">
+          <input type="text" id="edit-expenses-description" maxlength="100" />
+
+          <label for="edit-expenses-description"> Description </label>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="input-field col s12 m6">
+          <input type="number" id="edit-expenses-amount" min="0" step="0.01" />
+
+          <label for="edit-expenses-amount"> Amount </label>
+        </div>
+
+        <div class="input-field col s12 m6">
+          <select id="edit-expenses-status">
+            <option value="" disabled selected>Choose Status</option>
+
+            <option value="Paid">Paid</option>
+
+            <option value="Pending">Pending</option>
+          </select>
+
+          <label>Status</label>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="modal-close btn-flat">Cancel</button>
+
+        <button id="edit-save" class="btn blue waves-effect waves-light">
+          Update Expense
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE CATEGORY CONFIRMATION -->
+  <div id="modal-delete-category" class="modal">
+    <div class="modal-content">
+      <h4 id="delete-confirmation-title">Delete category?</h4>
+      <p id="delete-confirmation-message">
+        This category will be permanently deleted. You cannot delete a category
+        that still has products.
+      </p>
+
+      <div class="modal-footer">
+        <button
+          id="cancel-delete-category"
+          type="button"
+          class="modal-close btn-flat"
+        >
+          Cancel
+        </button>
+        <button id="confirm-delete-category" type="button" class="btn red">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE EXPENSE CONFIRMATION -->
+  <div id="modal-delete-expense" class="modal">
+    <div class="modal-content">
+      <h4>Delete Expense?</h4>
+
+      <p>
+        This expense record will be permanently deleted. This action cannot be
+        undone.
+      </p>
+
+      <div class="modal-footer">
+        <button
+          id="cancel-delete-expense"
+          type="button"
+          class="modal-close btn-flat"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="confirm-delete-expense"
+          type="button"
+          class="btn red waves-effect waves-light"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JAVASCRIPT -->
+
+<script src="/js/refresh.js"></script>
+<script src="/js/functionalnav.js"></script>
+
+<script type="module" src="/js/firebase.js"></script>
+
+<script type="module">
+  import { initExpensesModal } from "/js/addExpensesbtn.js";
+  import { loadExpenses } from "/js/adminExpenses.js";
+</script>

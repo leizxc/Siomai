@@ -1,30 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS PARES DASHBOARD</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>POS Dashboard</title>
     <!-- Custom CSS -->
-    <link rel="stylesheet" type="text/css" href="/css/admin.css">
+    <link rel="stylesheet" type="text/css" href="/css/employee.css" />
 
-    
     <!-- Materialize -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet" />
     <script type="text/javascript" src="/js/materialize.min.js"></script>
     <!-- Manifest -->
+<<<<<<< HEAD
     <link rel="manifest" href="/manifest.json">
     <!-- Design -->
       <link rel="stylesheet" href="/css/userpanelpares.css">
 </head>
 <body>
 <div class="container">
+=======
+    <link rel="manifest" href="/manifest.json" />
+  </head>
+
+  <body>
+>>>>>>> 25b6f718b8be969f76937f04c3c96bdff2fbfc28
     <!-- Side Bar -->
     <aside class="sidebar">
-      <h2 class="logo">Queen Casy</h2>
+      <h2 class="logo">Queen Cassy</h2>
       <p class="role">Employee</p>
 
+<<<<<<< HEAD
      <!-- <ul class="nav">
        <li><a href="../../employee/pares/userpanelpares.html"><i class="material-icons">shopping_cart</i>Point of Sale</a></li>
        <li><a href="stockpares.html" target="_blank"><i class="material-icons">inventory</i>Inventory</a></li>
@@ -39,11 +48,41 @@
     <li><a href="#" onclick="event.preventDefault(); loadSection('./salespares.html', this);"><i class="material-icons">payments</i>Expenses Records</a></li>
     <li><a href="../../index.html"><i class="material-icons">logout</i>Logout</a></li>
 </ul>
+=======
+      <ul class="nav">
+        <li>
+          <a href="../../employee/pares/userpanelpares.html"
+            ><i class="material-icons">shopping_cart</i>Point of Sale</a
+          >
+        </li>
+        <li>
+          <a href="#" onclick="loadSection('./stockpares.html', this)"
+            ><i class="material-icons">inventory</i>Inventory</a
+          >
+        </li>
+        <li>
+          <a href="#" onclick="loadSection('./qoutapares.html', this)"
+            ><i class="material-icons">bar_chart</i>Income Per Cart</a
+          >
+        </li>
+        <li>
+          <a href="#" onclick="loadSection('./salespares.html', this)"
+            ><i class="material-icons">payments</i>Expenses Records</a
+          >
+        </li>
+        <li>
+          <a href="../../index.html"
+            ><i class="material-icons">logout</i>Logout</a
+          >
+        </li>
+      </ul>
+>>>>>>> 25b6f718b8be969f76937f04c3c96bdff2fbfc28
     </aside>
 
     <div class="overlay"></div>
-      <!-- MAIN -->
+    <!-- MAIN -->
     <main class="main">
+<<<<<<< HEAD
       <div class="mobile-header">
             <button id="menu-toggle">
             <i class="material-icons">menu</i>
@@ -56,25 +95,46 @@
             <h1>Point of sales</h1>
             <p>Process Sales Transactions</p>
         </header>
+=======
+      <!-- Mobile Header -->
+      <header class="mobile-header">
+        <button id="menu-toggle">
+          <i class="material-icons">menu</i>
+        </button>
 
-        <section class="pos-container">
+        <h2>Point of Sale</h2>
 
-            <!-- Products -->
-            <div class="products">
+        <button class="notif-btn">
+          <i class="material-icons">notifications_none</i>
+        </button>
+      </header>
+>>>>>>> 25b6f718b8be969f76937f04c3c96bdff2fbfc28
 
-                <h2>Products</h2>
+      <!-- Search -->
+      <section class="search-section">
+        <div class="search-box">
+          <i class="material-icons">search</i>
 
-                <input type="text" placeholder="Search Product">
+          <input
+            type="text"
+            id="searchProduct"
+            placeholder="Search product..."
+          />
+        </div>
+      </section>
 
-                <div class="categories">
-                    <button>All</button>
-                    <button>Pares</button>
-                    <button>Rice</button>
-                    <button>Drinks</button>
-                </div>
+      <!-- Categories -->
+      <section class="categories">
+        <button class="category active">All</button>
 
-                <div class="product-list">
+        <button class="category">Pares</button>
 
+        <button class="category">Pares With Rice</button>
+
+        <button class="category">Drinks</button>
+      </section>
+
+<<<<<<< HEAD
                     <div class="product-card">
                         <div>
                             <h3>Pares</h3>
@@ -98,83 +158,64 @@
                         </div>
                         <button>+</button>
                     </div>
+=======
+      <!-- Products -->
+      <section class="product-list" id="productList"></section>
 
-                </div>
+      <!-- Floating Checkout -->
+      <section class="checkout-bar">
+        <div class="checkout-info">
+          <div>
+            <span class="cart-count"> 0 Items </span>
 
-            </div>
+            <button id="viewOrderBtn">View Order</button>
+          </div>
+>>>>>>> 25b6f718b8be969f76937f04c3c96bdff2fbfc28
 
-            <!-- Current Order -->
-            <div class="current-order">
+          <div>
+            <small>Total Amount</small>
 
-                <h2>Current Order</h2>
+            <h3>₱<span id="grandTotal">0.00</span></h3>
+          </div>
+        </div>
 
-                <div class="order-item">
-                    <span> Pares </span>
-                    <span>Qty: 1</span>
-                    <span>₱60.00</span>
-                </div>
+        <button id="checkoutBtn" class="checkout-btn">
+          <i class="material-icons"> payments </i>
 
-                <div class="order-item">
-                    <span>Rice</span>
-                    <span>Qty: 1</span>
-                    <span>₱15.00</span>
-                </div>
+          Proceed to Checkout
+        </button>
+      </section>
 
-                <div class="order-item">
-                    <span>Bottled Water</span>
-                    <span>Qty: 1</span>
-                    <span>₱20.00</span>
-                </div>
+      <!-- Bottom Navigation -->
 
-                <hr>
+      <nav class="bottom-nav">
+        <a class="active">
+          <i class="material-icons"> point_of_sale </i>
 
-                <p>Subtotal : ₱95.00</p>
-                <p>Discount : ₱0.00</p>
+          <span>POS</span>
+        </a>
 
-                <h2>Total : ₱95.00</h2>
+        <a>
+          <i class="material-icons"> inventory_2 </i>
 
-                <button>Hold Order</button>
-                <button>Checkout</button>
+          <span>Inventory</span>
+        </a>
 
-            </div>
+        <a>
+          <i class="material-icons"> history </i>
 
-        </section>
-
-        <!-- Payment -->
-        <section class="payment">
-
-            <h2>Payment</h2>
-
-            <div class="payment-info">
-
-                <div>
-                    <h3>Total Amount</h3>
-                    <p>₱95.00</p>
-                </div>
-
-                <div>
-                    <h3>Payment Method</h3>
-                    <button>Cash</button>
-                    <button>GCash</button>
-                </div>
-
-                <div>
-                    <label>Cash Received</label>
-                    <input type="number">
-                </div>
-
-                <div>
-                    <h3>Change</h3>
-                    <p>₱5.00</p>
-                </div>
-
-                <button>Complete Sale</button>
-
-            </div>
-
-        </section>
-
+          <span>History</span>
+        </a>
+      </nav>
     </main>
 
-</body>
+    <script src="/js/refresh.js"></script>
+    <script type="module" src="/js/navemployee.js"></script>
+    <script type="module" src="/js/firebase.js"></script>
+    <script type="module" src="/js/IndexDB.js"></script>
+    <script type="module">
+      import { initPOS } from "/js/empoleyee.js";
+      initPOS();
+    </script>
+  </body>
 </html>

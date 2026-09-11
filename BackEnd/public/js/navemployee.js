@@ -1,117 +1,174 @@
+// navemployee.js
+let currentLoadToken = 0;
+let isNavigating = false;
+let currentCleanup = null;
+
 function loadSection(page) {
+  if (isNavigating) return;
+  isNavigating = true;
+
+  //stop the previus page listener
+  if (currentCleanup) {
+    currentCleanup();
+    currentCleanup = null;
+  }
+
+  const myToken = ++currentLoadToken;
   fetch(page)
-    .then(response => response.text())
-    .then(async data => {
-      const main = document.getElementById('content');
+    .then((response) => response.text())
+    .then(async (data) => {
+      if (myToken !== currentLoadToken) return;
+
+      const main = document.getElementById("content");
       main.innerHTML = data;
 
-      // Initialize Materialize Components
-      const selects = document.querySelectorAll('select');
-      M.FormSelect.init(selects);
+      const title = document.getElementById("mobile-title");
 
-      const modals = document.querySelectorAll('.modal');
-      M.Modal.init(modals);
+      const pageTitles = {
+        "userpanel.html": "Point of Sale",
+        "report.html": "Report",
+        "stock.html": "Inventory",
+        "attendance.html": "Attendance",
+      };
+      if (title) title.textContent = pageTitles[page] || "Employee";
 
-      // PAGE INITIALIZERS (Employee side)
+      M.FormSelect.init(document.querySelectorAll("select"));
+      M.Modal.init(document.querySelectorAll(".modal"));
+
       switch (page) {
-        case "stock.html":
-          try {
-            const stockModule = await import("");
-            if (typeof stockModule.loadStock === "function") {
-              stockModule.loadStock();
-            }
-          } catch (err) {
-            console.error("Stock Init Error:", err);
-          }
-          break;
-
-        case "sales.html":
-          try {
-            const salesModule = await import("");
-            if (typeof salesModule.loadSales === "function") {
-              salesModule.loadSales();
-            }
-          } catch (err) {
-            console.error("Sales Init Error:", err);
-          }
-          break;
-
-        case "qouta.html":
-          try {
-            const quotaModule = await import("");
-            if (typeof quotaModule.loadQuota === "function") {
-              quotaModule.loadQuota();
-            }
-          } catch (err) {
-            console.error("Quota Init Error:", err);
-          }
-          break;
-
         case "userpanel.html":
           try {
-            const posModule = await import("./empoleyee.js");
+            const posModule = await import("/js/empoleyee.js");
             if (typeof posModule.initPOS === "function") {
-              posModule.initPOS();
+              if (myToken !== currentLoadToken) return;
+              await posModule.initPOS();
             }
+            currentCleanup = posModule.stopPosPage || null;
           } catch (err) {
-            console.error("POS Init Error:", err);
+            console.error("POS init Error", err);
           }
           break;
+
+        case "stock.html":
+          try {
+            const stockmodule = await import("/js/stock.js");
+            if (typeof stockmodule.loadstock === "function") {
+              if (myToken !== currentLoadToken) return;
+              await stockmodule.loadstock();
+            }
+
+            currentCleanup = stockmodule.stopStockPage || null;
+          } catch (err) {
+            console.error("stock init Error:", err);
+          }
+          break;
+
+        case "attendance.html":
+          try {
+            const attendanceModule = await import("/js/attendance.js");
+
+            if (typeof attendanceModule.initAttendance === "function") {
+              if (myToken !== currentLoadToken) return;
+
+              await attendanceModule.initAttendance();
+            }
+
+            currentCleanup = attendanceModule.stopAttendancePage || null;
+          } catch (err) {
+            console.error("Attendance init Error:", err);
+          }
+
+          break;
+
+        case "report.html":
       }
     })
-    .catch(err => console.error("Error Loading Section:", err));
+    .catch((err) => console.error("Error Loading Section:", err))
+    .finally(() => {
+      isNavigating = false;
+    });
+}
 
-  // Highlight nav
-  const navItems = document.querySelectorAll(".nav li");
-  navItems.forEach(item => {
+// Make function available to HTML
+window.loadSection = loadSection;
+
+// ================================
+// BOTTOM NAV ACTIVE STATE
+// ================================
+
+function updateBottomNav(page) {
+  const navItems = document.querySelectorAll(".bottom-nav a");
+
+  navItems.forEach((item) => {
     item.classList.remove("active");
   });
 
-  const link = document.querySelector(`.nav a[onclick*="${page}"]`);
-  if (link) {
-    link.parentElement.classList.add("active");
-  }
-
-  // Close sidebar on mobile
-  document.querySelector(".sidebar")?.classList.remove("active");
-  document.querySelector(".overlay")?.classList.remove("active");
-}
-
-// Make global for inline onclick
-window.loadSection = loadSection;
-
-// HAMBURGER MENU
-const menuBtn = document.getElementById("menu-toggle");
-const sidebar = document.querySelector(".sidebar");
-const overlay = document.querySelector(".overlay");
-
-if (menuBtn) {
-  menuBtn.addEventListener("click", () => {
-    sidebar?.classList.toggle("active");
-    overlay?.classList.toggle("active");
-  });
-}
-
-// CLOSE OVERLAY
-if (overlay) {
-  overlay.addEventListener("click", () => {
-    sidebar?.classList.remove("active");
-    overlay?.classList.remove("active");
-  });
-}
-
-// LANDSCAPE FIX
-function handleOrientation() {
-  const isLandscape = window.matchMedia("(orientation: landscape)").matches;
-  if (isLandscape && window.innerWidth <= 1024) {
-    sidebar?.classList.remove("active");
-    overlay?.classList.remove("active");
+  if (page === "userpanel.html") {
+    navItems[0]?.classList.add("active");
+  } else if (page === "stock.html") {
+    navItems[1]?.classList.add("active");
+  } else if (page === "attendance.html") {
+    navItems[2]?.classList.add("active");
+  } else if (page === "report.html") {
+    navItems[3]?.classList.add("active");
   }
 }
 
-// INITIAL RUN
-handleOrientation();
+// ================================
+// BOTTOM NAV CLICK EVENTS
+// ================================
 
-// LISTENERS
-window.addEventListener("resize", handleOrientation);
-window.addEventListener("orientationchange", handleOrientation);
+document.addEventListener("DOMContentLoaded", () => {
+  const bottomNav = document.querySelector(".bottom-nav");
+
+  if (!bottomNav) {
+    console.warn("Bottom navigation not found.");
+    return;
+  }
+
+  const navItems = bottomNav.querySelectorAll("a");
+
+  // POS
+  navItems[0]?.addEventListener("click", (event) => {
+    event.preventDefault();
+
+    loadSection("userpanel.html");
+  });
+
+  // INVENTORY
+  navItems[1]?.addEventListener("click", (event) => {
+    event.preventDefault();
+
+    loadSection("stock.html");
+  });
+
+  // ATTENDANCE
+  navItems[2]?.addEventListener("click", (event) => {
+    event.preventDefault();
+
+    loadSection("attendance.html");
+  });
+
+  // REPORT
+  navItems[3]?.addEventListener("click", (event) => {
+    event.preventDefault();
+
+    loadSection("report.html");
+  });
+
+  // Logout
+  navItems[4]?.addEventListener("click", (event) => {
+    event.preventDefault();
+
+    window.location.href = "/index.html";
+  });
+});
+
+// ================================
+// INITIAL PAGE
+// ================================
+
+document.addEventListener("DOMContentLoaded", () => {
+  // POS is the default page
+  updateBottomNav("userpanel.html");
+});

@@ -1,5 +1,6 @@
 # dependencies
 node_modules/
+BackEnd/node_modules/
 
 # environment variables
 .env
@@ -7,6 +8,11 @@ node_modules/
 # firebase / secrets
 BackEnd/*.json
 BackEnd/*.key
+
+# Firebase Hosting
+.firebase/
+.firebaserc
+firebase.json
 
 # OS junk
 .DS_Store

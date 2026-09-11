@@ -1,64 +1,116 @@
-<div id="content">
+<div class="stock-page">
+  <!-- Header -->
   <section class="page-header">
-    <div>
+    <div class="header-left">
       <h2>Stock Status</h2>
-
       <p>Monitor stock availability and inventory levels.</p>
     </div>
 
-    <div class="filters">
-      <input type="date" />
+    <div class="header-right">
+      <input type="date" id="stockDate" />
 
-      <select>
+      <select id="cartFilter">
         <option>All Carts</option>
+        <option>Cart 1</option>
+        <option>Cart 2</option>
       </select>
     </div>
   </section>
 
-  <!-- Summary -->
+  <!-- Summary Cards -->
 
-  <div class="dashboard-cards">
-    <div class="card">
-      <h4>Total Products</h4>
+  <section class="summary-grid">
+    <div class="summary-card">
+      <div class="icon purple">
+        <i class="material-icons">inventory_2</i>
+      </div>
 
-      <h2>0</h2>
+      <h5>Total Products</h5>
+
+      <h2 id="totalProducts">24</h2>
+
+      <p>All items in inventory</p>
     </div>
 
-    <div class="card">
-      <h4>In Stock</h4>
+    <div class="summary-card">
+      <div class="icon green">
+        <i class="material-icons">check_circle</i>
+      </div>
 
-      <h2>0</h2>
+      <h5>In Stock</h5>
+
+      <h2 id="inStock">18</h2>
+
+      <p>Items with stock</p>
     </div>
-  </div>
+  </section>
 
   <!-- Stock Overview -->
 
-  <section class="card">
-    <div class="overview">
-      <div>
-        <h4>Total Inventory Value</h4>
+  <section class="overview-card">
+    <h3>Stock Overview</h3>
 
-        <h2>₱0.00</h2>
+    <p>Overview of inventory value and stock levels.</p>
+
+    <div class="overview-grid">
+      <div class="overview-box">
+        <div class="icon purple">
+          <i class="material-icons">payments</i>
+        </div>
+
+        <div>
+          <small>Total Inventory Value</small>
+
+          <h2 id="inventoryValue">₱12,450.00</h2>
+
+          <span>Total value of current stock</span>
+        </div>
       </div>
 
-      <div>
-        <h4>Last Stock Update</h4>
+      <div class="overview-box">
+        <div class="icon blue">
+          <i class="material-icons">calendar_month</i>
+        </div>
 
-        <p>--</p>
+        <div>
+          <small>Last Stock Update</small>
+
+          <h2 id="lastUpdated">May 22, 2025</h2>
+
+          <span>Latest inventory update</span>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Product List -->
+  <!-- Stock Items -->
 
-  <section class="card">
+  <section class="table-card">
     <div class="table-header">
-      <h4>Stock Items</h4>
+      <div>
+        <h3>Stock Items</h3>
 
-      <input type="search" placeholder="Search Product" />
+        <p>Detailed list of all products and their stock levels.</p>
+      </div>
+
+      <div class="table-actions">
+        <div class="search-box">
+          <i class="material-icons">search</i>
+
+          <input
+            type="search"
+            id="searchProduct"
+            placeholder="Search product..."
+          />
+        </div>
+
+        <button class="filter-btn">
+          <i class="material-icons">filter_alt</i>
+        </button>
+      </div>
     </div>
 
-    <table>
+    <table class="stock-table">
       <thead>
         <tr>
           <th>Product</th>
@@ -72,22 +124,37 @@
           <th>Status</th>
 
           <th>Last Updated</th>
+
+          <th></th>
         </tr>
       </thead>
 
-      <tbody>
+      <tbody id="stockTableBody">
         <tr>
-          <td>Pares</td>
+          <td class="product-cell">
+            <img src="/assets/siomai.jpg" />
 
-          <td>Pares</td>
+            <span>Siomai (4pcs)</span>
+          </td>
 
-          <td>0</td>
+          <td>Siomai</td>
 
-          <td>Packs</td>
+          <td>120</td>
 
-          <td>In Stock</td>
+          <td>packs</td>
 
-          <td>--</td>
+          <td>
+            <span class="badge success"> In Stock </span>
+          </td>
+
+          <td>
+            May 22, 2025<br />
+            8:45 AM
+          </td>
+
+          <td>
+            <i class="material-icons more"> more_vert </i>
+          </td>
         </tr>
       </tbody>
     </table>

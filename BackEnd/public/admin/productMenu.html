@@ -1,0 +1,220 @@
+<!-- ================= ADD PRODUCT ================= -->
+<section class="card inventory-card product-menu-form">
+  <h4>Add Product Form</h4>
+
+  <form id="addProductMenu">
+    <div class="row">
+      <!-- Inventory Allocation -->
+      <div class="input-field col s12 m6">
+        <select id="employeeINV">
+          <option value="" disabled selected>Inventory Allocation</option>
+        </select>
+        <label for="employeeINV">Inventory</label>
+      </div>
+
+      <!-- Product Name -->
+      <div class="input-field col s12 m6">
+        <input type="text" id="inputProduct" />
+        <label for="inputProduct">Product Name (e.g. Pork Siomai)</label>
+      </div>
+
+      <!-- Kg counter to container -->
+      <div
+        class="input-field col s12 m6"
+        id="kg-used-field"
+        style="display: none"
+      >
+        <input type="number" name="kgUsed" id="KgUsed" step="0.01" min="0" />
+        <label for="kgUsed">Kilograms Used (as Ingredient) </label>
+      </div>
+
+      <!-- KALDER OR CONTAINER -->
+      <div
+        class="input-field col s12 m6"
+        id="kaldero-count-field"
+        style="display: none"
+      >
+        <input type="number" id="kalderocCount" min="0" />
+        <label for="kalderocCount"
+          >Number of kaldero or container Reached</label
+        >
+      </div>
+
+      <!-- Category / Role -->
+      <div class="input-field col s12 m6">
+        <select id="selectCategory">
+          <option value="" disabled selected>Select Role</option>
+        </select>
+        <label for="selectCategory">Select Role</label>
+      </div>
+
+      <!-- Initial Stock -->
+      <div class="input-field col s12 m6">
+        <input type="number" id="stock" readonly />
+        <label for="stock">Initial Stock</label>
+      </div>
+
+      <!-- Unit -->
+      <div class="input-field col s12 m6">
+        <input type="text" id="stockUnit" readonly />
+        <label for="stockUnit">Unit</label>
+      </div>
+
+      <!-- Price -->
+      <div class="input-field col s12 m6">
+        <input type="number" id="price" step="0.01" min="0" />
+        <label for="price">Product Price</label>
+      </div>
+
+      <!-- Product ID -->
+      <div class="input-field col s12">
+        <p class="GeneratedId">Product ID</p>
+        <input type="text" id="productId" readonly />
+      </div>
+
+      <!-- Image Upload -->
+      <div class="col s12">
+        <input type="file" id="inputImg" accept="image/*" hidden />
+        <div class="image-upload" id="uploadBox">
+          <img
+            id="previewImage"
+            src="/assets/upload-placeholder.png"
+            alt="Upload Image"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="save-btn-wrapper">
+      <button
+        id="save-menu"
+        type="submit"
+        class="btn btn-custom save-menu-btn waves-effect waves-light"
+      >
+        <i class="material-icons">add</i>
+        <span>Save Product Menu</span>
+      </button>
+    </div>
+  </form>
+</section>
+
+<!-- ================= PRODUCT MENU TABLE ================= -->
+<section class="card menu-card product-list-card">
+  <h4>Product List</h4>
+
+  <!-- SEARCH CATALOG -->
+   <div class="search-catalog-wrapper">
+    <div class="search-container">
+      <i class="material-icon search-icon">search</i>
+      <input type="text" id="searchProducMenu" placeholder="Search products..." class="search-input">
+      <button id="clearSearchBtn" class="clear-search-btn" style="display: none;">
+        <i class="material-icons">close</i>
+      </button>
+    </div>
+   </div>
+
+  <div class="row">
+    <div class="input-field col s12 m6">
+      <select id="filterCategory">
+        <option value="" disabled selected>Choose Category</option>
+      </select>
+      <label for="filterCategory">Filter by Category</label>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table id="menutable" class="striped responsive-table">
+      <thead>
+        <tr>
+          <th id="th-product-code">Product Code</th>
+          <th id="th-inventory-id">Inventory ID</th>
+          <th id="th-inventory-name">Inventory Name</th>
+          <th id="th-product-name">Product Name</th>
+          <th id="th-category">Category</th>
+          <th id="th-packs" style="display: none">Packs</th>
+          <th id="th-pieces" style="display: none">Pieces</th>
+          <th id="th-container" style="display: none">Container</th>
+          <th id="th-price">Price</th>
+          <th id="th-action">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Dynamically loaded -->
+      </tbody>
+    </table>
+
+    <!-- PAGINATION CONTROL -->
+    <div class="productmenu-footer">
+      <div>
+        <strong id="menu-info"></strong>
+      </div>
+    <div class="pagination-controls">
+      <button id="menu-prev" class="btn-flat waves-effect">
+        Previous
+      </button>
+      <span id="menu-page">Page 1 of 1</span>
+      <button id="menu-next" class="btn-flat waves-effect">
+        Next
+      </button>
+    </div>
+    </div>
+</section>
+
+<!-- ================= EDIT PRODUCT MENU MODAL ================= -->
+<div id="modal-edit-menu" class="modal">
+  <div class="modal-content">
+    <h4>Update Product Menu</h4>
+
+    <div class="input-field">
+      <input type="text" id="edit-menu-name" />
+      <label for="edit-menu-name" class="active">Product Name</label>
+    </div>
+
+    <div class="input-field">
+      <input type="text" id="edit-menu-stock" />
+      <label for="edit-menu-stock" class="active">Stock</label>
+    </div>
+
+    <div class="input-field">
+      <input type="number" id="edit-menu-price" step="0.01" min="0" />
+      <label for="edit-menu-price" class="active">Price</label>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="modal-close btn-flat">Cancel</button>
+      <button id="edit-menu-save" class="waves-effect waves-light btn blue">
+        Update
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DELETE CONFIRMATION ================= -->
+<div id="modal-delete-category" class="modal">
+  <div class="modal-content">
+    <h4 id="delete-confirmation-title">Delete category?</h4>
+    <p id="delete-confirmation-message">
+      This category will be permanently deleted. You cannot delete a category
+      that still has products.
+    </p>
+
+    <div class="modal-footer">
+      <button
+        id="cancel-delete-category"
+        type="button"
+        class="modal-close btn-flat"
+      >
+        Cancel
+      </button>
+      <button id="confirm-delete-category" type="button" class="btn red">
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/photomenu.js"></script>
+<script type="module">
+  import { initProductPage } from "/js/productmenu.js";
+  initProductPage();
+</script>

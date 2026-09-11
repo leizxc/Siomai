@@ -1,126 +1,176 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Queen Cassy Food Cart</title>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Queen Cassy Food Cart</title>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="/css/login.css" />
 
-  <!-- Custom CSS -->
-  <link rel="stylesheet" type="text/css" href="/css/login.css">
+    <!-- Materialize -->
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link type="text/css" href="/css/materialize.min.css" rel="stylesheet" />
+    <script type="text/javascript" src="/js/materialize.min.js"></script>
 
-  <!-- Materialize -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link type="text/css" href="/css/materialize.min.css" rel="stylesheet">
-  <script type="text/javascript" src="/js/materialize.min.js"></script>
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+  </head>
 
-  <!-- Manifest -->
-  <link rel="manifest" href="/manifest.json">
-</head>
+  <body>
+    <main>
+      <div class="login-wrapper">
+        <div class="card login-card z-depth-3">
+          <!--LOGO-->
+          <img src="/assets/queencassy.jpg" alt="Logo" class="logo" />
 
-<body>
-  <main>
-    <div class="login-wrapper">
-      <div class="card login-card z-depth-3">
+          <div class="title">Welcome</div>
+          <div class="subtitle">Please Log in To Continue</div>
 
-        <!--LOGO-->
-        <img src="/assets/queencassy.jpg" alt="Logo" class="logo">
+          <!-- FORM -->
+          <div class="input-field">
+            <i class="material-icons prefix">person</i>
+            <input
+              id="username"
+              type="text"
+              placeholder="Username or Email"
+              autocomplete="username"
+            />
+          </div>
 
-        <div class="title">Welcome</div>
-        <div class="subtitle">Please Log in To Continue</div>
+          <div class="input-field">
+            <i class="material-icons prefix">lock</i>
+            <input id="password" type="password" placeholder="Password" />
+            <label for="password">Password</label>
+            <span
+              class="material-icons toggle-password"
+              onclick="togglePassword()"
+              >visibility</span
+            >
+          </div>
 
-        <!-- FORM -->
-        <div class="input-field">
-          <i class="material-icons prefix">person</i>
-          <input id="username" type="text" placeholder="Username or Email" autocomplete="username">
+          <p class="remember-me">
+            <label>
+              <input type="checkbox" />
+              <span>Remember Me</span>
+            </label>
+          </p>
+
+          <button type="button" class="btn btn-login waves-effect waves-light">
+            Log In
+          </button>
+
+          <button
+            id="installBtn"
+            class="btn btn-install waves-effect waves-light"
+          >
+            Install App
+          </button>
         </div>
-
-        <div class="input-field">
-          <i class="material-icons prefix">lock</i>
-          <input id="password" type="password" placeholder="Password">
-          <label for="password">Password</label>
-          <span class="material-icons toggle-password" onclick="togglePassword()">visibility</span>
-        </div>
-
-        <p class="remember-me">
-          <label>
-            <input type="checkbox" />
-            <span>Remember Me</span>
-          </label>
-        </p>
-
-        <button type="button" class="btn btn-login waves-effect waves-light">
-          Log In
-        </button>
-
-        <button id="installBtn" class="btn btn-install waves-effect waves-light">Install App</button>
-
       </div>
-    </div>
-  </main>
-</body>
+    </main>
+  </body>
 
-<!-- JS Files -->
-<script src="/js/login.js"></script>
-<script type="module" src="/js/app.js"></script>
-<script src="/js/install.js"></script>
-<script src="/js/refresh.js"></script>
-<script type="module" src="/js/IndexDB.js"></script>
-<!-- FIREBASE -->
-<script type="module">
-  import { auth, db } from "/js/frontfirebase.js";
-  import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
- import { syncUsersFromFirebase, offlineLogin, SyncProductFromFirebase } from "/js/IndexDB.js";
+  <!-- JS Files -->
+  <script src="/js/login.js"></script>
+  <script type="module" src="/js/app.js"></script>
+  <script src="/js/install.js"></script>
+  <script src="/js/refresh.js"></script>
+  <script type="module" src="/js/IndexDB.js"></script>
+  <!-- FIREBASE -->
+  <script type="module">
+    import { auth, db } from "/js/frontfirebase.js";
+    import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      collection,
+      query,
+      where,
+      getDocs,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      syncUsersFromFirebase,
+      offlineLogin,
+      SyncProductFromFirebase,
+    } from "/js/IndexDB.js";
 
-  // auto-sync users and products once online
-  window.addEventListener("load", async () => {
-    if (navigator.onLine) {
-      await syncUsersFromFirebase();
-      await SyncProductFromFirebase();
-    }
-  });
-
-  document.querySelector(".btn-login").addEventListener("click", async (e) => {
-    e.preventDefault();
-    const username = document.getElementById("username").value.toLowerCase().trim();
-    const password = document.getElementById("password").value;
-    //offline fallback 
-     if (!navigator.onLine) {
-    console.log("Offline mode detected");
-    await offlineLogin(username, password);
-    return;
-  }
-
-    //online login(firebase)
-    const q = query(collection(db, "users"), where("username", "==", username));
-    const snapshot = await getDocs(q);
-
-    if (!snapshot.empty) {
-      const userDoc = snapshot.docs[0].data();
-      const email = userDoc.email;
-
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log("Login Success:", userCredential);
-
-        const role = userDoc.role.toLowerCase();
-        if (role === "admin") {
-          window.location.href = "/admin/adminpanel.html";
-        } else if (role === "siomai") {
-          window.location.href = "/employee/siomai/userpanel.html";
-        } else if (role === "pares") {
-          window.location.href = "/employee/pares/userpanelpares.html";
-        }
-      } catch (error) {
-       M.toast({html: 'Invalid password', classes: 'red-toast', displayLength:4000});
-        console.error(error);
+    // auto-sync users and products once online
+    window.addEventListener("load", async () => {
+      if (navigator.onLine) {
+        await syncUsersFromFirebase();
+        await SyncProductFromFirebase();
       }
-    } else {
-      M.toast({html:'Username not found',classes:'red-toast',displayLength:4000});
-      console.log("No match for:", username);
-    }
-  });
-</script>
+    });
 
+    document
+      .querySelector(".btn-login")
+      .addEventListener("click", async (e) => {
+        e.preventDefault();
+        const username = document
+          .getElementById("username")
+          .value.toLowerCase()
+          .trim();
+        const password = document.getElementById("password").value;
+        //offline fallback
+        if (!navigator.onLine) {
+          console.log("Offline mode detected");
+          await offlineLogin(username, password);
+          return;
+        }
+
+        //online login(firebase)
+        const q = query(
+          collection(db, "users"),
+          where("username", "==", username),
+        );
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+          const userDocSnap = snapshot.docs[0];
+          const userDoc = userDocSnap.data();
+          const email = userDoc.email;
+
+          try {
+            const userCredential = await signInWithEmailAndPassword(
+              auth,
+              email,
+              password,
+            );
+            console.log("Login Success:", userCredential);
+
+            const role = userDoc.role.toLowerCase();
+
+            if (role === "admin") {
+              window.location.href = "/admin/adminpanel.html";
+            } else {
+              // Bawat non-admin role (siomai, pares, at anumang bagong cart sa
+              // hinaharap) ay dumadaan na lang sa IISANG POS page. Ang role
+              // mismo ang nagpapaiba sa nakikita, hindi ang URL/folder.
+              sessionStorage.setItem("employeeRole", role);
+              sessionStorage.setItem("employeeUid", userCredential.user.uid);
+              sessionStorage.setItem("employeeUsername", username);
+              sessionStorage.setItem("employeeUserDocId", userDocSnap.id);
+
+              window.location.href = "/employee/siomai/userpanel.html";
+            }
+          } catch (error) {
+            M.toast({
+              html: "Invalid password",
+              classes: "red-toast",
+              displayLength: 4000,
+            });
+            console.error(error);
+          }
+        } else {
+          M.toast({
+            html: "Username not found",
+            classes: "red-toast",
+            displayLength: 4000,
+          });
+          console.log("No match for:", username);
+        }
+      });
+  </script>
 </html>

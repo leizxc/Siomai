@@ -1,3 +1,4 @@
+// addproductbtn.js
 import { db } from "/js/firebase.js";
 import {
   collection,
@@ -11,21 +12,25 @@ export async function initProductModal() {
   const employeeSelect = document.getElementById("productEmployee");
   const productNameSelect = document.getElementById("productName");
 
+  if (!roleSelect || !employeeSelect || !productNameSelect) return;
+
+  // Keep this list aligned with product.html. filter(Boolean) prevents a
+  // missing optional field from crashing the form during page navigation.
   const inputs = [
     productNameSelect,
     document.getElementById("productPrice"),
+    document.getElementById("availablePacks"),
     document.getElementById("availableStock"),
-    document.getElementById("assignQuantity"),
+    document.getElementById("assignPacks"),
+    document.getElementById("assignPieces"),
     document.getElementById("addProductBtn"),
-  ];
-
-  console.log("Inputs:", inputs);
+  ].filter(Boolean);
 
   // Materialize caches a select's disabled state inside its ".select-wrapper"
-  // at init time. Flipping the native .disabled property alone does NOT
-  // update that wrapper, so we always re-sync it right after.
   function resyncSelectWrapper(selectEl) {
-    if (!selectEl) return;
+    // isConnected guard: kung na-navigate na palayo
+    if (!selectEl || !selectEl.isConnected) return;
+
     const instance = M.FormSelect.getInstance(selectEl);
     if (instance) {
       instance.destroy();
@@ -40,13 +45,16 @@ export async function initProductModal() {
     inputs.forEach((el) => (el.disabled = !enable));
 
     // productName is Materialize-managed, so resync its wrapper too,
-    // otherwise it can get visually stuck showing "disabled" even
-    // after we just enabled the underlying <select>.
     resyncSelectWrapper(productNameSelect);
   }
 
+  // Tumataas ito kada bagong loadEmployeesByRole() call
+  let currentRoleRequestToken = 0;
+
   //  Populate employee dropdown based on selected role
   async function loadEmployeesByRole(selectedRole) {
+    const myRoleToken = ++currentRoleRequestToken;
+
     employeeSelect.innerHTML = `
     <option value="" selected>All ${selectedRole} Employees (Shared)</option>
   `;
@@ -55,6 +63,10 @@ export async function initProductModal() {
       where("role", "==", selectedRole),
     );
     const snap = await getDocs(q);
+
+    // May mas bagong role request na nauna — huwag na ituloy ito.
+    if (myRoleToken !== currentRoleRequestToken) return;
+    if (!employeeSelect.isConnected) return;
 
     snap.forEach((docSnap) => {
       const data = docSnap.data();
@@ -68,11 +80,17 @@ export async function initProductModal() {
   }
 
   //  When role changes, reload employee list
-  roleSelect.addEventListener("change", async () => {
-    const selectedRole = roleSelect.value;
-    await loadEmployeesByRole(selectedRole);
-    toggleInputs();
-  });
+  if (roleSelect && !roleSelect.dataset.roleChangeBound) {
+    roleSelect.dataset.roleChangeBound = "true";
+    roleSelect.addEventListener("change", async () => {
+      const selectedRole = roleSelect.value;
+      await loadEmployeesByRole(selectedRole);
+      toggleInputs();
+    });
+  }
 
-  employeeSelect.addEventListener("change", toggleInputs);
+  if (employeeSelect && !employeeSelect.dataset.employeeChangeBound) {
+    employeeSelect.dataset.employeeChangeBound = "true";
+    employeeSelect.addEventListener("change", toggleInputs);
+  }
 }
