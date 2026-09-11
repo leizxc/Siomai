@@ -1,7 +1,7 @@
 // Import Firestore helpers at db mula sa firebase.js
 import { getDocs, collection, addDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { db } from "./firebase.js"; // adjust path depende sa folder structure
+import { db } from "./frontfirebase.js"; // adjust path depende sa folder structure
 
 //  Hash function
 async function hashPassword(password) {
