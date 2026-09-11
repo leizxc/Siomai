@@ -354,7 +354,9 @@ export function addproductmenu() {
         product_name: productName,
         kg_used: kgused,
         kaldero_count: kalderocount,
-        category: role,
+        category: role, // role-based (SIOMAI/PARES)
+        inv_category:
+          inventory.inv_category || inventory.category || "Uncategorized", // BAGONG FIELD
         inventory_id: inventoryId,
         inventory_name: inventory.product_name,
         initial_stock: stock,
@@ -389,25 +391,28 @@ function initUppercaseProductName() {
   });
 }
 
+// FIXED: build the filter dropdown from the category NAME (inv_category),
+// not from the employee "role" field — inv_category is what getFilteredData()
+// actually compares against, so the dropdown values must match that.
 async function loadCategoryFilter() {
   const select = document.getElementById("filterCategory");
   if (!select) return;
 
-  const snap = await getDocs(collection(db, "employees"));
+  const snap = await getDocs(collection(db, "categoriesINV"));
 
   const categories = new Set();
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
 
-    if (data.role) {
-      categories.add(data.role.trim());
+    if (data.name) {
+      categories.add(data.name.trim());
     }
   });
 
   select.innerHTML = "";
 
-  let siomaiCategory = null;
+  let defaultCategory = null;
 
   categories.forEach((category) => {
     const option = document.createElement("option");
@@ -415,9 +420,9 @@ async function loadCategoryFilter() {
     option.value = category;
     option.textContent = category;
 
-    if (category.toUpperCase() === "SIOMAI") {
+    if (!defaultCategory) {
       option.selected = true;
-      siomaiCategory = category;
+      defaultCategory = category;
     }
 
     select.appendChild(option);
@@ -425,12 +430,11 @@ async function loadCategoryFilter() {
 
   reinitSelect(select);
 
-  // SIOMAI ang default
-  if (siomaiCategory) {
-    select.value = siomaiCategory;
+  if (defaultCategory) {
+    select.value = defaultCategory;
   }
 
-  return siomaiCategory;
+  return defaultCategory;
 }
 
 function confirmDeletion(title, message) {
@@ -471,8 +475,8 @@ export async function loadmenu() {
   // PAGINATION VARIABLES
   const PAGE_SIZE = 10;
   let currentPage = 1;
-  let menuRowsCache = [];
   let allMenuData = []; // Store all data for search/filter
+  let searchTimeout = null;
 
   function bindRowButtons() {
     tbody.querySelectorAll(".delete-btn").forEach((btn) => {
@@ -585,7 +589,7 @@ export async function loadmenu() {
   }
 
   // FILTER AND SEARCH FUNCTION
-  function filterAndSearchData() {
+  function getFilteredData() {
     const searchTerm = searchInput
       ? searchInput.value.toLowerCase().trim()
       : "";
@@ -594,9 +598,13 @@ export async function loadmenu() {
     let filteredData = allMenuData;
 
     // Filter by category
-    if (selectedCategory && selectedCategory !== "ALL") {
+    if (
+      selectedCategory &&
+      selectedCategory !== "ALL" &&
+      selectedCategory !== ""
+    ) {
       filteredData = filteredData.filter(
-        (item) => item.data.category === selectedCategory,
+        (item) => item.data.inv_category === selectedCategory,
       );
     }
 
@@ -606,6 +614,7 @@ export async function loadmenu() {
         const productCode = (item.data.product_code || "").toLowerCase();
         const productName = (item.data.product_name || "").toLowerCase();
         const inventoryName = (item.data.inventory_name || "").toLowerCase();
+        const invCategory = (item.data.inv_category || "").toLowerCase();
         const category = (item.data.category || "").toLowerCase();
         const inventoryId = (item.inventoryProductId || "").toLowerCase();
 
@@ -613,6 +622,7 @@ export async function loadmenu() {
           productCode.includes(searchTerm) ||
           productName.includes(searchTerm) ||
           inventoryName.includes(searchTerm) ||
+          invCategory.includes(searchTerm) ||
           category.includes(searchTerm) ||
           inventoryId.includes(searchTerm)
         );
@@ -624,7 +634,7 @@ export async function loadmenu() {
 
   // RENDER CURRENT PAGE
   function renderMenuPage() {
-    const filteredData = filterAndSearchData();
+    const filteredData = getFilteredData();
     const totalRecords = filteredData.length;
     const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
 
@@ -640,22 +650,25 @@ export async function loadmenu() {
       rowsHtml += item.html;
     }
 
-    tbody.innerHTML =
-      rowsHtml ||
-      `
-      <tr>
-        <td colspan="10" class="center-align grey-text">
-          No products found matching your criteria.
-        </td>
-      </tr>
-    `;
+    if (!rowsHtml) {
+      const searchTerm = searchInput ? searchInput.value : "";
+      rowsHtml = `
+        <tr>
+          <td colspan="10" class="center-align grey-text" style="padding: 30px 0;">
+            <i class="material-icons" style="font-size: 48px; display: block; margin-bottom: 10px;">search</i>
+            ${searchTerm ? `No products found matching "<strong>${searchTerm}</strong>"` : "No products found in this category."}
+          </td>
+        </tr>
+      `;
+    }
 
+    tbody.innerHTML = rowsHtml;
     bindRowButtons();
-    updateMenuPagination(totalPages, totalRecords);
+    updatePaginationControls(totalPages, totalRecords);
   }
 
   // UPDATE PAGINATION CONTROLS
-  function updateMenuPagination(totalPages, totalRecords) {
+  function updatePaginationControls(totalPages, totalRecords) {
     const prevBtn = document.getElementById("menu-prev");
     const nextBtn = document.getElementById("menu-next");
     const pageLabel = document.getElementById("menu-page");
@@ -670,6 +683,7 @@ export async function loadmenu() {
       pageLabel.textContent = `Page ${currentPage} of ${totalPages}`;
     }
 
+    // Remove old listeners to prevent duplicates
     prevBtn.onclick = null;
     nextBtn.onclick = null;
 
@@ -711,38 +725,39 @@ export async function loadmenu() {
       const pieces = data.current_pieces ?? data.current_stock ?? 0;
 
       quantityColumns = `
-        <td data-label="Packs">${formatQuantity(packs)}</td>
-        <td data-label="Pieces">${formatQuantity(pieces)}</td>
-      `;
+      <td data-label="Packs">${formatQuantity(packs)}</td>
+      <td data-label="Pieces">${formatQuantity(pieces)}</td>
+    `;
     }
     // KG / LITER
     else if (data.unit === "kg" || data.unit === "liter") {
       quantityColumns = `
-        <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
-      `;
+      <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
+    `;
     }
 
     return `
-      <tr>
-        <td data-label="Product Code"><strong>${data.product_code || "-"}</strong></td>
-        <td data-label="Inventory ID">${inventoryProductId}</td>
-        <td data-label="Inventory Name">${data.inventory_name || "-"}</td>
-        <td data-label="Product Name">${data.product_name || "-"}</td>
-        <td data-label="Category">${data.category || "-"}</td>
-        ${quantityColumns}
-        <td data-label="Price">₱${Number(data.price || 0).toFixed(2)}</td>
-        <td data-label="Action">
-          <button class="edit-btn btn blue waves-effect waves-light" data-id="${id}">
-            <i class="material-icons">edit</i>
-          </button>
-          <button class="delete-btn btn red waves-effect waves-light" data-id="${id}">
-            <i class="material-icons">delete</i>
-          </button>
-        </td>
-      </tr>
-    `;
+    <tr>
+      <td data-label="Product Code"><strong>${data.product_code || "-"}</strong></td>
+      <td data-label="Inventory ID">${inventoryProductId}</td>
+      <td data-label="Inventory Name">${data.inventory_name || "-"}</td>
+      <td data-label="Product Name">${data.product_name || "-"}</td>
+      <td data-label="Category">${data.inv_category || data.category || "-"}</td>
+      ${quantityColumns}
+      <td data-label="Price">₱${Number(data.price || 0).toFixed(2)}</td>
+      <td data-label="Action">
+        <button class="edit-btn btn blue waves-effect waves-light" data-id="${id}">
+          <i class="material-icons">edit</i>
+        </button>
+        <button class="delete-btn btn red waves-effect waves-light" data-id="${id}">
+          <i class="material-icons">delete</i>
+        </button>
+      </td>
+    </tr>
+  `;
   }
 
+  // MAIN RENDER FUNCTION - loads data from Firestore
   function renderMenu() {
     if (unsubscribeMenu) unsubscribeMenu();
 
@@ -824,16 +839,60 @@ export async function loadmenu() {
         });
       }
 
+      // Reset to page 1 and render
       currentPage = 1;
       renderMenuPage();
     });
   }
 
+  // START LISTENING
   renderMenu();
 
+  // ============================================
   // SEARCH EVENT LISTENERS
+  // ============================================
+
   if (searchInput) {
-    searchInput.addEventListener("input", () => {
+    // Remove old listeners
+    searchInput.removeEventListener("input", handleSearch);
+    searchInput.removeEventListener("keypress", handleKeyPress);
+
+    // Input event - automatic search habang nagta-type
+    searchInput.addEventListener("input", handleSearch);
+
+    // Keypress event - pag nag-enter
+    searchInput.addEventListener("keypress", handleKeyPress);
+  }
+
+  function handleSearch() {
+    // Clear previous timeout
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    // Debounce search for better performance
+    searchTimeout = setTimeout(() => {
+      currentPage = 1; // Reset to first page
+      renderMenuPage(); // Re-render table with new search results
+
+      // Show/hide clear button
+      if (clearBtn) {
+        clearBtn.style.display = searchInput.value.length > 0 ? "flex" : "none";
+      }
+    }, 300); // 300ms delay
+  }
+
+  function handleKeyPress(e) {
+    // Kapag nag-enter, mag-search agad (walang debounce)
+    if (e.key === "Enter") {
+      e.preventDefault(); // Prevent form submission
+
+      // Cancel pending timeout
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+        searchTimeout = null;
+      }
+
       currentPage = 1;
       renderMenuPage();
 
@@ -841,28 +900,33 @@ export async function loadmenu() {
       if (clearBtn) {
         clearBtn.style.display = searchInput.value.length > 0 ? "flex" : "none";
       }
-    });
+    }
   }
 
   // CLEAR SEARCH BUTTON
   if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-      if (searchInput) {
-        searchInput.value = "";
-        searchInput.focus();
-        clearBtn.style.display = "none";
-        currentPage = 1;
-        renderMenuPage();
-      }
-    });
+    clearBtn.removeEventListener("click", handleClearSearch);
+    clearBtn.addEventListener("click", handleClearSearch);
+  }
+
+  function handleClearSearch() {
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.focus();
+      clearBtn.style.display = "none";
+      currentPage = 1;
+      renderMenuPage(); // Re-render with cleared search
+    }
   }
 
   // CATEGORY FILTER EVENT
-  filterCategory.removeEventListener("change", renderMenu);
-  filterCategory.addEventListener("change", () => {
+  filterCategory.removeEventListener("change", handleCategoryChange);
+  filterCategory.addEventListener("change", handleCategoryChange);
+
+  function handleCategoryChange() {
     currentPage = 1;
-    renderMenuPage();
-  });
+    renderMenuPage(); // Re-render with new category filter
+  }
 }
 
 export function cleanupProductMenuPage() {
@@ -896,6 +960,7 @@ export function cleanupProductMenuPage() {
   const clearBtn = document.getElementById("clearSearchBtn");
   if (searchInput) {
     searchInput.oninput = null;
+    searchInput.onkeypress = null;
   }
   if (clearBtn) {
     clearBtn.onclick = null;
@@ -925,5 +990,11 @@ export async function initProductPage() {
   const clearBtn = document.getElementById("clearSearchBtn");
   if (clearBtn) {
     clearBtn.style.display = "none";
+  }
+
+  // Focus search input on load (optional)
+  const searchInput = document.getElementById("searchProductMenu");
+  if (searchInput) {
+    // Hindi na kailangan mag-focus para hindi annoying
   }
 }

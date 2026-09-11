@@ -119,17 +119,23 @@ function confirmRecover(
 export function loadInventory() {
   const tbody = document.getElementById("inventory-table-body");
   const dateInput = document.getElementById("filter-date");
+  const searchInput = document.getElementById("searchInventory");
+  const clearBtn = document.getElementById("clearInventorySearch");
 
   if (unsubscribeInventory) {
     unsubscribeInventory();
     unsubscribeInventory = null;
   }
 
+  let searchTimeout = null;
+
   unsubscribeInventory = onSnapshot(
     collection(db, "inventory"),
     async (querySnapshot) => {
       const tbodyNow = document.getElementById("inventory-table-body");
       const dateInputNow = document.getElementById("filter-date");
+      const searchInputNow = document.getElementById("searchInventory");
+
       if (!tbodyNow) {
         if (unsubscribeInventory) {
           unsubscribeInventory();
@@ -147,19 +153,48 @@ export function loadInventory() {
 
       const selectedCategory = selectedCategoryFilter;
       const selectedDate = dateInputNow ? dateInputNow.value : "";
+      const searchTerm = searchInputNow
+        ? searchInputNow.value.toLowerCase().trim()
+        : "";
+
+      // Get category name for filtering
+      let selectedCategoryName = "";
+      if (selectedCategory && selectedCategory !== "all") {
+        selectedCategoryName = categoryNameMap[selectedCategory] || "";
+      }
 
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
 
-        if (selectedCategory !== "all") {
-          const selectedName = categoryNameMap[selectedCategory] || "";
-          if (data.category !== selectedName) return;
+        // Category filter - only filter if not "all"
+        if (
+          selectedCategory &&
+          selectedCategory !== "all" &&
+          selectedCategoryName
+        ) {
+          if (data.category !== selectedCategoryName) return;
         }
 
+        // Date filter
         if (selectedDate) {
           if (!data.created_at) return;
           const docDate = toLocalDateValue(data.created_at.toDate());
           if (docDate !== selectedDate) return;
+        }
+
+        // Search filter
+        if (searchTerm) {
+          const productId = (data.product_id || "").toLowerCase();
+          const productName = (data.product_name || "").toLowerCase();
+          const category = (data.category || "").toLowerCase();
+
+          if (
+            !productId.includes(searchTerm) &&
+            !productName.includes(searchTerm) &&
+            !category.includes(searchTerm)
+          ) {
+            return;
+          }
         }
 
         totalProducts++;
@@ -237,6 +272,7 @@ export function loadInventory() {
 `);
       });
 
+      // Update totals
       let totalLabel1 = "Total Stocks";
       let totalDisplay1 = totalStocks;
 
@@ -289,6 +325,42 @@ export function loadInventory() {
       renderInventoryPage();
     },
   );
+
+  // Search event listeners
+  if (searchInput) {
+    searchInput.removeEventListener("input", handleInventorySearch);
+    searchInput.addEventListener("input", handleInventorySearch);
+  }
+
+  function handleInventorySearch() {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+
+    searchTimeout = setTimeout(() => {
+      currentPage = 1;
+      loadInventory();
+
+      if (clearBtn) {
+        clearBtn.style.display = searchInput.value.length > 0 ? "flex" : "none";
+      }
+    }, 300);
+  }
+
+  if (clearBtn) {
+    clearBtn.removeEventListener("click", handleClearInventorySearch);
+    clearBtn.addEventListener("click", handleClearInventorySearch);
+  }
+
+  function handleClearInventorySearch() {
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.focus();
+      clearBtn.style.display = "none";
+      currentPage = 1;
+      loadInventory();
+    }
+  }
 
   return unsubscribeInventory;
 }
@@ -596,14 +668,14 @@ export async function addProduct(
     return;
   }
 
-  // Generate unique product ID
   const productId = generateProductId();
 
   const productData = {
-    product_id: productId, // ← ID na ito ang lalabas sa table
+    product_id: productId,
     product_name: normalizedProductName,
     category_id: categoryId,
-    category: categoryData.name,
+    category: categoryData.name, // ✅ IDAGDAG ITO (category name)
+    inv_category: categoryData.name, // ✅ IDAGDAG DIN ITO para sa Product Menu
     role: categoryData.role,
     unit_type: unitType,
     quantity: quantity,
@@ -754,26 +826,44 @@ export function stopLoadingCategories() {
 function renderCategoryPills(container, snapshot) {
   container.innerHTML = "";
 
-  const allPill = document.createElement("button");
-  allPill.type = "button";
-  allPill.className =
-    "category-pill" + (selectedCategoryFilter === "all" ? " active" : "");
-  allPill.textContent = "All Categories";
-  allPill.dataset.id = "all";
-  allPill.onclick = () => selectCategoryPill("all");
-  container.appendChild(allPill);
-
+  // Get all categories with data
+  const categoriesWithData = [];
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
+    categoriesWithData.push({
+      id: docSnap.id,
+      name: data.name,
+    });
+  });
 
+  // If no categories, show nothing
+  if (categoriesWithData.length === 0) {
+    // Reset to all if no categories exist
+    selectedCategoryFilter = "all";
+    syncDeleteCategoryButtonState();
+    return;
+  }
+
+  // Check if current selected category still exists
+  const selectedExists = categoriesWithData.some(
+    (cat) => cat.id === selectedCategoryFilter,
+  );
+
+  // If "all" or invalid selection, select the first category
+  if (!selectedExists || selectedCategoryFilter === "all") {
+    selectedCategoryFilter = categoriesWithData[0].id;
+  }
+
+  // Render each category as a pill
+  categoriesWithData.forEach((category) => {
     const pill = document.createElement("button");
     pill.type = "button";
     pill.className =
       "category-pill" +
-      (selectedCategoryFilter === docSnap.id ? " active" : "");
-    pill.textContent = data.name;
-    pill.dataset.id = docSnap.id;
-    pill.onclick = () => selectCategoryPill(docSnap.id);
+      (selectedCategoryFilter === category.id ? " active" : "");
+    pill.textContent = category.name;
+    pill.dataset.id = category.id;
+    pill.onclick = () => selectCategoryPill(category.id);
     container.appendChild(pill);
   });
 
@@ -781,6 +871,8 @@ function renderCategoryPills(container, snapshot) {
 }
 
 function selectCategoryPill(categoryId) {
+  if (selectedCategoryFilter === categoryId) return;
+
   selectedCategoryFilter = categoryId;
   currentPage = 1;
 
@@ -789,13 +881,24 @@ function selectCategoryPill(categoryId) {
   });
 
   syncDeleteCategoryButtonState();
+
+  // Clear search when changing category
+  const searchInput = document.getElementById("searchInventory");
+  const clearBtn = document.getElementById("clearInventorySearch");
+  if (searchInput) {
+    searchInput.value = "";
+    if (clearBtn) clearBtn.style.display = "none";
+  }
+
   loadInventory();
 }
 
 function syncDeleteCategoryButtonState() {
   const deleteBtn = document.getElementById("delete-category-btn");
   if (deleteBtn) {
-    deleteBtn.disabled = selectedCategoryFilter === "all";
+    // I-enable ang delete button kapag may selected category
+    deleteBtn.disabled =
+      !selectedCategoryFilter || selectedCategoryFilter === "all";
   }
 }
 
@@ -1542,13 +1645,36 @@ function bindArchiveHistoryButtons() {
 
 export async function initInventoryPage() {
   currentPage = 1;
-  processExpiredArchives().catch(console.error); // ← ADD THIS
-  loadInventory();
+  processExpiredArchives().catch(console.error);
+
+  // Load categories first para malaman ang unang category
   loadCategories();
+
+  // Then load inventory with the first category selected
+  setTimeout(() => {
+    loadInventory();
+  }, 100);
+
   bindInventoryPageButtons();
+
+  // Initialize search clear button
+  const clearBtn = document.getElementById("clearInventorySearch");
+  if (clearBtn) {
+    clearBtn.style.display = "none";
+  }
 }
 
 export function stopInventoryPage() {
   stopLoadingInventory();
   stopLoadingCategories();
+
+  // Cleanup search listeners
+  const searchInput = document.getElementById("searchInventory");
+  const clearBtn = document.getElementById("clearInventorySearch");
+  if (searchInput) {
+    searchInput.oninput = null;
+  }
+  if (clearBtn) {
+    clearBtn.onclick = null;
+  }
 }
