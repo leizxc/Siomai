@@ -53,7 +53,6 @@ export async function initPOS() {
     await loadProductsOffline(currentEmployeeId);
     identifyCart();
     setupCartEvents();
-    setupCategoryButtons();
     setupProductSearch();
     return;
   }
@@ -124,10 +123,21 @@ async function loadProducts() {
       packs,
     });
   });
-
+  setupCategoryButtons();
   filterProducts();
 }
 
+function updateCartCount() {
+  const cartCount = document.querySelector(".cart-count");
+
+  if (!cartCount) return;
+
+  const totalItems = cart.reduce((total, item) => {
+    return total + Number(item.qty || 0);
+  }, 0);
+
+  cartCount.textContent = `${totalItems} ${totalItems === 1 ? "Item" : "Items"}`;
+}
 // ADD TO CART
 function addToCart(product) {
   const existing = cart.find((item) => item.id === product.id);
@@ -154,6 +164,8 @@ function addToCart(product) {
 
 // RENDER CART
 function identifyCart() {
+  updateCartCount();
+
   if (window.innerWidth <= 768) {
     renderMobileCart();
   } else {
@@ -238,26 +250,6 @@ function renderCart() {
 
       if (render) {
         identifyCart();
-      } else {
-        const row = input.closest("tr");
-        const price = row.querySelector("td:nth-child(4)");
-
-        if (price) {
-          price.textContent = `₱${(cart[idx].qty * cart[idx].price).toFixed(
-            2,
-          )}`;
-        }
-
-        const grandTotal = cart.reduce(
-          (total, item) => total + item.qty * item.price,
-          0,
-        );
-
-        const grandTotalElement = document.getElementById("grandTotal");
-
-        if (grandTotalElement) {
-          grandTotalElement.textContent = grandTotal.toFixed(2);
-        }
       }
     };
 
@@ -375,7 +367,6 @@ let selectedCategory = "All";
 
 function setProducts(products) {
   allProducts = products;
-
   setupCategoryButtons();
   filterProducts();
 }
@@ -386,26 +377,32 @@ function setProducts(products) {
 
 function setupCategoryButtons() {
   const categoriesContainer = document.querySelector(".categories");
-
   if (!categoriesContainer) return;
 
   const categories = [
     "All",
     ...new Set(
       allProducts
+        .filter((product) => {
+          const stock = Number(product.pieces ?? product.stock) || 0;
+          return stock > 0;
+        })
         .map((product) => String(product.category || "").trim())
-        .filter((category) => category !== ""),
+        .filter(Boolean),
     ),
   ];
 
+  if (!categories.includes(selectedCategory)) {
+    selectedCategory = "All";
+  }
+
   categoriesContainer.innerHTML = "";
 
-  categories.forEach((category, index) => {
+  categories.forEach((category) => {
     const button = document.createElement("button");
-
     button.classList.add("category");
 
-    if (index === 0) {
+    if (category === selectedCategory) {
       button.classList.add("active");
     }
 
@@ -414,19 +411,17 @@ function setupCategoryButtons() {
     button.addEventListener("click", () => {
       selectedCategory = category;
 
-      document.querySelectorAll(".category").forEach((btn) => {
+      categoriesContainer.querySelectorAll(".category").forEach((btn) => {
         btn.classList.remove("active");
       });
 
       button.classList.add("active");
-
       filterProducts();
     });
 
     categoriesContainer.appendChild(button);
   });
 }
-
 // ========================================
 // SEARCH PRODUCT
 // ========================================
@@ -454,29 +449,26 @@ function setupProductSearch() {
 function filterProducts() {
   const searchInput = document.getElementById("searchProduct");
 
-  const searchValue = searchInput ? searchInput.value.trim().toLowerCase() : "";
+  const searchValue = searchInput
+    ? searchInput.value.trim().toLowerCase()
+    : "";
 
-  const filteredProducts = allProducts.filter((product) => {
-    // Product category
-    const category = String(product.category || "")
-      .trim()
-      .toLowerCase();
+const filteredProducts = allProducts.filter((product) => {
+  const stock = Number(product.pieces ?? product.stock) || 0;
 
-    // Product name
-    const productName = String(product.name || "")
-      .trim()
-      .toLowerCase();
+  if (stock <= 0) return false;
 
-    // CATEGORY FILTER
-    const categoryMatch =
-      selectedCategory === "All" ||
-      category === selectedCategory.trim().toLowerCase();
+  const category = String(product.category || "").trim().toLowerCase();
+  const productName = String(product.name || "").trim().toLowerCase();
 
-    // SEARCH FILTER
-    const searchMatch = productName.includes(searchValue);
+  const categoryMatch =
+    selectedCategory === "All" ||
+    category === selectedCategory.trim().toLowerCase();
 
-    return categoryMatch && searchMatch;
-  });
+  const searchMatch = productName.includes(searchValue);
+
+  return categoryMatch && searchMatch;
+});
 
   renderProducts(filteredProducts);
 }
