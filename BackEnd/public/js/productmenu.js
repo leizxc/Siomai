@@ -632,9 +632,42 @@ export async function loadmenu() {
     return filteredData;
   }
 
+  // UPDATE TABLE HEADERS — based on the CURRENTLY FILTERED rows, not
+  // the whole unfiltered collection. This is what was causing the
+  // "SIOMAI shows Container instead of Packs/Pieces" bug: headers
+  // used to be set from the first doc in the raw snapshot (could be
+  // any category), regardless of which category the user had filtered.
+  function updateMenuTableHeaders(filteredData) {
+    const thPacks = document.getElementById("th-packs");
+    const thPieces = document.getElementById("th-pieces");
+    const thContainer = document.getElementById("th-container");
+    if (!thPacks || !thPieces || !thContainer) return;
+
+    const sampleUnit = (filteredData[0]?.data.unit || "").toLowerCase();
+
+    if (sampleUnit === "pack") {
+      thPacks.style.display = "";
+      thPieces.style.display = "";
+      thContainer.style.display = "none";
+      thPacks.textContent = "Packs";
+      thPieces.textContent = "Pieces";
+    } else if (sampleUnit === "kg" || sampleUnit === "liter") {
+      thPacks.style.display = "none";
+      thPieces.style.display = "none";
+      thContainer.style.display = "";
+      thContainer.textContent = "Container";
+    } else {
+      thPacks.style.display = "none";
+      thPieces.style.display = "none";
+      thContainer.style.display = "none";
+    }
+  }
+
   // RENDER CURRENT PAGE
   function renderMenuPage() {
     const filteredData = getFilteredData();
+    updateMenuTableHeaders(filteredData);
+
     const totalRecords = filteredData.length;
     const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
 
@@ -766,38 +799,10 @@ export async function loadmenu() {
     unsubscribeMenu = onSnapshot(q, async (snapshot) => {
       if (!tbody.isConnected) return;
 
-      // DETERMINE WHICH UNIT IS CURRENTLY DISPLAYED
-      let currentUnit = null;
       const menuDocs = [];
       snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        menuDocs.push({ id: docSnap.id, data });
-        if (!currentUnit && data.unit) {
-          currentUnit = data.unit;
-        }
+        menuDocs.push({ id: docSnap.id, data: docSnap.data() });
       });
-
-      // UPDATE TABLE HEADERS
-      const thPacks = document.getElementById("th-packs");
-      const thPieces = document.getElementById("th-pieces");
-      const thContainer = document.getElementById("th-container");
-
-      if (currentUnit === "pack") {
-        thPacks.style.display = "";
-        thPieces.style.display = "";
-        thContainer.style.display = "none";
-        thPacks.textContent = "Packs";
-        thPieces.textContent = "Pieces";
-      } else if (currentUnit === "kg" || currentUnit === "liter") {
-        thPacks.style.display = "none";
-        thPieces.style.display = "none";
-        thContainer.style.display = "";
-        thContainer.textContent = "Container";
-      } else {
-        thPacks.style.display = "none";
-        thPieces.style.display = "none";
-        thContainer.style.display = "none";
-      }
 
       // COLLECT ALL INVENTORY IDs
       const inventoryIds = new Set();
@@ -839,7 +844,8 @@ export async function loadmenu() {
         });
       }
 
-      // Reset to page 1 and render
+      // Reset to page 1 and render (this also updates headers, based
+      // on the currently filtered category — not the raw snapshot).
       currentPage = 1;
       renderMenuPage();
     });
