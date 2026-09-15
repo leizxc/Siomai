@@ -29,7 +29,6 @@ const PRODUCT_PAGE_SIZE = 10;
 let productCurrentPage = 1;
 let allProductData = [];
 
-// History variables
 let unsubscribeProductHistory = null;
 let historyRowsCache = [];
 let historyCurrentPage = 1;
@@ -38,9 +37,6 @@ const HISTORY_PAGE_SIZE = 10;
 // ============================================
 // HELPERS
 // ============================================
-
-// Treats "kg" and "liter" as the exact same kind of unit everywhere in
-// this file (both are container/kaldero-based units).
 function isContainerUnit(unit) {
   const u = (unit || "").toLowerCase();
   return u === "kg" || u === "liter";
@@ -78,41 +74,24 @@ function buildAssignedQuantityFields(menuData, pieces) {
   };
 }
 
-// Returns how many containers (kaldero) are actually available for a
-// kg/liter product. Falls back to current_stock only when no explicit
-// container count has been recorded for the product.
+// Number of physical containers (kaldero) available for kg/liter products.
+// Falls back to 1 (never to the stock number) when no explicit count is saved.
 function getMaxAvailableContainers(menuData) {
   const explicitCount = Number(
     menuData.kaldero_count ?? menuData.container_count ?? 0,
   );
   if (explicitCount > 0) return explicitCount;
-  // No explicit container count saved on the product — a kg/liter
-  // stock number is a WEIGHT/VOLUME, not a container count, so it can
-  // never stand in as the container count (that was the bug: a 40kg
-  // stock was showing as "40 available containers"). Assume a single
-  // container whenever there's stock left; the true count can't be
-  // recovered from stock alone.
   return Number(menuData.current_stock || 0) > 0 ? 1 : 0;
 }
 
-// Updates the read-only "Unit" display field in the assign-product form.
 function updateUnitDisplay(unit) {
   const unitField = document.getElementById("productUnit");
   if (unitField) {
-    const unitMap = {
-      pack: "PACK",
-      kg: "KG",
-      liter: "LITER",
-      piece: "PIECE",
-    };
+    const unitMap = { pack: "PACK", kg: "KG", liter: "LITER", piece: "PIECE" };
     unitField.value = unitMap[unit] || "-";
   }
 }
 
-// Hides every quantity-input variant (pack/container/piece/equivalent).
-// Whichever branch applies (pack / kg-liter / piece) turns its own
-// field back on afterwards. Shared by resetAssignProductForm() and
-// the product-select handler inside bindProductFormListeners().
 function hideAllQuantityInputs() {
   const ids = [
     "packs-input-field",
@@ -124,6 +103,16 @@ function hideAllQuantityInputs() {
     const el = document.getElementById(id);
     if (el) el.style.display = "none";
   });
+}
+
+// Hides Price + Available Packs/Stock until a product is chosen.
+function hideProductDetailFields() {
+  const priceField = document.getElementById("product-price-field");
+  const packsBox = document.getElementById("available-packs-box");
+  const stockBox = document.getElementById("available-stock-box");
+  if (priceField) priceField.style.display = "none";
+  if (packsBox) packsBox.style.display = "none";
+  if (stockBox) stockBox.style.display = "none";
 }
 
 function confirmDeletion(title, message) {
@@ -151,15 +140,10 @@ function confirmDeletion(title, message) {
 }
 
 // ============================================
-// PRODUCT HISTORY FUNCTIONS
+// PRODUCT HISTORY
 // ============================================
 async function saveToProductHistory(productData, productId) {
   try {
-    console.log(
-      "💾 Saving to history:",
-      productData.name || productData.product_name,
-    );
-
     const existingQuery = query(
       collection(db, "productHistoryAssign"),
       where("productId", "==", productId),
@@ -172,17 +156,13 @@ async function saveToProductHistory(productData, productId) {
     if (stockValue === 0)
       stockValue = Number(productData.pieces ?? productData.stock ?? 0);
 
-    console.log(`📊 Stock value to save: ${stockValue}`);
-
     const price = Number(productData.price || 0);
     const totalIncome = stockValue * price;
+    const capitalPrice = Number(productData.capital_price || 0);
+    const totalCapital = stockValue * capitalPrice;
     const productName =
       productData.name || productData.product_name || "Unknown";
     const employeeName = productData.employee_name || "Unknown";
-
-    console.log(
-      `📦 Product: ${productName}, Stock: ${stockValue}, Price: ${price}, Total Income: ${totalIncome}`,
-    );
 
     if (!existingSnap.empty) {
       const existingDoc = existingSnap.docs[0];
@@ -190,13 +170,14 @@ async function saveToProductHistory(productData, productId) {
         stock: stockValue,
         price: price,
         total_income: totalIncome,
+        capital_price: capitalPrice,
+        total_capital: totalCapital,
         original_stock: stockValue,
         employee_name: employeeName,
         unit: productData.unit || "pack",
         pieces_per_pack: Number(productData.pieces_per_pack || 60),
         last_updated: serverTimestamp(),
       });
-      console.log(`✅ Updated existing history: ${productName}`);
       return;
     }
 
@@ -211,6 +192,8 @@ async function saveToProductHistory(productData, productId) {
       unit: productData.unit || "pack",
       pieces_per_pack: Number(productData.pieces_per_pack || 60),
       total_income: totalIncome,
+      capital_price: capitalPrice,
+      total_capital: totalCapital,
       status: "Completed",
       completed_at: serverTimestamp(),
       created_at: serverTimestamp(),
@@ -220,9 +203,6 @@ async function saveToProductHistory(productData, productId) {
     };
 
     await addDoc(collection(db, "productHistoryAssign"), historyData);
-    console.log(
-      `✅ Product saved: ${productName}, Stock: ${stockValue}, Income: ₱${totalIncome.toFixed(2)}`,
-    );
 
     M.toast({
       html: `📦 ${productName} moved to Product History (Sold: ${stockValue}, Income: ₱${totalIncome.toFixed(2)})`,
@@ -235,17 +215,12 @@ async function saveToProductHistory(productData, productId) {
 
 export function loadProductHistory() {
   const tbody = document.getElementById("history-assign-table-body");
-  if (!tbody) {
-    console.warn("history-assign-table-body not found");
-    return;
-  }
+  if (!tbody) return;
 
   if (unsubscribeProductHistory) {
     unsubscribeProductHistory();
     unsubscribeProductHistory = null;
   }
-
-  console.log("Loading product history...");
 
   unsubscribeProductHistory = onSnapshot(
     collection(db, "productHistoryAssign"),
@@ -258,8 +233,6 @@ export function loadProductHistory() {
         }
         return;
       }
-
-      console.log(`Product History records found: ${querySnapshot.size}`);
 
       const rowsHtml = [];
 
@@ -275,8 +248,6 @@ export function loadProductHistory() {
       } else {
         querySnapshot.forEach((docSnap) => {
           const data = docSnap.data();
-
-          console.log("History record:", data.product_name, data);
 
           const dateCompleted = data.completed_at
             ? data.completed_at.toDate().toLocaleDateString("en-PH", {
@@ -294,8 +265,6 @@ export function loadProductHistory() {
           if (unitType === "pack") {
             const packs = Math.ceil(stockValue / piecesPerPack);
             stockDisplay = `${packs} packs (${stockValue} pcs)`;
-          } else if (unitType === "kg" || unitType === "liter") {
-            stockDisplay = `${stockValue} ${unitType}`;
           } else {
             stockDisplay = `${stockValue} ${unitType}`;
           }
@@ -312,7 +281,7 @@ export function loadProductHistory() {
               <td data-label="Employee">${data.employee_name || "-"}</td>
               <td data-label="Stock"><strong>${stockDisplay}</strong></td>
               <td data-label="Price">₱${price.toFixed(2)}</td>
-              <td data-label="Total Income"><strong style="color: #16a34a;">₱${totalIncome.toFixed(2)}</strong></td>
+              <td data-label="Naibenta"><strong style="color: #16a34a;">₱${totalIncome.toFixed(2)}</strong></td>
               <td data-label="Date Completed">${dateCompleted}</td>
               <td data-label="Status">
                 <span class="status available">Completed</span>
@@ -327,17 +296,14 @@ export function loadProductHistory() {
       renderHistoryPage();
     },
     (error) => {
-      console.error(" Error loading product history:", error);
+      console.error("Error loading product history:", error);
     },
   );
 }
 
 function renderHistoryPage() {
   const tbody = document.getElementById("history-assign-table-body");
-  if (!tbody) {
-    console.warn("⚠️ history-assign-table-body not found");
-    return;
-  }
+  if (!tbody) return;
 
   const totalPages = Math.max(
     1,
@@ -366,10 +332,6 @@ function renderHistoryPage() {
     if (pageLabel) {
       pageLabel.textContent = `Page ${historyCurrentPage} of ${totalPages}`;
     }
-
-    // Remove old listeners
-    prev.onclick = null;
-    next.onclick = null;
 
     prev.onclick = () => {
       if (historyCurrentPage > 1) {
@@ -438,6 +400,19 @@ async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
   });
 }
 
+async function getCapitalPriceForMenuItem(menuData, transaction = null) {
+  const inventoryId = menuData.inventory_id || menuData.inventoryId || null;
+  if (!inventoryId) return 0;
+
+  const inventoryRef = doc(db, "inventory", inventoryId);
+  const inventorySnap = transaction
+    ? await transaction.get(inventoryRef)
+    : await getDoc(inventoryRef);
+
+  if (!inventorySnap.exists()) return 0;
+  return Number(inventorySnap.data().unit_price || 0);
+}
+
 // ============================================
 // LOAD INVENTORY OPTIONS
 // ============================================
@@ -490,11 +465,6 @@ function resetAssignProductForm() {
     if (el) el.value = value;
   }
 
-  function safeSetText(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-  }
-
   safeSetValue("productPrice", "");
   safeSetValue("productUnit", "-");
   safeSetValue("availablePacks", "0");
@@ -504,12 +474,7 @@ function resetAssignProductForm() {
   safeSetValue("assignPieces", "");
   safeSetValue("assignEquivalent", "");
 
-  const packsBox = document.getElementById("available-packs-box");
-  const stockBox = document.getElementById("available-stock-box");
-  // Hidden by default — only the PACK branch of the product-select
-  // handler turns this back on, since it doesn't apply to KG/LITER/PIECE.
-  if (packsBox) packsBox.style.display = "none";
-  if (stockBox) stockBox.style.display = "flex";
+  hideProductDetailFields();
 
   const containerFieldBox = document.getElementById("container-field");
   if (containerFieldBox) containerFieldBox.style.display = "none";
@@ -551,9 +516,7 @@ function bindProductFormListeners() {
   const productName = document.getElementById("productName");
   const addProductForm = document.getElementById("addProductForm");
 
-  // ==========================================
   // ROLE CHANGE
-  // ==========================================
   productRole.addEventListener("change", (e) => {
     const role = e.target.value;
 
@@ -577,6 +540,7 @@ function bindProductFormListeners() {
     safeSetValue("assignEquivalent", "");
 
     hideAllQuantityInputs();
+    hideProductDetailFields();
 
     const containerEl = document.getElementById("container");
     if (containerEl) containerEl.value = "";
@@ -592,18 +556,11 @@ function bindProductFormListeners() {
     );
     if (packsLabelResetEl) packsLabelResetEl.textContent = "Available Packs";
 
-    const packsBox = document.getElementById("available-packs-box");
-    const stockBox = document.getElementById("available-stock-box");
-    if (packsBox) packsBox.style.display = "none";
-    if (stockBox) stockBox.style.display = "flex";
-
     M.updateTextFields();
     loadInventoryOptions(role);
   });
 
-  // ==========================================
   // PRODUCT SELECT
-  // ==========================================
   productName.addEventListener("change", (e) => {
     const id = e.target.value;
     if (!id) return;
@@ -624,6 +581,12 @@ function bindProductFormListeners() {
       const price = Number(data.price || 0);
 
       updateUnitDisplay(unit);
+
+      // Reveal price + stock fields now that a product is selected
+      const priceField = document.getElementById("product-price-field");
+      if (priceField) priceField.style.display = "block";
+      const stockBox = document.getElementById("available-stock-box");
+      if (stockBox) stockBox.style.display = "flex";
 
       const priceEl = document.getElementById("productPrice");
       if (priceEl) priceEl.value = price;
@@ -648,9 +611,6 @@ function bindProductFormListeners() {
       if (piecesInput) piecesInput.value = "";
       if (equivalentInput) equivalentInput.value = "";
 
-      // ==========================================
-      // PACK PRODUCT
-      // ==========================================
       if (unit === "pack") {
         const availablePacks = Math.floor(pieces / piecesPerPack);
         const packsEl = document.getElementById("availablePacks");
@@ -665,9 +625,7 @@ function bindProductFormListeners() {
         if (stockUnitEl) stockUnitEl.textContent = "PACK";
 
         const packsBox = document.getElementById("available-packs-box");
-        const stockBox = document.getElementById("available-stock-box");
         if (packsBox) packsBox.style.display = "flex";
-        if (stockBox) stockBox.style.display = "flex";
 
         const packsField = document.getElementById("packs-input-field");
         if (packsField) packsField.style.display = "block";
@@ -697,16 +655,8 @@ function bindProductFormListeners() {
 
         if (containerField) containerField.style.display = "none";
         if (containerEl) containerEl.value = "";
-
-        // ==========================================
-        // KG / LITER PRODUCT
-        // ==========================================
       } else if (unit === "kg" || unit === "liter") {
         const displayUnit = unit === "kg" ? "KG" : "LITER";
-        // Real number of physical containers (kaldero) — NOT the kg/
-        // liter stock amount. getMaxAvailableContainers() falls back
-        // to 1 (never to the stock number) when the product has no
-        // explicit container count saved.
         const maxContainers = getMaxAvailableContainers(data);
 
         const packsEl = document.getElementById("availablePacks");
@@ -721,9 +671,7 @@ function bindProductFormListeners() {
         if (stockUnitEl) stockUnitEl.textContent = displayUnit;
 
         const packsBox = document.getElementById("available-packs-box");
-        const stockBox = document.getElementById("available-stock-box");
         if (packsBox) packsBox.style.display = "flex";
-        if (stockBox) stockBox.style.display = "flex";
 
         const containerFieldInput = document.getElementById(
           "container-input-field",
@@ -761,10 +709,6 @@ function bindProductFormListeners() {
             if (containerEl) containerEl.value = "";
           }
         }
-
-        // ==========================================
-        // PIECE PRODUCT
-        // ==========================================
       } else {
         const packsEl = document.getElementById("availablePacks");
         if (packsEl) packsEl.value = "0";
@@ -773,9 +717,7 @@ function bindProductFormListeners() {
         if (stockUnitEl) stockUnitEl.textContent = "PIECE";
 
         const packsBox = document.getElementById("available-packs-box");
-        const stockBox = document.getElementById("available-stock-box");
         if (packsBox) packsBox.style.display = "none";
-        if (stockBox) stockBox.style.display = "flex";
 
         const piecesField = document.getElementById("pieces-input-field");
         if (piecesField) piecesField.style.display = "block";
@@ -810,9 +752,7 @@ function bindProductFormListeners() {
     });
   });
 
-  // ==========================================
   // QUANTITY INPUT LISTENER
-  // ==========================================
   document
     .querySelectorAll("#assignPacks, #assignContainer, #assignPieces")
     .forEach((input) => {
@@ -833,18 +773,10 @@ function bindProductFormListeners() {
         }
 
         let equivalent = value;
-        let equivalentLabel = "";
 
         if (unit === "pack") {
           const piecesPerPack = Number(inputEl.dataset.piecesPerPack) || 1;
           equivalent = value * piecesPerPack;
-          equivalentLabel = `${equivalent} total pieces`;
-        } else if (unit === "kg") {
-          equivalentLabel = `${value} kg total`;
-        } else if (unit === "liter") {
-          equivalentLabel = `${value} L total`;
-        } else if (unit === "piece") {
-          equivalentLabel = `${value} total pieces`;
         }
 
         if (equivalentInput) equivalentInput.value = equivalent;
@@ -853,9 +785,6 @@ function bindProductFormListeners() {
       });
     });
 
-  // ==========================================
-  // HELPER: GET SELECTED UNIT
-  // ==========================================
   function getSelectedUnit() {
     const packsField = document.getElementById("packs-input-field");
     const containerField = document.getElementById("container-input-field");
@@ -868,9 +797,7 @@ function bindProductFormListeners() {
     return "pack";
   }
 
-  // ==========================================
   // FORM SUBMIT
-  // ==========================================
   addProductForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -911,20 +838,216 @@ function bindProductFormListeners() {
     try {
       const menuRef = doc(db, "productMenu", menuId);
 
+      if (!employeeId) {
+        // ==========================================
+        // SHARED ASSIGNMENT ("All Employees")
+        // Every employee under the selected role gets the FULL
+        // entered quantity (not divided). Existing rows for that
+        // employee + product get merged; new rows are created for
+        // employees who don't have one yet.
+        // ==========================================
+        const empRoleSnap = await getDocs(
+          query(collection(db, "employees"), where("role", "==", role)),
+        );
+        const targetEmployees = [];
+        empRoleSnap.forEach((docSnap) => {
+          const d = docSnap.data();
+          targetEmployees.push({
+            id: docSnap.id,
+            fname: d.fname,
+            lname: d.lname,
+          });
+        });
+
+        if (targetEmployees.length === 0) {
+          throw new Error("No employees found for this role.");
+        }
+
+        // Pre-fetch existing product row per target employee (outside
+        // the transaction — Firestore transactions can't run queries).
+        const existingRowMap = {};
+        for (const emp of targetEmployees) {
+          const rowSnap = await getDocs(
+            query(
+              collection(db, "products"),
+              where("inventoryId", "==", menuId),
+              where("employeeId", "==", emp.id),
+            ),
+          );
+          existingRowMap[emp.id] = rowSnap.empty ? null : rowSnap.docs[0].id;
+        }
+
+        const result = await runTransaction(db, async (transaction) => {
+          const menuSnap = await transaction.get(menuRef);
+          if (!menuSnap.exists()) {
+            throw new Error("Selected product no longer exists.");
+          }
+
+          const menuData = menuSnap.data();
+          const menuUnit = (menuData.unit || "piece").toLowerCase();
+          const isContainer = isContainerUnit(menuUnit);
+          const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+
+          const capitalPrice = await getCapitalPriceForMenuItem(
+            menuData,
+            transaction,
+          );
+
+          const piecesPerEmployee =
+            menuUnit === "pack" ? enteredQty * piecesPerPack : enteredQty;
+
+          const currentStock = Number(menuData.current_stock || 0);
+          const maxContainers = isContainer
+            ? getMaxAvailableContainers(menuData)
+            : null;
+
+          const maxByStock = Math.floor(currentStock / piecesPerEmployee);
+          const maxByContainers = isContainer
+            ? Math.floor(maxContainers / piecesPerEmployee)
+            : Infinity;
+          const servableCount = Math.min(
+            targetEmployees.length,
+            maxByStock,
+            maxByContainers,
+          );
+
+          if (servableCount <= 0) {
+            throw new Error("Not enough stock to assign to any employee.");
+          }
+
+          const servedEmployees = targetEmployees.slice(0, servableCount);
+          const totalPiecesUsed = piecesPerEmployee * servableCount;
+          const updatedStock = currentStock - totalPiecesUsed;
+
+          // Read every existing row first — ALL reads in a Firestore
+          // transaction must happen before ANY writes.
+          const existingSnaps = {};
+          for (const emp of servedEmployees) {
+            const existingId = existingRowMap[emp.id];
+            if (existingId) {
+              const ref = doc(db, "products", existingId);
+              existingSnaps[emp.id] = {
+                ref,
+                snap: await transaction.get(ref),
+              };
+            }
+          }
+
+          // All reads are done — writes can start now.
+          transaction.update(menuRef, {
+            ...buildCurrentQuantityFields(menuData, updatedStock),
+            ...(isContainer
+              ? {
+                  kaldero_count: Math.max(0, maxContainers - totalPiecesUsed),
+                  container_count: Math.max(0, maxContainers - totalPiecesUsed),
+                }
+              : {}),
+            status: updatedStock <= 0 ? "On Selling" : "Available",
+            assigned: true,
+            last_updated: serverTimestamp(),
+          });
+
+          for (const emp of servedEmployees) {
+            const existing = existingSnaps[emp.id];
+            if (existing && existing.snap.exists()) {
+              const oldData = existing.snap.data();
+              const oldPieces = Number(oldData.pieces ?? oldData.stock ?? 0);
+              const oldCapital = Number(oldData.capital_price || 0);
+              const mergedPieces = oldPieces + piecesPerEmployee;
+              const mergedCapitalPrice =
+                mergedPieces > 0
+                  ? (oldPieces * oldCapital +
+                      piecesPerEmployee * capitalPrice) /
+                    mergedPieces
+                  : capitalPrice;
+
+              transaction.update(existing.ref, {
+                capital_price: mergedCapitalPrice,
+                ...buildAssignedQuantityFields(menuData, mergedPieces),
+                last_updated: serverTimestamp(),
+              });
+            } else {
+              const newRef = doc(collection(db, "products"));
+              transaction.set(newRef, {
+                name: menuData.product_name || "Unknown",
+                price: Number(menuData.price || 0),
+                capital_price: capitalPrice,
+                role: role || menuData.category || "Unknown",
+                category:
+                  menuData.inv_category || menuData.category || "Unknown",
+                employeeId: emp.id,
+                inventoryId: menuId,
+                ...buildAssignedQuantityFields(menuData, piecesPerEmployee),
+                created_at: serverTimestamp(),
+                last_updated: serverTimestamp(),
+              });
+            }
+          }
+
+          return {
+            piecesToAssign: totalPiecesUsed,
+            servedCount: servableCount,
+            totalEmployees: targetEmployees.length,
+          };
+        });
+
+        await adjustLinkedInventoryStock(menuId, -result.piecesToAssign);
+        await SyncProductFromFirebase();
+
+        if (result.servedCount < result.totalEmployees) {
+          M.toast({
+            html: `Not enough stock for everyone. Assigned to ${result.servedCount} of ${result.totalEmployees} employees.`,
+            classes: "orange rounded",
+          });
+        } else {
+          M.toast({
+            html: `Assigned to all ${result.servedCount} employees!`,
+            classes: "green rounded",
+          });
+        }
+
+        resetAssignProductForm();
+        return;
+      }
+
+      // ==========================================
+      // SPECIFIC-EMPLOYEE ASSIGNMENT
+      // Merge into that employee's existing row for this product,
+      // or create a new one if they don't have one yet.
+      // ==========================================
+      const existingQuery = query(
+        collection(db, "products"),
+        where("inventoryId", "==", menuId),
+        where("employeeId", "==", employeeId),
+      );
+      const existingSnap = await getDocs(existingQuery);
+      const existingProductId = existingSnap.empty
+        ? null
+        : existingSnap.docs[0].id;
+
       const result = await runTransaction(db, async (transaction) => {
         const menuSnap = await transaction.get(menuRef);
         if (!menuSnap.exists()) {
           throw new Error("Selected product no longer exists.");
         }
 
+        const existingProductRef = existingProductId
+          ? doc(db, "products", existingProductId)
+          : null;
+        const existingProductSnap = existingProductRef
+          ? await transaction.get(existingProductRef)
+          : null;
+
         const menuData = menuSnap.data();
         const menuUnit = (menuData.unit || "piece").toLowerCase();
         const isContainer = isContainerUnit(menuUnit);
         const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
 
-        // Translate the entered quantity into "pieces" — for pack
-        // products that's packs * piecesPerPack, for kg/liter/piece
-        // products the entered amount already IS the piece/unit count.
+        const newCapitalPrice = await getCapitalPriceForMenuItem(
+          menuData,
+          transaction,
+        );
+
         const piecesToAssign =
           menuUnit === "pack" ? enteredQty * piecesPerPack : enteredQty;
 
@@ -963,23 +1086,45 @@ function bindProductFormListeners() {
           last_updated: serverTimestamp(),
         });
 
+        if (existingProductSnap && existingProductSnap.exists()) {
+          const oldData = existingProductSnap.data();
+          const oldPieces = Number(oldData.pieces ?? oldData.stock ?? 0);
+          const oldCapital = Number(oldData.capital_price || 0);
+
+          const mergedPieces = oldPieces + piecesToAssign;
+          const mergedCapitalPrice =
+            mergedPieces > 0
+              ? (oldPieces * oldCapital + piecesToAssign * newCapitalPrice) /
+                mergedPieces
+              : newCapitalPrice;
+
+          transaction.update(existingProductRef, {
+            capital_price: mergedCapitalPrice,
+            ...buildAssignedQuantityFields(menuData, mergedPieces),
+            last_updated: serverTimestamp(),
+          });
+
+          return { menuData, piecesToAssign, merged: true };
+        }
+
         const newProductRef = doc(collection(db, "products"));
         transaction.set(newProductRef, {
           name: menuData.product_name || "Unknown",
           price: Number(menuData.price || 0),
+          capital_price: newCapitalPrice,
           role: role || menuData.category || "Unknown",
-          employeeId: employeeId || null,
+          category: menuData.inv_category || menuData.category || "Unknown",
+          employeeId: employeeId,
           inventoryId: menuId,
           ...buildAssignedQuantityFields(menuData, piecesToAssign),
           created_at: serverTimestamp(),
           last_updated: serverTimestamp(),
         });
 
-        return { menuData, piecesToAssign };
+        return { menuData, piecesToAssign, merged: false };
       });
 
       await adjustLinkedInventoryStock(menuId, -result.piecesToAssign);
-
       await SyncProductFromFirebase();
 
       M.toast({
@@ -1023,31 +1168,48 @@ async function loadRoles() {
 }
 
 // ============================================
-// LOAD ROLE FILTER OPTIONS
+// LOAD CATEGORY FILTER OPTIONS
 // ============================================
-function loadRoleFilterOptions(filterRoleSelect) {
+// filterRole element still uses the old ID, but it now filters by
+// product CATEGORY (not employee role) so kg/liter items don't get
+// lumped together just because they share a unit type.
+function loadCategoryFilterOptions(filterCategorySelect) {
   if (unsubscribeRoleFilter) unsubscribeRoleFilter();
 
   unsubscribeRoleFilter = onSnapshot(collection(db, "products"), (snapshot) => {
-    if (!filterRoleSelect.isConnected) return;
+    if (!filterCategorySelect.isConnected) return;
 
-    const roles = new Set();
+    const categories = new Set();
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data.role) roles.add(data.role.trim());
+      const cat = (data.category || data.role || "").trim();
+      if (cat) categories.add(cat);
     });
 
-    const previousValue = filterRoleSelect.value;
-    filterRoleSelect.innerHTML = "";
-    roles.forEach((role) => {
-      filterRoleSelect.innerHTML += `<option value="${role}">${role}</option>`;
-    });
+    const previousValue = filterCategorySelect.value;
 
-    if (previousValue && roles.has(previousValue)) {
-      filterRoleSelect.value = previousValue;
+    if (categories.size === 0) {
+      filterCategorySelect.innerHTML = `<option value="" disabled selected>No categories yet</option>`;
+      reinitSelect(filterCategorySelect);
+      return;
     }
 
-    reinitSelect(filterRoleSelect);
+    filterCategorySelect.innerHTML = "";
+    let selectedExists = false;
+    categories.forEach((category) => {
+      if (category === previousValue) selectedExists = true;
+      filterCategorySelect.innerHTML += `<option value="${category}">${category}</option>`;
+    });
+
+    if (selectedExists) {
+      filterCategorySelect.value = previousValue;
+      reinitSelect(filterCategorySelect);
+    } else {
+      const firstCategory = filterCategorySelect.querySelector("option")?.value;
+      filterCategorySelect.value = firstCategory;
+      reinitSelect(filterCategorySelect);
+      filterCategorySelect.dispatchEvent(new Event("change"));
+    }
   });
 }
 
@@ -1068,13 +1230,10 @@ export async function loadProducts() {
     employeesMap[docSnap.id] = docSnap.data();
   });
 
-  loadRoleFilterOptions(filterRole);
+  loadCategoryFilterOptions(filterRole);
 
   let searchTimeout = null;
 
-  // ==========================================
-  // BIND ROW BUTTONS
-  // ==========================================
   function bindRowButtons() {
     tbody.querySelectorAll(".delete-btn").forEach((btn) => {
       btn.onclick = async () => {
@@ -1206,9 +1365,6 @@ export async function loadProducts() {
           );
           const rawStock = document.getElementById("edit-stock").value;
 
-          // kg AND liter both need decimal (parseFloat) support —
-          // previously only "kg" got parseFloat and liter fell through
-          // to parseInt, silently truncating fractional liters.
           const newStock = isContainerUnit(oldData.unit)
             ? parseFloat(rawStock)
             : parseInt(rawStock, 10);
@@ -1220,8 +1376,6 @@ export async function loadProducts() {
           const menuData = menuSnap.data();
           const isContainer = isContainerUnit(oldData.unit);
 
-          // For kg/liter, block edits that would need more containers
-          // than are actually available.
           if (isContainer && diff > 0) {
             const maxContainers = getMaxAvailableContainers(menuData);
             if (diff > maxContainers) {
@@ -1287,32 +1441,32 @@ export async function loadProducts() {
     });
   }
 
-  // ==========================================
-  // FILTER & SEARCH
-  // ==========================================
   function getFilteredData() {
     const searchTerm = searchInput
       ? searchInput.value.toLowerCase().trim()
       : "";
-    const selectedRole = filterRole.value;
+    const selectedCategory = filterRole.value;
 
     let filteredData = allProductData;
 
-    if (selectedRole) {
-      filteredData = filteredData.filter(
-        (item) => item.data.role === selectedRole,
-      );
+    if (selectedCategory) {
+      filteredData = filteredData.filter((item) => {
+        const cat = (item.data.category || item.data.role || "").trim();
+        return cat === selectedCategory;
+      });
     }
 
     if (searchTerm) {
       filteredData = filteredData.filter((item) => {
         const productName = (item.data.name || "").toLowerCase();
         const role = (item.data.role || "").toLowerCase();
+        const category = (item.data.category || "").toLowerCase();
         const employee = (item.empDisplay || "").toLowerCase();
         const price = String(item.data.price || "");
         return (
           productName.includes(searchTerm) ||
           role.includes(searchTerm) ||
+          category.includes(searchTerm) ||
           employee.includes(searchTerm) ||
           price.includes(searchTerm)
         );
@@ -1322,13 +1476,6 @@ export async function loadProducts() {
     return filteredData;
   }
 
-  // ==========================================
-  // TABLE HEADER LABELS (unit-aware)
-  // ==========================================
-  // A single table column can't show two different header labels at
-  // once, so this assumes each filtered view (role/search) is made up
-  // of one consistent unit type — which matches removing "All Roles"
-  // from the filter above.
   function updateTableHeaders(filteredData) {
     const packsHeaderEl = document.querySelector(
       "#productTable thead th:nth-child(3)",
@@ -1352,9 +1499,6 @@ export async function loadProducts() {
     }
   }
 
-  // ==========================================
-  // RENDER PRODUCT PAGE
-  // ==========================================
   function renderProductPage() {
     if (!tbody.isConnected) return;
 
@@ -1374,7 +1518,9 @@ export async function loadProducts() {
       const { id, data, empDisplay } = item;
       const piecesValue = data.pieces ?? data.stock ?? 0;
       const priceValue = Number(data.price || 0);
-      const totalIncome = piecesValue * priceValue;
+
+      const capitalPriceValue = Number(data.capital_price || 0);
+      const totalCapital = piecesValue * capitalPriceValue;
 
       const packsDisplay =
         data.unit === "pack"
@@ -1391,7 +1537,7 @@ export async function loadProducts() {
           <td data-label="Pieces">${piecesValue}</td>
           <td data-label="Role">${data.role}</td>
           <td data-label="Employee">${empDisplay}</td>
-          <td data-label="Total Income"><strong>₱${totalIncome.toFixed(2)}</strong></td>
+          <td data-label="Capital"><strong style="color: #16a34a;">₱${totalCapital.toFixed(2)}</strong></td>
           <td data-label="Action">
             <button class="btn blue edit-btn" data-id="${id}"><i class="material-icons">edit</i></button>
             <button class="btn red delete-btn" data-id="${id}"><i class="material-icons">delete</i></button>
@@ -1448,24 +1594,13 @@ export async function loadProducts() {
     bindRowButtons();
   }
 
-  // ==========================================
-  // RENDER PRODUCTS - MAIN LISTENER
-  // ==========================================
-  function renderProducts(employeeId = "", role = "") {
+  function renderProducts(employeeId = "") {
     if (unsubscribeProducts) {
       unsubscribeProducts();
       unsubscribeProducts = null;
     }
 
     let q = collection(db, "products");
-
-    if (employeeId) {
-      const empRole = employeesMap[employeeId]?.role;
-      if (empRole)
-        q = query(collection(db, "products"), where("role", "==", empRole));
-    } else if (role) {
-      q = query(collection(db, "products"), where("role", "==", role));
-    }
 
     unsubscribeProducts = onSnapshot(q, async (querySnapshot) => {
       if (!tbody.isConnected) return;
@@ -1477,15 +1612,7 @@ export async function loadProducts() {
         const currentStock = Number(data.pieces ?? data.stock ?? 0);
         const productId = docSnap.id;
 
-        console.log(
-          `📦 Checking product: ${data.name || data.product_name}, Stock: ${currentStock}`,
-        );
-
         if (currentStock === 0 && data.employeeId) {
-          console.log(
-            `🔍 Stock is 0 for: ${data.name || data.product_name}, saving to history...`,
-          );
-
           try {
             let originalStock = Number(
               data.original_stock ?? data.assigned_stock ?? 0,
@@ -1504,9 +1631,6 @@ export async function loadProducts() {
                       prodData.stock ??
                       0,
                   );
-                  console.log(
-                    `📊 Found in products collection: ${originalStock} pieces`,
-                  );
                 }
               } catch (e) {
                 console.error("Error getting product data:", e);
@@ -1522,9 +1646,6 @@ export async function loadProducts() {
                   const piecesPerPack = Number(menuData.pieces_per_pack || 60);
                   const packs = Number(menuData.quantity || 1);
                   originalStock = piecesPerPack * packs;
-                  console.log(
-                    `📊 Found in productMenu: ${originalStock} pieces`,
-                  );
                 }
               } catch (e) {
                 console.error("Error getting menu data:", e);
@@ -1535,8 +1656,6 @@ export async function loadProducts() {
             const employeeName = empData.fname
               ? `${empData.fname} ${empData.lname}`.trim()
               : "Unknown";
-
-            console.log(`📊 Saving with Original Stock: ${originalStock}`);
 
             await saveToProductHistory(
               {
@@ -1550,9 +1669,6 @@ export async function loadProducts() {
             );
 
             await deleteDoc(doc(db, "products", productId));
-            console.log(
-              `🗑️ Product deleted from table: ${data.name || data.product_name}`,
-            );
             continue;
           } catch (error) {
             console.error("Error processing product:", error);
@@ -1579,15 +1695,12 @@ export async function loadProducts() {
 
   renderProducts();
 
-  // ==========================================
-  // EVENT LISTENERS
-  // ==========================================
-  filterRole.removeEventListener("change", handleRoleChange);
-  filterRole.addEventListener("change", handleRoleChange);
+  filterRole.removeEventListener("change", handleCategoryChange);
+  filterRole.addEventListener("change", handleCategoryChange);
 
-  function handleRoleChange() {
+  function handleCategoryChange() {
     productCurrentPage = 1;
-    renderProducts("", document.getElementById("filterRole").value);
+    renderProductPage();
   }
 
   if (searchInput) {
@@ -1625,7 +1738,6 @@ export async function loadProducts() {
 // INIT PRODUCT PAGE
 // ============================================
 export async function initProductPage() {
-  // Initialize modals
   const modals = document.querySelectorAll(".modal");
   modals.forEach((modal) => {
     const instance = M.Modal.getInstance(modal);
@@ -1641,28 +1753,20 @@ export async function initProductPage() {
   const clearBtn = document.getElementById("clearAssignSearch");
   if (clearBtn) clearBtn.style.display = "none";
 
-  // ==========================================
-  // BIND PRODUCT HISTORY BUTTON
-  // ==========================================
   const historyBtn = document.getElementById("btn-product-history-assign");
   if (historyBtn) {
-    // Remove existing listeners
     historyBtn.replaceWith(historyBtn.cloneNode(true));
     const newHistoryBtn = document.getElementById("btn-product-history-assign");
 
     newHistoryBtn.addEventListener("click", () => {
       const modalEl = document.getElementById("modal-product-history-assign");
-      if (!modalEl) {
-        console.error("❌ modal-product-history-assign not found");
-        return;
-      }
+      if (!modalEl) return;
 
       let instance = M.Modal.getInstance(modalEl);
       if (!instance) {
         instance = M.Modal.init(modalEl, {
           dismissible: true,
           onOpenEnd: () => {
-            console.log("📊 Loading product history...");
             loadProductHistory();
           },
           onCloseEnd: () => {
@@ -1674,8 +1778,6 @@ export async function initProductPage() {
       }
       instance.open();
     });
-  } else {
-    console.warn("⚠️ btn-product-history-assign not found");
   }
 }
 

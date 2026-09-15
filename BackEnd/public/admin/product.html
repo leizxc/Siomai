@@ -32,7 +32,11 @@
 
     <!-- Row 3: Quantity inputs -->
     <div class="row" id="quantity-inputs-wrapper">
-      <div class="input-field col s12 m6" id="packs-input-field">
+      <div
+        class="input-field col s12 m6"
+        id="packs-input-field"
+        style="display: none"
+      >
         <input type="number" id="assignPacks" min="1" step="1" required />
         <label for="assignPacks">Number of Packs</label>
       </div>
@@ -55,7 +59,11 @@
         <label for="assignPieces">Number of Pieces</label>
       </div>
 
-      <div class="input-field col s12 m6" id="equivalent-field">
+      <div
+        class="input-field col s12 m6"
+        id="equivalent-field"
+        style="display: none"
+      >
         <input type="number" id="assignEquivalent" readonly />
         <label for="assignEquivalent">Equivalent Total</label>
       </div>
@@ -63,14 +71,22 @@
 
     <!-- Row 4: Price | Available Packs -->
     <div class="row">
-      <div class="input-field col s12 m6">
+      <div
+        class="input-field col s12 m6"
+        id="product-price-field"
+        style="display: none"
+      >
         <input type="number" id="productPrice" step="0.01" min="0" readonly />
         <label for="productPrice">Product Price (₱)</label>
       </div>
 
-      <div class="input-field col s12 m6" id="available-packs-box">
+      <div
+        class="input-field col s12 m6"
+        id="available-packs-box"
+        style="display: none"
+      >
         <input type="number" id="availablePacks" readonly />
-        <label for="availablePacks">Available Packs</label>
+        <label for="availablePacks">available Packs</label>
       </div>
     </div>
 
@@ -79,6 +95,7 @@
       <div
         class="input-field col s12 m6 stock-with-unit"
         id="available-stock-box"
+        style="display: none"
       >
         <input type="number" id="availableStock" readonly />
         <label for="availableStock" id="availableStockLabel"
@@ -133,9 +150,8 @@
     </div>
 
     <div class="filter-category-wrapper">
-      <label for="filterRole">Filter by Role</label>
-      <select id="filterRole" class="browser-default">
-      </select>
+      <label for="filterRole">Filter by Category</label>
+      <select id="filterRole" class="browser-default"></select>
     </div>
   </div>
 
@@ -149,7 +165,7 @@
           <th>Pieces</th>
           <th>Role</th>
           <th>Employee</th>
-          <th>Expected Income</th>
+          <th>Capital</th>
           <th>Actions</th>
         </tr>
       </thead>
