@@ -1,98 +1,158 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>View Order</title>
 
-    <link rel="stylesheet" href="/css/materialize.min.css">
-    <link rel="stylesheet" href="/css/employee.css">
+    <link rel="stylesheet" href="/css/materialize.min.css" />
+    <link rel="stylesheet" href="/css/employee.css" />
 
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head>
-<body>
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+  </head>
 
-<div class="order-container">
-
-    <!-- Header -->
-    <header class="order-header">
-
+  <body>
+    <div class="order-container">
+      <header class="order-header">
         <button id="backBtn" class="back-btn">
-            <i class="material-icons">arrow_back</i>
+          <i class="material-icons">arrow_back</i>
         </button>
 
         <h5>Order Menu</h5>
+      </header>
 
-    </header>
+      <div id="orderList" class="order-list"></div>
 
-    <!-- Products -->
-    <div id="orderList" class="order-list">
+      <div id="cashModal" class="modal payment-modal">
+        <div class="modal-content">
+          <h4>Cash Payment</h4>
 
+          <div class="cash-summary">
+            <div class="cash-row">
+              <span>Total Bill</span>
 
-    </div>
-
-    <!-- Summary -->
-    <div class="summary-card">
-
-        <div class="summary-top">
-
-            <div>
-                <h6>Orders</h6>
-                <p>
-                    <span id="totalItems">0</span> items in total
-                </p>
+              <strong> ₱<span id="cashTotal">0.00</span> </strong>
             </div>
 
-            <h5>
-                ₱<span id="orderTotal">0.00</span>
-            </h5>
+            <div class="input-field">
+              <input
+                type="text"
+                id="cashAmount"
+                inputmode="decimal"
+                autocomplete="off"
+              />
 
+              <label for="cashAmount"> Amount Paid </label>
+            </div>
+
+            <div class="cash-row change-row">
+              <span>Change</span>
+
+              <strong> ₱<span id="cashChange">0.00</span> </strong>
+            </div>
+
+            <p id="cashPaymentMessage" class="cash-payment-message"></p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="modal-close btn-flat">Cancel</button>
+
+          <button id="confirmCashBtn" class="btn green" disabled>
+            Confirm Payment
+          </button>
+        </div>
+      </div>
+
+      <div id="cashlessModal" class="modal payment-modal">
+        <div class="modal-content">
+          <h4>Cashless Payment</h4>
+
+          <p>Select payment provider.</p>
+
+          <div class="cashless-options">
+            <button id="gcashBtn" class="cashless-option" data-provider="GCash">
+              <img src="/assets/gcash.png" alt="GCash" class="payment-logo" />
+              <span>GCash</span>
+            </button>
+
+            <button
+              id="paymayaBtn"
+              class="cashless-option"
+              data-provider="PayMaya"
+            >
+              <img src="/assets/maya.png" alt="Maya" class="payment-logo" />
+              <span>Maya</span>
+            </button>
+          </div>
+
+          <div
+            id="cashlessReferenceField"
+            class="input-field"
+            style="display: none"
+          >
+            <input type="text" id="cashlessRefNo" />
+
+            <label for="cashlessRefNo"> Reference No. </label>
+          </div>
+
+          <p id="selectedProvider" class="selected-provider">
+            No payment method selected
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="modal-close btn-flat">Cancel</button>
+
+          <button id="confirmCashlessBtn" class="btn green" disabled>
+            Confirm Payment
+          </button>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-top">
+          <div>
+            <h6>Orders</h6>
+
+            <p>
+              <span id="totalItems">0</span>
+              items in total
+            </p>
+          </div>
+
+          <h5>₱<span id="orderTotal">0.00</span></h5>
         </div>
 
         <h6>Payment Method</h6>
 
         <div class="payment-method">
+          <button id="cashBtn" class="payment-btn active" data-method="Cash">
+            <i class="material-icons"> payments </i>
 
-            <button
-                id="cashBtn"
-                class="payment-btn active"
-                data-method="Cash">
+            Cash
+          </button>
 
-                <i class="material-icons">payments</i>
+          <button id="cashlessBtn" class="payment-btn" data-method="Cashless">
+            <i class="material-icons"> credit_card </i>
 
-                Cash
-
-            </button>
-
-            <button
-                id="cashlessBtn"
-                class="payment-btn"
-                data-method="Cashless">
-
-                <i class="material-icons">credit_card</i>
-
-                Cashless
-
-            </button>
-
+            Cashless
+          </button>
         </div>
 
-        <button
-            id="checkoutBtn"
-            class="checkout-btn">
-
-            Checkout
-
-        </button>
-
+        <button id="checkoutBtn" class="checkout-btn">Checkout</button>
+      </div>
     </div>
 
-</div>
+    <script src="/js/materialize.min.js"></script>
 
-<script src="/js/materialize.min.js"></script>
-<script type="module" src="/js/vieworder.js"></script>
-<script type="module" src="/js/firebase.js"></script>
-<script type="module" src="/js/navemployee.js"></script>
+    <script type="module" src="/js/vieworder.js"></script>
 
-</body>
+    <script type="module" src="/js/firebase.js"></script>
+
+    <script type="module" src="/js/navemployee.js"></script>
+  </body>
 </html>

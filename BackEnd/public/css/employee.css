@@ -1358,7 +1358,7 @@ body {
   .mobile-header h2 {
     flex: 1;
     margin-left: 15px;
-    color: #000 ;
+    color: #000;
     font-size: 32px;
     font-weight: 700;
   }
@@ -1748,4 +1748,122 @@ body {
     height: 4px;
     margin-right: 3px;
   }
+}
+.payment-modal {
+  border-radius: 14px;
+  max-width: 500px;
+}
+
+.payment-modal h4 {
+  margin-top: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.cash-summary {
+  margin-top: 20px;
+}
+
+.cash-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 17px;
+}
+
+.cash-row strong {
+  font-size: 20px;
+}
+
+.change-row {
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.cash-payment-message {
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+.cash-payment-message.insufficient {
+  color: #f44336;
+}
+
+.cash-payment-message.sufficient {
+  color: #4caf50;
+}
+
+.cashless-options {
+  display: flex;
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.cashless-option {
+  flex: 1;
+  height: 70px;
+  border: none;
+  border-radius: 10px;
+  background: #f1f1f1;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: 0.2s;
+}
+
+.payment-logo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+#gcashBtn.active {
+  background: #2196f3;
+  color: white;
+}
+
+#paymayaBtn.active {
+  background: #4caf50;
+  color: white;
+}
+
+.cashless-option:hover {
+  transform: translateY(-1px);
+}
+
+#gcashBtn.active {
+  background: #2196f3;
+  color: white;
+}
+
+#paymayaBtn.active {
+  background: #4caf50;
+  color: white;
+}
+
+#cashlessReferenceField {
+  margin-top: 25px;
+}
+
+.selected-provider {
+  margin-top: 20px;
+  font-weight: 500;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px !important;
+}
+
+.modal-footer .modal-close,
+.modal-footer .btn {
+  margin: 0;
 }

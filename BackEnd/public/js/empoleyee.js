@@ -9,6 +9,7 @@ import {
   query,
   where,
   serverTimestamp,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 import {
@@ -25,6 +26,13 @@ const auth = getAuth(app);
 let unsubscribePOS = null;
 
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+// NOTE: these hold the logged-in employee's role and uid so that
+// filterProducts() can enforce them as a safety net, even if allProducts
+// ever gets populated from a source that isn't already filtered (e.g. a
+// realtime listener or the offline IndexedDB path).
+let currentRole = null;
+let currentEmployeeId = null;
 
 function formatQuantity(value) {
   const quantity = Number(value);
@@ -46,17 +54,21 @@ export async function initPOS() {
     });
   });
 
-  const currentEmployeeId = user ? user.uid : null;
+  const authUid = user ? user.uid : null;
 
   if (!navigator.onLine) {
     console.log("Offline mode: loading from IndexedDB");
-    await loadProductsOffline(currentEmployeeId);
+    await loadProductsOffline(authUid);
     identifyCart();
     setupCartEvents();
     setupProductSearch();
     return;
   }
 
+  // loadProducts() resolves quickly (it just sets up the realtime
+  // listener) — the actual product data arrives via onSnapshot whenever
+  // Firestore pushes it, and filterProducts()/renderProducts() get
+  // called automatically from inside that listener.
   await loadProducts();
   identifyCart();
   setupCartEvents();
@@ -68,9 +80,12 @@ function saveCart() {
   localStorage.setItem("cart", JSON.stringify(cart));
 }
 
-// Kunin ang role ng naka-login na employee, hanapin sa "employees"
-// collection gamit ang Auth uid (hindi doc ID mismo).
-async function getCurrentEmployeeRole() {
+// Kunin ang role at employeeId ng naka-login na employee, hanapin sa
+// "employees" collection gamit ang Auth uid (hindi doc ID mismo).
+// IMPORTANTE: ang "employeeId" na nakalagay sa mga product ay tumutukoy
+// sa DOCUMENT ID ng employee record (snap.docs[0].id) — hindi sa Auth
+// uid mismo. Kung magkaiba pala sa Firestore mo, dito lang ito baguhin.
+async function getCurrentEmployeeInfo() {
   const user = auth.currentUser;
   if (!user) return null;
 
@@ -78,7 +93,10 @@ async function getCurrentEmployeeRole() {
   const snap = await getDocs(q);
   if (snap.empty) return null;
 
-  return snap.docs[0].data().role || null;
+  return {
+    role: snap.docs[0].data().role || null,
+    employeeId: snap.docs[0].id,
+  };
 }
 
 // LOAD PRODUCTS
@@ -89,42 +107,76 @@ async function loadProducts() {
 
   productGrid.innerHTML = "";
 
-  const role = await getCurrentEmployeeRole();
+  const info = await getCurrentEmployeeInfo();
 
-  if (!role) {
+  if (!info || !info.role) {
     console.error("No role found for current employee.");
     return;
   }
 
+  // Save these so filterProducts() can also enforce them as a safety net.
+  currentRole = info.role;
+  currentEmployeeId = info.employeeId;
+
+  // Isarado muna ang dating listener (kung meron) bago mag-subscribe ng
+  // bago, para hindi dumoble ang updates kapag na-call ulit ang
+  // loadProducts() (hal. pagbabalik sa page).
+  if (unsubscribePOS) {
+    unsubscribePOS();
+    unsubscribePOS = null;
+  }
+
   // Ipakita lang ang mga product na naka-assign sa role na ito, o yung
-  // naka-mark na "ALL" (shared across every role).
+  // naka-mark na "ALL" (shared across every role). employeeId ang
+  // pangalawang gate — kailangan din itong tumugma (o "ALL") bago
+  // mapunta sa allProducts.
   const q = query(
     collection(db, "products"),
-    where("role", "in", [role, "ALL"]),
+    where("role", "in", [currentRole, "ALL"]),
   );
 
-  const querySnapshot = await getDocs(q);
+  // onSnapshot instead of getDocs: mag-a-update na mismo ang list kapag
+  // may nabago sa Firestore (bagong product, na-out of stock, etc.) —
+  // hindi na kailangan pa ng manual refresh ng page.
+  unsubscribePOS = onSnapshot(
+    q,
+    (querySnapshot) => {
+      allProducts = [];
 
-  allProducts = [];
+      querySnapshot.forEach((docSnap) => {
+        const product = docSnap.data();
 
-  querySnapshot.forEach((docSnap) => {
-    const product = docSnap.data();
+        // employeeId gate: kung may laman ito at hindi ito "ALL" o hindi
+        // tumutugma sa naka-login na employee, huwag isama.
+        const productEmployeeId = product.employeeId;
+        const employeeMatch =
+          !productEmployeeId ||
+          productEmployeeId === "ALL" ||
+          productEmployeeId === currentEmployeeId;
 
-    const pieces = Number(product.pieces ?? product.stock) || 0;
-    const piecesPerPack = Number(product.pieces_per_pack) || 1;
-    const packs =
-      product.unit === "pack" ? Math.ceil(pieces / piecesPerPack) : null;
+        if (!employeeMatch) return;
 
-    allProducts.push({
-      id: docSnap.id,
-      ...product,
-      pieces,
-      piecesPerPack,
-      packs,
-    });
-  });
-  setupCategoryButtons();
-  filterProducts();
+        const pieces = Number(product.pieces ?? product.stock) || 0;
+        const piecesPerPack = Number(product.pieces_per_pack) || 1;
+        const packs =
+          product.unit === "pack" ? Math.ceil(pieces / piecesPerPack) : null;
+
+        allProducts.push({
+          id: docSnap.id,
+          ...product,
+          pieces,
+          piecesPerPack,
+          packs,
+        });
+      });
+
+      setupCategoryButtons();
+      filterProducts();
+    },
+    (error) => {
+      console.error("Products listener error:", error);
+    },
+  );
 }
 
 function updateCartCount() {
@@ -449,26 +501,46 @@ function setupProductSearch() {
 function filterProducts() {
   const searchInput = document.getElementById("searchProduct");
 
-  const searchValue = searchInput
-    ? searchInput.value.trim().toLowerCase()
-    : "";
+  const searchValue = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
-const filteredProducts = allProducts.filter((product) => {
-  const stock = Number(product.pieces ?? product.stock) || 0;
+  const filteredProducts = allProducts.filter((product) => {
+    const stock = Number(product.pieces ?? product.stock) || 0;
 
-  if (stock <= 0) return false;
+    if (stock <= 0) return false;
 
-  const category = String(product.category || "").trim().toLowerCase();
-  const productName = String(product.name || "").trim().toLowerCase();
+    // Safety net: enforce role AND employeeId visibility here too, in
+    // case allProducts was ever populated from a path that skipped the
+    // filtered Firestore query (e.g. setProducts() from a realtime
+    // listener, or the offline IndexedDB load).
+    const productRole = product.role;
+    const roleMatch =
+      !currentRole ||
+      !productRole ||
+      productRole === currentRole ||
+      productRole === "ALL";
 
-  const categoryMatch =
-    selectedCategory === "All" ||
-    category === selectedCategory.trim().toLowerCase();
+    const productEmployeeId = product.employeeId;
+    const employeeMatch =
+      !currentEmployeeId ||
+      !productEmployeeId ||
+      productEmployeeId === "ALL" ||
+      productEmployeeId === currentEmployeeId;
 
-  const searchMatch = productName.includes(searchValue);
+    const category = String(product.category || "")
+      .trim()
+      .toLowerCase();
+    const productName = String(product.name || "")
+      .trim()
+      .toLowerCase();
 
-  return categoryMatch && searchMatch;
-});
+    const categoryMatch =
+      selectedCategory === "All" ||
+      category === selectedCategory.trim().toLowerCase();
+
+    const searchMatch = productName.includes(searchValue);
+
+    return roleMatch && employeeMatch && categoryMatch && searchMatch;
+  });
 
   renderProducts(filteredProducts);
 }
