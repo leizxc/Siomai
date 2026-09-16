@@ -71,10 +71,20 @@
         <div class="modal-content">
           <h4>Cashless Payment</h4>
 
+          <div class="cash-row">
+            <span>Total Bill</span>
+            <strong>₱<span id="cashlessTotal">0.00</span></strong>
+          </div>
+
           <p>Select payment provider.</p>
 
           <div class="cashless-options">
-            <button id="gcashBtn" class="cashless-option" data-provider="GCash">
+            <button
+              id="gcashBtn"
+              class="cashless-option"
+              type="button"
+              data-provider="GCash"
+            >
               <img src="/assets/gcash.png" alt="GCash" class="payment-logo" />
               <span>GCash</span>
             </button>
@@ -82,6 +92,7 @@
             <button
               id="paymayaBtn"
               class="cashless-option"
+              type="button"
               data-provider="PayMaya"
             >
               <img src="/assets/maya.png" alt="Maya" class="payment-logo" />
@@ -94,9 +105,14 @@
             class="input-field"
             style="display: none"
           >
-            <input type="text" id="cashlessRefNo" />
+            <input
+              type="text"
+              id="cashlessRefNo"
+              inputmode="numeric"
+              autocomplete="off"
+            />
 
-            <label for="cashlessRefNo"> Reference No. </label>
+            <label for="cashlessRefNo">Reference No.</label>
           </div>
 
           <p id="selectedProvider" class="selected-provider">
