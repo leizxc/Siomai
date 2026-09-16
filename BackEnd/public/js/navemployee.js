@@ -1,103 +1,176 @@
-// navemployee.js
 let currentLoadToken = 0;
 let isNavigating = false;
 let currentCleanup = null;
 
-function loadSection(page) {
+async function loadSection(page) {
   if (isNavigating) return;
+
   isNavigating = true;
 
-  //stop the previus page listener
   if (currentCleanup) {
     currentCleanup();
     currentCleanup = null;
   }
 
   const myToken = ++currentLoadToken;
-  fetch(page)
-    .then((response) => response.text())
-    .then(async (data) => {
-      if (myToken !== currentLoadToken) return;
 
-      const main = document.getElementById("content");
-      main.innerHTML = data;
+  try {
+    const response = await fetch(page);
 
-      const title = document.getElementById("mobile-title");
+    if (!response.ok) {
+      throw new Error(`Failed to load ${page}`);
+    }
 
-      const pageTitles = {
-        "userpanel.html": "Point of Sale",
-        "report.html": "Report",
-        "stock.html": "Inventory",
-        "attendance.html": "Attendance",
-      };
-      if (title) title.textContent = pageTitles[page] || "Employee";
+    const data = await response.text();
 
-      M.FormSelect.init(document.querySelectorAll("select"));
-      M.Modal.init(document.querySelectorAll(".modal"));
+    if (myToken !== currentLoadToken) return;
 
-      switch (page) {
-        case "userpanel.html":
-          try {
-            const posModule = await import("/js/empoleyee.js");
-            if (typeof posModule.initPOS === "function") {
-              if (myToken !== currentLoadToken) return;
-              await posModule.initPOS();
-            }
-            currentCleanup = posModule.stopPosPage || null;
-          } catch (err) {
-            console.error("POS init Error", err);
+    const parser = new DOMParser();
+    const parsedPage = parser.parseFromString(data, "text/html");
+
+    const main = document.getElementById("content");
+
+    if (!main) {
+      throw new Error("#content not found");
+    }
+
+    const pageContent = parsedPage.querySelector("#content");
+
+    if (pageContent) {
+      main.innerHTML = pageContent.innerHTML;
+    } else {
+      main.innerHTML = parsedPage.body.innerHTML;
+    }
+
+    const title = document.getElementById("mobile-title");
+
+    const pageTitles = {
+      "userpanel.html": "Point of Sale",
+      "report.html": "Report",
+      "stock.html": "Inventory",
+      "attendance.html": "Attendance",
+    };
+
+    if (title) {
+      title.textContent = pageTitles[page] || "Employee";
+    }
+
+    updateBottomNav(page);
+
+    if (typeof M !== "undefined") {
+      M.FormSelect.init(
+        document.querySelectorAll("select")
+      );
+
+      M.Modal.init(
+        document.querySelectorAll(".modal")
+      );
+    }
+
+    switch (page) {
+      case "userpanel.html":
+        try {
+          const posModule = await import("/js/empoleyee.js");
+
+          if (
+            myToken !== currentLoadToken
+          ) {
+            return;
           }
-          break;
 
-        case "stock.html":
-          try {
-            const stockmodule = await import("/js/stock.js");
-            if (typeof stockmodule.loadstock === "function") {
-              if (myToken !== currentLoadToken) return;
-              await stockmodule.loadstock();
-            }
-
-            currentCleanup = stockmodule.stopStockPage || null;
-          } catch (err) {
-            console.error("stock init Error:", err);
-          }
-          break;
-
-        case "attendance.html":
-          try {
-            const attendanceModule = await import("/js/attendance.js");
-
-            if (typeof attendanceModule.initAttendance === "function") {
-              if (myToken !== currentLoadToken) return;
-
-              await attendanceModule.initAttendance();
-            }
-
-            currentCleanup = attendanceModule.stopAttendancePage || null;
-          } catch (err) {
-            console.error("Attendance init Error:", err);
+          if (
+            typeof posModule.initPOS === "function"
+          ) {
+            await posModule.initPOS();
           }
 
-          break;
+          currentCleanup =
+            posModule.stopPosPage || null;
+        } catch (err) {
+          console.error(
+            "POS init Error:",
+            err
+          );
+        }
+        break;
 
-        case "report.html":
-      }
-    })
-    .catch((err) => console.error("Error Loading Section:", err))
-    .finally(() => {
-      isNavigating = false;
-    });
+      case "stock.html":
+        try {
+          const stockModule =
+            await import("/js/stock.js");
+
+          if (
+            myToken !== currentLoadToken
+          ) {
+            return;
+          }
+
+          if (
+            typeof stockModule.loadstock ===
+            "function"
+          ) {
+            await stockModule.loadstock();
+          }
+
+          currentCleanup =
+            stockModule.stopStockPage || null;
+        } catch (err) {
+          console.error(
+            "Stock init Error:",
+            err
+          );
+        }
+        break;
+
+      case "attendance.html":
+        try {
+          const attendanceModule =
+            await import("/js/attendance.js");
+
+          if (
+            myToken !== currentLoadToken
+          ) {
+            return;
+          }
+
+          if (
+            typeof attendanceModule.initAttendance ===
+            "function"
+          ) {
+            await attendanceModule.initAttendance();
+          }
+
+          currentCleanup =
+            attendanceModule.stopAttendancePage ||
+            null;
+        } catch (err) {
+          console.error(
+            "Attendance init Error:",
+            err
+          );
+        }
+        break;
+
+      case "report.html":
+        break;
+    }
+  } catch (err) {
+    console.error(
+      "Error Loading Section:",
+      err
+    );
+  } finally {
+    isNavigating = false;
+  }
 }
 
-// Make function available to HTML
 window.loadSection = loadSection;
 
-// ================================
-// BOTTOM NAV ACTIVE STATE
-// ================================
-
 function updateBottomNav(page) {
-  const navItems = document.querySelectorAll(".bottom-nav a");
+  const navItems =
+    document.querySelectorAll(
+      ".bottom-nav a"
+    );
 
   navItems.forEach((item) => {
     item.classList.remove("active");
@@ -114,61 +187,60 @@ function updateBottomNav(page) {
   }
 }
 
-// ================================
-// BOTTOM NAV CLICK EVENTS
-// ================================
+document.addEventListener(
+  "DOMContentLoaded",
+  () => {
+    const bottomNav =
+      document.querySelector(".bottom-nav");
 
-document.addEventListener("DOMContentLoaded", () => {
-  const bottomNav = document.querySelector(".bottom-nav");
+    if (!bottomNav) {
+      return;
+    }
 
-  if (!bottomNav) {
-    console.warn("Bottom navigation not found.");
-    return;
+    const navItems =
+      bottomNav.querySelectorAll("a");
+
+    navItems[0]?.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        loadSection("userpanel.html");
+      }
+    );
+
+    navItems[1]?.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        loadSection("stock.html");
+      }
+    );
+
+    navItems[2]?.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        loadSection("attendance.html");
+      }
+    );
+
+    navItems[3]?.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        loadSection("report.html");
+      }
+    );
+
+    navItems[4]?.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        window.location.href =
+          "/index.html";
+      }
+    );
+
+    updateBottomNav("userpanel.html");
   }
-
-  const navItems = bottomNav.querySelectorAll("a");
-
-  // POS
-  navItems[0]?.addEventListener("click", (event) => {
-    event.preventDefault();
-
-    loadSection("userpanel.html");
-  });
-
-  // INVENTORY
-  navItems[1]?.addEventListener("click", (event) => {
-    event.preventDefault();
-
-    loadSection("stock.html");
-  });
-
-  // ATTENDANCE
-  navItems[2]?.addEventListener("click", (event) => {
-    event.preventDefault();
-
-    loadSection("attendance.html");
-  });
-
-  // REPORT
-  navItems[3]?.addEventListener("click", (event) => {
-    event.preventDefault();
-
-    loadSection("report.html");
-  });
-
-  // Logout
-  navItems[4]?.addEventListener("click", (event) => {
-    event.preventDefault();
-
-    window.location.href = "/index.html";
-  });
-});
-
-// ================================
-// INITIAL PAGE
-// ================================
-
-document.addEventListener("DOMContentLoaded", () => {
-  // POS is the default page
-  updateBottomNav("userpanel.html");
-});
+);
