@@ -18,25 +18,45 @@
         <label for="inputProduct">Product Name (e.g. Pork Siomai)</label>
       </div>
 
-      <!-- Kg counter to container -->
+      <!-- PACK: Packs Used -->
+      <div
+        class="input-field col s12 m6"
+        id="packs-used-field"
+        style="display: none"
+      >
+        <input type="number" id="packsUsed" step="1" min="1" />
+        <label for="packsUsed">Packs Used</label>
+      </div>
+
+      <!-- PACK: Pieces Used (kung kailangan) -->
+      <div
+        class="input-field col s12 m6"
+        id="pieces-used-field"
+        style="display: none"
+      >
+        <input type="number" id="piecesUsed" step="1" min="1" />
+        <label for="piecesUsed">Pieces Used</label>
+      </div>
+
+      <!-- KG / KABAN / LITER: Kilograms Used -->
       <div
         class="input-field col s12 m6"
         id="kg-used-field"
         style="display: none"
       >
-        <input type="number" name="kgUsed" id="KgUsed" step="0.01" min="0" />
-        <label for="KgUsed">Kilograms Used (as Ingredient)</label>
+        <input type="number" id="KgUsed" step="0.01" min="0" />
+        <label for="KgUsed" id="kg-used-label">Kilograms Used</label>
       </div>
 
-      <!-- KALDER OR CONTAINER -->
+      <!-- Container Reached -->
       <div
         class="input-field col s12 m6"
         id="kaldero-count-field"
         style="display: none"
       >
-        <input type="number" id="kalderocCount" min="0" />
-        <label for="kalderocCount"
-          >Number of kaldero or container Reached</label
+        <input type="number" id="kalderocCount" min="0" step="1" />
+        <label for="kalderocCount" id="kaldero-label"
+          >Number of Container Reached</label
         >
       </div>
 
@@ -126,8 +146,7 @@
 
     <div class="filter-category-wrapper">
       <label for="filterCategory">Filter by Category</label>
-      <select id="filterCategory" class="browser-default">
-      </select>
+      <select id="filterCategory" class="browser-default"></select>
     </div>
   </div>
 
@@ -143,6 +162,9 @@
           <th id="th-packs" style="display: none">Packs</th>
           <th id="th-pieces" style="display: none">Pieces</th>
           <th id="th-container" style="display: none">Container</th>
+          <th id="th-pieces-used" style="display: none">Pieces Used</th>
+          <th id="th-packs-used" style="display: none">Packs Used</th>
+          <th id="th-kg-used" style="display: none">KG Used</th>
           <th id="th-price">Price</th>
           <th id="th-action">Action</th>
         </tr>

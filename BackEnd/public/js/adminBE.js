@@ -225,11 +225,22 @@ export function loadInventory() {
         if (data.unit_type === "pack") {
           totalLabel = "Total Pieces";
           totalDisplay = `${data.stock_quantity} pcs`;
+        } else if (data.unit_type === "packs") {
+          totalLabel = "Total Packs";
+          totalDisplay = `${data.quantity} packs`;
+        } else if (data.unit_type === "kaban") {
+          // Ipakita ang kg total + kung ilang kaban
+          const weightPerKaban = Number(data.weight_per_kaban || 0);
+          totalLabel = "Total Weight";
+          totalDisplay =
+            weightPerKaban > 0
+              ? `${data.stock_quantity} kg`
+              : `${data.stock_quantity} kg`;
         } else if (data.unit_type === "kg") {
           totalLabel = "Total Weight";
-          const pounds = (data.quantity * 2.2).toFixed(2);
-          totalDisplay = `${pounds} lb`;
+          totalDisplay = `${data.quantity} kg`;
         } else if (data.unit_type === "liter") {
+          totalLabel = "Total Volume";
           totalDisplay = `${data.quantity} L`;
         } else {
           totalLabel = "Total Quantity";
@@ -637,16 +648,41 @@ export async function addProduct(
   let stockQty = 0;
   let totalValue = 0;
 
+  // PACK → pieces (quantity × pieces_per_pack)
   if (unitType === "pack") {
     stockQty = quantity * piecesPerPack;
     totalValue = stockQty * unitPrice;
-  } else if (unitType === "kg") {
+  }
+  // PACKS → packs
+  else if (unitType === "packs") {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
-  } else if (unitType === "liter") {
+  }
+  // KABAN → kg (quantity × weight per kaban)
+  else if (unitType === "kaban") {
+    const weightPerKaban = Number(extraFields.weight_per_kaban || 0);
+    if (weightPerKaban <= 0) {
+      M.toast({
+        html: "Please enter Weight per Kaban.",
+        classes: "red rounded",
+      });
+      return;
+    }
+    stockQty = quantity * weightPerKaban;
+    totalValue = stockQty * unitPrice;
+  }
+  // KG → kg
+  else if (unitType === "kg") {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
-  } else {
+  }
+  // LITER → liters
+  else if (unitType === "liter") {
+    stockQty = quantity;
+    totalValue = quantity * unitPrice;
+  }
+  // Default
+  else {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
   }
@@ -674,8 +710,8 @@ export async function addProduct(
     product_id: productId,
     product_name: normalizedProductName,
     category_id: categoryId,
-    category: categoryData.name, // ✅ IDAGDAG ITO (category name)
-    inv_category: categoryData.name, // ✅ IDAGDAG DIN ITO para sa Product Menu
+    category: categoryData.name,
+    inv_category: categoryData.name,
     role: categoryData.role,
     unit_type: unitType,
     quantity: quantity,
@@ -686,6 +722,11 @@ export async function addProduct(
     created_at: serverTimestamp(),
     last_updated: serverTimestamp(),
   };
+
+  // Store weight per kaban para sa KABAN
+  if (unitType === "kaban") {
+    productData.weight_per_kaban = Number(extraFields.weight_per_kaban || 0);
+  }
 
   if (normalizedPlasticColor) {
     productData.plasticColor = normalizedPlasticColor;
@@ -992,11 +1033,14 @@ function bindNewCategoryUnitSelect() {
   newCategoryUnitSelect.onchange = (e) => {
     const field = document.getElementById("pieces-per-pack-field");
     if (!field) return;
+
+    // I-show ang pieces-per-pack field para sa PACK lang
     if (e.target.value === "pack") {
       field.style.display = "block";
     } else {
       field.style.display = "none";
     }
+
     const selects = document.querySelectorAll("select");
     if (selects.length) M.FormSelect.init(selects);
   };
@@ -1051,9 +1095,15 @@ function applyCategoryDependentFields(categoryData, els) {
     if (unitType === "pack") {
       qtyLabel.textContent = `Number of Packs (×${piecesPerPack} pieces each)`;
       qtyInput.placeholder = "Enter number of packs";
+    } else if (unitType === "packs") {
+      qtyLabel.textContent = "Number of Packs";
+      qtyInput.placeholder = "Enter number of packs";
+    } else if (unitType === "kaban") {
+      qtyLabel.textContent = "Number of Kaban";
+      qtyInput.placeholder = "Enter number of kaban";
     } else if (unitType === "kg") {
       qtyLabel.textContent = "Weight (in kilograms)";
-      qtyInput.placeholder = "Enter weigh in kg";
+      qtyInput.placeholder = "Enter weight in kg";
     } else if (unitType === "liter") {
       qtyLabel.textContent = "Volume (L)";
       qtyInput.placeholder = "Enter Liters";
@@ -1083,6 +1133,7 @@ function bindProductCategorySelect() {
 
     const categoryDoc = await getDoc(doc(db, "categoriesINV", categoryId));
     const categoryData = categoryDoc.data();
+    const unitType = categoryData.unit_type;
 
     applyCategoryDependentFields(categoryData, {
       qtyLabel: document.querySelector('label[for="product-packs"]'),
@@ -1090,6 +1141,20 @@ function bindProductCategorySelect() {
       plasticColorField: document.getElementById("product-plastic-color-field"),
       plasticColorInput: document.getElementById("product-plastic-color"),
     });
+
+    // Show/hide weight per kaban field
+    const weightPerKabanField = document.getElementById(
+      "weight-per-kaban-field",
+    );
+    if (weightPerKabanField) {
+      if (unitType === "kaban") {
+        weightPerKabanField.style.display = "block";
+      } else {
+        weightPerKabanField.style.display = "none";
+        const weightInput = document.getElementById("weight-per-kaban");
+        if (weightInput) weightInput.value = "";
+      }
+    }
 
     M.updateTextFields();
   };

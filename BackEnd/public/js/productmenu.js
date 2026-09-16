@@ -4,7 +4,6 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
-  deleteField,
   doc,
   serverTimestamp,
   onSnapshot,
@@ -15,7 +14,6 @@ import {
   runTransaction,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-//global listener state
 let unsubscribeInventoryOptions = null;
 let unsubscribeProductIdPreview = null;
 let unsubscribeMenu = null;
@@ -27,16 +25,37 @@ export async function refresh() {
   const previewImg = document.getElementById("previewImage");
   if (previewImg) previewImg.src = "/assets/upload-placeholder.png";
 
-  const kgUsedField = document.getElementById("kg-used-field");
-  const kalderoCountField = document.getElementById("kaldero-count-field");
-  if (kgUsedField) kgUsedField.style.display = "none";
-  if (kalderoCountField) kalderoCountField.style.display = "none";
+  hideAllDynamicFields();
   M.updateTextFields();
 
   reinitSelect(document.getElementById("employeeINV"));
   reinitSelect(document.getElementById("selectCategory"));
 
   previewNextProductId();
+}
+
+function hideAllDynamicFields() {
+  const piecesUsedField = document.getElementById("pieces-used-field");
+  const packsUsedField = document.getElementById("packs-used-field");
+  const kgUsedField = document.getElementById("kg-used-field");
+  const kalderoCountField = document.getElementById("kaldero-count-field");
+
+  if (piecesUsedField) piecesUsedField.style.display = "none";
+  if (packsUsedField) packsUsedField.style.display = "none";
+  if (kgUsedField) kgUsedField.style.display = "none";
+  if (kalderoCountField) kalderoCountField.style.display = "none";
+}
+
+function resetAllDynamicValues() {
+  const piecesUsedInput = document.getElementById("piecesUsed");
+  const packsUsedInput = document.getElementById("packsUsed");
+  const kgUsedInput = document.getElementById("KgUsed");
+  const kalderoCountInput = document.getElementById("kalderocCount");
+
+  if (piecesUsedInput) piecesUsedInput.value = "";
+  if (packsUsedInput) packsUsedInput.value = "";
+  if (kgUsedInput) kgUsedInput.value = "";
+  if (kalderoCountInput) kalderoCountInput.value = "";
 }
 
 async function generateProductCode() {
@@ -48,7 +67,6 @@ async function generateProductCode() {
       ? counterSnap.data().lastNumber || 0
       : 0;
     const next = current + 1;
-
     transaction.set(counterRef, { lastNumber: next }, { merge: true });
     return next;
   });
@@ -64,11 +82,12 @@ function reinitSelect(selectEl) {
 }
 
 function buildPackQuantityFields(inventory, stock) {
-  const isPack = inventory.unit_type === "pack";
+  const unit = (inventory.unit_type || "").toLowerCase();
+  const isPack = unit === "pack";
 
   if (!isPack) {
     return {
-      stock_quantity: null,
+      stock_quantity: stock,
       pieces_per_pack: null,
       current_pieces: null,
       current_packs: null,
@@ -154,13 +173,22 @@ function bindInventoryAllocationChange() {
     if (!inventorySnap.exists()) return;
 
     const data = inventorySnap.data();
+    const unit = (data.unit_type || "").toLowerCase();
+
+    hideAllDynamicFields();
+    resetAllDynamicValues();
 
     let stock = data.stock_quantity;
-    let unit = data.unit_type;
     let unitLabel = "";
 
     if (unit === "pack") {
       unitLabel = `${data.quantity} PACKS = ${data.stock_quantity} PCS`;
+    } else if (unit === "packs") {
+      stock = data.quantity;
+      unitLabel = "PACKS";
+    } else if (unit === "kaban") {
+      stock = data.stock_quantity;
+      unitLabel = `${data.quantity} KABAN = ${data.stock_quantity} KG`;
     } else if (unit === "kg") {
       stock = data.quantity;
       unitLabel = "KG";
@@ -174,20 +202,39 @@ function bindInventoryAllocationChange() {
     stockInput.value = stock;
     if (stockUnit) stockUnit.value = unitLabel;
 
-    // TANGGALIN ANG AUTO-FILL NG PRICE - hayaan si user mag-input
-    // if (priceInput) priceInput.value = data.unit_price ?? "";
-
+    const piecesUsedField = document.getElementById("pieces-used-field");
+    const packsUsedField = document.getElementById("packs-used-field");
     const kgUsedField = document.getElementById("kg-used-field");
     const kalderoCountField = document.getElementById("kaldero-count-field");
 
-    if (unit === "kg") {
-      kgUsedField.style.display = "block";
-      kalderoCountField.style.display = "block";
-    } else {
-      kgUsedField.style.display = "none";
-      kalderoCountField.style.display = "none";
-      document.getElementById("KgUsed").value = "";
-      document.getElementById("kalderocCount").value = "";
+    if (unit === "pack") {
+      if (packsUsedField) packsUsedField.style.display = "block";
+    } else if (unit === "packs") {
+      if (packsUsedField) packsUsedField.style.display = "block";
+      if (kalderoCountField) kalderoCountField.style.display = "block";
+      const kalderoLabel = document.getElementById("kaldero-label");
+      if (kalderoLabel)
+        kalderoLabel.textContent = "Number of Container Reached";
+    } else if (unit === "kaban") {
+      if (kgUsedField) kgUsedField.style.display = "block";
+      if (kalderoCountField) kalderoCountField.style.display = "block";
+      const kgLabel = document.getElementById("kg-used-label");
+      if (kgLabel) kgLabel.textContent = "Kilograms Used (Rice)";
+      const kalderoLabel = document.getElementById("kaldero-label");
+      if (kalderoLabel)
+        kalderoLabel.textContent = "Number of Container Reached";
+    } else if (unit === "kg") {
+      if (kgUsedField) kgUsedField.style.display = "block";
+      if (kalderoCountField) kalderoCountField.style.display = "block";
+      const kalderoLabel = document.getElementById("kaldero-label");
+      if (kalderoLabel)
+        kalderoLabel.textContent = "Number of Container Reached";
+    } else if (unit === "liter") {
+      if (kgUsedField) kgUsedField.style.display = "block";
+      if (kalderoCountField) kalderoCountField.style.display = "block";
+      const kalderoLabel = document.getElementById("kaldero-label");
+      if (kalderoLabel)
+        kalderoLabel.textContent = "Number of Container Reached";
     }
 
     M.updateTextFields();
@@ -282,9 +329,6 @@ export function addproductmenu() {
       const stock = Number(document.getElementById("stock").value);
       const price = Number(document.getElementById("price").value);
 
-      // Basic fields only — kg fields are checked below, only if this
-      // inventory item is actually a "kg" item.
-
       if (!inventoryId || !productName || !role || stock <= 0) {
         M.toast({
           html: "Please complete all fields.",
@@ -293,7 +337,6 @@ export function addproductmenu() {
         return;
       }
 
-      // Hiwalay na check para sa price
       if (price <= 0) {
         M.toast({
           html: "Please enter a valid price.",
@@ -304,24 +347,60 @@ export function addproductmenu() {
 
       if (saveBtn) saveBtn.disabled = true;
 
-      // Need unit_type BEFORE validating kg fields
       const inventorySnap = await getDoc(doc(db, "inventory", inventoryId));
-
       if (!inventorySnap.exists()) {
         M.toast({ html: "Inventory not found.", classes: "red rounded" });
         return;
       }
 
       const inventory = inventorySnap.data();
+      const unit = (inventory.unit_type || "").toLowerCase();
 
-      let kgused = null;
-      let kalderocount = null;
+      let piecesUsed = null;
+      let packsUsed = null;
+      let kgUsed = null;
+      let kalderoCount = null;
 
-      if (inventory.unit_type === "kg") {
-        kgused = Number(document.getElementById("KgUsed").value);
-        kalderocount = Number(document.getElementById("kalderocCount").value);
-
-        if (kgused <= 0 || kalderocount <= 0) {
+      if (unit === "pack") {
+        packsUsed = Number(document.getElementById("packsUsed").value);
+        if (packsUsed <= 0) {
+          M.toast({ html: "Please enter Packs Used.", classes: "red rounded" });
+          return;
+        }
+      } else if (unit === "packs") {
+        packsUsed = Number(document.getElementById("packsUsed").value);
+        kalderoCount = Number(document.getElementById("kalderocCount").value);
+        if (packsUsed <= 0 || kalderoCount <= 0) {
+          M.toast({
+            html: "Please complete all fields.",
+            classes: "red rounded",
+          });
+          return;
+        }
+      } else if (unit === "kaban") {
+        kgUsed = Number(document.getElementById("KgUsed").value);
+        kalderoCount = Number(document.getElementById("kalderocCount").value);
+        if (kgUsed <= 0 || kalderoCount <= 0) {
+          M.toast({
+            html: "Please complete all fields.",
+            classes: "red rounded",
+          });
+          return;
+        }
+      } else if (unit === "kg") {
+        kgUsed = Number(document.getElementById("KgUsed").value);
+        kalderoCount = Number(document.getElementById("kalderocCount").value);
+        if (kgUsed <= 0 || kalderoCount <= 0) {
+          M.toast({
+            html: "Please complete all fields.",
+            classes: "red rounded",
+          });
+          return;
+        }
+      } else if (unit === "liter") {
+        kgUsed = Number(document.getElementById("KgUsed").value);
+        kalderoCount = Number(document.getElementById("kalderocCount").value);
+        if (kgUsed <= 0 || kalderoCount <= 0) {
           M.toast({
             html: "Please complete all fields.",
             classes: "red rounded",
@@ -352,17 +431,20 @@ export function addproductmenu() {
       await addDoc(collection(db, "productMenu"), {
         product_code: productCode,
         product_name: productName,
-        kg_used: kgused,
-        kaldero_count: kalderocount,
-        category: role, // role-based (SIOMAI/PARES)
+        pieces_used: piecesUsed,
+        packs_used: packsUsed,
+        kg_used: kgUsed,
+        kaldero_count: kalderoCount,
+        category: role,
         inv_category:
-          inventory.inv_category || inventory.category || "Uncategorized", // BAGONG FIELD
+          inventory.inv_category || inventory.category || "Uncategorized",
         inventory_id: inventoryId,
         inventory_name: inventory.product_name,
         initial_stock: stock,
         current_stock: stock,
         ...quantityFields,
         unit: inventory.unit_type,
+        weight_per_kaban: Number(inventory.weight_per_kaban || 0),
         price: price,
         image_url: imageURL,
         status: "Available",
@@ -370,7 +452,6 @@ export function addproductmenu() {
       });
 
       M.toast({ html: "Product Menu Saved!", classes: "green rounded" });
-
       form.reset();
       refresh();
     } catch (error) {
@@ -385,55 +466,39 @@ export function addproductmenu() {
 function initUppercaseProductName() {
   const input = document.getElementById("inputProduct");
   if (!input) return;
-
   input.addEventListener("input", () => {
     input.value = input.value.toUpperCase();
   });
 }
 
-// FIXED: build the filter dropdown from the category NAME (inv_category),
-// not from the employee "role" field — inv_category is what getFilteredData()
-// actually compares against, so the dropdown values must match that.
 async function loadCategoryFilter() {
   const select = document.getElementById("filterCategory");
   if (!select) return;
 
   const snap = await getDocs(collection(db, "categoriesINV"));
-
   const categories = new Set();
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
-
-    if (data.name) {
-      categories.add(data.name.trim());
-    }
+    if (data.name) categories.add(data.name.trim());
   });
 
   select.innerHTML = "";
-
   let defaultCategory = null;
 
   categories.forEach((category) => {
     const option = document.createElement("option");
-
     option.value = category;
     option.textContent = category;
-
     if (!defaultCategory) {
       option.selected = true;
       defaultCategory = category;
     }
-
     select.appendChild(option);
   });
 
   reinitSelect(select);
-
-  if (defaultCategory) {
-    select.value = defaultCategory;
-  }
-
+  if (defaultCategory) select.value = defaultCategory;
   return defaultCategory;
 }
 
@@ -447,7 +512,6 @@ function confirmDeletion(title, message) {
   const messageElement = document.getElementById("delete-confirmation-message");
 
   const modalInstance = M.Modal.init(modalElement, { dismissible: false });
-
   titleElement.textContent = title;
   messageElement.textContent = message;
 
@@ -472,10 +536,9 @@ export async function loadmenu() {
 
   if (!tbody || !filterCategory) return;
 
-  // PAGINATION VARIABLES
   const PAGE_SIZE = 10;
   let currentPage = 1;
-  let allMenuData = []; // Store all data for search/filter
+  let allMenuData = [];
   let searchTimeout = null;
 
   function bindRowButtons() {
@@ -521,7 +584,6 @@ export async function loadmenu() {
     tbody.querySelectorAll(".edit-btn").forEach((btn) => {
       btn.onclick = async () => {
         const id = btn.dataset.id;
-
         const menuRef = doc(db, "productMenu", id);
         const menuSnap = await getDoc(menuRef);
         if (!menuSnap.exists()) return;
@@ -570,7 +632,6 @@ export async function loadmenu() {
               price: newPrice,
               last_updated: serverTimestamp(),
             });
-
             M.toast({
               html: "Product menu updated!",
               classes: "green rounded",
@@ -588,7 +649,6 @@ export async function loadmenu() {
     });
   }
 
-  // FILTER AND SEARCH FUNCTION
   function getFilteredData() {
     const searchTerm = searchInput
       ? searchInput.value.toLowerCase().trim()
@@ -597,7 +657,6 @@ export async function loadmenu() {
 
     let filteredData = allMenuData;
 
-    // Filter by category
     if (
       selectedCategory &&
       selectedCategory !== "ALL" &&
@@ -608,7 +667,6 @@ export async function loadmenu() {
       );
     }
 
-    // Filter by search term
     if (searchTerm) {
       filteredData = filteredData.filter((item) => {
         const productCode = (item.data.product_code || "").toLowerCase();
@@ -632,11 +690,6 @@ export async function loadmenu() {
     return filteredData;
   }
 
-  // UPDATE TABLE HEADERS — based on the CURRENTLY FILTERED rows, not
-  // the whole unfiltered collection. This is what was causing the
-  // "SIOMAI shows Container instead of Packs/Pieces" bug: headers
-  // used to be set from the first doc in the raw snapshot (could be
-  // any category), regardless of which category the user had filtered.
   function updateMenuTableHeaders(filteredData) {
     const thPacks = document.getElementById("th-packs");
     const thPieces = document.getElementById("th-pieces");
@@ -649,9 +702,19 @@ export async function loadmenu() {
       thPacks.style.display = "";
       thPieces.style.display = "";
       thContainer.style.display = "none";
-      thPacks.textContent = "Packs";
-      thPieces.textContent = "Pieces";
-    } else if (sampleUnit === "kg" || sampleUnit === "liter") {
+      thPacks.textContent = "Packs Used";
+      thPieces.textContent = "Pieces Used";
+    } else if (sampleUnit === "packs") {
+      thPacks.style.display = "";
+      thPieces.style.display = "none";
+      thContainer.style.display = "";
+      thPacks.textContent = "Packs Used";
+      thContainer.textContent = "Container";
+    } else if (
+      sampleUnit === "kaban" ||
+      sampleUnit === "kg" ||
+      sampleUnit === "liter"
+    ) {
       thPacks.style.display = "none";
       thPieces.style.display = "none";
       thContainer.style.display = "";
@@ -663,7 +726,6 @@ export async function loadmenu() {
     }
   }
 
-  // RENDER CURRENT PAGE
   function renderMenuPage() {
     const filteredData = getFilteredData();
     updateMenuTableHeaders(filteredData);
@@ -677,7 +739,6 @@ export async function loadmenu() {
     const start = (currentPage - 1) * PAGE_SIZE;
     const pageData = filteredData.slice(start, start + PAGE_SIZE);
 
-    // Build rows
     let rowsHtml = "";
     for (const item of pageData) {
       rowsHtml += item.html;
@@ -700,7 +761,6 @@ export async function loadmenu() {
     updatePaginationControls(totalPages, totalRecords);
   }
 
-  // UPDATE PAGINATION CONTROLS
   function updatePaginationControls(totalPages, totalRecords) {
     const prevBtn = document.getElementById("menu-prev");
     const nextBtn = document.getElementById("menu-next");
@@ -712,11 +772,9 @@ export async function loadmenu() {
     prevBtn.disabled = currentPage === 1;
     nextBtn.disabled = currentPage === totalPages;
 
-    if (pageLabel) {
+    if (pageLabel)
       pageLabel.textContent = `Page ${currentPage} of ${totalPages}`;
-    }
 
-    // Remove old listeners to prevent duplicates
     prevBtn.onclick = null;
     nextBtn.onclick = null;
 
@@ -745,11 +803,9 @@ export async function loadmenu() {
     }
   }
 
-  // GENERATE ROW HTML
   function generateRowHtml(id, data, inventoryProductId) {
     let quantityColumns = "";
 
-    // PACK
     if (data.unit === "pack") {
       const packs = Math.ceil(
         (data.current_pieces ?? data.current_stock) /
@@ -758,39 +814,45 @@ export async function loadmenu() {
       const pieces = data.current_pieces ?? data.current_stock ?? 0;
 
       quantityColumns = `
-      <td data-label="Packs">${formatQuantity(packs)}</td>
-      <td data-label="Pieces">${formatQuantity(pieces)}</td>
-    `;
-    }
-    // KG / LITER
-    else if (data.unit === "kg" || data.unit === "liter") {
+        <td data-label="Packs Used">${formatQuantity(data.packs_used ?? packs)}</td>
+        <td data-label="Pieces Used">${formatQuantity(data.pieces_used ?? pieces)}</td>
+      `;
+    } else if (data.unit === "packs") {
       quantityColumns = `
-      <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
-    `;
+        <td data-label="Packs Used">${formatQuantity(data.packs_used)}</td>
+        <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
+      `;
+    } else if (data.unit === "kaban") {
+      quantityColumns = `
+        <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
+      `;
+    } else if (data.unit === "kg" || data.unit === "liter") {
+      quantityColumns = `
+        <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
+      `;
     }
 
     return `
-    <tr>
-      <td data-label="Product Code"><strong>${data.product_code || "-"}</strong></td>
-      <td data-label="Inventory ID">${inventoryProductId}</td>
-      <td data-label="Inventory Name">${data.inventory_name || "-"}</td>
-      <td data-label="Product Name">${data.product_name || "-"}</td>
-      <td data-label="Category">${data.inv_category || data.category || "-"}</td>
-      ${quantityColumns}
-      <td data-label="Price">₱${Number(data.price || 0).toFixed(2)}</td>
-      <td data-label="Action">
-        <button class="edit-btn btn blue waves-effect waves-light" data-id="${id}">
-          <i class="material-icons">edit</i>
-        </button>
-        <button class="delete-btn btn red waves-effect waves-light" data-id="${id}">
-          <i class="material-icons">delete</i>
-        </button>
-      </td>
-    </tr>
-  `;
+      <tr>
+        <td data-label="Product Code"><strong>${data.product_code || "-"}</strong></td>
+        <td data-label="Inventory ID">${inventoryProductId}</td>
+        <td data-label="Inventory Name">${data.inventory_name || "-"}</td>
+        <td data-label="Product Name">${data.product_name || "-"}</td>
+        <td data-label="Category">${data.inv_category || data.category || "-"}</td>
+        ${quantityColumns}
+        <td data-label="Price">₱${Number(data.price || 0).toFixed(2)}</td>
+        <td data-label="Action">
+          <button class="edit-btn btn blue waves-effect waves-light" data-id="${id}">
+            <i class="material-icons">edit</i>
+          </button>
+          <button class="delete-btn btn red waves-effect waves-light" data-id="${id}">
+            <i class="material-icons">delete</i>
+          </button>
+        </td>
+      </tr>
+    `;
   }
 
-  // MAIN RENDER FUNCTION - loads data from Firestore
   function renderMenu() {
     if (unsubscribeMenu) unsubscribeMenu();
 
@@ -804,29 +866,22 @@ export async function loadmenu() {
         menuDocs.push({ id: docSnap.id, data: docSnap.data() });
       });
 
-      // COLLECT ALL INVENTORY IDs
       const inventoryIds = new Set();
       menuDocs.forEach(({ data }) => {
-        if (data.inventory_id) {
-          inventoryIds.add(data.inventory_id);
-        }
+        if (data.inventory_id) inventoryIds.add(data.inventory_id);
       });
 
-      // FETCH ALL INVENTORY DOCUMENTS
       const inventoryMap = new Map();
       for (const invId of inventoryIds) {
         try {
           const invRef = doc(db, "inventory", invId);
           const invSnap = await getDoc(invRef);
-          if (invSnap.exists()) {
-            inventoryMap.set(invId, invSnap.data());
-          }
+          if (invSnap.exists()) inventoryMap.set(invId, invSnap.data());
         } catch (err) {
           console.error("Error fetching inventory:", err);
         }
       }
 
-      // BUILD ALL DATA WITH HTML
       allMenuData = [];
       for (const { id, data } of menuDocs) {
         let inventoryProductId = "-";
@@ -836,80 +891,47 @@ export async function loadmenu() {
         }
 
         const html = generateRowHtml(id, data, inventoryProductId);
-        allMenuData.push({
-          id,
-          data,
-          inventoryProductId,
-          html,
-        });
+        allMenuData.push({ id, data, inventoryProductId, html });
       }
 
-      // Reset to page 1 and render (this also updates headers, based
-      // on the currently filtered category — not the raw snapshot).
       currentPage = 1;
       renderMenuPage();
     });
   }
 
-  // START LISTENING
   renderMenu();
 
-  // ============================================
-  // SEARCH EVENT LISTENERS
-  // ============================================
-
   if (searchInput) {
-    // Remove old listeners
     searchInput.removeEventListener("input", handleSearch);
     searchInput.removeEventListener("keypress", handleKeyPress);
-
-    // Input event - automatic search habang nagta-type
     searchInput.addEventListener("input", handleSearch);
-
-    // Keypress event - pag nag-enter
     searchInput.addEventListener("keypress", handleKeyPress);
   }
 
   function handleSearch() {
-    // Clear previous timeout
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-
-    // Debounce search for better performance
+    if (searchTimeout) clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-      currentPage = 1; // Reset to first page
-      renderMenuPage(); // Re-render table with new search results
-
-      // Show/hide clear button
-      if (clearBtn) {
+      currentPage = 1;
+      renderMenuPage();
+      if (clearBtn)
         clearBtn.style.display = searchInput.value.length > 0 ? "flex" : "none";
-      }
-    }, 300); // 300ms delay
+    }, 300);
   }
 
   function handleKeyPress(e) {
-    // Kapag nag-enter, mag-search agad (walang debounce)
     if (e.key === "Enter") {
-      e.preventDefault(); // Prevent form submission
-
-      // Cancel pending timeout
+      e.preventDefault();
       if (searchTimeout) {
         clearTimeout(searchTimeout);
         searchTimeout = null;
       }
-
       currentPage = 1;
       renderMenuPage();
-
-      // Show/hide clear button
-      if (clearBtn) {
+      if (clearBtn)
         clearBtn.style.display = searchInput.value.length > 0 ? "flex" : "none";
-      }
     }
   }
 
-  // CLEAR SEARCH BUTTON
   if (clearBtn) {
     clearBtn.removeEventListener("click", handleClearSearch);
     clearBtn.addEventListener("click", handleClearSearch);
@@ -921,17 +943,16 @@ export async function loadmenu() {
       searchInput.focus();
       clearBtn.style.display = "none";
       currentPage = 1;
-      renderMenuPage(); // Re-render with cleared search
+      renderMenuPage();
     }
   }
 
-  // CATEGORY FILTER EVENT
   filterCategory.removeEventListener("change", handleCategoryChange);
   filterCategory.addEventListener("change", handleCategoryChange);
 
   function handleCategoryChange() {
     currentPage = 1;
-    renderMenuPage(); // Re-render with new category filter
+    renderMenuPage();
   }
 }
 
@@ -949,7 +970,6 @@ export function cleanupProductMenuPage() {
     unsubscribeMenu = null;
   }
 
-  // Cleanup pagination event listeners
   const prevBtn = document.getElementById("menu-prev");
   const nextBtn = document.getElementById("menu-next");
   if (prevBtn) {
@@ -961,23 +981,19 @@ export function cleanupProductMenuPage() {
     nextBtn.disabled = true;
   }
 
-  // Cleanup search listeners
   const searchInput = document.getElementById("searchProductMenu");
   const clearBtn = document.getElementById("clearSearchBtn");
   if (searchInput) {
     searchInput.oninput = null;
     searchInput.onkeypress = null;
   }
-  if (clearBtn) {
-    clearBtn.onclick = null;
-  }
+  if (clearBtn) clearBtn.onclick = null;
 }
 
 export async function initProductPage() {
   loadInventoryOptions();
   loadroles();
 
-  // Hintayin munang ma-load ang categories
   await loadCategoryFilter();
 
   previewNextProductId();
@@ -986,21 +1002,9 @@ export async function initProductPage() {
   initUppercaseProductName();
   bindInventoryAllocationChange();
 
-  // Initialize pagination display
   const infoLabel = document.getElementById("menu-info");
-  if (infoLabel) {
-    infoLabel.textContent = "Showing: 0 Product Menu records";
-  }
+  if (infoLabel) infoLabel.textContent = "Showing: 0 Product Menu records";
 
-  // Initialize search clear button
   const clearBtn = document.getElementById("clearSearchBtn");
-  if (clearBtn) {
-    clearBtn.style.display = "none";
-  }
-
-  // Focus search input on load (optional)
-  const searchInput = document.getElementById("searchProductMenu");
-  if (searchInput) {
-    // Hindi na kailangan mag-focus para hindi annoying
-  }
+  if (clearBtn) clearBtn.style.display = "none";
 }

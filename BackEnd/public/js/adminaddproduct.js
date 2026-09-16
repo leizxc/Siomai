@@ -17,9 +17,6 @@ import { SyncProductFromFirebase } from "/js/IndexDB.js";
 
 await SyncProductFromFirebase();
 
-// ============================================
-// VARIABLES
-// ============================================
 let unsubscribeInventoryOptions = null;
 let unsubscribeProducts = null;
 let unsubscribeProduct = null;
@@ -34,12 +31,9 @@ let historyRowsCache = [];
 let historyCurrentPage = 1;
 const HISTORY_PAGE_SIZE = 10;
 
-// ============================================
-// HELPERS
-// ============================================
 function isContainerUnit(unit) {
   const u = (unit || "").toLowerCase();
-  return u === "kg" || u === "liter";
+  return u === "kg" || u === "liter" || u === "packs" || u === "kaban";
 }
 
 function reinitSelect(selectEl) {
@@ -60,10 +54,15 @@ function buildCurrentQuantityFields(menuData, pieces) {
 }
 
 function buildAssignedQuantityFields(menuData, pieces) {
-  const isPack = menuData.unit === "pack";
+  const unit = (menuData.unit || "piece").toLowerCase();
+  const isPack = unit === "pack";
   const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+  const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
+  const kgUsed = Number(menuData.kg_used || 0);
+  const packsUsed = Number(menuData.packs_used || 0);
+  const piecesUsed = Number(menuData.pieces_used || 0);
 
-  return {
+  const result = {
     stock: pieces,
     pieces: pieces,
     packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
@@ -72,10 +71,25 @@ function buildAssignedQuantityFields(menuData, pieces) {
     original_stock: pieces,
     assigned_stock: pieces,
   };
+
+  if (unit === "kaban" && weightPerKaban > 0) {
+    result.kaban_count = Math.ceil(pieces / weightPerKaban);
+    result.weight_per_kaban = weightPerKaban;
+    result.total_kg = pieces;
+    result.kg_used = kgUsed;
+  }
+
+  if (unit === "packs" && packsUsed > 0) {
+    result.packs_used = packsUsed;
+  }
+
+  if (unit === "pack" && piecesUsed > 0) {
+    result.pieces_used = piecesUsed;
+  }
+
+  return result;
 }
 
-// Number of physical containers (kaldero) available for kg/liter products.
-// Falls back to 1 (never to the stock number) when no explicit count is saved.
 function getMaxAvailableContainers(menuData) {
   const explicitCount = Number(
     menuData.kaldero_count ?? menuData.container_count ?? 0,
@@ -105,14 +119,11 @@ function hideAllQuantityInputs() {
   });
 }
 
-// Hides Price + Available Packs/Stock until a product is chosen.
 function hideProductDetailFields() {
   const priceField = document.getElementById("product-price-field");
   const packsBox = document.getElementById("available-packs-box");
-  const stockBox = document.getElementById("available-stock-box");
   if (priceField) priceField.style.display = "none";
   if (packsBox) packsBox.style.display = "none";
-  if (stockBox) stockBox.style.display = "none";
 }
 
 function confirmDeletion(title, message) {
@@ -139,9 +150,6 @@ function confirmDeletion(title, message) {
   });
 }
 
-// ============================================
-// PRODUCT HISTORY
-// ============================================
 async function saveToProductHistory(productData, productId) {
   try {
     const existingQuery = query(
@@ -158,8 +166,19 @@ async function saveToProductHistory(productData, productId) {
 
     const price = Number(productData.price || 0);
     const totalIncome = stockValue * price;
+
     const capitalPrice = Number(productData.capital_price || 0);
-    const totalCapital = stockValue * capitalPrice;
+    const unit = (productData.unit || "").toLowerCase();
+    const kgUsed = Number(productData.kg_used || 0);
+
+    let totalCapital;
+    if (unit === "kaban") {
+      const baseQty = kgUsed > 0 ? kgUsed : stockValue;
+      totalCapital = baseQty * capitalPrice;
+    } else {
+      totalCapital = stockValue * capitalPrice;
+    }
+
     const productName =
       productData.name || productData.product_name || "Unknown";
     const employeeName = productData.employee_name || "Unknown";
@@ -205,7 +224,7 @@ async function saveToProductHistory(productData, productId) {
     await addDoc(collection(db, "productHistoryAssign"), historyData);
 
     M.toast({
-      html: `📦 ${productName} moved to Product History (Sold: ${stockValue}, Income: ₱${totalIncome.toFixed(2)})`,
+      html: `📦 ${productName} moved to Product History`,
       classes: "blue rounded",
     });
   } catch (error) {
@@ -364,9 +383,6 @@ export function stopLoadingHistoryAssign() {
   }
 }
 
-// ============================================
-// INVENTORY STOCK ADJUSTMENT
-// ============================================
 async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
   if (!inventoryId) return;
 
@@ -375,10 +391,11 @@ async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
   if (!inventorySnap.exists()) return;
 
   const invData = inventorySnap.data();
+  const invUnit = (invData.unit_type || "").toLowerCase();
   let piecesPerPack = 1;
   let deltaInInventoryUnit = deltaPieces;
 
-  if (invData.unit_type === "pack") {
+  if (invUnit === "pack") {
     const categorySnap = await getDoc(
       doc(db, "categoriesINV", invData.category_id),
     );
@@ -386,15 +403,24 @@ async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
       ? categorySnap.data().pieces_per_pack || 1
       : 1;
     deltaInInventoryUnit = deltaPieces / piecesPerPack;
+  } else if (invUnit === "kaban") {
+    const weightPerKaban = Number(invData.weight_per_kaban) || 0;
+    if (weightPerKaban > 0) {
+      deltaInInventoryUnit = deltaPieces / weightPerKaban;
+    }
   }
 
   const newQuantity = (invData.quantity || 0) + deltaInInventoryUnit;
   const newStockQuantity =
-    invData.unit_type === "pack" ? newQuantity * piecesPerPack : newQuantity;
+    invUnit === "pack" ? newQuantity * piecesPerPack : newQuantity;
+
+  const unitPrice = Number(invData.unit_price || 0);
+  const newTotalValue = newQuantity * unitPrice;
 
   await updateDoc(inventoryRef, {
     quantity: newQuantity,
     stock_quantity: newStockQuantity,
+    total_value: newTotalValue,
     status: newQuantity <= 0 ? "On Selling" : "Available",
     last_updated: serverTimestamp(),
   });
@@ -410,12 +436,21 @@ async function getCapitalPriceForMenuItem(menuData, transaction = null) {
     : await getDoc(inventoryRef);
 
   if (!inventorySnap.exists()) return 0;
-  return Number(inventorySnap.data().unit_price || 0);
+
+  const invData = inventorySnap.data();
+  const invUnit = (invData.unit_type || "").toLowerCase();
+  const unitPrice = Number(invData.unit_price || 0);
+
+  if (invUnit === "kaban") {
+    const weightPerKaban = Number(invData.weight_per_kaban) || 0;
+    if (weightPerKaban > 0) {
+      return unitPrice / weightPerKaban;
+    }
+  }
+
+  return unitPrice;
 }
 
-// ============================================
-// LOAD INVENTORY OPTIONS
-// ============================================
 function loadInventoryOptions(role = "") {
   const select = document.getElementById("productName");
   if (!select) return;
@@ -447,9 +482,6 @@ function loadInventoryOptions(role = "") {
   });
 }
 
-// ============================================
-// RESET FORM
-// ============================================
 function resetAssignProductForm() {
   if (unsubscribeProduct) {
     unsubscribeProduct();
@@ -468,7 +500,6 @@ function resetAssignProductForm() {
   safeSetValue("productPrice", "");
   safeSetValue("productUnit", "-");
   safeSetValue("availablePacks", "0");
-  safeSetValue("availableStock", "0");
   safeSetValue("assignPacks", "");
   safeSetValue("assignContainer", "");
   safeSetValue("assignPieces", "");
@@ -481,12 +512,6 @@ function resetAssignProductForm() {
 
   const containerEl = document.getElementById("container");
   if (containerEl) containerEl.value = "";
-
-  const stockUnitEl = document.getElementById("availableStockUnit");
-  if (stockUnitEl) stockUnitEl.textContent = "";
-
-  const stockLabel = document.getElementById("availableStockLabel");
-  if (stockLabel) stockLabel.textContent = "Available Pieces";
 
   const packsLabelResetEl = document.querySelector(
     'label[for="availablePacks"]',
@@ -508,15 +533,11 @@ function resetAssignProductForm() {
   }
 }
 
-// ============================================
-// BIND FORM LISTENERS
-// ============================================
 function bindProductFormListeners() {
   const productRole = document.getElementById("productRole");
   const productName = document.getElementById("productName");
   const addProductForm = document.getElementById("addProductForm");
 
-  // ROLE CHANGE
   productRole.addEventListener("change", (e) => {
     const role = e.target.value;
 
@@ -533,7 +554,6 @@ function bindProductFormListeners() {
     safeSetValue("productPrice", "");
     safeSetValue("productUnit", "-");
     safeSetValue("availablePacks", "0");
-    safeSetValue("availableStock", "0");
     safeSetValue("assignPacks", "");
     safeSetValue("assignContainer", "");
     safeSetValue("assignPieces", "");
@@ -545,12 +565,6 @@ function bindProductFormListeners() {
     const containerEl = document.getElementById("container");
     if (containerEl) containerEl.value = "";
 
-    const stockUnitEl = document.getElementById("availableStockUnit");
-    if (stockUnitEl) stockUnitEl.textContent = "";
-
-    const stockLabel = document.getElementById("availableStockLabel");
-    if (stockLabel) stockLabel.textContent = "Available Pieces";
-
     const packsLabelResetEl = document.querySelector(
       'label[for="availablePacks"]',
     );
@@ -560,7 +574,6 @@ function bindProductFormListeners() {
     loadInventoryOptions(role);
   });
 
-  // PRODUCT SELECT
   productName.addEventListener("change", (e) => {
     const id = e.target.value;
     if (!id) return;
@@ -582,22 +595,14 @@ function bindProductFormListeners() {
 
       updateUnitDisplay(unit);
 
-      // Reveal price + stock fields now that a product is selected
       const priceField = document.getElementById("product-price-field");
       if (priceField) priceField.style.display = "block";
-      const stockBox = document.getElementById("available-stock-box");
-      if (stockBox) stockBox.style.display = "flex";
 
       const priceEl = document.getElementById("productPrice");
       if (priceEl) priceEl.value = price;
 
-      const stockEl = document.getElementById("availableStock");
-      if (stockEl) stockEl.value = pieces;
-
       hideAllQuantityInputs();
 
-      const stockLabel = document.getElementById("availableStockLabel");
-      const stockUnitEl = document.getElementById("availableStockUnit");
       const containerField = document.getElementById("container-field");
       const containerEl = document.getElementById("container");
 
@@ -620,9 +625,6 @@ function bindProductFormListeners() {
           'label[for="availablePacks"]',
         );
         if (packsLabelEl) packsLabelEl.textContent = "Available Packs";
-
-        if (stockLabel) stockLabel.textContent = "Available Pieces";
-        if (stockUnitEl) stockUnitEl.textContent = "PACK";
 
         const packsBox = document.getElementById("available-packs-box");
         if (packsBox) packsBox.style.display = "flex";
@@ -655,8 +657,12 @@ function bindProductFormListeners() {
 
         if (containerField) containerField.style.display = "none";
         if (containerEl) containerEl.value = "";
-      } else if (unit === "kg" || unit === "liter") {
-        const displayUnit = unit === "kg" ? "KG" : "LITER";
+      } else if (
+        unit === "kg" ||
+        unit === "liter" ||
+        unit === "packs" ||
+        unit === "kaban"
+      ) {
         const maxContainers = getMaxAvailableContainers(data);
 
         const packsEl = document.getElementById("availablePacks");
@@ -666,9 +672,6 @@ function bindProductFormListeners() {
           'label[for="availablePacks"]',
         );
         if (packsLabelEl) packsLabelEl.textContent = "Available Containers";
-
-        if (stockLabel) stockLabel.textContent = "Available Stock";
-        if (stockUnitEl) stockUnitEl.textContent = displayUnit;
 
         const packsBox = document.getElementById("available-packs-box");
         if (packsBox) packsBox.style.display = "flex";
@@ -713,9 +716,6 @@ function bindProductFormListeners() {
         const packsEl = document.getElementById("availablePacks");
         if (packsEl) packsEl.value = "0";
 
-        if (stockLabel) stockLabel.textContent = "Available Pieces";
-        if (stockUnitEl) stockUnitEl.textContent = "PIECE";
-
         const packsBox = document.getElementById("available-packs-box");
         if (packsBox) packsBox.style.display = "none";
 
@@ -752,7 +752,6 @@ function bindProductFormListeners() {
     });
   });
 
-  // QUANTITY INPUT LISTENER
   document
     .querySelectorAll("#assignPacks, #assignContainer, #assignPieces")
     .forEach((input) => {
@@ -797,7 +796,6 @@ function bindProductFormListeners() {
     return "pack";
   }
 
-  // FORM SUBMIT
   addProductForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -839,13 +837,6 @@ function bindProductFormListeners() {
       const menuRef = doc(db, "productMenu", menuId);
 
       if (!employeeId) {
-        // ==========================================
-        // SHARED ASSIGNMENT ("All Employees")
-        // Every employee under the selected role gets the FULL
-        // entered quantity (not divided). Existing rows for that
-        // employee + product get merged; new rows are created for
-        // employees who don't have one yet.
-        // ==========================================
         const empRoleSnap = await getDocs(
           query(collection(db, "employees"), where("role", "==", role)),
         );
@@ -863,8 +854,6 @@ function bindProductFormListeners() {
           throw new Error("No employees found for this role.");
         }
 
-        // Pre-fetch existing product row per target employee (outside
-        // the transaction — Firestore transactions can't run queries).
         const existingRowMap = {};
         for (const emp of targetEmployees) {
           const rowSnap = await getDocs(
@@ -887,14 +876,20 @@ function bindProductFormListeners() {
           const menuUnit = (menuData.unit || "piece").toLowerCase();
           const isContainer = isContainerUnit(menuUnit);
           const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+          const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
 
           const capitalPrice = await getCapitalPriceForMenuItem(
             menuData,
             transaction,
           );
 
-          const piecesPerEmployee =
-            menuUnit === "pack" ? enteredQty * piecesPerPack : enteredQty;
+          let piecesPerEmployee = enteredQty;
+
+          if (menuUnit === "pack") {
+            piecesPerEmployee = enteredQty * piecesPerPack;
+          } else if (menuUnit === "kaban" && weightPerKaban > 0) {
+            piecesPerEmployee = enteredQty * weightPerKaban;
+          }
 
           const currentStock = Number(menuData.current_stock || 0);
           const maxContainers = isContainer
@@ -903,7 +898,7 @@ function bindProductFormListeners() {
 
           const maxByStock = Math.floor(currentStock / piecesPerEmployee);
           const maxByContainers = isContainer
-            ? Math.floor(maxContainers / piecesPerEmployee)
+            ? Math.floor(maxContainers / enteredQty)
             : Infinity;
           const servableCount = Math.min(
             targetEmployees.length,
@@ -917,10 +912,9 @@ function bindProductFormListeners() {
 
           const servedEmployees = targetEmployees.slice(0, servableCount);
           const totalPiecesUsed = piecesPerEmployee * servableCount;
+          const totalQtyUsed = enteredQty * servableCount;
           const updatedStock = currentStock - totalPiecesUsed;
 
-          // Read every existing row first — ALL reads in a Firestore
-          // transaction must happen before ANY writes.
           const existingSnaps = {};
           for (const emp of servedEmployees) {
             const existingId = existingRowMap[emp.id];
@@ -933,13 +927,12 @@ function bindProductFormListeners() {
             }
           }
 
-          // All reads are done — writes can start now.
           transaction.update(menuRef, {
             ...buildCurrentQuantityFields(menuData, updatedStock),
             ...(isContainer
               ? {
-                  kaldero_count: Math.max(0, maxContainers - totalPiecesUsed),
-                  container_count: Math.max(0, maxContainers - totalPiecesUsed),
+                  kaldero_count: Math.max(0, maxContainers - totalQtyUsed),
+                  container_count: Math.max(0, maxContainers - totalQtyUsed),
                 }
               : {}),
             status: updatedStock <= 0 ? "On Selling" : "Available",
@@ -1010,11 +1003,6 @@ function bindProductFormListeners() {
         return;
       }
 
-      // ==========================================
-      // SPECIFIC-EMPLOYEE ASSIGNMENT
-      // Merge into that employee's existing row for this product,
-      // or create a new one if they don't have one yet.
-      // ==========================================
       const existingQuery = query(
         collection(db, "products"),
         where("inventoryId", "==", menuId),
@@ -1042,18 +1030,24 @@ function bindProductFormListeners() {
         const menuUnit = (menuData.unit || "piece").toLowerCase();
         const isContainer = isContainerUnit(menuUnit);
         const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+        const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
 
         const newCapitalPrice = await getCapitalPriceForMenuItem(
           menuData,
           transaction,
         );
 
-        const piecesToAssign =
-          menuUnit === "pack" ? enteredQty * piecesPerPack : enteredQty;
+        let piecesToAssign = enteredQty;
+
+        if (menuUnit === "pack") {
+          piecesToAssign = enteredQty * piecesPerPack;
+        } else if (menuUnit === "kaban" && weightPerKaban > 0) {
+          piecesToAssign = enteredQty * weightPerKaban;
+        }
 
         if (isContainer) {
           const maxContainers = getMaxAvailableContainers(menuData);
-          if (piecesToAssign > maxContainers) {
+          if (enteredQty > maxContainers) {
             throw new Error(
               `Not enough containers! Available: ${maxContainers}`,
             );
@@ -1073,11 +1067,11 @@ function bindProductFormListeners() {
             ? {
                 kaldero_count: Math.max(
                   0,
-                  getMaxAvailableContainers(menuData) - piecesToAssign,
+                  getMaxAvailableContainers(menuData) - enteredQty,
                 ),
                 container_count: Math.max(
                   0,
-                  getMaxAvailableContainers(menuData) - piecesToAssign,
+                  getMaxAvailableContainers(menuData) - enteredQty,
                 ),
               }
             : {}),
@@ -1145,9 +1139,6 @@ function bindProductFormListeners() {
   });
 }
 
-// ============================================
-// LOAD ROLES
-// ============================================
 async function loadRoles() {
   const roleSelect = document.getElementById("productRole");
   const snap = await getDocs(collection(db, "employees"));
@@ -1167,12 +1158,6 @@ async function loadRoles() {
   reinitSelect(roleSelect);
 }
 
-// ============================================
-// LOAD CATEGORY FILTER OPTIONS
-// ============================================
-// filterRole element still uses the old ID, but it now filters by
-// product CATEGORY (not employee role) so kg/liter items don't get
-// lumped together just because they share a unit type.
 function loadCategoryFilterOptions(filterCategorySelect) {
   if (unsubscribeRoleFilter) unsubscribeRoleFilter();
 
@@ -1213,9 +1198,6 @@ function loadCategoryFilterOptions(filterCategorySelect) {
   });
 }
 
-// ============================================
-// LOAD PRODUCTS
-// ============================================
 export async function loadProducts() {
   const tbody = document.querySelector("#productTable tbody");
   const filterRole = document.getElementById("filterRole");
@@ -1284,15 +1266,22 @@ export async function loadProducts() {
             const restoredStock =
               (menuData.current_stock || 0) + restoredPieces;
             const isContainer = isContainerUnit(menuData.unit);
+            const menuUnit = (menuData.unit || "").toLowerCase();
+            const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
+
+            let restoredQty = restoredPieces;
+            if (menuUnit === "kaban" && weightPerKaban > 0) {
+              restoredQty = restoredPieces / weightPerKaban;
+            }
 
             transaction.update(menuRef, {
               ...buildCurrentQuantityFields(menuData, restoredStock),
               ...(isContainer
                 ? {
                     kaldero_count:
-                      getMaxAvailableContainers(menuData) + restoredPieces,
+                      getMaxAvailableContainers(menuData) + restoredQty,
                     container_count:
-                      getMaxAvailableContainers(menuData) + restoredPieces,
+                      getMaxAvailableContainers(menuData) + restoredQty,
                   }
                 : {}),
               status: restoredStock <= 0 ? "On Selling" : "Available",
@@ -1375,10 +1364,17 @@ export async function loadProducts() {
           const menuSnap = await getDoc(menuRef);
           const menuData = menuSnap.data();
           const isContainer = isContainerUnit(oldData.unit);
+          const menuUnit = (menuData.unit || "").toLowerCase();
+          const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
+
+          let diffQty = diff;
+          if (menuUnit === "kaban" && weightPerKaban > 0) {
+            diffQty = diff / weightPerKaban;
+          }
 
           if (isContainer && diff > 0) {
             const maxContainers = getMaxAvailableContainers(menuData);
-            if (diff > maxContainers) {
+            if (diffQty > maxContainers) {
               M.toast({
                 html: `Not enough containers! Available: ${maxContainers}`,
                 classes: "red rounded",
@@ -1413,11 +1409,11 @@ export async function loadProducts() {
               ? {
                   kaldero_count: Math.max(
                     0,
-                    getMaxAvailableContainers(menuData) - diff,
+                    getMaxAvailableContainers(menuData) - diffQty,
                   ),
                   container_count: Math.max(
                     0,
-                    getMaxAvailableContainers(menuData) - diff,
+                    getMaxAvailableContainers(menuData) - diffQty,
                   ),
                 }
               : {}),
@@ -1493,6 +1489,12 @@ export async function loadProducts() {
     } else if (sampleUnit === "liter") {
       packsHeaderEl.textContent = "Container";
       piecesHeaderEl.textContent = "Liter";
+    } else if (sampleUnit === "packs") {
+      packsHeaderEl.textContent = "Container";
+      piecesHeaderEl.textContent = "Packs";
+    } else if (sampleUnit === "kaban") {
+      packsHeaderEl.textContent = "Container";
+      piecesHeaderEl.textContent = "KG Used";
     } else {
       packsHeaderEl.textContent = "Packs";
       piecesHeaderEl.textContent = "Pieces";
@@ -1518,23 +1520,43 @@ export async function loadProducts() {
       const { id, data, empDisplay } = item;
       const piecesValue = data.pieces ?? data.stock ?? 0;
       const priceValue = Number(data.price || 0);
-
       const capitalPriceValue = Number(data.capital_price || 0);
-      const totalCapital = piecesValue * capitalPriceValue;
+      const kgUsedValue = Number(data.kg_used || 0);
+      const unit = (data.unit || "").toLowerCase();
 
-      const packsDisplay =
-        data.unit === "pack"
-          ? Math.ceil(piecesValue / (data.pieces_per_pack || 1))
-          : isContainerUnit(data.unit)
-            ? piecesValue
-            : "-";
+      // FIX: Para sa KABAN, gamitin ang kg_used sa capital computation
+      let totalCapital;
+      if (unit === "kaban") {
+        const baseQty = kgUsedValue > 0 ? kgUsedValue : piecesValue;
+        totalCapital = baseQty * capitalPriceValue;
+      } else {
+        totalCapital = piecesValue * capitalPriceValue;
+      }
+
+      let packsDisplay = "-";
+      let piecesDisplay = piecesValue;
+
+      if (data.unit === "pack") {
+        packsDisplay = Math.ceil(piecesValue / (data.pieces_per_pack || 1));
+      } else if (data.unit === "kaban") {
+        const weightPerKaban = Number(data.weight_per_kaban || 0);
+        if (weightPerKaban > 0) {
+          packsDisplay = Math.ceil(piecesValue / weightPerKaban);
+        } else {
+          packsDisplay = piecesValue;
+        }
+
+        piecesDisplay = kgUsedValue > 0 ? kgUsedValue : piecesValue;
+      } else if (isContainerUnit(data.unit)) {
+        packsDisplay = piecesValue;
+      }
 
       rowsHtml += `
         <tr>
           <td data-label="Product Name">${data.name}</td>
           <td data-label="Price">₱${priceValue.toFixed(2)}</td>
           <td data-label="Packs">${packsDisplay}</td>
-          <td data-label="Pieces">${piecesValue}</td>
+          <td data-label="Pieces">${piecesDisplay}</td>
           <td data-label="Role">${data.role}</td>
           <td data-label="Employee">${empDisplay}</td>
           <td data-label="Capital"><strong style="color: #16a34a;">₱${totalCapital.toFixed(2)}</strong></td>
@@ -1734,9 +1756,6 @@ export async function loadProducts() {
   }
 }
 
-// ============================================
-// INIT PRODUCT PAGE
-// ============================================
 export async function initProductPage() {
   const modals = document.querySelectorAll(".modal");
   modals.forEach((modal) => {
@@ -1781,9 +1800,6 @@ export async function initProductPage() {
   }
 }
 
-// ============================================
-// CLEANUP
-// ============================================
 export function cleanupProductPage() {
   if (unsubscribeInventoryOptions) {
     unsubscribeInventoryOptions();

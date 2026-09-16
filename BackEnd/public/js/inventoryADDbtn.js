@@ -69,6 +69,11 @@ export function initInventoryModal() {
         ? document.getElementById("product-plastic-color").value.trim()
         : "";
 
+      const weightPerKabanInput = document.getElementById("weight-per-kaban");
+      const weightPerKaban = weightPerKabanInput
+        ? Number(weightPerKabanInput.value) || 0
+        : 0;
+
       if (!name || !category || !packsStr || !priceStr) {
         alert("Please fill all required fields!");
         saveBtn.disabled = false;
@@ -79,16 +84,32 @@ export function initInventoryModal() {
       const unitPrice = parseFloat(priceStr);
 
       try {
-        // TAMA na: walang 'id' parameter
-        await addProduct(name, category, packs, unitPrice, plasticColor);
+        const extraFields = {};
+        if (weightPerKaban > 0) {
+          extraFields.weight_per_kaban = weightPerKaban;
+        }
 
+        await addProduct(
+          name,
+          category,
+          packs,
+          unitPrice,
+          plasticColor,
+          extraFields,
+        );
+
+        // Reset form
         document.getElementById("product-name").value = "";
         document.getElementById("product-category").selectedIndex = 0;
         document.getElementById("product-packs").value = "";
         document.getElementById("product-price").value = "";
+        if (weightPerKabanInput) weightPerKabanInput.value = "";
         if (document.getElementById("product-plastic-color")) {
           document.getElementById("product-plastic-color").value = "";
         }
+
+        const weightField = document.getElementById("weight-per-kaban-field");
+        if (weightField) weightField.style.display = "none";
 
         const selects = document.querySelectorAll("select");
         reinitAllSelects(selects);
