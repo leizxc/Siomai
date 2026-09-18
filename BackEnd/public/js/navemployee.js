@@ -1,6 +1,34 @@
+import { app } from "/js/firebase.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { collection, getDocs, getFirestore, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 let currentLoadToken = 0;
 let isNavigating = false;
 let currentCleanup = null;
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+async function loadEmployeeProfile() {
+  const nameElement = document.querySelector("#employee-profile-name");
+  if (!nameElement) return;
+
+  const user = await new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      unsubscribe();
+      resolve(currentUser);
+    });
+  });
+  if (!user) return;
+
+  try {
+    const snapshot = await getDocs(query(collection(db, "employees"), where("uid", "==", user.uid)));
+    const employee = snapshot.docs[0]?.data();
+    const name = `${employee?.fname || ""} ${employee?.lname || ""}`.trim();
+    nameElement.textContent = name || user.displayName || "Employee";
+  } catch (error) {
+    console.error("Unable to load employee profile:", error);
+  }
+}
 
 async function loadSection(page) {
   if (isNavigating) return;
@@ -173,6 +201,8 @@ async function loadSection(page) {
       err
     );
   } finally {
+    document.querySelector(".sidebar")?.classList.remove("active");
+    document.querySelector(".overlay")?.classList.remove("active");
     isNavigating = false;
   }
 }
@@ -205,6 +235,7 @@ document.addEventListener(
   async () => {
     const bottomNav =
       document.querySelector(".bottom-nav");
+    loadEmployeeProfile();
 
     document.querySelector("#employee-notification-bell")?.addEventListener(
       "click",

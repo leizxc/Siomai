@@ -26,6 +26,7 @@ let currentAttendance = null;
 let unsubscribeAttendance = null;
 let statsTimer = null;
 let attendanceHistory = [];
+let selectedAttendanceRange = "today";
 
 // ========================================
 // INITIALIZE ATTENDANCE
@@ -35,6 +36,8 @@ export async function initAttendance() {
   if (attendanceInitialized) return;
 
   attendanceInitialized = true;
+  setAttendanceDate();
+  setupAttendanceTabs();
 
   try {
     const user = auth.currentUser;
@@ -132,18 +135,21 @@ function getTodayDate() {
 function displayAttendance(attendance) {
   currentAttendance = attendance;
   if (attendance.status === "pending") {
+    updateTodayStatus("Awaiting approval", "Your time-in request has been sent to the manager.", "pending");
     setTimeInButtonPending();
     displayPendingAttendance(attendance);
     return;
   }
 
   if (attendance.status === "completed") {
+    updateTodayStatus("Shift completed", "Your time out has been recorded for today.", "completed");
     setTimeInButtonCompleted();
     displayCompletedAttendance(attendance);
     return;
   }
 
   setTimeInButtonActive();
+  updateTodayStatus("Time in active", "You are currently clocked in.", "active");
 
   const activityList =
     document.querySelector(".activity-list");
@@ -255,6 +261,7 @@ function displayAttendance(attendance) {
 // ========================================
 
 function showNoAttendance(message) {
+  updateTodayStatus("Ready to time in", "Submit your request when you are ready to start.", "ready");
   const activityList =
     document.querySelector(".activity-list");
 
@@ -296,6 +303,7 @@ export function stopAttendancePage() {
 }
 
 function displayPendingAttendance(attendance) {
+  updateTodayStatus("Awaiting approval", "Your time-in request has been sent to the manager.", "pending");
   const activityList = document.querySelector(".activity-list");
   if (!activityList) return;
 
@@ -316,6 +324,7 @@ function displayPendingAttendance(attendance) {
 }
 
 function displayCompletedAttendance(attendance) {
+  updateTodayStatus("Shift completed", "Your time out has been recorded for today.", "completed");
   const activityList = document.querySelector(".activity-list");
   if (!activityList) return;
 
@@ -345,6 +354,7 @@ async function loadAttendanceStats(userId) {
     const snapshot = await getDocs(query(collection(db, "attendance"), where("userId", "==", userId)));
     attendanceHistory = snapshot.docs.map((item) => item.data());
     renderAttendanceStats();
+    renderAttendanceHistory();
     if (!statsTimer) statsTimer = setInterval(renderAttendanceStats, 60 * 1000);
   } catch (error) {
     console.error("Unable to load attendance statistics:", error);
@@ -381,6 +391,79 @@ function renderAttendanceStats() {
   document.querySelector("#shift-streak-value")?.replaceChildren(
     document.createTextNode(String(getShiftStreak(activeDates, today)))
   );
+}
+
+function setAttendanceDate() {
+  const dateElement = document.querySelector("#attendance-current-date");
+  if (!dateElement) return;
+  dateElement.textContent = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function setupAttendanceTabs() {
+  document.querySelectorAll(".tab[data-range]").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      selectedAttendanceRange = tab.dataset.range;
+      document.querySelectorAll(".tab[data-range]").forEach((item) => {
+        const active = item === tab;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-pressed", String(active));
+      });
+      renderAttendanceHistory();
+    });
+  });
+}
+
+function updateTodayStatus(title, note, state) {
+  const titleElement = document.querySelector("#today-status-value");
+  const noteElement = document.querySelector("#today-status-note");
+  const statElement = document.querySelector("#today-status-stat");
+  const statNoteElement = document.querySelector("#today-status-stat-note");
+  if (titleElement) titleElement.textContent = title;
+  if (noteElement) noteElement.textContent = note;
+  if (statElement) {
+    statElement.textContent = title.replace(" to time in", "");
+    statElement.dataset.state = state;
+  }
+  if (statNoteElement) {
+    statNoteElement.className = `stat-sub badge ${state}`;
+    statNoteElement.innerHTML = `<span class="material-icons">${state === "active" ? "check_circle" : state === "pending" ? "hourglass_top" : state === "completed" ? "task_alt" : "schedule"}</span> Today`;
+  }
+}
+
+function renderAttendanceHistory() {
+  const activityList = document.querySelector(".activity-list");
+  if (!activityList || !attendanceHistory.length) return;
+
+  const today = getTodayDate();
+  const now = new Date();
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+  const records = attendanceHistory
+    .filter((attendance) => {
+      const date = attendance.attendanceDate || (toDate(attendance.clockedInAt) ? toDateKey(toDate(attendance.clockedInAt)) : "");
+      return selectedAttendanceRange === "today"
+        ? date === today
+        : date && dateFromKey(date) >= weekStart;
+    })
+    .sort((a, b) => (toDate(b.clockedInAt)?.getTime() || 0) - (toDate(a.clockedInAt)?.getTime() || 0));
+
+  if (!records.length) {
+    activityList.innerHTML = `<div class="attendance-empty"><span class="material-icons">event_available</span><strong>No attendance records</strong><small>${selectedAttendanceRange === "today" ? "No shift activity has been recorded today." : "No activity was recorded this week."}</small></div>`;
+    return;
+  }
+
+  activityList.innerHTML = records.map((attendance) => {
+    const clockedInAt = toDate(attendance.clockedInAt);
+    const label = attendance.status === "pending" ? "Time in request" : attendance.status === "completed" ? "Shift completed" : "Clocked in";
+    const status = attendance.status === "pending" ? "pending" : attendance.status === "completed" ? "completed" : "active";
+    const icon = status === "pending" ? "hourglass_top" : status === "completed" ? "logout" : "login";
+    const dateLabel = clockedInAt ? clockedInAt.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : attendance.attendanceDate || "Today";
+    const timeLabel = clockedInAt ? clockedInAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "Awaiting approval";
+    return `<div class="activity-item"><div class="activity-icon ${status === "completed" ? "out" : ""}"><span class="material-icons">${icon}</span></div><div class="activity-info"><div class="activity-title">${label}</div><div class="activity-time">${dateLabel} · ${timeLabel}</div></div><div class="activity-right"><div class="activity-status ${status}">${status === "active" ? '<span class="status-dot"></span>' : ""}${status === "active" ? "Active" : status === "pending" ? "Pending" : "Completed"}</div></div></div>`;
+  }).join("");
 }
 
 function getShiftStreak(activeDates, today) {

@@ -17,7 +17,7 @@ body {
 }
 
 .material-icons {
-  color: #333 !important;
+  color: #000 !important;
 }
 
 /* Sidebar */
@@ -329,7 +329,7 @@ body {
   }
 
   body:has(.product-list) .search-box input {
-    width: 100%;
+    width: 200%;
     height: 48px;
     padding: 0 18px 0 45px;
     border: 1px solid #c9d2df;
@@ -338,6 +338,7 @@ body {
     color: #333;
     font-size: 15px;
     outline: none;
+    margin-top: 25px;
   }
 
   body:has(.product-list) .search-box input:focus {
@@ -346,7 +347,7 @@ body {
 
   body:has(.product-list) .search-box i {
     position: absolute;
-    top: 50%;
+    top: 63%;
     left: 14px;
     transform: translateY(-50%);
     color: #333 !important;
@@ -1079,6 +1080,7 @@ body {
   font-weight: 700;
   cursor: pointer;
   transition: background 0.2s ease, opacity 0.2s ease;
+  margin-top: 10px;
 }
 
 #content .time-in-button:hover:not(:disabled) {
@@ -1195,7 +1197,7 @@ body {
 
 #content .tab {
   min-width: 105px;
-  height: 42px;
+  height: 50px;
   padding: 0 18px;
   border-radius: 22px;
   background: #f5f6f9;
@@ -1351,6 +1353,125 @@ body {
 
 #content .more {
   display: none;
+}
+
+/* Attendance dashboard */
+#content .attendance-page-heading {
+  align-items: center;
+  padding: 4px 0 20px;
+  margin-bottom: 0;
+}
+
+#content .attendance-eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: #416fac;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+#content .attendance-page-heading h2 {
+  color: #1f2d45;
+  font-size: 28px;
+}
+
+#content .attendance-page-heading p {
+  margin: 5px 0 0;
+  color: #7a8596;
+  font-size: 13px;
+}
+
+#content .attendance-dashboard {
+  max-width: 1180px;
+}
+
+#content .attendance-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 17px;
+  margin-bottom: 16px;
+  border: 1px solid #dce8f9;
+  border-radius: 13px;
+  background: linear-gradient(120deg, #edf5ff, #fbfdff);
+}
+
+#content .attendance-status-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 10px;
+  background: #d9e9ff;
+  color: #3969ad;
+}
+
+#content .attendance-status-icon .material-icons { font-size: 20px; }
+#content .attendance-status-banner span,
+#content .attendance-status-banner strong,
+#content .attendance-status-banner small { display: block; }
+#content .attendance-status-banner > div:last-child > span { color: #66758b; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+#content .attendance-status-banner strong { margin: 2px 0; color: #253650; font-size: 15px; }
+#content .attendance-status-banner small { color: #7b8798; font-size: 11px; }
+
+#content .attendance-dashboard .stats-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#content .attendance-dashboard .stat-card { min-height: 120px; border-radius: 13px; }
+#content .status-stat-value { font-size: 20px; }
+#content .status-stat-value[data-state="active"] { color: #21845b; }
+#content .status-stat-value[data-state="pending"] { color: #b77913; }
+#content .status-stat-value[data-state="completed"] { color: #596579; }
+#content .stat-sub.pending { color: #b77913; }
+#content .stat-sub.completed { color: #596579; }
+
+#content .attendance-empty {
+  display: grid;
+  min-height: 142px;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  border: 1px dashed #d7dfe9;
+  border-radius: 12px;
+  background: #fff;
+  color: #788599;
+  text-align: center;
+}
+
+#content .attendance-empty .material-icons { color: #6f96c8; font-size: 28px; }
+#content .attendance-empty strong { color: #40506a; font-size: 13px; }
+#content .attendance-empty small { font-size: 11px; }
+
+html.dark #content .attendance-page-heading h2,
+html.dark #content .attendance-status-banner strong,
+html.dark #content .attendance-empty strong,
+html.dark #content .activity-title { color: #f5f5f5; }
+html.dark #content .attendance-page-heading p,
+html.dark #content .attendance-status-banner > div:last-child > span,
+html.dark #content .attendance-status-banner small,
+html.dark #content .activity-time,
+html.dark #content .attendance-empty { color: #a3a3a3; }
+html.dark #content .attendance-status-banner { border-color: #263750; background: #111b2a; }
+html.dark #content .attendance-status-icon { background: #1e3657; color: #8fc2ff; }
+html.dark #content .attendance-dashboard .stat-card,
+html.dark #content .activity-item,
+html.dark #content .attendance-empty { border-color: #262626; background: #141414; box-shadow: none; }
+html.dark #content .tab { background: #1a1a1a; color: #d4d4d4; }
+html.dark #content .tab.active,
+html.dark #content .tab-calendar { background: #1e3657; color: #8fc2ff; }
+
+@media screen and (max-width: 768px) {
+  #content .attendance-page-heading { padding: 2px 10px 14px; }
+  #content .attendance-page-heading h2 { font-size: 23px; }
+  #content .attendance-page-heading p { font-size: 11px; }
+  #content .attendance-dashboard { padding-right: 10px; padding-left: 10px; }
+  #content .attendance-status-banner { gap: 10px; padding: 12px; margin-bottom: 13px; }
+  #content .attendance-status-banner strong { font-size: 13px; }
+  #content .attendance-status-banner small { font-size: 10px; }
+  #content .attendance-dashboard .stats-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  #content .attendance-dashboard .stat-card { min-height: 86px; padding: 10px 8px; }
+  #content .attendance-dashboard .status-stat-value { font-size: 13px; line-height: 1.25; }
 }
 
 /* ===================== TABLET + MOBILE ===================== */
@@ -1730,7 +1851,7 @@ body {
   #content .tab {
     min-width: 0;
     flex: 1;
-    height: 34px;
+    height: 50px;
     padding: 0 9px;
     border-radius: 18px;
     font-size: 9px;
@@ -1933,21 +2054,33 @@ body {
 }
 
 .lowstock-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
   background: #fff3cd;
   color: #856404;
   border: none;
-  padding: 6px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 .lowstock-btn .material-icons {
-  font-size: 16px;
+  color: inherit !important;
+  font-size: 17px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Assigned employee inventory */
@@ -2062,6 +2195,7 @@ html.dark .sidebar .logo, html.dark .sidebar .role, html.dark .sidebar .nav li a
 html.dark .sidebar .nav li.active, html.dark .sidebar .nav li:hover { background: #27344a; }
 html.dark .employee-header-title h2, html.dark .employee-profile strong { color: #f5f5f5; }
 html.dark .employee-header-title span, html.dark .employee-profile small { color: #a3a3a3; }
+html.dark .employee-profile > .material-icons { color: #f5f5f5 !important; }
 html.dark .employee-icon-button { border-color: #262626; background: #1a1a1a; }
 html.dark .employee-icon-button .material-icons { color: #f5f5f5 !important; }
 html.dark .assigned-stock-user, html.dark .assigned-summary-card, html.dark .assigned-stock-table-card, html.dark .expense-report-form, html.dark .expense-report-guide, html.dark .expense-report-history { border-color: #262626; background: #141414; box-shadow: none; }
@@ -2071,17 +2205,360 @@ html.dark .assigned-stock-table th { background: #1a1a1a; color: #d4d4d4; } html
 html.dark .assigned-stock-search, html.dark .expense-report-form input, html.dark .expense-report-form textarea { border-color: #262626; background: #0a0a0a; color: #f5f5f5; }
 html.dark .assigned-stock-search input { color: #f5f5f5; }
 
+/* Employee modals: includes dynamically created POS warning modals and payments. */
+html.dark .modal {
+  background: #141414;
+  color: #f5f5f5;
+}
+
+html.dark .modal .modal-content,
+html.dark .modal .modal-footer {
+  background: #141414;
+  color: #f5f5f5;
+  border-color: #262626;
+}
+
+html.dark .modal .modal-content h1,
+html.dark .modal .modal-content h2,
+html.dark .modal .modal-content h3,
+html.dark .modal .modal-content h4,
+html.dark .modal .modal-content h5,
+html.dark .modal .modal-content h6,
+html.dark .modal .modal-content p,
+html.dark .modal .modal-content span,
+html.dark .modal .modal-content strong,
+html.dark .modal .modal-content label,
+html.dark .modal .modal-footer .btn-flat,
+html.dark .modal .modal-footer .modal-close {
+  color: #f5f5f5 !important;
+}
+
+html.dark .modal input:not([type]),
+html.dark .modal input[type="text"],
+html.dark .modal input[type="number"],
+html.dark .modal textarea {
+  border-bottom-color: #525252 !important;
+  color: #f5f5f5 !important;
+}
+
+html.dark .modal input:focus:not([readonly]),
+html.dark .modal textarea:focus:not([readonly]) {
+  border-bottom-color: #66a8ff !important;
+  box-shadow: 0 1px 0 0 #66a8ff !important;
+}
+
+html.dark .modal .cashless-option {
+  background: #262626;
+  color: #f5f5f5;
+}
+
+html.dark .modal .modal-footer .btn-flat:hover,
+html.dark .modal .modal-footer .modal-close:hover {
+  background: #262626;
+}
+
+/* View Order page. */
+html.dark .order-container,
+html.dark .order-header,
+html.dark .order-item,
+html.dark .summary-card {
+  background: #141414;
+  color: #f5f5f5;
+}
+
+html.dark .order-header {
+  border-bottom: 1px solid #262626;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .35);
+}
+
+html.dark .back-btn {
+  background: #1a1a1a;
+}
+
+html.dark .back-btn i,
+html.dark .order-header h5,
+html.dark .order-info h6,
+html.dark .order-price,
+html.dark .summary-top h5,
+html.dark .summary-card h6 {
+  color: #f5f5f5;
+}
+
+html.dark .order-item {
+  border: 1px solid #262626;
+  box-shadow: none;
+}
+
+html.dark .order-image {
+  background: #262626;
+}
+
+html.dark .order-info small,
+html.dark .order-info p,
+html.dark .order-info span,
+html.dark .summary-top p {
+  color: #a3a3a3;
+}
+
+html.dark .summary-card {
+  border-top: 1px solid #262626;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, .3);
+}
+
+html.dark .payment-btn {
+  background: #262626;
+  color: #f5f5f5;
+}
+
+html.dark .payment-btn.active {
+  background: #1976d2;
+  color: #fff;
+}
+
 @media screen and (max-width: 768px) {
-  .mobile-header.employee-topbar { padding: 14px 18px; }
+  /* Same compact mobile navigation pattern used by the manager dashboard. */
+  .main { padding-top: 56px; padding-bottom: 190px; }
+  .mobile-header.employee-topbar { position: fixed; top: 0; right: 0; left: 0; z-index: 1500; min-height: 56px; height: 56px; padding: 0 12px; margin: 0; gap: 8px; border-bottom: 1px solid #e4e8ef; box-shadow: 0 1px 4px rgba(0, 0, 0, .08); }
+  .employee-header-title { min-width: 0; flex: 1; overflow: hidden; }
   .employee-header-title span { display: none; }
-  .mobile-header.employee-topbar h2 { margin-left: 0; font-size: 23px; }
-  .employee-header-actions { display: flex; align-items: center; gap: 10px; }
-  .employee-icon-button { border: 0; background: transparent; }
-  .employee-icon-button .material-icons { color: #000 !important; }
-  .employee-profile { display: none; }
+  .mobile-header.employee-topbar h2 { margin: 0; overflow: hidden; color: #24314a; font-size: 1.05rem; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+  .employee-header-actions { display: flex; align-items: center; flex: 0 0 auto; gap: 6px; }
+  .employee-icon-button { width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; }
+  .employee-icon-button .material-icons { color: #24314a !important; font-size: 22px; }
+  .employee-profile { display: flex; padding-left: 2px; border-left: 0; }
+  .employee-profile > .material-icons { color: #456da8 !important; font-size: 30px; }
+  .employee-profile div { display: none; }
+
+  /* POS: a compact, touch-friendly flow with checkout always above navigation. */
+  body:has(.product-list) .search-section { padding: 14px 16px 10px; }
+  body:has(.product-list) .search-box input { height: 46px; padding: 0 14px 0 43px; border-color: #dfe5ed; border-radius: 12px; font-size: 14px; }
+  body:has(.product-list) .search-box i { top: 11px; left: 13px; font-size: 23px; }
+  body:has(.product-list) .categories { gap: 8px; padding: 4px 16px 12px; }
+  body:has(.product-list) .category { padding: 9px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+  body:has(.product-list) .product-list { gap: 12px; padding: 4px 16px 16px; }
+  body:has(.product-list) .product-card { min-height: 104px; padding: 12px; border: 1px solid #e8edf4; border-radius: 14px; box-shadow: 0 2px 8px rgba(24, 42, 76, .05); }
+  body:has(.product-list) .product-image { width: 76px; height: 76px; border-radius: 10px; }
+  body:has(.product-list) .product-info { margin-left: 12px; }
+  body:has(.product-list) .product-info h4 { margin-bottom: 5px; font-size: 16px; line-height: 1.25; }
+  body:has(.product-list) .product-info p { font-size: 12px; }
+  body:has(.product-list) .price { font-size: 16px; font-weight: 700; }
+  body:has(.product-list) .add-btn { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 10px; }
+  body:has(.product-list) .add-btn i { font-size: 25px; }
+  body:has(.product-list) .cart-section { display: none; }
+  body:has(.product-list) .checkout-bar { bottom: 72px; z-index: 300; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid #e6ebf2; box-shadow: 0 -3px 12px rgba(24, 42, 76, .09); }
+  body:has(.product-list) .checkout-info { margin-bottom: 10px; }
+  body:has(.product-list) .cart-count { padding: 5px 10px; background: #e8f0fe; font-size: 12px; }
+  body:has(.product-list) .checkout-info small { font-size: 11px; }
+  body:has(.product-list) .checkout-info h3 { font-size: 20px; }
+  body:has(.product-list) .checkout-btn { height: 48px; border-radius: 11px; font-size: 15px; }
+  body:has(.product-list) .bottom-nav { height: 72px; padding-bottom: env(safe-area-inset-bottom); }
+  body:has(.product-list) .bottom-nav i { font-size: 23px; }
+  body:has(.product-list) .bottom-nav span { font-size: 10px; }
+
+  html.dark .mobile-header.employee-topbar { border-color: #262626; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
+  html.dark .employee-icon-button .material-icons, html.dark .mobile-header.employee-topbar h2 { color: #f5f5f5 !important; }
+  html.dark body:has(.product-list) .search-box input, html.dark body:has(.product-list) .product-card, html.dark body:has(.product-list) .checkout-bar { border-color: #262626; background: #141414; color: #f5f5f5; }
+  html.dark body:has(.product-list) .product-info h4 { color: #f5f5f5; }
+  html.dark body:has(.product-list) .product-info p, html.dark body:has(.product-list) .checkout-info small { color: #a3a3a3; }
+}
+
+/* POS finishing touches: prevent horizontal page swiping on phones. */
+@media screen and (max-width: 768px) {
+  html,
+  body,
+  .main,
+  #content {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
+  body:has(.product-list) .categories {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body:has(.product-list) .category {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .product-card,
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .checkout-bar {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Only category chips can scroll sideways; the search stays compact. */
+  body:has(.product-list) .search-box {
+    width: min(100%, 330px);
+    margin: 0 auto;
+  }
+
+  /* Keep the product action in a fixed column regardless of title length. */
+  body:has(.product-list) .product-card {
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr) 70px;
+    gap: 12px;
+  }
+
+  body:has(.product-list) .product-info {
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  body:has(.product-list) .product-info h4,
+  body:has(.product-list) .product-info p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  body:has(.product-list) .product-info h4 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  body:has(.product-list) .product-info p {
+    white-space: nowrap;
+  }
+
+  body:has(.product-list) .add-btn {
+    flex: none;
+    margin: 0;
+    transform: none !important;
+  }
+
+  body:has(.product-list) .product-card {
+    position: relative;
+  }
+
+  body:has(.product-list) .product-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  body:has(.product-list) .lowstock-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  body:has(.product-list) .lowstock-btn .material-icons {
+    font-size: 15px;
+  }
+
+  .bottom-nav {
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .bottom-nav a {
+    min-width: 0;
+    flex: 1 1 20%;
+    font-size: 10px;
+  }
+
+  .bottom-nav a span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  html.dark .bottom-nav {
+    background: #111;
+    border-top-color: #262626;
+  }
+
+  html.dark .bottom-nav a,
+  html.dark .bottom-nav i {
+    color: #a3a3a3 !important;
+  }
+
+  html.dark .bottom-nav a.active,
+  html.dark .bottom-nav a.active i {
+    color: #66a8ff !important;
+  }
+
+  html.dark body:has(.product-list) .categories {
+    background: #0a0a0a;
+  }
+
+  html.dark body:has(.product-list) .category {
+    background: #1a1a1a;
+    color: #d4d4d4;
+  }
+
+  html.dark body:has(.product-list) .category.active {
+    background: #1976d2;
+    color: #fff;
+  }
+
+  html.dark body:has(.product-list) .cart-count {
+    background: #172a45;
+    color: #8fc2ff;
+  }
+}
+
+/* Desktop POS dark palette. */
+html.dark body:has(.product-list) .search-box input,
+html.dark body:has(.product-list) .product-card,
+html.dark body:has(.product-list) .cart-section,
+html.dark body:has(.product-list) .checkout-bar {
+  border-color: #262626;
+  background: #141414;
+  color: #f5f5f5;
+  box-shadow: none;
+}
+
+html.dark body:has(.product-list) .product-info h4,
+html.dark body:has(.product-list) .product-card h5,
+html.dark body:has(.product-list) .checkout-info h3,
+html.dark body:has(.product-list) .cart-section td {
+  color: #f5f5f5;
+}
+
+html.dark body:has(.product-list) .product-info p,
+html.dark body:has(.product-list) .product-card p,
+html.dark body:has(.product-list) .checkout-info small {
+  color: #a3a3a3;
+}
+
+html.dark body:has(.product-list) .cart-section td {
+  border-bottom-color: #262626;
+}
+
+@media (min-width: 769px) {
+  /* Keep the original single-card product list, with clear room for the cart. */
+  body:has(.product-list) .product-list {
+    width: calc(100% - 400px);
+  }
+
+  body:has(.product-list) .cart-section,
+  body:has(.product-list) .checkout-bar {
+    width: 360px;
+    right: 25px;
+  }
 }
 
 /* Employee expense reports */
+.expense-form-footer button,
+#content .time-in-button {
+  background: #2196f3 !important;
+}
+
+.expense-form-footer button:hover:not(:disabled),
+#content .time-in-button:hover:not(:disabled) {
+  background: #1976d2 !important;
+}
+
 .expense-report-page { max-width: 1120px; margin: 0 auto; padding: 4px 0 30px; }
 .expense-report-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 4px 0 24px; }.expense-report-header .eyebrow { color: #426baa; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }.expense-report-header h2 { margin: 5px 0; color: #22314a; font-size: 28px; font-weight: 800; }.expense-report-header p { margin: 0; color: #748094; font-size: 13px; }.expense-report-header-icon { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 14px; background: #eaf1ff; }.expense-report-header-icon .material-icons { color: #416fac !important; font-size: 28px; }
 .expense-report-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }.expense-report-form, .expense-report-guide, .expense-report-history { border: 1px solid #e5eaf2; border-radius: 14px; background: #fff; box-shadow: 0 5px 17px rgba(31, 48, 81, .045); }.expense-report-form { padding: 24px; }.expense-form-heading h3, .expense-report-guide h3, .expense-history-heading h3 { margin: 0; color: #293750; font-size: 17px; font-weight: 800; }.expense-form-heading p, .expense-history-heading p { margin: 5px 0 20px; color: #8791a0; font-size: 12px; }
