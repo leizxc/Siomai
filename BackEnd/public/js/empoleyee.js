@@ -719,7 +719,7 @@ function renderProducts(products) {
 
     card.innerHTML = `
       <img
-        src="${product.image || "/images/no-image.png"}"
+        src="${product.image || "/assets/upload-placeholder.png"}"
         class="product-image"
       >
 

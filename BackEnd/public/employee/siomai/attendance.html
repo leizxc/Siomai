@@ -3,25 +3,29 @@
     <div>
       <h2>Attendance</h2>
     </div>
+    <button type="button" class="time-in-button" id="time-in-button">
+      <span class="material-icons">login</span>
+      Time In
+    </button>
   </section>
 
   <div class="container">
     <div class="stats-row">
       <div class="stat-card">
         <div class="stat-label">Total Hours</div>
-        <div class="stat-value">38.5 <span>hrs</span></div>
-        <div class="stat-sub positive">
+        <div class="stat-value"><span id="total-hours-value">0.0</span> <span>hrs</span></div>
+        <div class="stat-sub positive" id="total-hours-note">
           <span class="material-icons">trending_up</span>
-          +2.4h vs last week
+          This week
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-label">Shift Streak</div>
-        <div class="stat-value">12 <span>days</span></div>
-        <div class="stat-sub badge">
+        <div class="stat-value"><span id="shift-streak-value">0</span> <span>days</span></div>
+        <div class="stat-sub badge" id="shift-streak-note">
           <span class="material-icons">emoji_events</span>
-          Top Performer
+          Current streak
         </div>
       </div>
     </div>

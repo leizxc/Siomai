@@ -157,6 +157,14 @@ async function loadSection(page) {
         break;
 
       case "report.html":
+        try {
+          const reportModule = await import("/js/report.js");
+          if (myToken !== currentLoadToken) return;
+          await reportModule.initReportPage?.();
+          currentCleanup = reportModule.stopReportPage || null;
+        } catch (err) {
+          console.error("Expense report init error:", err);
+        }
         break;
     }
   } catch (err) {
@@ -194,9 +202,21 @@ function updateBottomNav(page) {
 
 document.addEventListener(
   "DOMContentLoaded",
-  () => {
+  async () => {
     const bottomNav =
       document.querySelector(".bottom-nav");
+
+    document.querySelector("#employee-notification-bell")?.addEventListener(
+      "click",
+      () => loadSection("report.html")
+    );
+
+    try {
+      const notificationModule = await import("/js/employeeNotifications.js");
+      notificationModule.initEmployeeNotifications?.();
+    } catch (err) {
+      console.error("Employee notification init error:", err);
+    }
 
     if (!bottomNav) {
       return;

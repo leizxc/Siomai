@@ -18,6 +18,14 @@
 
     <!-- Manifest -->
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      (function () {
+        const theme = localStorage.getItem("theme");
+        if (theme === "dark" || (!theme && matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
   </head>
 
   <body>
@@ -68,11 +76,26 @@
 
     <!-- Main -->
     <main class="main">
-      <div class="mobile-header">
-        <h2 id="mobile-title">Point of Sale</h2>
-        <i class="material-icons">notifications_none</i>
-        <i class="material-icons">account_circle</i>
-      </div>
+      <header class="mobile-header employee-topbar">
+        <div class="employee-header-title">
+          <span>Employee workspace</span>
+          <h2 id="mobile-title">Point of Sale</h2>
+        </div>
+
+        <div class="employee-header-actions">
+          <button id="theme-toggle" type="button" class="employee-icon-button theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+            <i class="material-icons" id="theme-icon">dark_mode</i>
+          </button>
+          <button id="employee-notification-bell" type="button" class="employee-icon-button" aria-label="Open expense reports" title="Expense reports">
+            <i class="material-icons">notifications_none</i>
+            <span id="employee-notification-count" hidden>0</span>
+          </button>
+          <div class="employee-profile">
+            <span class="material-icons">account_circle</span>
+            <div><strong>Employee</strong><small>Staff account</small></div>
+          </div>
+        </div>
+      </header>
 
       <div id="content">
         <!-- Search -->
@@ -169,6 +192,7 @@
     <script type="module" src="/js/navemployee.js"></script>
     <script type="module" src="/js/firebase.js"></script>
     <script type="module" src="/js/IndexDB.js"></script>
+    <script src="/js/theme.js"></script>
 
     <script type="module">
       import { initPOS } from "/js/empoleyee.js";

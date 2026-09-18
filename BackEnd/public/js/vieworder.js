@@ -138,7 +138,7 @@ function renderOrder() {
     card.innerHTML = `
       <img
         class="order-image"
-        src="${item.image || "/images/no-image.png"}"
+        src="${item.image || "/assets/upload-placeholder.png"}"
       >
 
       <div class="order-info">

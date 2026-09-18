@@ -1049,6 +1049,9 @@ body {
 }
 
 #content .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
   margin-bottom: 18px;
 }
@@ -1059,6 +1062,57 @@ body {
   font-size: 24px;
   line-height: 1.2;
   font-weight: 700;
+}
+
+#content .time-in-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #456da8;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+#content .time-in-button:hover:not(:disabled) {
+  background: #315b9b;
+}
+
+#content .time-in-button.active,
+#content .time-in-button:disabled.active {
+  background: #21845b;
+  color: #fff;
+  cursor: default;
+}
+
+#content .time-in-button.pending,
+#content .time-in-button:disabled.pending {
+  background: #d99018;
+  color: #fff;
+  cursor: default;
+}
+
+#content .time-in-button.completed,
+#content .time-in-button:disabled.completed {
+  background: #68707d;
+  color: #fff;
+  cursor: default;
+}
+
+#content .time-in-button:disabled {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+#content .time-in-button .material-icons {
+  font-size: 18px;
 }
 
 #content .stats-row {
@@ -1272,8 +1326,13 @@ body {
 }
 
 #content .activity-status.active {
-  background: #454a55;
+  background: #21845b;
   color: #fff;
+}
+
+#content .activity-status.pending {
+  background: #fff3d9;
+  color: #9a6500;
 }
 
 #content .activity-status.completed {
@@ -1890,3 +1949,163 @@ body {
 .lowstock-btn .material-icons {
   font-size: 16px;
 }
+
+/* Assigned employee inventory */
+.assigned-stock-page {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 32px;
+  background: #f6f8fc;
+}
+
+.assigned-stock-header,
+.assigned-stock-table-header,
+.assigned-stock-user,
+.assigned-product-name {
+  display: flex;
+  align-items: center;
+}
+
+.assigned-stock-header {
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.assigned-stock-header .eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #4067a5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.assigned-stock-header h2 { margin: 0; color: #17233b; font-size: clamp(27px, 3vw, 34px); font-weight: 800; }
+.assigned-stock-header p { margin: 8px 0 0; color: #6e7788; font-size: 14px; }
+
+.assigned-stock-user {
+  gap: 11px;
+  min-width: 210px;
+  padding: 13px 16px;
+  border: 1px solid #e4eaf4;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 5px 16px rgba(36, 53, 85, .05);
+}
+.assigned-stock-user > .material-icons { padding: 8px; border-radius: 9px; background: #eaf1ff; color: #3969ad; }
+.assigned-stock-user small, .assigned-stock-user strong { display: block; }
+.assigned-stock-user small { color: #8690a1; font-size: 10px; }
+.assigned-stock-user strong { margin-top: 2px; color: #27344c; font-size: 13px; }
+
+.assigned-stock-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+.assigned-summary-card { display: flex; align-items: center; gap: 14px; min-height: 120px; padding: 18px; border: 1px solid #e8edf5; border-radius: 14px; background: #fff; box-shadow: 0 5px 16px rgba(36, 53, 85, .045); }
+.assigned-summary-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 11px; }
+.assigned-summary-icon.blue { background: #eaf1ff; color: #356ab2; }.assigned-summary-icon.green { background: #e6f6ee; color: #278457; }.assigned-summary-icon.amber { background: #fff4df; color: #b77913; }.assigned-summary-icon.purple { background: #f1ebff; color: #7254b9; }
+.assigned-stock-page .assigned-summary-icon .material-icons { color: inherit !important; font-size: 22px; line-height: 1; }
+.assigned-summary-card span, .assigned-summary-card strong, .assigned-summary-card small { display: block; }.assigned-summary-card span { color: #778193; font-size: 11px; font-weight: 700; text-transform: uppercase; }.assigned-summary-card strong { margin: 4px 0; color: #1e2b44; font-size: 25px; line-height: 1; }.assigned-summary-card small { color: #98a0ae; font-size: 10px; }
+
+.assigned-stock-table-card { overflow: hidden; border: 1px solid #e6ebf3; border-radius: 15px; background: #fff; box-shadow: 0 5px 18px rgba(36, 53, 85, .05); }
+.assigned-stock-table-header { justify-content: space-between; gap: 18px; padding: 22px 24px; border-bottom: 1px solid #edf0f5; }.assigned-stock-table-header h3 { margin: 0; color: #24314a; font-size: 17px; font-weight: 800; }.assigned-stock-table-header p { margin: 5px 0 0; color: #8590a0; font-size: 12px; }
+.assigned-stock-search { display: flex; align-items: center; gap: 8px; width: min(100%, 280px); padding: 0 12px; border: 1px solid #dfe5ee; border-radius: 9px; background: #fafbfd; color: #788397; }.assigned-stock-search input { width: 100%; height: 38px; border: 0 !important; outline: 0; box-shadow: none !important; background: transparent; font-size: 13px; }
+.assigned-stock-table-wrap { overflow-x: auto; }.assigned-stock-table { width: 100%; border-collapse: collapse; }.assigned-stock-table th { padding: 13px 24px; background: #fafbfd; color: #7c8798; font-size: 10px; font-weight: 800; letter-spacing: .06em; text-align: left; text-transform: uppercase; }.assigned-stock-table td { padding: 16px 24px; border-top: 1px solid #eef1f5; color: #546074; font-size: 13px; vertical-align: middle; }.assigned-stock-table td > strong { color: #26344d; }.assigned-stock-table td small { color: #8993a2; font-size: 11px; }
+.assigned-product-name { gap: 10px; color: #26344d; }.assigned-product-name > span { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 8px; background: #eaf1ff; color: #3b6eb2; font-size: 13px; font-weight: 800; }.assigned-stock-badge { display: inline-block; padding: 5px 9px; border-radius: 99px; font-size: 10px; font-weight: 800; }.assigned-stock-badge.in { background: #e8f7ee; color: #218154; }.assigned-stock-badge.low { background: #fff4df; color: #a96800; }.assigned-stock-badge.out { background: #ffebed; color: #ba4050; }
+.assigned-stock-empty { padding: 48px !important; text-align: center; }.assigned-stock-empty span, .assigned-stock-empty strong, .assigned-stock-empty small { display: block; }.assigned-stock-page .assigned-stock-empty .material-icons { margin-bottom: 8px; color: #9aa6b7 !important; font-size: 30px; }.assigned-stock-empty strong { color: #526078; }.assigned-stock-empty small { margin-top: 5px; color: #929cac; }
+
+@media screen and (max-width: 900px) { .assigned-stock-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media screen and (max-width: 600px) { .assigned-stock-page { padding: 20px 16px; }.assigned-stock-header, .assigned-stock-table-header { align-items: flex-start; flex-direction: column; }.assigned-stock-user, .assigned-stock-search { width: 100%; }.assigned-stock-summary { grid-template-columns: 1fr; }.assigned-stock-table th, .assigned-stock-table td { padding: 13px 16px; }.assigned-stock-table { min-width: 760px; } }
+
+/* Employee desktop header — aligned with the manager dashboard header. */
+@media (min-width: 769px) {
+  .mobile-header.employee-topbar {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    min-height: 76px;
+    margin: -25px -25px 25px;
+    padding: 13px 25px;
+    border-bottom: 1px solid #e4e8ef;
+    background: rgba(255, 255, 255, .96);
+    backdrop-filter: blur(10px);
+  }
+
+  .employee-header-title span { display: block; margin-bottom: 2px; color: #8390a2; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .employee-header-title h2 { margin: 0; color: #24314a; font-size: 21px; font-weight: 800; }
+  .employee-header-actions { display: flex; align-items: center; gap: 16px; }
+  .employee-icon-button { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid #e1e7ef; border-radius: 10px; background: #fff; cursor: pointer; }
+  .employee-icon-button:hover { background: #f4f7fb; }
+  .employee-icon-button .material-icons { color: #4e5d75 !important; font-size: 21px; }
+  .employee-icon-button { position: relative; }
+  #employee-notification-count { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border: 2px solid #fff; border-radius: 99px; background: #d74444; color: #fff; font-size: 9px; font-weight: 800; line-height: 13px; }
+  .employee-icon-button.has-notification .material-icons { color: #d48710 !important; animation: employee-bell-pulse 1.5s ease-in-out infinite; }
+  .employee-profile { display: flex; align-items: center; gap: 8px; padding-left: 16px; border-left: 1px solid #e6eaf0; }
+  .employee-profile > .material-icons { color: #456da8 !important; font-size: 34px; }
+  .employee-profile strong, .employee-profile small { display: block; }.employee-profile strong { color: #33415b; font-size: 12px; }.employee-profile small { margin-top: 1px; color: #8994a5; font-size: 10px; }
+
+  body:has(.product-list) .main::before { display: none; }
+  body:has(.product-list) .search-section { position: relative; top: auto; left: auto; right: auto; z-index: auto; height: auto; padding: 0; margin: 0 0 18px; }
+  body:has(.product-list) .categories { padding: 0 0 18px; }
+  body:has(.product-list) .cart-section { top: 101px; }
+  body:has(.product-list) .checkout-bar { bottom: 25px; }
+}
+
+@keyframes employee-bell-pulse { 0%, 100% { transform: rotate(0); } 10%, 30% { transform: rotate(12deg); } 20%, 40% { transform: rotate(-12deg); } 50% { transform: rotate(0); } }
+
+/* Shared employee dark theme — uses the same `theme` preference as manager/admin. */
+html.dark body, html.dark .main, html.dark .assigned-stock-page { background: #0a0a0a; color: #f5f5f5; }
+html.dark .sidebar, html.dark .mobile-header.employee-topbar { background: #111111; border-color: #262626; }
+html.dark .sidebar .logo, html.dark .sidebar .role, html.dark .sidebar .nav li a, html.dark .sidebar .nav li i { color: #e8edf6 !important; }
+html.dark .sidebar .nav li.active, html.dark .sidebar .nav li:hover { background: #27344a; }
+html.dark .employee-header-title h2, html.dark .employee-profile strong { color: #f5f5f5; }
+html.dark .employee-header-title span, html.dark .employee-profile small { color: #a3a3a3; }
+html.dark .employee-icon-button { border-color: #262626; background: #1a1a1a; }
+html.dark .employee-icon-button .material-icons { color: #f5f5f5 !important; }
+html.dark .assigned-stock-user, html.dark .assigned-summary-card, html.dark .assigned-stock-table-card, html.dark .expense-report-form, html.dark .expense-report-guide, html.dark .expense-report-history { border-color: #262626; background: #141414; box-shadow: none; }
+html.dark .assigned-stock-header h2, html.dark .assigned-stock-user strong, html.dark .assigned-summary-card strong, html.dark .assigned-stock-table-header h3, html.dark .assigned-stock-table td > strong, html.dark .assigned-product-name, html.dark .expense-report-header h2, html.dark .expense-form-heading h3, html.dark .expense-report-guide h3, html.dark .expense-history-heading h3, html.dark .expense-history-item strong, html.dark .expense-history-item b { color: #f5f5f5; }
+html.dark .assigned-stock-header p, html.dark .assigned-stock-user small, html.dark .assigned-summary-card span, html.dark .assigned-summary-card small, html.dark .assigned-stock-table-header p, html.dark .assigned-stock-table td, html.dark .assigned-stock-table td small, html.dark .expense-form-heading p, html.dark .expense-history-heading p, html.dark .expense-report-guide p, html.dark .expense-report-guide ul, html.dark .expense-history-item p, html.dark .expense-history-item small { color: #a3a3a3; }
+html.dark .assigned-stock-table th { background: #1a1a1a; color: #d4d4d4; } html.dark .assigned-stock-table td, html.dark .assigned-stock-table th, html.dark .assigned-stock-table-header, html.dark .expense-history-list, html.dark .expense-history-item { border-color: #262626; }
+html.dark .assigned-stock-search, html.dark .expense-report-form input, html.dark .expense-report-form textarea { border-color: #262626; background: #0a0a0a; color: #f5f5f5; }
+html.dark .assigned-stock-search input { color: #f5f5f5; }
+
+@media screen and (max-width: 768px) {
+  .mobile-header.employee-topbar { padding: 14px 18px; }
+  .employee-header-title span { display: none; }
+  .mobile-header.employee-topbar h2 { margin-left: 0; font-size: 23px; }
+  .employee-header-actions { display: flex; align-items: center; gap: 10px; }
+  .employee-icon-button { border: 0; background: transparent; }
+  .employee-icon-button .material-icons { color: #000 !important; }
+  .employee-profile { display: none; }
+}
+
+/* Employee expense reports */
+.expense-report-page { max-width: 1120px; margin: 0 auto; padding: 4px 0 30px; }
+.expense-report-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 4px 0 24px; }.expense-report-header .eyebrow { color: #426baa; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }.expense-report-header h2 { margin: 5px 0; color: #22314a; font-size: 28px; font-weight: 800; }.expense-report-header p { margin: 0; color: #748094; font-size: 13px; }.expense-report-header-icon { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 14px; background: #eaf1ff; }.expense-report-header-icon .material-icons { color: #416fac !important; font-size: 28px; }
+.expense-report-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }.expense-report-form, .expense-report-guide, .expense-report-history { border: 1px solid #e5eaf2; border-radius: 14px; background: #fff; box-shadow: 0 5px 17px rgba(31, 48, 81, .045); }.expense-report-form { padding: 24px; }.expense-form-heading h3, .expense-report-guide h3, .expense-history-heading h3 { margin: 0; color: #293750; font-size: 17px; font-weight: 800; }.expense-form-heading p, .expense-history-heading p { margin: 5px 0 20px; color: #8791a0; font-size: 12px; }
+.expense-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }.expense-report-form label { color: #56647a; font-size: 11px; font-weight: 700; }.expense-report-form input, .expense-report-form textarea { display: block; width: 100%; margin-top: 6px; padding: 10px 11px; border: 1px solid #dfe5ed; border-radius: 8px; outline: none; background: #fbfcfe; color: #2e3c54; font: inherit; font-size: 13px; }.expense-report-form input:focus, .expense-report-form textarea:focus { border-color: #507dbd; box-shadow: 0 0 0 3px #eaf1fb; }.expense-description-label { display: block; margin-top: 16px; }.expense-report-form textarea { min-height: 100px; resize: vertical; }.expense-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 20px; }.expense-form-footer small { color: #8b95a4; font-size: 10px; }.expense-form-footer button { display: inline-flex; align-items: center; gap: 7px; padding: 11px 15px; border: 0; border-radius: 8px; background: #3c6faa; color: #fff; font-weight: 800; cursor: pointer; }.expense-form-footer button:disabled { opacity: .7; cursor: wait; }.expense-form-footer button .material-icons { color: #fff !important; font-size: 17px; }
+.expense-report-guide { padding: 23px; background: linear-gradient(145deg, #edf4ff, #fff); }.expense-report-guide > .material-icons { margin-bottom: 13px; color: #3f71ae !important; font-size: 28px; }.expense-report-guide p { color: #69778b; font-size: 12px; line-height: 1.6; }.expense-report-guide ul { margin: 18px 0 0; padding-left: 18px; color: #526077; font-size: 12px; line-height: 2; }
+.expense-report-history { margin-top: 20px; padding: 22px 24px; }.expense-history-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }.expense-history-heading p { margin-bottom: 14px; }.expense-history-heading > span { padding: 5px 9px; border-radius: 99px; background: #fff3df; color: #9a6600; font-size: 10px; font-weight: 800; }.expense-history-list { display: grid; gap: 1px; border-top: 1px solid #edf0f4; }.expense-history-item { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 13px 0; border-bottom: 1px solid #edf0f4; }.expense-history-item strong { color: #33415a; font-size: 13px; }.expense-history-item p { max-width: 580px; margin: 3px 0; overflow: hidden; color: #738095; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.expense-history-item small { color: #9aa3b0; font-size: 10px; }.expense-history-item > div:last-child { min-width: 100px; text-align: right; }.expense-history-item b { display: block; color: #31415d; font-size: 13px; }.report-status { display: inline-block; margin-top: 4px; padding: 3px 7px; border-radius: 99px; background: #fff3df; color: #9a6600; font-size: 9px; font-weight: 800; text-transform: capitalize; }.expense-history-empty { padding: 26px 0 6px; color: #8c96a5; font-size: 13px; text-align: center; }
+@media screen and (max-width: 760px) { .expense-report-layout { grid-template-columns: 1fr; }.expense-form-grid { grid-template-columns: 1fr; }.expense-form-footer { align-items: flex-start; flex-direction: column; }.expense-form-footer button { width: 100%; justify-content: center; }.expense-report-history { padding: 18px; }.expense-history-item p { max-width: 180px; }.expense-report-header h2 { font-size: 24px; } }
+
+/* Shared modal placement: centered and scroll-safe on every screen size. */
+.modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: min(92vw, 640px) !important;
+  max-height: min(82vh, 720px) !important;
+  margin: 0 !important;
+  border-radius: 14px !important;
+  transform: translate(-50%, -50%) !important;
+  overflow: hidden !important;
+}
+
+.modal.modal-fixed-footer { height: min(82vh, 720px) !important; }
+.modal .modal-content { max-height: calc(min(82vh, 720px) - 76px); overflow-y: auto; overscroll-behavior: contain; }
+.modal .modal-footer { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; min-height: 64px; padding: 12px 18px; }
+@media screen and (max-width: 600px) { .modal { width: 94vw !important; max-height: 88vh !important; border-radius: 12px !important; }.modal.modal-fixed-footer { height: 88vh !important; }.modal .modal-content { max-height: calc(88vh - 70px); padding: 20px !important; }.modal .modal-footer { min-height: 60px; padding: 10px 14px; } }
+
+.report-status.read { background: #e8f7ee; color: #218154; }

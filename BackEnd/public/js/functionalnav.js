@@ -117,6 +117,14 @@ function loadSection(page) {
           break;
 
         case "EmployeeMonitoring.html":
+          try {
+            const attendanceModule = await import("/js/attendanceAdmin.js");
+            if (myToken !== currentLoadToken) return;
+            attendanceModule.initAttendanceMonitoring?.();
+            currentCleanup = attendanceModule.stopAttendanceMonitoring || null;
+          } catch (err) {
+            console.error("Attendance monitoring init error:", err);
+          }
           break;
       }
     })

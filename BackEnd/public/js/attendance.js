@@ -2,22 +2,34 @@
 
 import { app } from "/js/firebase.js";
 
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getAuth,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
   getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
   doc,
-  getDoc,
   setDoc,
   serverTimestamp,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 let attendanceInitialized = false;
+let currentAttendance = null;
+let unsubscribeAttendance = null;
+let statsTimer = null;
+let attendanceHistory = [];
 
+// ========================================
 // INITIALIZE ATTENDANCE
+// ========================================
 
 export async function initAttendance() {
   if (attendanceInitialized) return;
@@ -27,7 +39,7 @@ export async function initAttendance() {
   try {
     const user = auth.currentUser;
 
-    // Walang naka login
+    // Walang naka-login
     if (!user) {
       console.warn("No logged-in user found.");
 
@@ -38,85 +50,116 @@ export async function initAttendance() {
 
     console.log("Attendance user:", user.uid);
 
+    // ========================================
+    // GET EMPLOYEE INFORMATION
+    // ========================================
+
+    const employeeQuery = query(
+      collection(db, "employees"),
+      where("uid", "==", user.uid)
+    );
+
+    const employeeSnapshot = await getDocs(employeeQuery);
+
+    if (employeeSnapshot.empty) {
+      console.warn("Employee record not found.");
+
+      showNoAttendance("Employee information not found.");
+
+      return;
+    }
+
+    const employeeData = employeeSnapshot.docs[0].data();
+
+    const fname = employeeData.fname || "";
+    const lname = employeeData.lname || "";
+
+    console.log("Employee:", fname, lname);
+
+    // ========================================
     // TODAY'S DOCUMENT ID
+    // ========================================
 
     const today = getTodayDate();
 
     const attendanceId = `${user.uid}_${today}`;
 
-    const attendanceRef = doc(db, "attendance", attendanceId);
+    const attendanceRef = doc(
+      db,
+      "attendance",
+      attendanceId
+    );
 
-    // CHECK EXISTING ATTENDANCE
+    watchAttendance(attendanceRef, { attendanceRef, user, fname, lname, today });
+    await loadAttendanceStats(user.uid);
 
-    const attendanceSnapshot = await getDoc(attendanceRef);
-
-    if (attendanceSnapshot.exists()) {
-      console.log("Attendance already recorded today.");
-
-      displayAttendance(attendanceSnapshot.data());
-
-      return;
-    }
-
-    // AUTOMATIC CLOCK IN
-
-    const attendanceData = {
-      userId: user.uid,
-
-      email: user.email || "",
-
-      status: "active",
-
-      type: "clocked_in",
-
-      clockedInAt: serverTimestamp(),
-
-      createdAt: serverTimestamp(),
-    };
-
-    await setDoc(attendanceRef, attendanceData);
-
-    console.log("Attendance successfully recorded.");
-
-    // Display current time immediately
-    displayAttendance({
-      ...attendanceData,
-
-      clockedInAt: new Date(),
-    });
   } catch (error) {
-    console.error("Attendance initialization error:", error);
+    console.error(
+      "Attendance initialization error:",
+      error
+    );
 
-    showNoAttendance("Unable to load attendance.");
+    showNoAttendance(
+      "Unable to load attendance."
+    );
   }
 }
 
+// ========================================
 // GET TODAY'S DATE
+// ========================================
 
 function getTodayDate() {
   const date = new Date();
 
   const year = date.getFullYear();
 
-  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
 
-  const day = String(date.getDate()).padStart(2, "0");
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
 
+// ========================================
 // DISPLAY ATTENDANCE
+// ========================================
 
 function displayAttendance(attendance) {
-  const activityList = document.querySelector(".activity-list");
+  currentAttendance = attendance;
+  if (attendance.status === "pending") {
+    setTimeInButtonPending();
+    displayPendingAttendance(attendance);
+    return;
+  }
+
+  if (attendance.status === "completed") {
+    setTimeInButtonCompleted();
+    displayCompletedAttendance(attendance);
+    return;
+  }
+
+  setTimeInButtonActive();
+
+  const activityList =
+    document.querySelector(".activity-list");
 
   if (!activityList) return;
 
-  let clockedInTime = attendance.clockedInAt;
+  let clockedInTime =
+    attendance.clockedInAt;
 
   // Firebase Timestamp
-  if (clockedInTime && typeof clockedInTime.toDate === "function") {
-    clockedInTime = clockedInTime.toDate();
+  if (
+    clockedInTime &&
+    typeof clockedInTime.toDate === "function"
+  ) {
+    clockedInTime =
+      clockedInTime.toDate();
   }
 
   // Fallback
@@ -124,22 +167,45 @@ function displayAttendance(attendance) {
     clockedInTime = new Date();
   }
 
+  // ========================================
   // FORMAT TIME
+  // ========================================
 
-  const formattedTime = clockedInTime.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const formattedTime =
+    clockedInTime.toLocaleTimeString(
+      "en-US",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
 
+  // ========================================
   // FORMAT DATE
+  // ========================================
 
-  const formattedDate = clockedInTime.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const formattedDate =
+    clockedInTime.toLocaleDateString(
+      "en-US",
+      {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }
+    );
 
+  // ========================================
+  // EMPLOYEE NAME
+  // ========================================
+
+  const employeeName =
+    `${attendance.fname || ""} ${
+      attendance.lname || ""
+    }`.trim();
+
+  // ========================================
   // DISPLAY
+  // ========================================
 
   activityList.innerHTML = `
 
@@ -151,7 +217,6 @@ function displayAttendance(attendance) {
         </span>
       </div>
 
-
       <div class="activity-info">
 
         <div class="activity-title">
@@ -159,11 +224,14 @@ function displayAttendance(attendance) {
         </div>
 
         <div class="activity-time">
+          ${employeeName}
+        </div>
+
+        <div class="activity-time">
           ${formattedDate} · ${formattedTime}
         </div>
 
       </div>
-
 
       <div class="activity-right">
 
@@ -182,10 +250,13 @@ function displayAttendance(attendance) {
   `;
 }
 
+// ========================================
 // EMPTY / ERROR STATE
+// ========================================
 
 function showNoAttendance(message) {
-  const activityList = document.querySelector(".activity-list");
+  const activityList =
+    document.querySelector(".activity-list");
 
   if (!activityList) return;
 
@@ -206,10 +277,237 @@ function showNoAttendance(message) {
   `;
 }
 
+// ========================================
 // CLEANUP
+// ========================================
 
 export function stopAttendancePage() {
   attendanceInitialized = false;
+  currentAttendance = null;
+  unsubscribeAttendance?.();
+  unsubscribeAttendance = null;
+  clearInterval(statsTimer);
+  statsTimer = null;
+  attendanceHistory = [];
 
-  console.log("Attendance page stopped.");
+  console.log(
+    "Attendance page stopped."
+  );
+}
+
+function displayPendingAttendance(attendance) {
+  const activityList = document.querySelector(".activity-list");
+  if (!activityList) return;
+
+  const employeeName = `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
+  activityList.innerHTML = `
+    <div class="activity-item">
+      <div class="activity-icon"><span class="material-icons">hourglass_top</span></div>
+      <div class="activity-info">
+        <div class="activity-title">Time In Request Sent</div>
+        <div class="activity-time">${employeeName}</div>
+        <div class="activity-time">Waiting for manager approval</div>
+      </div>
+      <div class="activity-right">
+        <div class="activity-status pending">Pending</div>
+      </div>
+    </div>
+  `;
+}
+
+function displayCompletedAttendance(attendance) {
+  const activityList = document.querySelector(".activity-list");
+  if (!activityList) return;
+
+  const employeeName = `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
+  const clockedOutAt = toDate(attendance.clockedOutAt);
+  const formattedTime = clockedOutAt
+    ? clockedOutAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    : "—";
+
+  activityList.innerHTML = `
+    <div class="activity-item">
+      <div class="activity-icon out"><span class="material-icons">logout</span></div>
+      <div class="activity-info">
+        <div class="activity-title">Clocked Out</div>
+        <div class="activity-time">${employeeName}</div>
+        <div class="activity-time">Time out: ${formattedTime}</div>
+      </div>
+      <div class="activity-right">
+        <div class="activity-status completed">Completed</div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadAttendanceStats(userId) {
+  try {
+    const snapshot = await getDocs(query(collection(db, "attendance"), where("userId", "==", userId)));
+    attendanceHistory = snapshot.docs.map((item) => item.data());
+    renderAttendanceStats();
+    if (!statsTimer) statsTimer = setInterval(renderAttendanceStats, 60 * 1000);
+  } catch (error) {
+    console.error("Unable to load attendance statistics:", error);
+  }
+}
+
+function renderAttendanceStats() {
+  const now = new Date();
+  const today = getTodayDate();
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+  const activeDates = new Set();
+  let totalMilliseconds = 0;
+
+  attendanceHistory.forEach((attendance) => {
+    if (attendance.status !== "active" && attendance.status !== "completed") return;
+    const clockedInAt = toDate(attendance.clockedInAt);
+    const dateKey = attendance.attendanceDate || (clockedInAt ? toDateKey(clockedInAt) : "");
+    if (!clockedInAt || !dateKey) return;
+
+    activeDates.add(dateKey);
+    const attendanceDate = dateFromKey(dateKey);
+    if (attendanceDate < weekStart || attendanceDate > now) return;
+
+    const clockedOutAt = toDate(attendance.clockedOutAt);
+    const endOfShift = clockedOutAt || (dateKey === today
+      ? now
+      : new Date(attendanceDate.getFullYear(), attendanceDate.getMonth(), attendanceDate.getDate() + 1));
+    totalMilliseconds += Math.max(0, endOfShift - clockedInAt);
+  });
+
+  document.querySelector("#total-hours-value")?.replaceChildren(
+    document.createTextNode((totalMilliseconds / 3600000).toFixed(1))
+  );
+  document.querySelector("#shift-streak-value")?.replaceChildren(
+    document.createTextNode(String(getShiftStreak(activeDates, today)))
+  );
+}
+
+function getShiftStreak(activeDates, today) {
+  const cursor = dateFromKey(today);
+  if (!activeDates.has(today)) cursor.setDate(cursor.getDate() - 1);
+
+  let streak = 0;
+  while (activeDates.has(toDateKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function toDate(value) {
+  return value?.toDate ? value.toDate() : value instanceof Date ? value : null;
+}
+
+function toDateKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function dateFromKey(value) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function watchAttendance(attendanceRef, context) {
+  unsubscribeAttendance?.();
+
+  unsubscribeAttendance = onSnapshot(attendanceRef, (snapshot) => {
+    if (snapshot.exists()) {
+      displayAttendance(snapshot.data());
+      loadAttendanceStats(context.user.uid);
+      return;
+    }
+
+    currentAttendance = null;
+    showTimeInButton(context);
+    showNoAttendance("No time-in request submitted today.");
+  });
+}
+
+function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
+  const timeInButton = document.querySelector("#time-in-button");
+
+  if (!timeInButton) return;
+
+  timeInButton.hidden = false;
+  timeInButton.classList.remove("active", "pending", "completed");
+  timeInButton.disabled = false;
+  timeInButton.innerHTML = `
+    <span class="material-icons">login</span>
+    Time In
+  `;
+
+  timeInButton.onclick = async () => {
+    if (currentAttendance) return;
+
+    timeInButton.disabled = true;
+    timeInButton.textContent = "Sending request...";
+
+    const attendanceData = {
+      userId: user.uid,
+      fname,
+      lname,
+      email: user.email || "",
+      status: "pending",
+      type: "time_in_request",
+      attendanceDate: today,
+      requestedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    };
+
+    try {
+      await setDoc(attendanceRef, attendanceData);
+      currentAttendance = attendanceData;
+      setTimeInButtonPending();
+      displayPendingAttendance(attendanceData);
+    } catch (error) {
+      console.error("Time in error:", error);
+      timeInButton.disabled = false;
+      timeInButton.innerHTML = `
+        <span class="material-icons">login</span>
+        Time In
+      `;
+      showNoAttendance("Unable to send time-in request. Please try again.");
+    }
+  };
+}
+
+function setTimeInButtonPending() {
+  const timeInButton = document.querySelector("#time-in-button");
+  if (!timeInButton) return;
+
+  timeInButton.disabled = true;
+  timeInButton.classList.remove("active");
+  timeInButton.classList.add("pending");
+  timeInButton.innerHTML = `
+    <span class="material-icons">hourglass_top</span>
+    Awaiting Approval
+  `;
+}
+
+function setTimeInButtonCompleted() {
+  const timeInButton = document.querySelector("#time-in-button");
+  if (!timeInButton) return;
+
+  timeInButton.disabled = true;
+  timeInButton.classList.remove("active", "pending");
+  timeInButton.classList.add("completed");
+  timeInButton.innerHTML = `
+    <span class="material-icons">logout</span>
+    Time Out Recorded
+  `;
+}
+
+function setTimeInButtonActive() {
+  const timeInButton = document.querySelector("#time-in-button");
+
+  if (!timeInButton) return;
+
+  timeInButton.disabled = true;
+  timeInButton.classList.remove("pending", "completed");
+  timeInButton.classList.add("active");
+  timeInButton.innerHTML = `
+    <span class="material-icons">check_circle</span>
+    Time In Active
+  `;
 }

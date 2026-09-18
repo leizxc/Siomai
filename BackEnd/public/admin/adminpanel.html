@@ -590,9 +590,15 @@
     <div id="manager-notifications-modal" class="modal manager-notifications-modal">
       <div class="modal-content">
         <h4>Manager notifications</h4>
+        <div class="notification-selection-toolbar">
+          <label><input id="manager-select-all" type="checkbox" /><span>Select all</span></label>
+          <span id="manager-selected-count">0 selected</span>
+        </div>
         <div id="manager-notification-list"></div>
       </div>
       <div class="modal-footer">
+        <button id="mark-manager-selected-read" type="button" class="btn-flat" disabled>Mark as read</button>
+        <button id="delete-manager-selected" type="button" class="btn red" disabled>Delete selected</button>
         <button type="button" class="modal-close btn-flat">Close</button>
       </div>
     </div>

@@ -6,9 +6,13 @@ import {
   query,
   updateDoc,
   doc,
+  deleteDoc,
+  serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 let unsubscribeNotifications = null;
+let selectedNotificationIds = new Set();
+let notificationsById = new Map();
 
 function escapeHtml(value) {
   const div = document.createElement("div");
@@ -35,6 +39,10 @@ function renderNotifications(notifications) {
   }
 
   if (!list) return;
+  const activeIds = new Set(notifications.map((item) => item.id));
+  notificationsById = new Map(notifications.map((item) => [item.id, item]));
+  selectedNotificationIds = new Set([...selectedNotificationIds].filter((id) => activeIds.has(id)));
+
   if (!notifications.length) {
     list.innerHTML = '<p class="manager-notification-empty">No notifications.</p>';
     return;
@@ -42,13 +50,14 @@ function renderNotifications(notifications) {
 
   list.innerHTML = notifications.map(({ id, ...item }) => `
     <article class="manager-notification ${item.read ? "" : "unread"}" data-id="${id}">
-      <i class="material-icons">warning</i>
+      <label class="manager-notification-select" aria-label="Select notification"><input type="checkbox" value="${id}" ${selectedNotificationIds.has(id) ? "checked" : ""} /><span></span></label>
+      <i class="material-icons">${item.type === "expense_report" ? "receipt_long" : "warning"}</i>
       <div>
-        <strong>Low stock: ${escapeHtml(item.productName)}</strong>
-        <p>${escapeHtml(item.remainingStock)} ${escapeHtml(item.unit)} remaining</p>
+        <strong>${escapeHtml(item.title || `Low stock: ${item.productName}`)}</strong>
+        <p>${escapeHtml(item.message || `${item.remainingStock} ${item.unit} remaining`)}</p>
         <small>${formatDate(item.updatedAt || item.createdAt)}</small>
       </div>
-      ${item.read ? "" : '<button type="button" class="btn-flat mark-notification-read">Mark read</button>'}
+      ${item.read ? '<span class="notification-read-state">Read</span>' : '<button type="button" class="btn-flat mark-notification-read">Mark read</button>'}
     </article>
   `).join("");
 
@@ -57,14 +66,66 @@ function renderNotifications(notifications) {
       const notification = event.currentTarget.closest("[data-id]");
       if (!notification) return;
       try {
-        await updateDoc(doc(db, "managerNotifications", notification.dataset.id), {
-          read: true,
-        });
+        await markNotificationRead(notification.dataset.id);
+        showToast("Notification marked as read.", "green");
       } catch (error) {
         console.error("Unable to mark notification as read:", error);
       }
     });
   });
+
+  list.querySelectorAll(".manager-notification-select input").forEach((checkbox) => {
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) selectedNotificationIds.add(checkbox.value);
+      else selectedNotificationIds.delete(checkbox.value);
+      syncSelectionControls(notifications);
+    });
+  });
+
+  syncSelectionControls(notifications);
+}
+
+function syncSelectionControls(notifications = []) {
+  const count = document.getElementById("manager-selected-count");
+  const selectAll = document.getElementById("manager-select-all");
+  const markRead = document.getElementById("mark-manager-selected-read");
+  const deleteSelected = document.getElementById("delete-manager-selected");
+  const selectedCount = selectedNotificationIds.size;
+  const unreadSelectedCount = [...selectedNotificationIds].filter((id) => !notificationsById.get(id)?.read).length;
+
+  if (count) count.textContent = `${selectedCount} selected`;
+  if (selectAll) {
+    selectAll.checked = notifications.length > 0 && selectedCount === notifications.length;
+    selectAll.indeterminate = selectedCount > 0 && selectedCount < notifications.length;
+  }
+  if (markRead) markRead.disabled = unreadSelectedCount === 0;
+  if (deleteSelected) deleteSelected.disabled = selectedCount === 0;
+}
+
+function showToast(message, classes) {
+  if (typeof M !== "undefined") M.toast({ html: message, classes });
+}
+
+async function markNotificationRead(id) {
+  const notification = notificationsById.get(id);
+  if (!notification || notification.read) return false;
+
+  const updates = [
+    updateDoc(doc(db, "managerNotifications", id), {
+      read: true,
+      readAt: serverTimestamp(),
+    }),
+  ];
+
+  if (notification.type === "expense_report" && notification.reportId) {
+    updates.push(updateDoc(doc(db, "expenseReports", notification.reportId), {
+      status: "read",
+      reviewedAt: serverTimestamp(),
+    }));
+  }
+
+  await Promise.all(updates);
+  return true;
 }
 
 export function initManagerNotifications() {
@@ -74,6 +135,31 @@ export function initManagerNotifications() {
 
   const modal = M.Modal.init(modalElement);
   bell.addEventListener("click", () => modal.open());
+
+  document.getElementById("manager-select-all")?.addEventListener("change", (event) => {
+    document.querySelectorAll(".manager-notification-select input").forEach((checkbox) => {
+      checkbox.checked = event.currentTarget.checked;
+      if (checkbox.checked) selectedNotificationIds.add(checkbox.value);
+      else selectedNotificationIds.delete(checkbox.value);
+    });
+    syncSelectionControls(Array.from(document.querySelectorAll(".manager-notification")));
+  });
+
+  document.getElementById("mark-manager-selected-read")?.addEventListener("click", async () => {
+    const ids = [...selectedNotificationIds].filter((id) => !notificationsById.get(id)?.read);
+    if (!ids.length) return;
+    await Promise.all(ids.map((id) => markNotificationRead(id)));
+    selectedNotificationIds.clear();
+    showToast(`${ids.length} notification${ids.length > 1 ? "s" : ""} marked as read.`, "green");
+  });
+
+  document.getElementById("delete-manager-selected")?.addEventListener("click", async () => {
+    const ids = [...selectedNotificationIds];
+    if (!ids.length || !window.confirm(`Delete ${ids.length} selected notification${ids.length > 1 ? "s" : ""}?`)) return;
+    await Promise.all(ids.map((id) => deleteDoc(doc(db, "managerNotifications", id))));
+    selectedNotificationIds.clear();
+    showToast("Selected notifications deleted.", "green");
+  });
 
   unsubscribeNotifications = onSnapshot(
     query(collection(db, "managerNotifications"), orderBy("updatedAt", "desc")),

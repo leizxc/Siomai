@@ -5078,3 +5078,24 @@ html.dark #productTable td:nth-child(7) strong {
 html.dark #modal-product-history-assign td:nth-child(6) strong {
   color: #4ade80;
 }
+
+.notification-selection-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 6px; padding: 9px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--text-secondary); font-size: 12px; }
+.notification-selection-toolbar label, .manager-notification-select { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }.manager-notification-select { margin: 0; }.manager-notification-select input, .notification-selection-toolbar input { position: static; opacity: 1; pointer-events: auto; }.notification-read-state { color: #31855b; font-size: 11px; font-weight: 700; }.manager-notification .mark-notification-read { margin-left: auto; }.manager-notification-select + .material-icons { flex: 0 0 auto; }
+
+/* Shared modal placement: keep every manager modal centered and responsive. */
+.modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: min(92vw, 640px) !important;
+  max-height: min(82vh, 720px) !important;
+  margin: 0 !important;
+  border-radius: 14px !important;
+  transform: translate(-50%, -50%) !important;
+  overflow: hidden !important;
+}
+
+.modal.modal-fixed-footer { height: min(82vh, 720px) !important; }
+.modal .modal-content { max-height: calc(min(82vh, 720px) - 76px); overflow-y: auto; overscroll-behavior: contain; }
+.modal .modal-footer { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; min-height: 64px; padding: 12px 18px; }
+@media screen and (max-width: 600px) { .modal { width: 94vw !important; max-height: 88vh !important; border-radius: 12px !important; }.modal.modal-fixed-footer { height: 88vh !important; }.modal .modal-content { max-height: calc(88vh - 70px); padding: 20px !important; }.modal .modal-footer { min-height: 60px; padding: 10px 14px; } }

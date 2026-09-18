@@ -18,4 +18,10 @@
       applyTheme(root.classList.contains("dark") ? "light" : "dark");
     });
   }
+
+  window.addEventListener("storage", (event) => {
+    if (event.key !== "theme" || !event.newValue) return;
+    root.classList.toggle("dark", event.newValue === "dark");
+    if (icon) icon.textContent = event.newValue === "dark" ? "light_mode" : "dark_mode";
+  });
 })();
