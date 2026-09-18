@@ -40,6 +40,26 @@ function formatQuantity(value) {
   return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2);
 }
 
+// ========================================
+// LOW STOCK CHECK
+// ========================================
+// pack -> low kapag <= 1 pack na lang
+// kg   -> low kapag <= 1 kg na lang
+// piece/pcs (default) -> low kapag <= 20 pcs na lang
+function isLowStock(product) {
+  const unit = product.unit || "piece";
+
+  if (unit === "pack") {
+    return Number(product.packs) <= 1;
+  }
+
+  if (unit === "kg") {
+    return Number(product.pieces) <= 1;
+  }
+
+  return Number(product.pieces) <= 20;
+}
+
 // INIT POS
 export async function initPOS() {
   cart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -571,6 +591,8 @@ function renderProducts(products) {
 
     card.classList.add("product-card");
 
+    const lowStock = isLowStock(product);
+
     card.innerHTML = `
       <img
         src="${product.image || "/images/no-image.png"}"
@@ -593,18 +615,29 @@ function renderProducts(products) {
 
       </div>
 
-      <button
-        class="add-btn"
-        data-id="${product.id}"
-        data-name="${product.name}"
-        data-price="${product.price}"
-        data-stock="${product.pieces}"
-        data-packs="${product.packs ?? ""}"
-        data-pieces-per-pack="${product.piecesPerPack}"
-        data-unit="${product.unit || "piece"}"
-      >
-        <i class="material-icons">add</i>
-      </button>
+      <div class="product-actions">
+        ${
+          lowStock
+            ? `<button class="lowstock-btn" type="button">
+                 <i class="material-icons">warning</i>
+                 Low Stock
+               </button>`
+            : ""
+        }
+
+        <button
+          class="add-btn"
+          data-id="${product.id}"
+          data-name="${product.name}"
+          data-price="${product.price}"
+          data-stock="${product.pieces}"
+          data-packs="${product.packs ?? ""}"
+          data-pieces-per-pack="${product.piecesPerPack}"
+          data-unit="${product.unit || "piece"}"
+        >
+          <i class="material-icons">add</i>
+        </button>
+      </div>
     `;
 
     productList.appendChild(card);
