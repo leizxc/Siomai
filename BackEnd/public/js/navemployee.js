@@ -7,6 +7,11 @@ async function loadSection(page) {
 
   isNavigating = true;
 
+  // Ang unang POS load ay ini-init mula sa userpanel.html, kaya wala pa itong
+  // currentCleanup sa navigator. Ipaalam din sa POS module na papalitan na ang
+  // DOM para maisara nito ang realtime product listener.
+  window.dispatchEvent(new Event("employee:before-section-change"));
+
   if (currentCleanup) {
     currentCleanup();
     currentCleanup = null;

@@ -181,6 +181,42 @@ body {
   cursor: pointer;
 }
 
+.manager-notification-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.manager-notification-bell .material-icons { font-size: 26px; }
+
+#manager-notification-count {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: #e53935;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+.manager-notification { display: flex; gap: 12px; padding: 13px 4px; border-bottom: 1px solid var(--border); align-items: center; }
+.manager-notification.unread { background: #fff8e1; }
+.manager-notification > i { color: #f9a825; }
+.manager-notification div { flex: 1; }
+.manager-notification p, .manager-notification small { margin: 3px 0 0; color: var(--text-secondary); }
+.manager-notification-empty { color: var(--text-secondary); }
+
 .admin-profile {
   display: flex;
   align-items: center;

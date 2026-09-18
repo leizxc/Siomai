@@ -101,7 +101,14 @@ function getMaxAvailableContainers(menuData) {
 function updateUnitDisplay(unit) {
   const unitField = document.getElementById("productUnit");
   if (unitField) {
-    const unitMap = { pack: "PACK", kg: "KG", liter: "LITER", piece: "PIECE" };
+    const unitMap = {
+      pack: "PACK",
+      kg: "KG",
+      liter: "LITER",
+      packs: "PACKS",
+      kaban: "KABAN",
+      piece: "PIECE",
+    };
     unitField.value = unitMap[unit] || "-";
   }
 }

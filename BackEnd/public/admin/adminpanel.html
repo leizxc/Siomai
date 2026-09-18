@@ -114,7 +114,15 @@
               </button>
             </div>
 
-            <i class="material-icons">notifications_none</i>
+            <button
+              id="manager-notification-bell"
+              class="manager-notification-bell"
+              type="button"
+              aria-label="Manager notifications"
+            >
+              <i class="material-icons">notifications_none</i>
+              <span id="manager-notification-count" hidden>0</span>
+            </button>
 
             <div class="admin-profile">
               <i class="material-icons">account_circle</i>
@@ -578,6 +586,16 @@
         </div>
       </main>
     </div>
+
+    <div id="manager-notifications-modal" class="modal manager-notifications-modal">
+      <div class="modal-content">
+        <h4>Manager notifications</h4>
+        <div id="manager-notification-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="modal-close btn-flat">Close</button>
+      </div>
+    </div>
   </body>
 
   <!-- JS Files -->
@@ -585,4 +603,8 @@
   <script src="/js/functionalnav.js"></script>
   <script type="module" src="/js/IndexDB.js"></script>
   <script src="/js/theme.js"></script>
+  <script type="module">
+    import { initManagerNotifications } from "/js/adminnotifications.js";
+    initManagerNotifications();
+  </script>
 </html>

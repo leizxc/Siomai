@@ -26,6 +26,7 @@ export async function refresh() {
   if (previewImg) previewImg.src = "/assets/upload-placeholder.png";
 
   hideAllDynamicFields();
+  resetAllDynamicValues();
   M.updateTextFields();
 
   reinitSelect(document.getElementById("employeeINV"));
@@ -184,9 +185,12 @@ function bindInventoryAllocationChange() {
     if (unit === "pack") {
       unitLabel = `${data.quantity} PACKS = ${data.stock_quantity} PCS`;
     } else if (unit === "packs") {
-      stock = data.quantity;
+      // Palamig ingredients (Gulaman Powder, Powdered Juice) — walang
+      // conversion, hindi ito bottles o pieces.
+      stock = data.stock_quantity;
       unitLabel = "PACKS";
     } else if (unit === "kaban") {
+      // Rice — kaban converted to kg (stock_quantity) sa adminBE.js.
       stock = data.stock_quantity;
       unitLabel = `${data.quantity} KABAN = ${data.stock_quantity} KG`;
     } else if (unit === "kg") {
@@ -206,36 +210,39 @@ function bindInventoryAllocationChange() {
     const packsUsedField = document.getElementById("packs-used-field");
     const kgUsedField = document.getElementById("kg-used-field");
     const kalderoCountField = document.getElementById("kaldero-count-field");
+    const kgLabel = document.getElementById("kg-used-label");
+    const kalderoLabel = document.getElementById("kaldero-label");
 
     if (unit === "pack") {
-      if (packsUsedField) packsUsedField.style.display = "block";
+      // FIXED: Siomai-type — dapat "Pieces Used" field ang lumalabas,
+      // hindi "Packs Used". Dati nagpapakita ng packsUsedField dito,
+      // kaya laging blangko ang pieces_used sa Firestore.
+      if (piecesUsedField) piecesUsedField.style.display = "block";
     } else if (unit === "packs") {
+      // Gulaman Powder / Powdered Juice: "Packs Used" + "Number of
+      // Container Reached".
       if (packsUsedField) packsUsedField.style.display = "block";
       if (kalderoCountField) kalderoCountField.style.display = "block";
-      const kalderoLabel = document.getElementById("kaldero-label");
       if (kalderoLabel)
         kalderoLabel.textContent = "Number of Container Reached";
     } else if (unit === "kaban") {
+      // Rice: "Kilograms Used" + "Number of Container Reached" — same
+      // shape as KG.
       if (kgUsedField) kgUsedField.style.display = "block";
       if (kalderoCountField) kalderoCountField.style.display = "block";
-      const kgLabel = document.getElementById("kg-used-label");
-      if (kgLabel) kgLabel.textContent = "Kilograms Used (Rice)";
-      const kalderoLabel = document.getElementById("kaldero-label");
+      if (kgLabel) kgLabel.textContent = "Kilograms Used"; // reset (di na "(Rice)")
       if (kalderoLabel)
         kalderoLabel.textContent = "Number of Container Reached";
     } else if (unit === "kg") {
       if (kgUsedField) kgUsedField.style.display = "block";
       if (kalderoCountField) kalderoCountField.style.display = "block";
-      const kalderoLabel = document.getElementById("kaldero-label");
-      if (kalderoLabel)
-        kalderoLabel.textContent = "Number of Container Reached";
-    } else if (unit === "liter") {
-      if (kgUsedField) kgUsedField.style.display = "block";
-      if (kalderoCountField) kalderoCountField.style.display = "block";
-      const kalderoLabel = document.getElementById("kaldero-label");
+      if (kgLabel) kgLabel.textContent = "Kilograms Used"; // reset kung galing "kaban"
       if (kalderoLabel)
         kalderoLabel.textContent = "Number of Container Reached";
     }
+    // NOTE: LITER — ibinalik sa simpleng behavior (walang extra fields),
+    // dahil wala ito sa spec mo. Kung gusto mo palang gawing kagaya ng
+    // KG ang liter, idagdag lang ulit ang branch nito dito.
 
     M.updateTextFields();
   };
@@ -362,45 +369,32 @@ export function addproductmenu() {
       let kalderoCount = null;
 
       if (unit === "pack") {
-        packsUsed = Number(document.getElementById("packsUsed").value);
-        if (packsUsed <= 0) {
-          M.toast({ html: "Please enter Packs Used.", classes: "red rounded" });
+        // FIXED: kunin na ang "Pieces Used" input (dati "packsUsed"
+        // ang nire-read dito, kaya mali).
+        piecesUsed = Number(document.getElementById("piecesUsed").value);
+        if (!(piecesUsed > 0)) {
+          M.toast({
+            html: "Please enter Pieces Used.",
+            classes: "red rounded",
+          });
           return;
         }
       } else if (unit === "packs") {
         packsUsed = Number(document.getElementById("packsUsed").value);
         kalderoCount = Number(document.getElementById("kalderocCount").value);
-        if (packsUsed <= 0 || kalderoCount <= 0) {
+        if (!(packsUsed > 0) || !(kalderoCount > 0)) {
           M.toast({
             html: "Please complete all fields.",
             classes: "red rounded",
           });
           return;
         }
-      } else if (unit === "kaban") {
+      } else if (unit === "kaban" || unit === "kg") {
+        // KABAN (Rice) reuses the exact same "Kilograms Used" +
+        // "Number of Container Reached" fields as KG.
         kgUsed = Number(document.getElementById("KgUsed").value);
         kalderoCount = Number(document.getElementById("kalderocCount").value);
-        if (kgUsed <= 0 || kalderoCount <= 0) {
-          M.toast({
-            html: "Please complete all fields.",
-            classes: "red rounded",
-          });
-          return;
-        }
-      } else if (unit === "kg") {
-        kgUsed = Number(document.getElementById("KgUsed").value);
-        kalderoCount = Number(document.getElementById("kalderocCount").value);
-        if (kgUsed <= 0 || kalderoCount <= 0) {
-          M.toast({
-            html: "Please complete all fields.",
-            classes: "red rounded",
-          });
-          return;
-        }
-      } else if (unit === "liter") {
-        kgUsed = Number(document.getElementById("KgUsed").value);
-        kalderoCount = Number(document.getElementById("kalderocCount").value);
-        if (kgUsed <= 0 || kalderoCount <= 0) {
+        if (!(kgUsed > 0) || !(kalderoCount > 0)) {
           M.toast({
             html: "Please complete all fields.",
             classes: "red rounded",
@@ -408,6 +402,7 @@ export function addproductmenu() {
           return;
         }
       }
+      // LITER: walang required extra fields (reverted to original simple behavior).
 
       const existingProduct = await getDocs(
         query(
@@ -702,7 +697,7 @@ export async function loadmenu() {
       thPacks.style.display = "";
       thPieces.style.display = "";
       thContainer.style.display = "none";
-      thPacks.textContent = "Packs Used";
+      thPacks.textContent = "Packs";
       thPieces.textContent = "Pieces Used";
     } else if (sampleUnit === "packs") {
       thPacks.style.display = "";
@@ -814,7 +809,7 @@ export async function loadmenu() {
       const pieces = data.current_pieces ?? data.current_stock ?? 0;
 
       quantityColumns = `
-        <td data-label="Packs Used">${formatQuantity(data.packs_used ?? packs)}</td>
+        <td data-label="Packs">${formatQuantity(packs)}</td>
         <td data-label="Pieces Used">${formatQuantity(data.pieces_used ?? pieces)}</td>
       `;
     } else if (data.unit === "packs") {

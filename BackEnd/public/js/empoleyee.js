@@ -6,6 +6,7 @@ import {
   addDoc,
   doc,
   updateDoc,
+  setDoc,
   query,
   where,
   serverTimestamp,
@@ -24,6 +25,9 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 
 let unsubscribePOS = null;
+// Bawat pagpasok/alis sa POS ay may sariling session. Pinipigilan nito ang
+// mabagal na async load mula sa dating DOM na mag-render sa bagong section.
+let posSession = 0;
 
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
@@ -60,8 +64,88 @@ function isLowStock(product) {
   return Number(product.pieces) <= 20;
 }
 
+function getProductStockLabel(product) {
+  const pieces = Number(product.pieces ?? product.stock) || 0;
+  if (product.unit === "pack") {
+    return `${formatQuantity(product.packs)} packs (${formatQuantity(pieces)} pcs)`;
+  }
+  return `${formatQuantity(pieces)} ${product.unit || "pcs"}`;
+}
+
+async function openLowStockConfirmation(product) {
+  const existing = document.getElementById("low-stock-confirmation-modal");
+  if (existing) existing.remove();
+
+  const modalElement = document.createElement("div");
+  modalElement.id = "low-stock-confirmation-modal";
+  modalElement.className = "modal";
+  modalElement.innerHTML = `
+    <div class="modal-content">
+      <h4><i class="material-icons amber-text text-darken-2">warning</i> Low stock alert</h4>
+      <p><strong>${product.name}</strong> has only ${getProductStockLabel(product)} remaining.</p>
+      <p>Send this low-stock alert to the manager?</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-flat" data-action="cancel">Cancel</button>
+      <button type="button" class="btn amber darken-2" data-action="confirm">Send alert</button>
+    </div>
+  `;
+  document.body.appendChild(modalElement);
+
+  const modal = M.Modal.init(modalElement, {
+    dismissible: false,
+    onCloseEnd: () => modalElement.remove(),
+  });
+
+  modalElement.querySelector('[data-action="cancel"]').addEventListener("click", () => {
+    modal.close();
+  });
+
+  modalElement.querySelector('[data-action="confirm"]').addEventListener("click", async () => {
+    const confirmButton = modalElement.querySelector('[data-action="confirm"]');
+    confirmButton.disabled = true;
+    confirmButton.textContent = "Sending...";
+
+    try {
+      // Isang active alert lang bawat product para hindi mapuno ang manager bell
+      // kapag paulit-ulit itong na-click ng employee.
+      await setDoc(doc(db, "managerNotifications", `low-stock-${product.id}`), {
+        type: "low_stock",
+        productId: product.id,
+        productName: product.name || "Unnamed product",
+        remainingStock: Number(product.pieces ?? product.stock) || 0,
+        unit: product.unit || "pcs",
+        employeeId: currentEmployeeId,
+        employeeUid: auth.currentUser?.uid || null,
+        read: false,
+        updatedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      }, { merge: true });
+
+      M.toast({ html: "Low-stock alert sent to the manager.", classes: "green rounded" });
+      modal.close();
+    } catch (error) {
+      console.error("Unable to send low-stock alert:", error);
+      confirmButton.disabled = false;
+      confirmButton.textContent = "Send alert";
+      M.toast({ html: "Unable to send the alert. Please try again.", classes: "red rounded" });
+    }
+  });
+
+  modal.open();
+}
+
 // INIT POS
 export async function initPOS() {
+  const session = ++posSession;
+
+  // Maaaring matawag ang initPOS nang higit sa isang beses (hal. back/forward
+  // navigation). Isara agad ang lumang listener bago gumawa ng bago.
+  if (unsubscribePOS) {
+    unsubscribePOS();
+    unsubscribePOS = null;
+  }
+
   cart = JSON.parse(localStorage.getItem("cart")) || [];
 
   // Firebase Auth restores the session asynchronously — auth.currentUser
@@ -76,9 +160,14 @@ export async function initPOS() {
 
   const authUid = user ? user.uid : null;
 
+  // Kung nakalipat na sa ibang DOM habang hinihintay ang Firebase Auth,
+  // huwag nang magpatuloy sa lumang POS page.
+  if (session !== posSession || !document.getElementById("productList")) return;
+
   if (!navigator.onLine) {
     console.log("Offline mode: loading from IndexedDB");
     await loadProductsOffline(authUid);
+    if (session !== posSession) return;
     identifyCart();
     setupCartEvents();
     setupProductSearch();
@@ -89,7 +178,8 @@ export async function initPOS() {
   // listener) — the actual product data arrives via onSnapshot whenever
   // Firestore pushes it, and filterProducts()/renderProducts() get
   // called automatically from inside that listener.
-  await loadProducts();
+  await loadProducts(session);
+  if (session !== posSession) return;
   identifyCart();
   setupCartEvents();
   setupCategoryButtons();
@@ -120,7 +210,7 @@ async function getCurrentEmployeeInfo() {
 }
 
 // LOAD PRODUCTS
-async function loadProducts() {
+async function loadProducts(session) {
   const productGrid = document.getElementById("productList");
 
   if (!productGrid) return;
@@ -128,6 +218,8 @@ async function loadProducts() {
   productGrid.innerHTML = "";
 
   const info = await getCurrentEmployeeInfo();
+
+  if (session !== posSession || !productGrid.isConnected) return;
 
   if (!info || !info.role) {
     console.error("No role found for current employee.");
@@ -161,6 +253,10 @@ async function loadProducts() {
   unsubscribePOS = onSnapshot(
     q,
     (querySnapshot) => {
+      // Ang callback ng dating listener ay hindi dapat magbago ng DOM pagkatapos
+      // lumipat ang employee sa ibang section.
+      if (session !== posSession || !productGrid.isConnected) return;
+
       allProducts = [];
 
       querySnapshot.forEach((docSnap) => {
@@ -421,10 +517,38 @@ function setupCartEvents() {
   });
 }
 
-window.addEventListener("pageshow", () => {
+function restoreCartOnPageShow() {
+  // pageshow ay maaari ring tumakbo kapag naka-cache ang ibang page. POS lang
+  // ang may cart elements, kaya huwag mag-render sa ibang DOM.
+  if (!document.getElementById("cartTable")) return;
   cart = JSON.parse(localStorage.getItem("cart")) || [];
   identifyCart();
-});
+}
+
+window.addEventListener("pageshow", restoreCartOnPageShow);
+
+// Tinatawag ng navemployee.js bago palitan ang #content.
+export function stopPosPage() {
+  posSession += 1;
+
+  if (unsubscribePOS) {
+    unsubscribePOS();
+    unsubscribePOS = null;
+  }
+
+  currentRole = null;
+  currentEmployeeId = null;
+  allProducts = [];
+  selectedCategory = "All";
+
+  // Kapag lumipat sa ibang employee section, ituring na cancelled ang
+  // kasalukuyang order. Hindi ito tinatawag sa Proceed to Checkout, kaya
+  // buo pa rin ang cart sa payment page.
+  cart = [];
+  localStorage.removeItem("cart");
+}
+
+window.addEventListener("employee:before-section-change", stopPosPage);
 
 // ========================================
 // PRODUCT FILTER & SEARCH
@@ -618,7 +742,7 @@ function renderProducts(products) {
       <div class="product-actions">
         ${
           lowStock
-            ? `<button class="lowstock-btn" type="button">
+            ? `<button class="lowstock-btn" type="button" data-id="${product.id}">
                  <i class="material-icons">warning</i>
                  Low Stock
                </button>`
@@ -659,6 +783,13 @@ function renderProducts(products) {
         pieces_per_pack: Number(btn.dataset.piecesPerPack) || 1,
         unit: btn.dataset.unit,
       });
+    });
+  });
+
+  document.querySelectorAll(".lowstock-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const product = products.find((item) => item.id === btn.dataset.id);
+      if (product) openLowStockConfirmation(product);
     });
   });
 }

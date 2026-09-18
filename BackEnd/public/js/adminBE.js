@@ -148,7 +148,16 @@ export function loadInventory() {
       let totalStocks = 0;
       let totalValue = 0;
       const categories = new Set();
-      const unitTotals = { pack: 0, kg: 0, liter: 0, other: 0 };
+      // FIXED: idinagdag ang "packs" at "kaban" buckets — dati napupunta
+      // lang ito sa "other", kaya mali yung "All Categories" summary.
+      const unitTotals = {
+        pack: 0,
+        kg: 0,
+        liter: 0,
+        packs: 0,
+        kaban: 0,
+        other: 0,
+      };
       const rowsHtml = [];
 
       const selectedCategory = selectedCategoryFilter;
@@ -202,12 +211,13 @@ export function loadInventory() {
         totalValue += data.total_value;
         categories.add(data.category);
 
-        const bucket =
-          data.unit_type === "pack" ||
-          data.unit_type === "kg" ||
-          data.unit_type === "liter"
-            ? data.unit_type
-            : "other";
+        // FIXED: gamit na ng array includes() para hindi na mapunta ang
+        // "packs"/"kaban" sa "other" bucket.
+        const bucket = ["pack", "kg", "liter", "packs", "kaban"].includes(
+          data.unit_type,
+        )
+          ? data.unit_type
+          : "other";
         unitTotals[bucket] += data.stock_quantity;
 
         let status = "Available";
@@ -229,13 +239,10 @@ export function loadInventory() {
           totalLabel = "Total Packs";
           totalDisplay = `${data.quantity} packs`;
         } else if (data.unit_type === "kaban") {
-          // Ipakita ang kg total + kung ilang kaban
-          const weightPerKaban = Number(data.weight_per_kaban || 0);
+          // FIXED: tinanggal ang dead ternary — parehas lang naman
+          // ang dalawang branch dati, kaya sinimplify na lang.
           totalLabel = "Total Weight";
-          totalDisplay =
-            weightPerKaban > 0
-              ? `${data.stock_quantity} kg`
-              : `${data.stock_quantity} kg`;
+          totalDisplay = `${data.stock_quantity} kg`;
         } else if (data.unit_type === "kg") {
           totalLabel = "Total Weight";
           totalDisplay = `${data.quantity} kg`;
@@ -298,6 +305,12 @@ export function loadInventory() {
           if (unitType === "pack") {
             totalLabel1 = "Total Pieces";
             totalDisplay1 = `${totalStocks} pcs`;
+          } else if (unitType === "packs") {
+            totalLabel1 = "Total Packs";
+            totalDisplay1 = `${totalStocks} packs`;
+          } else if (unitType === "kaban") {
+            totalLabel1 = "Total Weight";
+            totalDisplay1 = `${totalStocks} kg`;
           } else if (unitType === "kg") {
             totalLabel1 = "Total Weight";
             totalDisplay1 = `${(totalStocks * 2.2).toFixed(2)} lb`;
@@ -314,6 +327,10 @@ export function loadInventory() {
         if (unitTotals.pack) parts.push(`${unitTotals.pack} pcs`);
         if (unitTotals.kg) parts.push(`${unitTotals.kg} kg`);
         if (unitTotals.liter) parts.push(`${unitTotals.liter} L`);
+        // NEW: packs at kaban totals — dati wala ito, kaya nawawala sa
+        // "All Categories" summary.
+        if (unitTotals.packs) parts.push(`${unitTotals.packs} packs`);
+        if (unitTotals.kaban) parts.push(`${unitTotals.kaban} kg (kaban)`);
         if (unitTotals.other) parts.push(`${unitTotals.other} qty`);
 
         totalLabel1 = "Total Stocks";
@@ -491,6 +508,16 @@ function bindInventoryRowButtons() {
         bindLiveUppercase(editPlasticColorInput);
       }
 
+      // NEW: optional "Weight per Kaban" field in the Edit modal.
+      // Kung wala ka pang idinagdag na field na ito sa HTML, hindi ito
+      // gagana pero hindi rin masisira ang ibang bahagi (defensive check).
+      const editWeightPerKabanField = document.getElementById(
+        "edit-weight-per-kaban-field",
+      );
+      const editWeightPerKabanInput = document.getElementById(
+        "edit-weight-per-kaban",
+      );
+
       const editCategoryDoc = productDataForEdit.category_id
         ? await getDoc(doc(db, "categoriesINV", productDataForEdit.category_id))
         : null;
@@ -504,6 +531,18 @@ function bindInventoryRowButtons() {
           ),
           plasticColorInput: editPlasticColorInput,
         });
+
+        if (editWeightPerKabanField) {
+          if (editCategoryDoc.data().unit_type === "kaban") {
+            editWeightPerKabanField.style.display = "block";
+            if (editWeightPerKabanInput) {
+              editWeightPerKabanInput.value =
+                productDataForEdit.weight_per_kaban || "";
+            }
+          } else {
+            editWeightPerKabanField.style.display = "none";
+          }
+        }
       }
       M.updateTextFields();
 
@@ -521,6 +560,16 @@ function bindInventoryRowButtons() {
           ),
           plasticColorInput: document.getElementById("edit-plastic-color"),
         });
+
+        if (editWeightPerKabanField) {
+          if (newCategoryDoc.data().unit_type === "kaban") {
+            editWeightPerKabanField.style.display = "block";
+          } else {
+            editWeightPerKabanField.style.display = "none";
+            if (editWeightPerKabanInput) editWeightPerKabanInput.value = "";
+          }
+        }
+
         M.updateTextFields();
       };
 
@@ -548,8 +597,34 @@ function bindInventoryRowButtons() {
         const unitType = categoryData.unit_type;
         const piecesPerPack = categoryData.pieces_per_pack || 1;
 
-        let newStock =
-          unitType === "pack" ? newQuantity * piecesPerPack : newQuantity;
+        // FIXED: KABAN was missing here entirely — dati, ang bilang ng
+        // KABAN mismo ang na-save bilang stock_quantity (kg), hindi
+        // na-multiply sa weight_per_kaban.
+        let weightPerKaban = Number(productDataForEdit.weight_per_kaban || 0);
+        if (unitType === "kaban") {
+          const editWeightInput = document.getElementById(
+            "edit-weight-per-kaban",
+          );
+          if (editWeightInput && editWeightInput.value) {
+            weightPerKaban = Number(editWeightInput.value);
+          }
+          if (weightPerKaban <= 0) {
+            M.toast({
+              html: "Please enter Weight per Kaban.",
+              classes: "red rounded",
+            });
+            return;
+          }
+        }
+
+        let newStock;
+        if (unitType === "pack") {
+          newStock = newQuantity * piecesPerPack;
+        } else if (unitType === "kaban") {
+          newStock = newQuantity * weightPerKaban;
+        } else {
+          newStock = newQuantity;
+        }
         const newTotalValue = newStock * newPrice;
 
         const updateData = {
@@ -564,6 +639,12 @@ function bindInventoryRowButtons() {
           total_value: newTotalValue,
           last_updated: serverTimestamp(),
         };
+
+        if (unitType === "kaban") {
+          updateData.weight_per_kaban = weightPerKaban;
+        } else {
+          updateData.weight_per_kaban = deleteField();
+        }
 
         if (categoryData.name.toLowerCase() === "pares" && newPlasticColor) {
           updateData.plasticColor = newPlasticColor;
@@ -653,7 +734,7 @@ export async function addProduct(
     stockQty = quantity * piecesPerPack;
     totalValue = stockQty * unitPrice;
   }
-  // PACKS → packs
+  // PACKS → packs (walang conversion — hindi ito "pack" Siomai-type)
   else if (unitType === "packs") {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
@@ -1395,9 +1476,15 @@ export function loadArchiveHistory() {
             })
           : "-";
 
+        // NEW: packs/kaban branches — dati napupunta lang sa generic
+        // fallback (walang unit label sa display).
         let totalDisplay = "";
         if (data.unit_type === "pack") {
           totalDisplay = `${data.stock_quantity} pcs`;
+        } else if (data.unit_type === "packs") {
+          totalDisplay = `${data.stock_quantity} packs`;
+        } else if (data.unit_type === "kaban") {
+          totalDisplay = `${data.stock_quantity} kg`;
         } else if (data.unit_type === "kg") {
           totalDisplay = `${(data.quantity * 2.2).toFixed(2)} lb`;
         } else if (data.unit_type === "liter") {
@@ -1564,9 +1651,14 @@ export function loadProductHistory() {
             })
           : "-";
 
+        // NEW: packs/kaban branches — same reasoning as Archive History above.
         let totalDisplay = "";
         if (data.unit_type === "pack") {
           totalDisplay = `${data.stock_quantity} pcs`;
+        } else if (data.unit_type === "packs") {
+          totalDisplay = `${data.stock_quantity} packs`;
+        } else if (data.unit_type === "kaban") {
+          totalDisplay = `${data.stock_quantity} kg`;
         } else if (data.unit_type === "kg") {
           totalDisplay = `${(data.quantity * 2.2).toFixed(2)} lb`;
         } else if (data.unit_type === "liter") {
