@@ -83,16 +83,26 @@
         </div>
 
         <div class="employee-header-actions">
-          <button id="theme-toggle" type="button" class="employee-icon-button theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
-            <i class="material-icons" id="theme-icon">dark_mode</i>
-          </button>
-          <button id="employee-notification-bell" type="button" class="employee-icon-button" aria-label="Open expense reports" title="Expense reports">
+          <div class="desktop-theme-toggle">
+            <button id="theme-toggle" type="button" class="employee-icon-button theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+              <i class="material-icons" id="theme-icon">dark_mode</i>
+            </button>
+          </div>
+          <button id="employee-notification-bell" type="button" class="employee-icon-button" aria-label="Open notifications" title="Notifications">
             <i class="material-icons">notifications_none</i>
             <span id="employee-notification-count" hidden>0</span>
           </button>
-          <div class="employee-profile">
+          <div class="employee-profile-menu">
+          <button id="employee-profile-menu-button" type="button" class="employee-profile" aria-label="Open account menu" aria-expanded="false" aria-controls="employee-profile-menu-panel">
             <span class="material-icons">account_circle</span>
             <div><strong id="employee-profile-name">Employee</strong><small>Employee</small></div>
+          </button>
+          <div id="employee-profile-menu-panel" class="employee-profile-menu-panel" hidden>
+            <button type="button" class="employee-profile-menu-action" data-theme-toggle>
+              <i class="material-icons" data-theme-icon>dark_mode</i><span>Dark mode</span>
+            </button>
+            <a class="employee-profile-menu-action" href="../../index.html"><i class="material-icons">logout</i><span>Logout</span></a>
+          </div>
           </div>
         </div>
       </header>
@@ -157,6 +167,14 @@
         </section>
       </div>
     </main>
+
+    <div id="employee-notifications-modal" class="modal employee-notifications-modal">
+      <div class="modal-content">
+        <h4>Notifications</h4>
+        <div id="employee-notification-list"></div>
+      </div>
+      <div class="modal-footer"><button type="button" class="modal-close btn-flat">Close</button></div>
+    </div>
 
     <!-- Bottom Navigation -->
 

@@ -6,6 +6,7 @@ import {
   getFirestore,
   onSnapshot,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -115,6 +116,7 @@ async function approveAttendance(id, button) {
   button.textContent = "Accepting...";
 
   try {
+    const attendance = attendanceRows.find((item) => item.id === id);
     await updateDoc(doc(db, "attendance", id), {
       status: "active",
       type: "clocked_in",
@@ -122,6 +124,18 @@ async function approveAttendance(id, button) {
       approvedAt: serverTimestamp(),
       approvedBy: auth.currentUser?.uid || "",
     });
+    if (attendance?.userId) {
+      await setDoc(doc(db, "employeeNotifications", `time-in-approved-${id}`), {
+        type: "time_in_approved",
+        attendanceId: id,
+        userId: attendance.userId,
+        title: "Time-in approved",
+        message: "Your manager approved your time-in request.",
+        read: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
   } catch (error) {
     console.error("Unable to approve attendance:", error);
     button.disabled = false;

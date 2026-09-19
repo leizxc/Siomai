@@ -2158,14 +2158,14 @@ html.dark #content .tab-calendar { background: #1e3657; color: #8fc2ff; }
     top: 0;
     z-index: 50;
     min-height: 76px;
-    margin: -25px -25px 25px;
+    margin: 0 0 25px;
     padding: 13px 25px;
     border-bottom: 1px solid #e4e8ef;
     background: rgba(255, 255, 255, .96);
     backdrop-filter: blur(10px);
   }
 
-  .employee-header-title span { display: block; margin-bottom: 2px; color: #8390a2; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .employee-header-title span { display: none; }
   .employee-header-title h2 { margin: 0; color: #24314a; font-size: 21px; font-weight: 800; }
   .employee-header-actions { display: flex; align-items: center; gap: 16px; }
   .employee-icon-button { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid #e1e7ef; border-radius: 10px; background: #fff; cursor: pointer; }
@@ -2585,3 +2585,33 @@ html.dark body:has(.product-list) .cart-section td {
 @media screen and (max-width: 600px) { .modal { width: 94vw !important; max-height: 88vh !important; border-radius: 12px !important; }.modal.modal-fixed-footer { height: 88vh !important; }.modal .modal-content { max-height: calc(88vh - 70px); padding: 20px !important; }.modal .modal-footer { min-height: 60px; padding: 10px 14px; } }
 
 .report-status.read { background: #e8f7ee; color: #218154; }
+
+.employee-profile-menu { position: relative; }
+button.employee-profile { border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.employee-profile-menu-panel { position: absolute; z-index: 2000; top: calc(100% + 8px); right: 0; display: grid; min-width: 165px; padding: 7px; border: 1px solid #e1e7ef; border-radius: 10px; background: #fff; box-shadow: 0 12px 28px rgba(0, 0, 0, .15); }
+.employee-profile-menu-panel[hidden] { display: none; }
+.employee-profile-menu-action { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border: 0; border-radius: 7px; background: transparent; color: #33415b; font: inherit; text-align: left; cursor: pointer; }
+.employee-profile-menu-action:hover { background: #f1f5f9; }
+.employee-profile-menu-action .material-icons { font-size: 19px; }
+html.dark .employee-profile-menu-panel { border-color: #333; background: #1a1a1a; }
+html.dark .employee-profile-menu-action { color: #f5f5f5; }
+html.dark .employee-profile-menu-action:hover { background: #292929; }
+.employee-notification { display: flex; align-items: center; gap: 12px; padding: 13px 4px; border-bottom: 1px solid #e5eaf2; }
+.employee-notification.unread { background: #fff8e1; }
+.employee-notification > .material-icons { color: #d48710 !important; }
+.employee-notification > div { flex: 1; }
+.employee-notification p, .employee-notification small, .employee-notification-empty { margin: 3px 0 0; color: #718096; }
+.employee-notification .btn-flat { margin-left: auto; }
+html.dark .employee-notification { border-color: #292929; }
+html.dark .employee-notification.unread { background: #2b2413; }
+html.dark .employee-notification p, html.dark .employee-notification small, html.dark .employee-notification-empty { color: #a3a3a3; }
+
+@media (min-width: 769px) {
+  .employee-profile-menu-panel { display: none !important; }
+  button.employee-profile { cursor: default; }
+}
+
+@media (max-width: 768px) {
+  .desktop-theme-toggle { display: none; }
+  .bottom-nav a:last-child { display: none; }
+}

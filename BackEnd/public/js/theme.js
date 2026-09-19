@@ -1,11 +1,11 @@
 (function () {
   const root = document.documentElement;
-  const btn = document.getElementById("theme-toggle");
-  const icon = document.getElementById("theme-icon");
+  const btns = document.querySelectorAll("#theme-toggle, [data-theme-toggle]");
+  const icons = document.querySelectorAll("#theme-icon, [data-theme-icon]");
 
   function applyTheme(theme) {
     root.classList.toggle("dark", theme === "dark");
-    if (icon) icon.textContent = theme === "dark" ? "light_mode" : "dark_mode";
+    icons.forEach((icon) => { icon.textContent = theme === "dark" ? "light_mode" : "dark_mode"; });
     localStorage.setItem("theme", theme);
   }
 
@@ -13,15 +13,15 @@
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   applyTheme(saved || (prefersDark ? "dark" : "light"));
 
-  if (btn) {
+  btns.forEach((btn) => {
     btn.addEventListener("click", () => {
       applyTheme(root.classList.contains("dark") ? "light" : "dark");
     });
-  }
+  });
 
   window.addEventListener("storage", (event) => {
     if (event.key !== "theme" || !event.newValue) return;
     root.classList.toggle("dark", event.newValue === "dark");
-    if (icon) icon.textContent = event.newValue === "dark" ? "light_mode" : "dark_mode";
+    icons.forEach((icon) => { icon.textContent = event.newValue === "dark" ? "light_mode" : "dark_mode"; });
   });
 })();

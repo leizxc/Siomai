@@ -237,10 +237,25 @@ document.addEventListener(
       document.querySelector(".bottom-nav");
     loadEmployeeProfile();
 
-    document.querySelector("#employee-notification-bell")?.addEventListener(
-      "click",
-      () => loadSection("report.html")
-    );
+    const profileMenuButton = document.querySelector("#employee-profile-menu-button");
+    const profileMenuPanel = document.querySelector("#employee-profile-menu-panel");
+    const closeProfileMenu = () => {
+      if (!profileMenuButton || !profileMenuPanel) return;
+      profileMenuPanel.hidden = true;
+      profileMenuButton.setAttribute("aria-expanded", "false");
+    };
+    profileMenuButton?.addEventListener("click", () => {
+      if (!profileMenuPanel || !window.matchMedia("(max-width: 768px)").matches) return;
+      const willOpen = profileMenuPanel.hidden;
+      profileMenuPanel.hidden = !willOpen;
+      profileMenuButton.setAttribute("aria-expanded", String(willOpen));
+    });
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".employee-profile-menu")) closeProfileMenu();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeProfileMenu();
+    });
 
     try {
       const notificationModule = await import("/js/employeeNotifications.js");
