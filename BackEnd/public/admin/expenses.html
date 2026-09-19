@@ -33,18 +33,20 @@
 
   <!--FILTER-->
   <section class="card inventory-card expense-filter-card">
+    <div class="category-row expense-category-row">
+      <div
+        id="expense-category-pills"
+        class="category-pills"
+        aria-label="Filter expenses by category"
+      >
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+
     <div class="row filter-row">
       <div class="input-field col s12 m6">
         <input type="date" id="filter-date" />
         <label for="filter-date" class="active">Date</label>
-      </div>
-
-      <div class="input-field col s12 m6">
-        <select id="filter-category">
-          <option value="all" selected>All Categories</option>
-        </select>
-
-        <label>Category</label>
       </div>
     </div>
 

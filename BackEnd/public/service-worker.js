@@ -1,5 +1,5 @@
-const staticCacheName = 'site-static-v15';
-const dynamicCache = 'site-dynamic-v15';
+const staticCacheName = 'site-static-v16';
+const dynamicCache = 'site-dynamic-v16';
 
 const assets = [
 './index.html',
@@ -36,7 +36,7 @@ self.addEventListener('install', evt => {
   evt.waitUntil(
     caches.open(staticCacheName).then(cache => {
       console.log('Caching shell assets');
-      return cache.addAll(assets);
+      return cache.addAll(assets).then(() => self.skipWaiting());
     })
   );
 });
@@ -56,25 +56,41 @@ self.addEventListener('activate', evt => {
       return Promise.all(keys
         .filter(key => key !== staticCacheName)
         .map(key => caches.delete(key))
-      );
+      ).then(() => self.clients.claim());
 })
   );
 });
 
 //fetch event
 self.addEventListener('fetch', evt => {
+  const requestUrl = new URL(evt.request.url);
+
+  // Cache API only supports HTTP(S) requests. Browser extensions can make
+  // chrome-extension:// requests while DevTools is open, so let those pass
+  // through without trying to cache them.
+  if (
+    evt.request.method !== 'GET' ||
+    !['http:', 'https:'].includes(requestUrl.protocol)
+  ) {
+    return;
+  }
+
   evt.respondWith(
     caches.match(evt.request).then(cacheRes => {
       return cacheRes || fetch(evt.request).then(fetchRes => {
-        if (evt.request.method === "GET") {
+        if (fetchRes.ok || fetchRes.type === 'opaque') {
           return caches.open(dynamicCache).then(cache => {
-            cache.put(evt.request, fetchRes.clone());
-            limitCacheSize(dynamicCache, 50);
-            return fetchRes;
+            return cache
+              .put(evt.request, fetchRes.clone())
+              .then(() => {
+                limitCacheSize(dynamicCache, 50);
+                return fetchRes;
+              })
+              .catch(() => fetchRes);
           });
-        } else {
-          return fetchRes;
         }
+
+        return fetchRes;
       }).catch(() => {
         //  fallback kapag walang cache at offline
         if (evt.request.url.endsWith('.html')) {

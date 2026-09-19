@@ -31,6 +31,7 @@
           <div class="subtitle">Please Log in To Continue</div>
 
           <!-- FORM -->
+          <form id="login-form">
           <div class="input-field">
             <i class="material-icons prefix">person</i>
             <input
@@ -59,9 +60,10 @@
             </label>
           </p>
 
-          <button type="button" class="btn btn-login waves-effect waves-light">
+          <button type="submit" class="btn btn-login waves-effect waves-light">
             Log In
           </button>
+          </form>
 
           <button
             id="installBtn"
@@ -105,8 +107,8 @@
     });
 
     document
-      .querySelector(".btn-login")
-      .addEventListener("click", async (e) => {
+      .getElementById("login-form")
+      .addEventListener("submit", async (e) => {
         e.preventDefault();
         const username = document
           .getElementById("username")

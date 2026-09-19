@@ -2,6 +2,33 @@ let currentLoadToken = 0;
 let isNavigating = false;
 let currentCleanup = null;
 
+function applyTableDataLabels(root = document) {
+  root.querySelectorAll("table").forEach((table) => {
+    const headers = Array.from(table.querySelectorAll("thead th")).map((th) =>
+      th.textContent.trim(),
+    );
+
+    if (!headers.length) return;
+
+    table.classList.add("data-table");
+    table.querySelectorAll("tbody tr").forEach((row) => {
+      Array.from(row.cells).forEach((cell, index) => {
+        if (cell.colSpan > 1 || cell.dataset.label) return;
+        cell.dataset.label = headers[index] || "";
+      });
+    });
+  });
+}
+
+const contentArea = document.getElementById("content");
+if (contentArea) {
+  applyTableDataLabels(contentArea);
+  new MutationObserver(() => applyTableDataLabels(contentArea)).observe(contentArea, {
+    childList: true,
+    subtree: true,
+  });
+}
+
 function loadSection(page) {
   if (isNavigating) return;
   isNavigating = true;
@@ -21,6 +48,7 @@ function loadSection(page) {
 
       const main = document.getElementById("content");
       main.innerHTML = data;
+      applyTableDataLabels(main);
 
       const title = document.getElementById("mobile-title");
 

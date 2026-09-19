@@ -1694,6 +1694,10 @@ button.save-menu-btn,
   margin-right: -10px;
 }
 
+.expense-category-row {
+  margin-bottom: 10px;
+}
+
 .expense-filter-card .input-field {
   position: relative !important;
   margin-top: 28px !important;
@@ -3082,6 +3086,12 @@ ul.dropdown-content.select-dropdown li.selected {
     padding: 12px 0;
     overflow: hidden;
     max-width: calc(100% - 32px);
+  }
+
+  .expense-filter-card .expense-category-row {
+    margin: 0 0 10px;
+    padding: 0;
+    max-width: none;
   }
 
   .category-pills {
@@ -5099,3 +5109,192 @@ html.dark #modal-product-history-assign td:nth-child(6) strong {
 .modal .modal-content { max-height: calc(min(82vh, 720px) - 76px); overflow-y: auto; overscroll-behavior: contain; }
 .modal .modal-footer { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; min-height: 64px; padding: 12px 18px; }
 @media screen and (max-width: 600px) { .modal { width: 94vw !important; max-height: 88vh !important; border-radius: 12px !important; }.modal.modal-fixed-footer { height: 88vh !important; }.modal .modal-content { max-height: calc(88vh - 70px); padding: 20px !important; }.modal .modal-footer { min-height: 60px; padding: 10px 14px; } }
+
+/* Tables without their own card layout remain usable on small screens. */
+.table-section,
+.dashboard-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .table-section > table,
+  .dashboard-table-wrapper > table {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .table-section > table thead,
+  .dashboard-table-wrapper > table thead {
+    display: none;
+  }
+
+  .table-section > table,
+  .table-section > table tbody,
+  .table-section > table tr,
+  .table-section > table td,
+  .dashboard-table-wrapper > table,
+  .dashboard-table-wrapper > table tbody,
+  .dashboard-table-wrapper > table tr,
+  .dashboard-table-wrapper > table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table-section > table tr,
+  .dashboard-table-wrapper > table tr {
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow);
+  }
+
+  .table-section > table td,
+  .dashboard-table-wrapper > table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-soft);
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+
+  .table-section > table td:last-child,
+  .dashboard-table-wrapper > table td:last-child {
+    border-bottom: 0;
+  }
+
+  .table-section > table td::before,
+  .dashboard-table-wrapper > table td::before {
+    content: attr(data-label);
+    flex: 0 0 42%;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .table-section > table td[colspan],
+  .dashboard-table-wrapper > table td[colspan] {
+    display: block;
+    text-align: center;
+  }
+
+  .table-section > table td[colspan]::before,
+  .dashboard-table-wrapper > table td[colspan]::before {
+    content: none;
+  }
+}
+
+/* Use the dashboard card-table pattern consistently across every admin table. */
+@media (max-width: 768px) {
+  #content .data-table {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #content .data-table thead {
+    display: none !important;
+  }
+
+  #content .data-table,
+  #content .data-table tbody,
+  #content .data-table tr,
+  #content .data-table td {
+    display: block;
+    width: 100% !important;
+  }
+
+  #content .data-table tr {
+    margin-bottom: 14px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow);
+  }
+
+  #content .data-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-soft);
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+
+  #content .data-table td:last-child {
+    border-bottom: 0;
+  }
+
+  #content .data-table td::before {
+    content: attr(data-label);
+    flex: 0 0 42%;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  #content .data-table td[colspan] {
+    display: block;
+    text-align: center;
+  }
+
+  #content .data-table td[colspan]::before {
+    content: none;
+  }
+
+  /* A tap on a mobile table card must not leave it looking selected. */
+  #content .data-table,
+  #content .data-table td {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  #content .data-table tr:hover,
+  #content table.data-table.highlight > tbody > tr:hover {
+    background: var(--bg-card) !important;
+  }
+
+  /* Materialize's .striped class shades alternating rows. Disable it for
+     mobile cards so no row appears selected or highlighted. */
+  #content table.data-table.striped > tbody > tr:nth-child(odd),
+  #content table.data-table.striped > tbody > tr:hover {
+    background-color: var(--bg-card) !important;
+  }
+}
+
+/* Tables are informational only; do not show a row-hover/selected state. */
+#content .data-table tbody tr:hover,
+#inventory-table tbody tr:hover,
+#menutable tbody tr:hover,
+#productTable tbody tr:hover,
+#expenseTable tbody tr:hover,
+#employeeTable tbody tr:hover {
+  background: var(--bg-card) !important;
+  background-color: var(--bg-card) !important;
+}
+
+#content table.data-table.striped > tbody > tr:nth-child(odd) {
+  background-color: var(--bg-card) !important;
+}
+
+#content .data-table tbody tr,
+#inventory-table tbody tr,
+#menutable tbody tr,
+#productTable tbody tr,
+#expenseTable tbody tr,
+#employeeTable tbody tr {
+  transition: none !important;
+}

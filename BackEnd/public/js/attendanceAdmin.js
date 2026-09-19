@@ -48,14 +48,14 @@ function renderAttendanceRows() {
   tbody.innerHTML = rows.length
     ? rows.map((item) => `
       <tr>
-        <td>${escapeHtml(item.userId || "—")}</td>
-        <td>${escapeHtml(`${item.fname || ""} ${item.lname || ""}`.trim() || "—")}</td>
-        <td>${escapeHtml(item.email || "—")}</td>
-        <td>${formatStatus(item.status)}</td>
-        <td>${formatTime(item.clockedInAt)}</td>
-        <td>${formatTime(item.clockedOutAt)}</td>
-        <td>${getNotes(item)}</td>
-        <td>${getAction(item)}</td>
+        <td data-label="ID">${escapeHtml(item.userId || "—")}</td>
+        <td data-label="Name">${escapeHtml(`${item.fname || ""} ${item.lname || ""}`.trim() || "—")}</td>
+        <td data-label="Email">${escapeHtml(item.email || "—")}</td>
+        <td data-label="Status">${formatStatus(item.status)}</td>
+        <td data-label="Time In">${formatTime(item.clockedInAt)}</td>
+        <td data-label="Time Out">${formatTime(item.clockedOutAt)}</td>
+        <td data-label="Notes">${getNotes(item)}</td>
+        <td data-label="Action">${getAction(item)}</td>
       </tr>
     `).join("")
     : `<tr><td colspan="8">No attendance records found.</td></tr>`;

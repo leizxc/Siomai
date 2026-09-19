@@ -1,6 +1,9 @@
 // expensesADDbtn.js
 import { db } from "/js/firebase.js";
-import { addExpense } from "/js/adminExpenses.js";
+import {
+  addExpense,
+  setExpenseCategoryFilter,
+} from "/js/adminExpenses.js";
 
 import {
   collection,
@@ -15,28 +18,80 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 let unsubscribeCategory = null;
+let selectedExpenseCategory = "all";
 
 //LOAD EXPENSE CATEGORIES
 
 function loadExpenseCategories() {
-  const filterSelect = document.getElementById("filter-category");
+  const filterPills = document.getElementById("expense-category-pills");
   const addSelect = document.getElementById("expenses-category");
   const editSelect = document.getElementById("edit-expenses-category");
 
-  if (!filterSelect && !addSelect && !editSelect) return;
+  if (!filterPills && !addSelect && !editSelect) return;
 
   if (unsubscribeCategory) unsubscribeCategory();
 
   unsubscribeCategory = onSnapshot(
     collection(db, "expenses_category"),
     (snapshot) => {
-      updateSelect(filterSelect, snapshot, "All Categories", "all");
+      renderExpenseCategoryPills(filterPills, snapshot);
 
       updateSelect(addSelect, snapshot, "Choose Category", "");
 
       updateSelect(editSelect, snapshot, "Choose Category", "");
     },
   );
+}
+
+function renderExpenseCategoryPills(container, snapshot) {
+  if (!container || !container.isConnected) return;
+
+  const categories = [];
+  snapshot.forEach((docSnap) => categories.push(docSnap.data().name));
+
+  if (
+    selectedExpenseCategory !== "all" &&
+    !categories.includes(selectedExpenseCategory)
+  ) {
+    selectedExpenseCategory = "all";
+    setExpenseCategoryFilter("all");
+  }
+
+  container.innerHTML = "";
+
+  ["all", ...categories].forEach((category) => {
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className =
+      "category-pill" +
+      (selectedExpenseCategory === category ? " active" : "");
+    pill.textContent = category === "all" ? "All Categories" : category;
+    pill.dataset.category = category;
+    pill.setAttribute("aria-pressed", String(selectedExpenseCategory === category));
+    pill.onclick = () => selectExpenseCategory(category);
+    container.appendChild(pill);
+  });
+
+  syncDeleteCategoryButtonState();
+}
+
+function selectExpenseCategory(category) {
+  if (selectedExpenseCategory === category) return;
+
+  selectedExpenseCategory = category;
+  document.querySelectorAll("#expense-category-pills .category-pill").forEach((pill) => {
+    const isActive = pill.dataset.category === category;
+    pill.classList.toggle("active", isActive);
+    pill.setAttribute("aria-pressed", String(isActive));
+  });
+
+  syncDeleteCategoryButtonState();
+  setExpenseCategoryFilter(category);
+}
+
+function syncDeleteCategoryButtonState() {
+  const deleteBtn = document.getElementById("btn-delete-category");
+  if (deleteBtn) deleteBtn.disabled = selectedExpenseCategory === "all";
 }
 
 function updateSelect(select, snapshot, placeholder, value) {
@@ -279,10 +334,9 @@ function bindAddCategoryButton() {
 
 function bindDeleteCategoryButton() {
   const deleteBtn = document.getElementById("btn-delete-category");
-  const filterSelect = document.getElementById("filter-category");
   const modalElem = document.getElementById("modal-delete-category");
 
-  if (!deleteBtn || !filterSelect || !modalElem) {
+  if (!deleteBtn || !modalElem) {
     console.warn("Delete Category elements not found.");
     return;
   }
@@ -301,16 +355,10 @@ function bindDeleteCategoryButton() {
     modalInstance = M.Modal.init(modalElem, { dismissible: false });
   }
 
-  // I-disable ang button kapag "All Categories" pa rin ang napili.
-  function syncDeleteButtonState() {
-    deleteBtn.disabled = !filterSelect.value || filterSelect.value === "all";
-  }
-
-  syncDeleteButtonState();
-  filterSelect.addEventListener("change", syncDeleteButtonState);
+  syncDeleteCategoryButtonState();
 
   deleteBtn.onclick = () => {
-    const categoryName = filterSelect.value;
+    const categoryName = selectedExpenseCategory;
 
     if (!categoryName || categoryName === "all") {
       M.toast({
@@ -327,7 +375,7 @@ function bindDeleteCategoryButton() {
   };
 
   confirmBtn.onclick = async () => {
-    const categoryName = filterSelect.value;
+    const categoryName = selectedExpenseCategory;
 
     if (!categoryName || categoryName === "all") {
       modalInstance.close();
@@ -369,9 +417,9 @@ function bindDeleteCategoryButton() {
         ),
       );
 
-      filterSelect.value = "all";
-      M.FormSelect.init(filterSelect);
-      syncDeleteButtonState();
+      selectedExpenseCategory = "all";
+      setExpenseCategoryFilter("all");
+      syncDeleteCategoryButtonState();
 
       modalInstance.close();
 

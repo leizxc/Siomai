@@ -21,7 +21,6 @@ let expenseListCache = [];
 
 // FILTERS
 const filterDateInput = document.getElementById("filter-date");
-const filterCategorySelect = document.getElementById("filter-category");
 
 let currentFilterDate = "";
 let currentFilterCategory = "all";
@@ -32,11 +31,11 @@ filterDateInput?.addEventListener("change", () => {
   loadExpenses();
 });
 
-filterCategorySelect?.addEventListener("change", () => {
-  currentFilterCategory = filterCategorySelect.value;
+export function setExpenseCategoryFilter(category) {
+  currentFilterCategory = category || "all";
   currentPage = 1;
   loadExpenses();
-});
+}
 
 // Destroy muna bago i-init, para hindi ma-corrupt ang select state
 function reinitSelect(selectEl) {

@@ -13,6 +13,7 @@ import {
 let unsubscribeNotifications = null;
 let selectedNotificationIds = new Set();
 let notificationsById = new Map();
+let pendingDeleteNotificationIds = [];
 
 function escapeHtml(value) {
   const div = document.createElement("div");
@@ -131,9 +132,25 @@ async function markNotificationRead(id) {
 export function initManagerNotifications() {
   const bell = document.getElementById("manager-notification-bell");
   const modalElement = document.getElementById("manager-notifications-modal");
-  if (!bell || !modalElement || unsubscribeNotifications) return;
+  const deleteModalElement = document.getElementById("delete-notifications-modal");
+  const confirmDeleteButton = document.getElementById("confirm-delete-notifications");
+  const deleteMessage = document.getElementById("delete-notifications-message");
+
+  if (
+    !bell ||
+    !modalElement ||
+    !deleteModalElement ||
+    !confirmDeleteButton ||
+    !deleteMessage ||
+    unsubscribeNotifications
+  ) return;
 
   const modal = M.Modal.init(modalElement);
+  const deleteModal = M.Modal.init(deleteModalElement, {
+    onCloseEnd: () => {
+      pendingDeleteNotificationIds = [];
+    },
+  });
   bell.addEventListener("click", () => modal.open());
 
   document.getElementById("manager-select-all")?.addEventListener("change", (event) => {
@@ -153,12 +170,31 @@ export function initManagerNotifications() {
     showToast(`${ids.length} notification${ids.length > 1 ? "s" : ""} marked as read.`, "green");
   });
 
-  document.getElementById("delete-manager-selected")?.addEventListener("click", async () => {
+  document.getElementById("delete-manager-selected")?.addEventListener("click", () => {
     const ids = [...selectedNotificationIds];
-    if (!ids.length || !window.confirm(`Delete ${ids.length} selected notification${ids.length > 1 ? "s" : ""}?`)) return;
-    await Promise.all(ids.map((id) => deleteDoc(doc(db, "managerNotifications", id))));
-    selectedNotificationIds.clear();
-    showToast("Selected notifications deleted.", "green");
+    if (!ids.length) return;
+
+    pendingDeleteNotificationIds = ids;
+    deleteMessage.textContent = `Delete ${ids.length} selected notification${ids.length > 1 ? "s" : ""}? This action cannot be undone.`;
+    deleteModal.open();
+  });
+
+  confirmDeleteButton.addEventListener("click", async () => {
+    const ids = [...pendingDeleteNotificationIds];
+    if (!ids.length) return;
+
+    confirmDeleteButton.disabled = true;
+    try {
+      await Promise.all(ids.map((id) => deleteDoc(doc(db, "managerNotifications", id))));
+      selectedNotificationIds.clear();
+      deleteModal.close();
+      showToast("Selected notifications deleted.", "green");
+    } catch (error) {
+      console.error("Unable to delete notifications:", error);
+      showToast("Unable to delete selected notifications.", "red");
+    } finally {
+      confirmDeleteButton.disabled = false;
+    }
   });
 
   unsubscribeNotifications = onSnapshot(
