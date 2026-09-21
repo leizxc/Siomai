@@ -145,7 +145,12 @@ export function initManagerNotifications() {
     unsubscribeNotifications
   ) return;
 
-  const modal = M.Modal.init(modalElement);
+  const modal = M.Modal.getInstance(modalElement) || M.Modal.init(modalElement);
+  const existingDeleteModal = M.Modal.getInstance(deleteModalElement);
+  if (existingDeleteModal) {
+    if (existingDeleteModal.isOpen) existingDeleteModal.close();
+    existingDeleteModal.destroy();
+  }
   const deleteModal = M.Modal.init(deleteModalElement, {
     onCloseEnd: () => {
       pendingDeleteNotificationIds = [];

@@ -8,6 +8,26 @@ let currentCleanup = null;
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+function disposeSectionModals(root) {
+  if (typeof M === "undefined" || !root) return;
+
+  root.querySelectorAll(".modal").forEach((modal) => {
+    const instance = M.Modal.getInstance(modal);
+    if (!instance) return;
+    if (instance.isOpen) instance.close();
+    instance.destroy();
+  });
+
+  root.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
+
+  if (!document.querySelector(".modal.open")) {
+    document.body.style.overflow = "";
+    if (M.Modal && typeof M.Modal._modalsOpen === "number") {
+      M.Modal._modalsOpen = 0;
+    }
+  }
+}
+
 async function loadEmployeeProfile() {
   const nameElement = document.querySelector("#employee-profile-name");
   if (!nameElement) return;
@@ -66,6 +86,8 @@ async function loadSection(page) {
     if (!main) {
       throw new Error("#content not found");
     }
+
+    disposeSectionModals(main);
 
     const pageContent = parsedPage.querySelector("#content");
 

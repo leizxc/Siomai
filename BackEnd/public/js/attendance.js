@@ -14,6 +14,7 @@ import {
   getDocs,
   doc,
   setDoc,
+  updateDoc,
   serverTimestamp,
   onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -23,6 +24,7 @@ const db = getFirestore(app);
 
 let attendanceInitialized = false;
 let currentAttendance = null;
+let currentAttendanceRef = null;
 let unsubscribeAttendance = null;
 let statsTimer = null;
 let attendanceHistory = [];
@@ -138,6 +140,13 @@ function displayAttendance(attendance) {
     updateTodayStatus("Awaiting approval", "Your time-in request has been sent to the manager.", "pending");
     setTimeInButtonPending();
     displayPendingAttendance(attendance);
+    return;
+  }
+
+  if (attendance.status === "time_out_pending") {
+    updateTodayStatus("Time out awaiting approval", "Your time-out request has been sent to the manager.", "pending");
+    setTimeOutButtonPending();
+    displayPendingTimeOut(attendance);
     return;
   }
 
@@ -291,6 +300,7 @@ function showNoAttendance(message) {
 export function stopAttendancePage() {
   attendanceInitialized = false;
   currentAttendance = null;
+  currentAttendanceRef = null;
   unsubscribeAttendance?.();
   unsubscribeAttendance = null;
   clearInterval(statsTimer);
@@ -344,6 +354,26 @@ function displayCompletedAttendance(attendance) {
       </div>
       <div class="activity-right">
         <div class="activity-status completed">Completed</div>
+      </div>
+    </div>
+  `;
+}
+
+function displayPendingTimeOut(attendance) {
+  const activityList = document.querySelector(".activity-list");
+  if (!activityList) return;
+
+  const employeeName = `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
+  activityList.innerHTML = `
+    <div class="activity-item">
+      <div class="activity-icon out"><span class="material-icons">hourglass_top</span></div>
+      <div class="activity-info">
+        <div class="activity-title">Time Out Request Sent</div>
+        <div class="activity-time">${employeeName}</div>
+        <div class="activity-time">Waiting for manager approval</div>
+      </div>
+      <div class="activity-right">
+        <div class="activity-status pending">Pending</div>
       </div>
     </div>
   `;
@@ -493,6 +523,7 @@ function dateFromKey(value) {
 
 function watchAttendance(attendanceRef, context) {
   unsubscribeAttendance?.();
+  currentAttendanceRef = attendanceRef;
 
   unsubscribeAttendance = onSnapshot(attendanceRef, (snapshot) => {
     if (snapshot.exists()) {
@@ -586,11 +617,34 @@ function setTimeInButtonActive() {
 
   if (!timeInButton) return;
 
-  timeInButton.disabled = true;
+  timeInButton.disabled = false;
   timeInButton.classList.remove("pending", "completed");
   timeInButton.classList.add("active");
   timeInButton.innerHTML = `
-    <span class="material-icons">check_circle</span>
-    Time In Active
+    <span class="material-icons">logout</span>
+    Time Out
   `;
+
+  timeInButton.onclick = async () => {
+    if (currentAttendance?.status !== "active" || !currentAttendanceRef) return;
+
+    timeInButton.disabled = true;
+    timeInButton.textContent = "Recording time out...";
+
+    try {
+      await updateDoc(currentAttendanceRef, {
+        status: "completed",
+        type: "clocked_out",
+        clockedOutAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Time out error:", error);
+      timeInButton.disabled = false;
+      timeInButton.innerHTML = `
+        <span class="material-icons">logout</span>
+        Time Out
+      `;
+      M.toast({ html: "Unable to record time out. Please try again.", classes: "red rounded" });
+    }
+  };
 }

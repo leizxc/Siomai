@@ -2,6 +2,36 @@ let currentLoadToken = 0;
 let isNavigating = false;
 let currentCleanup = null;
 
+// Materialize keeps modal instances and their overlays outside of application
+// state.  Since this dashboard replaces #content with innerHTML, leaving an
+// instance alive makes its overlay/focus handlers point at detached DOM.
+// Dispose them before a section is replaced so repeatedly opening modals (or
+// changing pages while one is open) cannot leave the UI locked.
+function disposeSectionModals(root) {
+  if (typeof M === "undefined" || !root) return;
+
+  root.querySelectorAll(".modal").forEach((modal) => {
+    const instance = M.Modal.getInstance(modal);
+    if (!instance) return;
+
+    // close() updates Materialize's internal open-modal counter before
+    // destroy() removes the element-specific event listeners and overlay.
+    if (instance.isOpen) instance.close();
+    instance.destroy();
+  });
+
+  // A previous interrupted navigation may already have detached a modal but
+  // left an overlay in this section. Remove only overlays owned by #content.
+  root.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
+
+  if (!document.querySelector(".modal.open")) {
+    document.body.style.overflow = "";
+    if (M.Modal && typeof M.Modal._modalsOpen === "number") {
+      M.Modal._modalsOpen = 0;
+    }
+  }
+}
+
 function applyTableDataLabels(root = document) {
   root.querySelectorAll("table").forEach((table) => {
     const headers = Array.from(table.querySelectorAll("thead th")).map((th) =>
@@ -47,6 +77,7 @@ function loadSection(page) {
       if (myToken !== currentLoadToken) return;
 
       const main = document.getElementById("content");
+      disposeSectionModals(main);
       main.innerHTML = data;
       applyTableDataLabels(main);
 

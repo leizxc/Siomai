@@ -1087,11 +1087,14 @@ body {
   background: #315b9b;
 }
 
-#content .time-in-button.active,
-#content .time-in-button:disabled.active {
-  background: #21845b;
+#content .time-in-button.active {
+  background: #d97706;
   color: #fff;
-  cursor: default;
+  cursor: pointer;
+}
+
+#content .time-in-button.active:hover:not(:disabled) {
+  background: #b45309;
 }
 
 #content .time-in-button.pending,
@@ -2053,6 +2056,10 @@ html.dark #content .tab-calendar { background: #1e3657; color: #8fc2ff; }
   gap: 8px;
 }
 
+.checkout-info[hidden] {
+  display: none !important;
+}
+
 .lowstock-btn {
   display: inline-grid;
   width: 30px;
@@ -2151,6 +2158,20 @@ html.dark #content .tab-calendar { background: #1e3657; color: #8fc2ff; }
 
 /* Employee desktop header — aligned with the manager dashboard header. */
 @media (min-width: 769px) {
+  /* Use the POS shell on every employee page so the shared top header stays
+     at the same horizontal and vertical position after navigation. */
+  body:has(.employee-topbar) .sidebar {
+    width: 258px;
+  }
+
+  body:has(.employee-topbar) .main {
+    width: calc(100% - 258px);
+    min-height: 100vh;
+    margin-left: 258px;
+    padding: 0 25px 25px;
+    background: #f8f9fc;
+  }
+
   .mobile-header.employee-topbar {
     display: flex !important;
     align-items: center;
@@ -2177,6 +2198,39 @@ html.dark #content .tab-calendar { background: #1e3657; color: #8fc2ff; }
   .employee-profile { display: flex; align-items: center; gap: 8px; padding-left: 16px; border-left: 1px solid #e6eaf0; }
   .employee-profile > .material-icons { color: #456da8 !important; font-size: 34px; }
   .employee-profile strong, .employee-profile small { display: block; }.employee-profile strong { color: #33415b; font-size: 12px; }.employee-profile small { margin-top: 1px; color: #8994a5; font-size: 10px; }
+
+  /* Keep the Add button pinned to the right while the low-stock label grows
+     to fit its text instead of overflowing from the small circular icon. */
+  body:has(.product-list) .product-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    padding-right: 12px;
+  }
+
+  body:has(.product-list) .product-actions .lowstock-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    width: auto;
+    min-height: 34px;
+    padding: 6px 10px;
+    border-radius: 17px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  body:has(.product-list) .product-actions .lowstock-btn .material-icons {
+    font-size: 18px;
+  }
+
+  body:has(.product-list) .product-actions .add-btn {
+    margin-right: 0;
+  }
 
   body:has(.product-list) .main::before { display: none; }
   body:has(.product-list) .search-section { position: relative; top: auto; left: auto; right: auto; z-index: auto; height: auto; padding: 0; margin: 0 0 18px; }
@@ -2346,6 +2400,7 @@ html.dark .payment-btn.active {
   body:has(.product-list) .cart-section { display: none; }
   body:has(.product-list) .checkout-bar { bottom: 72px; z-index: 300; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid #e6ebf2; box-shadow: 0 -3px 12px rgba(24, 42, 76, .09); }
   body:has(.product-list) .checkout-info { margin-bottom: 10px; }
+  body:has(.product-list) .checkout-bar.is-empty { padding-top: 12px; }
   body:has(.product-list) .cart-count { padding: 5px 10px; background: #e8f0fe; font-size: 12px; }
   body:has(.product-list) .checkout-info small { font-size: 11px; }
   body:has(.product-list) .checkout-info h3 { font-size: 20px; }
@@ -2353,6 +2408,14 @@ html.dark .payment-btn.active {
   body:has(.product-list) .bottom-nav { height: 72px; padding-bottom: env(safe-area-inset-bottom); }
   body:has(.product-list) .bottom-nav i { font-size: 23px; }
   body:has(.product-list) .bottom-nav span { font-size: 10px; }
+
+  /* Reserve room below the final product so it can be scrolled completely
+     above the fixed checkout area and bottom navigation. */
+  body:has(.product-list) .main {
+    min-height: 100dvh;
+    padding-bottom: calc(190px + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(190px + env(safe-area-inset-bottom));
+  }
 
   html.dark .mobile-header.employee-topbar { border-color: #262626; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
   html.dark .employee-icon-button .material-icons, html.dark .mobile-header.employee-topbar h2 { color: #f5f5f5 !important; }
@@ -2438,18 +2501,38 @@ html.dark .payment-btn.active {
   }
 
   body:has(.product-list) .product-actions {
-    display: flex;
+    position: relative;
+    align-self: stretch;
+    min-height: 76px;
+  }
+
+  /* The warning is an overlay, not part of the button's layout flow. This
+     keeps Add in exactly the same position whether stock is low or not. */
+  body:has(.product-list) .product-actions .add-btn {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+  }
+
+  body:has(.product-list) .product-actions .lowstock-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 4px;
+    justify-content: center;
+    gap: 3px;
+    width: 70px;
+    min-height: 22px;
+    padding: 3px 5px;
+    border-radius: 11px;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
   }
 
-  body:has(.product-list) .lowstock-btn {
-    width: 24px;
-    height: 24px;
-  }
-
-  body:has(.product-list) .lowstock-btn .material-icons {
+  body:has(.product-list) .product-actions .lowstock-btn .material-icons {
     font-size: 15px;
   }
 

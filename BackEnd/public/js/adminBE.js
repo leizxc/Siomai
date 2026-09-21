@@ -31,6 +31,18 @@ function toUpper(value) {
   return (value || "").trim().toUpperCase();
 }
 
+// M.Modal.init() does not replace an existing instance by itself. Recreating
+// one without destroying the old instance leaves duplicate listeners and
+// overlays behind after several opens.
+function replaceModalInstance(element, options) {
+  const existing = M.Modal.getInstance(element);
+  if (existing) {
+    if (existing.isOpen) existing.close();
+    existing.destroy();
+  }
+  return M.Modal.init(element, options);
+}
+
 function bindLiveUppercase(input) {
   if (!input || input.dataset.uppercaseBound) return;
   input.dataset.uppercaseBound = "true";
@@ -60,7 +72,9 @@ function confirmDeletion(title, message) {
   if (!modalElement || !confirmButton || !cancelButton) {
     return Promise.resolve(false);
   }
-  const modalInstance = M.Modal.init(modalElement, { dismissible: false });
+  const modalInstance = replaceModalInstance(modalElement, {
+    dismissible: false,
+  });
 
   if (titleElement) titleElement.textContent = title;
   if (messageElement) messageElement.textContent = message;
@@ -96,9 +110,9 @@ function confirmRecover(
     return Promise.resolve(false);
   }
 
-  let modalInstance = M.Modal.getInstance(modalElement);
-  if (modalInstance) modalInstance.destroy();
-  modalInstance = M.Modal.init(modalElement, { dismissible: false });
+  const modalInstance = replaceModalInstance(modalElement, {
+    dismissible: false,
+  });
 
   if (titleElement) titleElement.textContent = title;
   if (messageElement) messageElement.textContent = message;
@@ -575,7 +589,7 @@ function bindInventoryRowButtons() {
 
       const modalElem = document.getElementById("modal-edit");
       if (!modalElem) return;
-      const modalInstance = M.Modal.init(modalElem);
+      const modalInstance = replaceModalInstance(modalElem);
       modalInstance.open();
 
       const saveBtn = document.getElementById("edit-save");
@@ -625,7 +639,11 @@ function bindInventoryRowButtons() {
         } else {
           newStock = newQuantity;
         }
-        const newTotalValue = newStock * newPrice;
+        // Kaban prices are per kaban, not per kilogram.  Keep `newStock`
+        // in kg for inventory tracking, but calculate its monetary value
+        // from the number of kaban entered.
+        const newTotalValue =
+          unitType === "kaban" ? newQuantity * newPrice : newStock * newPrice;
 
         const updateData = {
           product_name: newName,
@@ -739,7 +757,8 @@ export async function addProduct(
     stockQty = quantity;
     totalValue = quantity * unitPrice;
   }
-  // KABAN → kg (quantity × weight per kaban)
+  // KABAN → kg (quantity × weight per kaban) for stock tracking.
+  // Its unit price remains per kaban, so value uses the original quantity.
   else if (unitType === "kaban") {
     const weightPerKaban = Number(extraFields.weight_per_kaban || 0);
     if (weightPerKaban <= 0) {
@@ -750,7 +769,7 @@ export async function addProduct(
       return;
     }
     stockQty = quantity * weightPerKaban;
-    totalValue = stockQty * unitPrice;
+    totalValue = quantity * unitPrice;
   }
   // KG → kg
   else if (unitType === "kg") {
@@ -1137,7 +1156,7 @@ function bindAddCategoryButton() {
     const modalElem = document.getElementById("modal-add-category");
     if (!modalElem) return;
 
-    const modalInstance = M.Modal.init(modalElem, {
+    const modalInstance = replaceModalInstance(modalElem, {
       onOpenEnd() {
         const selects = document.querySelectorAll("select");
         if (selects.length) M.FormSelect.init(selects);

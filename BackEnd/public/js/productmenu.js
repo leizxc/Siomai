@@ -506,6 +506,11 @@ function confirmDeletion(title, message) {
   const titleElement = document.getElementById("delete-confirmation-title");
   const messageElement = document.getElementById("delete-confirmation-message");
 
+  const existingModal = M.Modal.getInstance(modalElement);
+  if (existingModal) {
+    if (existingModal.isOpen) existingModal.close();
+    existingModal.destroy();
+  }
   const modalInstance = M.Modal.init(modalElement, { dismissible: false });
   titleElement.textContent = title;
   messageElement.textContent = message;

@@ -74,7 +74,14 @@ function getProductStockLabel(product) {
 
 async function openLowStockConfirmation(product) {
   const existing = document.getElementById("low-stock-confirmation-modal");
-  if (existing) existing.remove();
+  if (existing) {
+    const existingModal = M.Modal.getInstance(existing);
+    if (existingModal) {
+      if (existingModal.isOpen) existingModal.close();
+      existingModal.destroy();
+    }
+    existing.remove();
+  }
 
   const modalElement = document.createElement("div");
   modalElement.id = "low-stock-confirmation-modal";
@@ -306,6 +313,22 @@ function updateCartCount() {
 
   cartCount.textContent = `${totalItems} ${totalItems === 1 ? "Item" : "Items"}`;
 }
+
+function updateCheckoutVisibility() {
+  const hasItems = cart.some((item) => Number(item.qty || 0) > 0);
+  const checkoutInfo = document.querySelector(".checkout-info");
+  const checkoutBar = document.querySelector(".checkout-bar");
+
+  if (checkoutInfo) {
+    checkoutInfo.hidden = !hasItems;
+  }
+
+  if (checkoutBar) {
+    checkoutBar.classList.toggle("has-items", hasItems);
+    checkoutBar.classList.toggle("is-empty", !hasItems);
+  }
+}
+
 // ADD TO CART
 function addToCart(product) {
   const existing = cart.find((item) => item.id === product.id);
@@ -333,6 +356,7 @@ function addToCart(product) {
 // RENDER CART
 function identifyCart() {
   updateCartCount();
+  updateCheckoutVisibility();
 
   if (window.innerWidth <= 768) {
     renderMobileCart();
@@ -744,7 +768,7 @@ function renderProducts(products) {
           lowStock
             ? `<button class="lowstock-btn" type="button" data-id="${product.id}">
                  <i class="material-icons" aria-hidden="true">warning</i>
-                 <span class="sr-only">Low stock</span>
+v                 <span>Low stock</span>
                </button>`
             : ""
         }

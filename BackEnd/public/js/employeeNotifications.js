@@ -56,7 +56,7 @@ export async function initEmployeeNotifications() {
   const modalElement = document.querySelector("#employee-notifications-modal");
   if (!bell || !badge || !modalElement || unsubscribeReports || unsubscribeAttendanceNotifications) return;
 
-  const modal = M.Modal.init(modalElement);
+  const modal = M.Modal.getInstance(modalElement) || M.Modal.init(modalElement);
   bell.addEventListener("click", () => modal.open());
   const user = await new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => { unsubscribe(); resolve(currentUser); });

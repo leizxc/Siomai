@@ -1767,7 +1767,10 @@ export async function initProductPage() {
   const modals = document.querySelectorAll(".modal");
   modals.forEach((modal) => {
     const instance = M.Modal.getInstance(modal);
-    if (instance) instance.destroy();
+    if (instance) {
+      if (instance.isOpen) instance.close();
+      instance.destroy();
+    }
     M.Modal.init(modal, { dismissible: false });
   });
 

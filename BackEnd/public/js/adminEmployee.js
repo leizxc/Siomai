@@ -502,6 +502,11 @@ function confirmDeletion(title, message) {
   if (!modalElement || !confirmButton || !cancelButton) {
     return Promise.resolve(false);
   }
+  const existingModal = M.Modal.getInstance(modalElement);
+  if (existingModal) {
+    if (existingModal.isOpen) existingModal.close();
+    existingModal.destroy();
+  }
   const modalInstance = M.Modal.init(modalElement, { dismissible: false });
 
   if (titleElement) titleElement.textContent = title;

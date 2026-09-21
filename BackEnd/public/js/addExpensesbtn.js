@@ -139,7 +139,11 @@ export function initExpensesModal() {
     return;
   }
 
-  const modalInstance = M.Modal.init(modalElem);
+  // The navigator initializes page modals first. Reuse that instance instead
+  // of registering another set of Materialize handlers every time this page
+  // is loaded.
+  const modalInstance =
+    M.Modal.getInstance(modalElem) || M.Modal.init(modalElem);
 
   loadExpenseCategories();
 
