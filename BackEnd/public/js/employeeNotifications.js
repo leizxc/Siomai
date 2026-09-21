@@ -1,4 +1,5 @@
 import { app } from "/js/firebase.js";
+import { requestDeviceNotificationPermission, showDeviceNotification } from "/js/deviceNotifications.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { collection, doc, getDocs, getFirestore, onSnapshot, query, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -8,6 +9,8 @@ let unsubscribeReports = null;
 let unsubscribeAttendanceNotifications = null;
 let expenseNotifications = [];
 let attendanceNotifications = [];
+let hasLoadedInitialReports = false;
+let hasLoadedInitialAttendanceNotifications = false;
 
 function formatDate(timestamp) {
   return timestamp?.toDate?.().toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }) || "Just now";
@@ -57,7 +60,13 @@ export async function initEmployeeNotifications() {
   if (!bell || !badge || !modalElement || unsubscribeReports || unsubscribeAttendanceNotifications) return;
 
   const modal = M.Modal.getInstance(modalElement) || M.Modal.init(modalElement);
-  bell.addEventListener("click", () => modal.open());
+  bell.addEventListener("click", async () => {
+    const permission = await requestDeviceNotificationPermission();
+    if (permission === "denied" && typeof M !== "undefined") {
+      M.toast({ html: "Allow notifications in your browser settings to receive phone alerts.", classes: "orange" });
+    }
+    modal.open();
+  });
   const user = await new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => { unsubscribe(); resolve(currentUser); });
   });
@@ -68,12 +77,39 @@ export async function initEmployeeNotifications() {
   const employeeId = employeeSnapshot.docs[0].id;
 
   unsubscribeReports = onSnapshot(query(collection(db, "expenseReports"), where("employeeId", "==", employeeId)), (snapshot) => {
+    if (hasLoadedInitialReports) {
+      snapshot.docChanges()
+        .filter((change) => change.type === "modified" && change.doc.data().status === "read" && !change.doc.data().employeeNotified)
+        .forEach((change) => {
+          showDeviceNotification({
+            title: "Expense report reviewed",
+            body: "Your expense report has been reviewed by the manager.",
+            tag: `expense-report-${change.doc.id}`,
+            url: "/employee/siomai/userpanel.html",
+          }).catch((error) => console.error("Unable to show device notification:", error));
+        });
+    }
+    hasLoadedInitialReports = true;
     expenseNotifications = snapshot.docs.filter((item) => item.data().status === "read" && !item.data().employeeNotified).map((item) => ({ id: item.id, source: "expense", title: "Expense report reviewed", message: "Your expense report has been reviewed by the manager.", ...item.data() }));
     updateBadge(bell, badge);
     renderNotifications();
   }, (error) => console.error("Unable to load employee expense notifications:", error));
 
   unsubscribeAttendanceNotifications = onSnapshot(query(collection(db, "employeeNotifications"), where("userId", "==", user.uid)), (snapshot) => {
+    if (hasLoadedInitialAttendanceNotifications) {
+      snapshot.docChanges()
+        .filter((change) => change.type === "added" && !change.doc.data().read)
+        .forEach((change) => {
+          const item = change.doc.data();
+          showDeviceNotification({
+            title: item.title || "New notification",
+            body: item.message || "You have a new system notification.",
+            tag: `employee-notification-${change.doc.id}`,
+            url: "/employee/siomai/userpanel.html",
+          }).catch((error) => console.error("Unable to show device notification:", error));
+        });
+    }
+    hasLoadedInitialAttendanceNotifications = true;
     attendanceNotifications = snapshot.docs.map((item) => ({ id: item.id, source: "attendance", ...item.data() }));
     updateBadge(bell, badge);
     renderNotifications();
@@ -87,4 +123,6 @@ export function stopEmployeeNotifications() {
   unsubscribeAttendanceNotifications = null;
   expenseNotifications = [];
   attendanceNotifications = [];
+  hasLoadedInitialReports = false;
+  hasLoadedInitialAttendanceNotifications = false;
 }

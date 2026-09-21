@@ -39,12 +39,19 @@
               type="text"
               placeholder="Username or Email"
               autocomplete="username"
+              required
             />
           </div>
 
           <div class="input-field">
             <i class="material-icons prefix">lock</i>
-            <input id="password" type="password" placeholder="Password" />
+            <input
+              id="password"
+              type="password"
+              placeholder="Password"
+              autocomplete="current-password"
+              required
+            />
             <label for="password">Password</label>
             <span
               class="material-icons toggle-password"
@@ -60,8 +67,16 @@
             </label>
           </p>
 
-          <button type="submit" class="btn btn-login waves-effect waves-light">
-            Log In
+          <button
+            id="login-button"
+            type="submit"
+            class="btn btn-login waves-effect waves-light"
+          >
+            <span class="login-button-label">Log In</span>
+            <span class="login-button-loading" aria-hidden="true">
+              <span class="login-spinner"></span>
+              Logging in...
+            </span>
           </button>
           </form>
 
@@ -110,31 +125,44 @@
       .getElementById("login-form")
       .addEventListener("submit", async (e) => {
         e.preventDefault();
+        const loginButton = document.getElementById("login-button");
+        if (loginButton?.disabled) return;
+
+        const setLoginLoading = (isLoading) => {
+          if (!loginButton) return;
+          loginButton.disabled = isLoading;
+          loginButton.classList.toggle("is-loading", isLoading);
+          loginButton.setAttribute("aria-busy", String(isLoading));
+        };
+
         const username = document
           .getElementById("username")
           .value.toLowerCase()
           .trim();
         const password = document.getElementById("password").value;
-        //offline fallback
-        if (!navigator.onLine) {
-          console.log("Offline mode detected");
-          await offlineLogin(username, password);
-          return;
-        }
+        let isRedirecting = false;
+        setLoginLoading(true);
 
-        //online login(firebase)
-        const q = query(
-          collection(db, "users"),
-          where("username", "==", username),
-        );
-        const snapshot = await getDocs(q);
+        try {
+          //offline fallback
+          if (!navigator.onLine) {
+            console.log("Offline mode detected");
+            await offlineLogin(username, password);
+            return;
+          }
 
-        if (!snapshot.empty) {
-          const userDocSnap = snapshot.docs[0];
-          const userDoc = userDocSnap.data();
-          const email = userDoc.email;
+          //online login(firebase)
+          const q = query(
+            collection(db, "users"),
+            where("username", "==", username),
+          );
+          const snapshot = await getDocs(q);
 
-          try {
+          if (!snapshot.empty) {
+            const userDocSnap = snapshot.docs[0];
+            const userDoc = userDocSnap.data();
+            const email = userDoc.email;
+
             const userCredential = await signInWithEmailAndPassword(
               auth,
               email,
@@ -143,6 +171,7 @@
             console.log("Login Success:", userCredential);
 
             const role = userDoc.role.toLowerCase();
+            isRedirecting = true;
 
             if (role === "admin") {
               window.location.href = "/admin/adminpanel.html";
@@ -157,21 +186,23 @@
 
               window.location.href = "/employee/siomai/userpanel.html";
             }
-          } catch (error) {
+          } else {
             M.toast({
-              html: "Invalid password",
+              html: "Username not found",
               classes: "red-toast",
               displayLength: 4000,
             });
-            console.error(error);
+            console.log("No match for:", username);
           }
-        } else {
+        } catch (error) {
           M.toast({
-            html: "Username not found",
+            html: "Invalid username or password",
             classes: "red-toast",
             displayLength: 4000,
           });
-          console.log("No match for:", username);
+          console.error(error);
+        } finally {
+          if (!isRedirecting) setLoginLoading(false);
         }
       });
   </script>

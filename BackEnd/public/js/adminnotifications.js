@@ -9,11 +9,16 @@ import {
   deleteDoc,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  requestDeviceNotificationPermission,
+  showDeviceNotification,
+} from "/js/deviceNotifications.js";
 
 let unsubscribeNotifications = null;
 let selectedNotificationIds = new Set();
 let notificationsById = new Map();
 let pendingDeleteNotificationIds = [];
+let hasLoadedInitialNotifications = false;
 
 function escapeHtml(value) {
   const div = document.createElement("div");
@@ -156,7 +161,13 @@ export function initManagerNotifications() {
       pendingDeleteNotificationIds = [];
     },
   });
-  bell.addEventListener("click", () => modal.open());
+  bell.addEventListener("click", async () => {
+    const permission = await requestDeviceNotificationPermission();
+    if (permission === "denied") {
+      showToast("Allow notifications in your browser settings to receive phone alerts.", "orange");
+    }
+    modal.open();
+  });
 
   document.getElementById("manager-select-all")?.addEventListener("change", (event) => {
     document.querySelectorAll(".manager-notification-select input").forEach((checkbox) => {
@@ -204,10 +215,30 @@ export function initManagerNotifications() {
 
   unsubscribeNotifications = onSnapshot(
     query(collection(db, "managerNotifications"), orderBy("updatedAt", "desc")),
-    (snapshot) => renderNotifications(snapshot.docs.map((entry) => ({
-      id: entry.id,
-      ...entry.data(),
-    }))),
+    (snapshot) => {
+      const notifications = snapshot.docs.map((entry) => ({
+        id: entry.id,
+        ...entry.data(),
+      }));
+
+      // The first snapshot contains old notifications, so do not replay them
+      // as phone alerts. Only genuinely new, unread notifications alert.
+      if (hasLoadedInitialNotifications) {
+        snapshot.docChanges()
+          .filter((change) => change.type === "added" && !change.doc.data().read)
+          .forEach((change) => {
+            const item = change.doc.data();
+            showDeviceNotification({
+              title: item.title || (item.type === "expense_report" ? "New expense report" : "Low stock alert"),
+              body: item.message || `${item.productName || "A product"} is running low on stock.`,
+              tag: `manager-notification-${change.doc.id}`,
+              url: "/admin/adminpanel.html",
+            }).catch((error) => console.error("Unable to show device notification:", error));
+          });
+      }
+      hasLoadedInitialNotifications = true;
+      renderNotifications(notifications);
+    },
     (error) => console.error("Unable to load manager notifications:", error),
   );
 }

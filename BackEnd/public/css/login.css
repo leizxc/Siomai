@@ -164,6 +164,39 @@ body {
     margin-bottom: 14px ;
 }
 
+.btn-login .login-button-loading {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.btn-login.is-loading {
+  cursor: wait;
+  opacity: 0.82;
+}
+
+.btn-login.is-loading .login-button-label {
+  display: none;
+}
+
+.btn-login.is-loading .login-button-loading {
+  display: inline-flex;
+}
+
+.login-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: login-spin 0.7s linear infinite;
+}
+
+@keyframes login-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Install Button */
 
 #installBtn {

@@ -1,5 +1,5 @@
-const staticCacheName = 'site-static-v16';
-const dynamicCache = 'site-dynamic-v16';
+const staticCacheName = 'site-static-v17';
+const dynamicCache = 'site-dynamic-v17';
 
 const assets = [
 './index.html',
@@ -22,6 +22,7 @@ const assets = [
   './js/IndexDB.js',
   './js/navemployee.js',
   './js/empoleyee.js',
+  './js/deviceNotifications.js',
 
   // Images
   './assets/queencassy.jpg',
@@ -107,6 +108,21 @@ self.addEventListener('fetch', evt => {
         }
         return new Response('Offline content unavailable', { status: 200, headers: { 'Content-Type': 'text/plain' } });
       });
+    })
+  );
+});
+
+// Tapping a notification from the phone notification bar returns the user to
+// the corresponding system page instead of opening an unrelated browser tab.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || './index.html';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      const existingClient = windowClients.find((client) => client.url.includes(targetUrl));
+      if (existingClient) return existingClient.focus();
+      return clients.openWindow(targetUrl);
     })
   );
 });
