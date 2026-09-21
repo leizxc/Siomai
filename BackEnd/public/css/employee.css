@@ -2413,8 +2413,11 @@ html.dark .payment-btn.active {
      above the fixed checkout area and bottom navigation. */
   body:has(.product-list) .main {
     min-height: 100dvh;
-    padding-bottom: calc(190px + env(safe-area-inset-bottom));
-    scroll-padding-bottom: calc(190px + env(safe-area-inset-bottom));
+    /* The checkout panel is fixed above the fixed bottom navigation. Keep
+       enough document space after the last card so it can scroll fully into
+       view instead of ending underneath either fixed element. */
+    padding-bottom: calc(260px + env(safe-area-inset-bottom));
+    scroll-padding-bottom: calc(260px + env(safe-area-inset-bottom));
   }
 
   html.dark .mobile-header.employee-topbar { border-color: #262626; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }

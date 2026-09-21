@@ -768,7 +768,7 @@ function renderProducts(products) {
           lowStock
             ? `<button class="lowstock-btn" type="button" data-id="${product.id}">
                  <i class="material-icons" aria-hidden="true">warning</i>
-v                 <span>Low stock</span>
+                 <span>Low stock</span>
                </button>`
             : ""
         }
