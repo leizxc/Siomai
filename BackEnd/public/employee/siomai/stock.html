@@ -6,47 +6,54 @@
     <div class="assigned-stock-user">
       <span class="material-icons">person</span>
       <div>
-        <small>Viewing inventory for</small
-        ><strong id="assignedEmployeeName">Your account</strong>
+        <small>Viewing inventory for</small>
+        <strong id="assignedEmployeeName">Your account</strong>
       </div>
     </div>
-  </section>     
+  </section>
 
   <section class="assigned-stock-summary">
     <article class="assigned-summary-card">
-      <div class="assigned-summary-icon">
-       <i class="material-icons">inventory_2</i>
+      <div class="assigned-summary-icon blue">
+        <i class="material-icons">inventory_2</i>
       </div>
       <div>
-        <span>Assigned products</span><strong id="totalProducts">0</strong
-        ><small>Items under your care</small>
+        <span>Assigned products</span>
+        <strong id="totalProducts">0</strong>
+        <small>Items under your care</small>
       </div>
     </article>
+
     <article class="assigned-summary-card">
-      <div class="assigned-summary-icon">
-       <i class="material-icons">check_circle</i>
+      <div class="assigned-summary-icon green">
+        <i class="material-icons">check_circle</i>
       </div>
       <div>
-        <span>Available stock</span><strong id="inStock">0</strong
-        ><small>Products ready to sell</small>
+        <span>Available stock</span>
+        <strong id="inStock">0</strong>
+        <small>Products ready to sell</small>
       </div>
     </article>
+
     <article class="assigned-summary-card">
-      <div class="assigned-summary-icon">
+      <div class="assigned-summary-icon amber">
         <i class="material-icons">warning_amber</i>
       </div>
       <div>
-        <span>Low stock</span><strong id="lowStock">0</strong
-        ><small>Needs your attention</small>
+        <span>Low stock</span>
+        <strong id="lowStock">0</strong>
+        <small>Needs your attention</small>
       </div>
     </article>
-    <article class="assigned-summary-card">
-      <div class="assigned-summary-icon">
+
+    <article class="assigned-summary-card" hidden>
+      <div class="assigned-summary-icon purple">
         <i class="material-icons">payments</i>
       </div>
       <div>
-        <span>Inventory value</span><strong id="inventoryValue">₱0.00</strong
-        ><small>Based on selling price</small>
+        <span>Inventory value</span>
+        <strong id="inventoryValue">₱0.00</strong>
+        <small>Based on selling price</small>
       </div>
     </article>
   </section>
@@ -57,14 +64,15 @@
         <h3>Your stock items</h3>
         <p>Updates automatically when the manager changes your assignment.</p>
       </div>
-      <label class="assigned-stock-search"
-        ><span class="material-icons">search</span
-        ><input
+      <label class="assigned-stock-search">
+        <span class="material-icons">search</span>
+        <input
           id="searchProduct"
           type="search"
           placeholder="Search assigned products"
           autocomplete="off"
-      /></label>
+        />
+      </label>
     </div>
     <div class="assigned-stock-table-wrap">
       <table class="assigned-stock-table">

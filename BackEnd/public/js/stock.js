@@ -48,12 +48,9 @@ function renderStockPage() {
   const products = assignedProducts.filter((product) => `${product.name || product.product_name || ""} ${product.category || ""} ${product.role || ""}`.toLowerCase().includes(search));
   const inStock = assignedProducts.filter((product) => getQuantity(product) > 0);
   const lowStock = inStock.filter(isLowStock);
-  const value = assignedProducts.reduce((sum, product) => sum + getQuantity(product) * Number(product.price || 0), 0);
-
   setText("#totalProducts", assignedProducts.length);
   setText("#inStock", inStock.length);
   setText("#lowStock", lowStock.length);
-  setText("#inventoryValue", formatCurrency(value));
 
   const tbody = document.querySelector("#stockTableBody");
   if (!tbody) return;
@@ -79,7 +76,18 @@ function renderStockPage() {
 }
 
 function getQuantity(product) { return Number(product.pieces ?? product.stock ?? product.current_stock ?? 0); }
-function isLowStock(product) { return (product.unit || "").toLowerCase() === "pack" ? getQuantity(product) <= 1 : getQuantity(product) <= 20; }
+function isLowStock(product) {
+  const unit = String(product.unit || "").trim().toLowerCase();
+  const category = String(product.category || product.role || "")
+    .trim()
+    .toLowerCase();
+  const isUnlimited =
+    ["kaban", "kg", "packs"].includes(unit) ||
+    ["drinks", "rice"].includes(category);
+  const isPieceBased = ["piece", "pieces", "pcs", "pc", "pack"].includes(unit);
+
+  return !isUnlimited && isPieceBased && getQuantity(product) > 0 && getQuantity(product) <= 25;
+}
 function formatUnit(unit) { return ({ piece: "pcs", pieces: "pcs", pack: "packs", kg: "kg", liter: "L" })[(unit || "piece").toLowerCase()] || unit || "pcs"; }
 function formatQuantity(value) { return Number.isInteger(value) ? String(value) : value.toFixed(2); }
 function formatCurrency(value) { return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(value); }

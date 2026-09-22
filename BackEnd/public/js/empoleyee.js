@@ -47,29 +47,40 @@ function formatQuantity(value) {
 // ========================================
 // LOW STOCK CHECK
 // ========================================
-// pack -> low kapag <= 1 pack na lang
-// kg   -> low kapag <= 1 kg na lang
-// piece/pcs (default) -> low kapag <= 20 pcs na lang
+// Low-stock warnings apply only to products counted by pieces.  Bulk units
+// and the Drinks/Rice categories do not have a low-stock/order limit.
+function hasUnlimitedOrder(product) {
+  const unit = String(product.unit || "").trim().toLowerCase();
+  const category = String(product.category || product.role || "")
+    .trim()
+    .toLowerCase();
+  return (
+    ["kaban", "kg", "packs"].includes(unit) ||
+    ["drinks", "rice"].includes(category)
+  );
+}
+
 function isLowStock(product) {
-  const unit = product.unit || "piece";
+  const unit = String(product.unit || "piece").trim().toLowerCase();
+  const isPieceBased = ["piece", "pieces", "pcs", "pc", "pack"].includes(unit);
+  const quantity = Number(product.pieces ?? product.stock) || 0;
 
-  if (unit === "pack") {
-    return Number(product.packs) <= 1;
-  }
-
-  if (unit === "kg") {
-    return Number(product.pieces) <= 1;
-  }
-
-  return Number(product.pieces) <= 20;
+  return !hasUnlimitedOrder(product) && isPieceBased && quantity > 0 && quantity <= 25;
 }
 
 function getProductStockLabel(product) {
   const pieces = Number(product.pieces ?? product.stock) || 0;
-  if (product.unit === "pack") {
+  if (String(product.unit || "").trim().toLowerCase() === "pack") {
     return `${formatQuantity(product.packs)} packs (${formatQuantity(pieces)} pcs)`;
   }
   return `${formatQuantity(pieces)} ${product.unit || "pcs"}`;
+}
+
+function getCardStockLabel(product) {
+  const unit = String(product.unit || "").trim().toLowerCase();
+  if (unit === "kaban") return "Kaldero";
+  if (unit === "packs") return "Container";
+  return getProductStockLabel(product);
 }
 
 async function openLowStockConfirmation(product) {
@@ -334,14 +345,14 @@ function addToCart(product) {
   const existing = cart.find((item) => item.id === product.id);
 
   if (existing) {
-    if (existing.qty < product.stock) {
+    if (hasUnlimitedOrder(product) || existing.qty < product.stock) {
       existing.qty += 1;
     } else {
       M.toast({ html: "Not enough stock!", classes: "red rounded" });
       return;
     }
   } else {
-    if (product.stock <= 0) {
+    if (!hasUnlimitedOrder(product) && product.stock <= 0) {
       M.toast({ html: "Out of stock!", classes: "red rounded" });
       return;
     }
@@ -405,7 +416,7 @@ function renderCart() {
 
     row.innerHTML = `
       <td>${item.name}</td>
-      <td><input type="number" min="1" max="${item.stock}" value="${item.qty}" data-index="${index}" class="qty-input"></td>
+      <td><input type="number" min="1" ${hasUnlimitedOrder(item) ? "" : `max="${item.stock}"`} value="${item.qty}" data-index="${index}" class="qty-input"></td>
       <td>₱${item.price.toFixed(2)}</td>
       <td>₱${total.toFixed(2)}</td>
       <td><button class="btn red remove-btn" data-index="${index}"><i class="material-icons">delete</i></button></td>
@@ -427,7 +438,7 @@ function renderCart() {
         quantity = 1;
       }
 
-      if (quantity > cart[idx].stock) {
+      if (!hasUnlimitedOrder(cart[idx]) && quantity > cart[idx].stock) {
         quantity = cart[idx].stock;
 
         M.toast({
@@ -674,7 +685,7 @@ function filterProducts() {
   const filteredProducts = allProducts.filter((product) => {
     const stock = Number(product.pieces ?? product.stock) || 0;
 
-    if (stock <= 0) return false;
+    if (stock <= 0 && !hasUnlimitedOrder(product)) return false;
 
     // Safety net: enforce role AND employeeId visibility here too, in
     // case allProducts was ever populated from a path that skipped the
@@ -782,11 +793,15 @@ function renderProducts(products) {
           data-packs="${product.packs ?? ""}"
           data-pieces-per-pack="${product.piecesPerPack}"
           data-unit="${product.unit || "piece"}"
+          data-category="${product.category || product.role || ""}"
         >
           <i class="material-icons">add</i>
         </button>
       </div>
     `;
+
+    const productStock = card.querySelector(".product-stock");
+    if (productStock) productStock.textContent = getCardStockLabel(product);
 
     productList.appendChild(card);
   });
@@ -806,6 +821,7 @@ function renderProducts(products) {
         packs: btn.dataset.packs === "" ? null : Number(btn.dataset.packs),
         pieces_per_pack: Number(btn.dataset.piecesPerPack) || 1,
         unit: btn.dataset.unit,
+        category: btn.dataset.category,
       });
     });
   });

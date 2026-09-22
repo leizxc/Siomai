@@ -21,6 +21,7 @@ let unsubscribeCategories = null;
 
 let selectedCategoryFilter = "all";
 let categoryNameMap = {};
+let shouldLoadInventoryAfterCategories = false;
 
 // PAGINATION
 const PAGE_SIZE = 10;
@@ -29,6 +30,36 @@ let inventoryRowsCache = [];
 
 function toUpper(value) {
   return (value || "").trim().toUpperCase();
+}
+
+// Low-stock status is only relevant for products whose stock is counted in
+// pieces. Bulk units and the Drinks/Rice categories do not use this limit.
+function isPieceBasedUnit(unit) {
+  return ["piece", "pieces", "pcs", "pc", "pack"].includes(
+    String(unit || "").trim().toLowerCase(),
+  );
+}
+
+function isLowStockExempt(unit, category) {
+  const normalizedUnit = String(unit || "").trim().toLowerCase();
+  const normalizedCategory = String(category || "").trim().toLowerCase();
+
+  return (
+    ["kaban", "kg", "packs"].includes(normalizedUnit) ||
+    ["drinks", "rice"].includes(normalizedCategory)
+  );
+}
+
+// M.Modal.init() does not replace an existing instance by itself. Recreating
+// one without destroying the old instance leaves duplicate listeners and
+// overlays behind after several opens.
+function replaceModalInstance(element, options) {
+  const existing = M.Modal.getInstance(element);
+  if (existing) {
+    if (existing.isOpen) existing.close();
+    existing.destroy();
+  }
+  return M.Modal.init(element, options);
 }
 
 function bindLiveUppercase(input) {
@@ -60,7 +91,9 @@ function confirmDeletion(title, message) {
   if (!modalElement || !confirmButton || !cancelButton) {
     return Promise.resolve(false);
   }
-  const modalInstance = M.Modal.init(modalElement, { dismissible: false });
+  const modalInstance = replaceModalInstance(modalElement, {
+    dismissible: false,
+  });
 
   if (titleElement) titleElement.textContent = title;
   if (messageElement) messageElement.textContent = message;
@@ -96,9 +129,9 @@ function confirmRecover(
     return Promise.resolve(false);
   }
 
-  let modalInstance = M.Modal.getInstance(modalElement);
-  if (modalInstance) modalInstance.destroy();
-  modalInstance = M.Modal.init(modalElement, { dismissible: false });
+  const modalInstance = replaceModalInstance(modalElement, {
+    dismissible: false,
+  });
 
   if (titleElement) titleElement.textContent = title;
   if (messageElement) messageElement.textContent = message;
@@ -221,11 +254,13 @@ export function loadInventory() {
         unitTotals[bucket] += data.stock_quantity;
 
         let status = "Available";
-        const lowStockThreshold = data.low_stock_threshold || 25;
+        const canShowLowStock =
+          isPieceBasedUnit(data.unit_type) &&
+          !isLowStockExempt(data.unit_type, data.category);
 
         if (data.quantity <= 0) {
           status = "On Selling";
-        } else if (data.stock_quantity <= lowStockThreshold) {
+        } else if (canShowLowStock && data.stock_quantity <= 25) {
           status = "Low Stock";
         }
 
@@ -575,7 +610,7 @@ function bindInventoryRowButtons() {
 
       const modalElem = document.getElementById("modal-edit");
       if (!modalElem) return;
-      const modalInstance = M.Modal.init(modalElem);
+      const modalInstance = replaceModalInstance(modalElem);
       modalInstance.open();
 
       const saveBtn = document.getElementById("edit-save");
@@ -625,7 +660,11 @@ function bindInventoryRowButtons() {
         } else {
           newStock = newQuantity;
         }
-        const newTotalValue = newStock * newPrice;
+        // Kaban prices are per kaban, not per kilogram.  Keep `newStock`
+        // in kg for inventory tracking, but calculate its monetary value
+        // from the number of kaban entered.
+        const newTotalValue =
+          unitType === "kaban" ? newQuantity * newPrice : newStock * newPrice;
 
         const updateData = {
           product_name: newName,
@@ -739,7 +778,8 @@ export async function addProduct(
     stockQty = quantity;
     totalValue = quantity * unitPrice;
   }
-  // KABAN → kg (quantity × weight per kaban)
+  // KABAN → kg (quantity × weight per kaban) for stock tracking.
+  // Its unit price remains per kaban, so value uses the original quantity.
   else if (unitType === "kaban") {
     const weightPerKaban = Number(extraFields.weight_per_kaban || 0);
     if (weightPerKaban <= 0) {
@@ -750,7 +790,7 @@ export async function addProduct(
       return;
     }
     stockQty = quantity * weightPerKaban;
-    totalValue = stockQty * unitPrice;
+    totalValue = quantity * unitPrice;
   }
   // KG → kg
   else if (unitType === "kg") {
@@ -972,7 +1012,8 @@ function renderCategoryPills(container, snapshot) {
   );
 
   // If "all" or invalid selection, select the first category
-  if (!selectedExists || selectedCategoryFilter === "all") {
+  const selectionChanged = !selectedExists || selectedCategoryFilter === "all";
+  if (selectionChanged) {
     selectedCategoryFilter = categoriesWithData[0].id;
   }
 
@@ -990,6 +1031,14 @@ function renderCategoryPills(container, snapshot) {
   });
 
   syncDeleteCategoryButtonState();
+
+  // Wait for the category snapshot before loading inventory. This prevents
+  // the initial Summary card from briefly rendering the combined “All” data.
+  if (selectionChanged || shouldLoadInventoryAfterCategories) {
+    shouldLoadInventoryAfterCategories = false;
+    currentPage = 1;
+    loadInventory();
+  }
 }
 
 function selectCategoryPill(categoryId) {
@@ -1137,7 +1186,7 @@ function bindAddCategoryButton() {
     const modalElem = document.getElementById("modal-add-category");
     if (!modalElem) return;
 
-    const modalInstance = M.Modal.init(modalElem, {
+    const modalInstance = replaceModalInstance(modalElem, {
       onOpenEnd() {
         const selects = document.querySelectorAll("select");
         if (selects.length) M.FormSelect.init(selects);
@@ -1802,15 +1851,14 @@ function bindArchiveHistoryButtons() {
 
 export async function initInventoryPage() {
   currentPage = 1;
+  shouldLoadInventoryAfterCategories = true;
   processExpiredArchives().catch(console.error);
 
   // Load categories first para malaman ang unang category
   loadCategories();
 
-  // Then load inventory with the first category selected
-  setTimeout(() => {
-    loadInventory();
-  }, 100);
+  // loadInventory() is started by renderCategoryPills() only after a real
+  // category has been selected, so the first summary is never "All".
 
   bindInventoryPageButtons();
 
