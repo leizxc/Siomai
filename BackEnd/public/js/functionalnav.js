@@ -3,10 +3,6 @@ let isNavigating = false;
 let currentCleanup = null;
 
 // Materialize keeps modal instances and their overlays outside of application
-// state.  Since this dashboard replaces #content with innerHTML, leaving an
-// instance alive makes its overlay/focus handlers point at detached DOM.
-// Dispose them before a section is replaced so repeatedly opening modals (or
-// changing pages while one is open) cannot leave the UI locked.
 function disposeSectionModals(root) {
   if (typeof M === "undefined" || !root) return;
 
@@ -15,7 +11,6 @@ function disposeSectionModals(root) {
     if (!instance) return;
 
     // close() updates Materialize's internal open-modal counter before
-    // destroy() removes the element-specific event listeners and overlay.
     if (instance.isOpen) instance.close();
     instance.destroy();
   });

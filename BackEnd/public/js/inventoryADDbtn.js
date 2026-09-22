@@ -75,7 +75,7 @@ export function initInventoryModal() {
         : 0;
 
       if (!name || !category || !packsStr || !priceStr) {
-        alert("Please fill all required fields!");
+        M.toast({ html: "Please fill all required fields!", classes: "red rounded" });
         saveBtn.disabled = false;
         return;
       }
@@ -117,7 +117,7 @@ export function initInventoryModal() {
         modalInstance.close();
       } catch (err) {
         console.error("SAVE ERROR:", err);
-        alert("Failed to save product: " + err.message);
+        M.toast({ html: "Failed to save product: " + err.message, classes: "red rounded" });
       } finally {
         saveBtn.disabled = false;
       }
