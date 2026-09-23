@@ -107,13 +107,15 @@
       where,
       getDocs,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import {
+        import {
       syncUsersFromFirebase,
       offlineLogin,
       SyncProductFromFirebase,
     } from "/js/IndexDB.js";
+    import { requestDeviceNotificationPermission } from "/js/deviceNotifications.js";
 
     // auto-sync users and products once online
+
     window.addEventListener("load", async () => {
       if (navigator.onLine) {
         await syncUsersFromFirebase();
@@ -170,12 +172,17 @@
             );
             console.log("Login Success:", userCredential);
 
-            const role = userDoc.role.toLowerCase();
+                        const role = userDoc.role.toLowerCase();
             isRedirecting = true;
 
+            // Request notification permission and save token
+            await requestDeviceNotificationPermission(userDocSnap.id);
+
             if (role === "admin") {
+              sessionStorage.setItem("adminUserDocId", userDocSnap.id);
               window.location.href = "/admin/adminpanel.html";
             } else {
+
               // Bawat non-admin role (siomai, pares, at anumang bagong cart sa
               // hinaharap) ay dumadaan na lang sa IISANG POS page. Ang role
               // mismo ang nagpapaiba sa nakikita, hindi ang URL/folder.

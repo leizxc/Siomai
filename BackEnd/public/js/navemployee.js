@@ -8,14 +8,18 @@ let currentCleanup = null;
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Sections are replaced with innerHTML.  A Materialize modal keeps its
+// overlay and keyboard/focus listeners outside that markup, so dispose every
+// section modal first to prevent a stale overlay from blocking future clicks.
 function disposeSectionModals(root) {
   if (typeof M === "undefined" || !root) return;
 
-  root.querySelectorAll(".modal").forEach((modal) => {
-    const instance = M.Modal.getInstance(modal);
-    if (!instance) return;
-    if (instance.isOpen) instance.close();
-    instance.destroy();
+  root.querySelectorAll(".modal").forEach((modalElement) => {
+    const modal = M.Modal.getInstance(modalElement);
+    if (!modal) return;
+
+    if (modal.isOpen) modal.close();
+    modal.destroy();
   });
 
   root.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
@@ -25,6 +29,18 @@ function disposeSectionModals(root) {
     if (M.Modal && typeof M.Modal._modalsOpen === "number") {
       M.Modal._modalsOpen = 0;
     }
+  }
+}
+
+// The notification bell lives in the persistent employee header while its
+// modal is supplied by userpanel.html. Keep that modal outside #content so a
+// section change cannot leave the bell pointing to a detached modal instance.
+function preserveEmployeeNotificationModal(root) {
+  const notificationModal = root?.querySelector(
+    "#employee-notifications-modal",
+  );
+  if (notificationModal && notificationModal.parentElement !== document.body) {
+    document.body.appendChild(notificationModal);
   }
 }
 
@@ -87,9 +103,13 @@ async function loadSection(page) {
       throw new Error("#content not found");
     }
 
-    disposeSectionModals(main);
-
     const pageContent = parsedPage.querySelector("#content");
+
+    preserveEmployeeNotificationModal(main);
+    // userpanel.html includes the original markup as well. The persistent
+    // instance above is the only notification modal that should remain.
+    parsedPage.querySelector("#employee-notifications-modal")?.remove();
+    disposeSectionModals(main);
 
     if (pageContent) {
       main.innerHTML = pageContent.innerHTML;
@@ -267,7 +287,7 @@ document.addEventListener(
       profileMenuButton.setAttribute("aria-expanded", "false");
     };
     profileMenuButton?.addEventListener("click", () => {
-      if (!profileMenuPanel || !window.matchMedia("(max-width: 768px)").matches) return;
+      if (!profileMenuPanel) return;
       const willOpen = profileMenuPanel.hidden;
       profileMenuPanel.hidden = !willOpen;
       profileMenuButton.setAttribute("aria-expanded", String(willOpen));
@@ -322,15 +342,6 @@ document.addEventListener(
       (event) => {
         event.preventDefault();
         loadSection("report.html");
-      }
-    );
-
-    navItems[4]?.addEventListener(
-      "click",
-      (event) => {
-        event.preventDefault();
-        window.location.href =
-          "/index.html";
       }
     );
 

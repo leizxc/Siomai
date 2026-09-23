@@ -60,13 +60,42 @@ export async function initEmployeeNotifications() {
   if (!bell || !badge || !modalElement || unsubscribeReports || unsubscribeAttendanceNotifications) return;
 
   const modal = M.Modal.getInstance(modalElement) || M.Modal.init(modalElement);
-  bell.addEventListener("click", async () => {
-    const permission = await requestDeviceNotificationPermission();
+  const closeButton = modalElement.querySelector(".modal-close");
+
+  // Use the same instance that opened the modal. This remains reliable even
+  // after the employee content section is replaced.
+  if (closeButton) {
+    closeButton.onclick = () => modal.close();
+  }
+
+  // Materialize normally handles its overlay click. Keep an explicit fallback
+  // because this modal is preserved while the employee content DOM changes.
+  if (modalElement._outsideCloseHandler) {
+    document.removeEventListener(
+      "pointerdown",
+      modalElement._outsideCloseHandler,
+      true,
+    );
+  }
+  modalElement._outsideCloseHandler = (event) => {
+    if (modal.isOpen && !modalElement.contains(event.target)) {
+      modal.close();
+    }
+  };
+  document.addEventListener(
+    "pointerdown",
+    modalElement._outsideCloseHandler,
+    true,
+  );
+
+  bell.onclick = async () => {
+    const userDocId = sessionStorage.getItem("employeeUserDocId");
+    const permission = await requestDeviceNotificationPermission(userDocId);
     if (permission === "denied" && typeof M !== "undefined") {
       M.toast({ html: "Allow notifications in your browser settings to receive phone alerts.", classes: "orange" });
     }
     modal.open();
-  });
+  };
   const user = await new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => { unsubscribe(); resolve(currentUser); });
   });

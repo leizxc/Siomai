@@ -84,6 +84,7 @@ function bindAddRoleButton() {
   };
 
   saveRoleBtn.onclick = async () => {
+    if (saveRoleBtn.disabled) return;
     const roleName = newRoleInput.value.trim().toUpperCase();
 
     if (!roleName) {
@@ -98,22 +99,30 @@ function bindAddRoleButton() {
       return;
     }
 
-    const existing = await getDocs(
-      query(collection(db, "roles"), where("name", "==", roleName)),
-    );
-    if (!existing.empty) {
-      M.toast({ html: "That role already exists.", classes: "red rounded" });
-      return;
+    saveRoleBtn.disabled = true;
+    try {
+      const existing = await getDocs(
+        query(collection(db, "roles"), where("name", "==", roleName)),
+      );
+      if (!existing.empty) {
+        M.toast({ html: "That role already exists.", classes: "red rounded" });
+        return;
+      }
+
+      await addDoc(collection(db, "roles"), {
+        name: roleName,
+        created_at: serverTimestamp(),
+      });
+
+      M.toast({ html: "New Role successfully save!", classes: "green rounded" });
+      newRoleInput.value = "";
+      modalInstance.close();
+    } catch (error) {
+      console.error("Unable to add role:", error);
+      M.toast({ html: "Failed to save the role.", classes: "red rounded" });
+    } finally {
+      saveRoleBtn.disabled = false;
     }
-
-    await addDoc(collection(db, "roles"), {
-      name: roleName,
-      created_at: serverTimestamp(),
-    });
-
-    M.toast({ html: "New Role successfully save!", classes: "green rounded" });
-    newRoleInput.value = "";
-    modalInstance.close();
   };
 }
 

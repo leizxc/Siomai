@@ -151,6 +151,27 @@ export function initManagerNotifications() {
   ) return;
 
   const modal = M.Modal.getInstance(modalElement) || M.Modal.init(modalElement);
+  const closeButton = modalElement.querySelector(".modal-close");
+  if (closeButton) {
+    closeButton.onclick = () => modal.close();
+  }
+  if (modalElement._outsideCloseHandler) {
+    document.removeEventListener(
+      "pointerdown",
+      modalElement._outsideCloseHandler,
+      true,
+    );
+  }
+  modalElement._outsideCloseHandler = (event) => {
+    if (modal.isOpen && !modalElement.contains(event.target)) {
+      modal.close();
+    }
+  };
+  document.addEventListener(
+    "pointerdown",
+    modalElement._outsideCloseHandler,
+    true,
+  );
   const existingDeleteModal = M.Modal.getInstance(deleteModalElement);
   if (existingDeleteModal) {
     if (existingDeleteModal.isOpen) existingDeleteModal.close();
@@ -161,13 +182,14 @@ export function initManagerNotifications() {
       pendingDeleteNotificationIds = [];
     },
   });
-  bell.addEventListener("click", async () => {
-    const permission = await requestDeviceNotificationPermission();
+  bell.onclick = async () => {
+    const userDocId = sessionStorage.getItem("adminUserDocId");
+    const permission = await requestDeviceNotificationPermission(userDocId);
     if (permission === "denied") {
       showToast("Allow notifications in your browser settings to receive phone alerts.", "orange");
     }
     modal.open();
-  });
+  };
 
   document.getElementById("manager-select-all")?.addEventListener("change", (event) => {
     document.querySelectorAll(".manager-notification-select input").forEach((checkbox) => {
