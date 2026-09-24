@@ -18,8 +18,9 @@ const assets = [
   "./css/login.css",
   "./css/admin.css",
   "./css/materialize.min.css",
+  "./css/employee.css",
 
-  // JS
+  // JS 
   "./js/app.js",
   "./js/install.js",
   "./js/refresh.js",

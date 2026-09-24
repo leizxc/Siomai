@@ -11,9 +11,6 @@ export async function loadstock() {
   const employee = await getCurrentEmployee();
   if (!employee) return renderMessage("Your employee account could not be found.");
 
-  const employeeName = document.querySelector("#assignedEmployeeName");
-  if (employeeName) employeeName.textContent = `${employee.fname || ""} ${employee.lname || ""}`.trim() || "Your account";
-
   unsubscribeStock?.();
   unsubscribeStock = onSnapshot(
     query(collection(db, "products"), where("employeeId", "==", employee.id)),
@@ -51,6 +48,10 @@ function renderStockPage() {
   setText("#totalProducts", assignedProducts.length);
   setText("#inStock", inStock.length);
   setText("#lowStock", lowStock.length);
+  const categories = new Set(
+    assignedProducts.map((product) => String(product.category || product.role || "Uncategorized").trim().toLowerCase() || "uncategorized"),
+  );
+  setText("#totalCategories", categories.size);
 
   const tbody = document.querySelector("#stockTableBody");
   if (!tbody) return;
