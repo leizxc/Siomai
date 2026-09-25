@@ -195,6 +195,20 @@ body {
 
 .manager-notification-bell .material-icons { font-size: 26px; }
 
+.manager-notification-bell.has-notification .material-icons {
+  animation: manager-notification-bell-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes manager-notification-bell-pulse {
+  0%, 100% { transform: rotate(0); }
+  10%, 30% { transform: rotate(12deg); }
+  20%, 40% { transform: rotate(-12deg); }
+  50%, 70% { transform: rotate(0); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-8deg); }
+  90% { transform: rotate(0); }
+}
+
 #manager-notification-count {
   position: absolute;
   top: -5px;
@@ -213,9 +227,14 @@ body {
 .manager-notification { display: flex; gap: 12px; padding: 13px 4px; border-bottom: 1px solid var(--border); align-items: center; }
 .manager-notification.unread { background: #fff8e1; }
 .manager-notification > i { color: #f9a825; }
-.manager-notification div { flex: 1; }
+.manager-notification > div { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .manager-notification p, .manager-notification small { margin: 3px 0 0; color: var(--text-secondary); }
 .manager-notification-empty { color: var(--text-secondary); }
+.manager-notification-select { display: inline-flex; flex: 0 0 18px; align-items: center; justify-content: center; width: 18px; min-width: 18px; }
+.manager-notification-select input { position: static !important; display: inline-block !important; flex: 0 0 16px; width: 16px !important; height: 16px !important; margin: 0; opacity: 1 !important; pointer-events: auto !important; appearance: auto !important; -webkit-appearance: checkbox !important; }
+.manager-notification-select > span { display: none !important; }
+.manager-notification .mark-notification-read,
+.manager-notification .notification-read-state { flex: 0 0 auto; white-space: nowrap; }
 
 .admin-profile {
   display: flex;
@@ -5111,22 +5130,128 @@ html.dark #modal-product-history-assign td:nth-child(6) strong {
 @media screen and (max-width: 600px) { .modal { width: 94vw !important; max-height: 88vh !important; border-radius: 12px !important; }.modal.modal-fixed-footer { height: 88vh !important; }.modal .modal-content { max-height: calc(88vh - 70px); padding: 20px !important; }.modal .modal-footer { min-height: 60px; padding: 10px 14px; } }
 
 #manager-notifications-modal .modal-content {
-  max-height: calc(min(82vh, 720px) - 150px) !important;
+  max-height: calc(min(82dvh, 720px) - 76px) !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
+#manager-notifications-modal {
+  width: min(92vw, 560px) !important;
+  height: min(82dvh, 720px) !important;
+  max-height: min(82dvh, 720px) !important;
+}
+
+#manager-notifications-modal.open {
+  display: flex !important;
+  flex-direction: column;
+}
+
+#manager-notifications-modal.open .modal-content {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#manager-notifications-modal.open .modal-footer {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+html.dark #manager-notifications-modal .modal-content,
+html.dark #manager-notifications-modal .modal-footer {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark #manager-notifications-modal .notification-selection-toolbar {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+html.dark #manager-notifications-modal .manager-notification {
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+html.dark #manager-notifications-modal .manager-notification.unread {
+  background: #2b2413;
+}
+
+html.dark #manager-notifications-modal .manager-notification strong,
+html.dark #manager-notifications-modal .manager-notification p,
+html.dark #manager-notifications-modal .manager-notification small {
+  color: var(--text-primary) !important;
+}
+
+html.dark #manager-notifications-modal .manager-notification small {
+  color: var(--text-secondary) !important;
+}
+
+html.dark #manager-notifications-modal .manager-notification-empty {
+  color: var(--text-secondary);
+}
+
+html.dark #manager-notifications-modal input[type="checkbox"] {
+  color-scheme: dark;
+  accent-color: var(--accent);
+}
+
+html.dark #manager-notifications-modal .modal-footer #delete-manager-selected {
+  background: #4b2525 !important;
+  border-color: #4b2525 !important;
+  color: #fca5a5 !important;
+  opacity: 0.75;
+}
+
+html.dark #manager-notifications-modal .modal-footer #delete-manager-selected:not(:disabled) {
+  background: #c62828 !important;
+  border-color: #c62828 !important;
+  color: #fff !important;
+  opacity: 1;
+}
+
+html.dark #delete-notifications-modal #confirm-delete-notifications.btn.red {
+  background: #c62828 !important;
+  border-color: #c62828 !important;
+  color: #fff !important;
+}
+
+#manager-notifications-modal #mark-manager-selected-read:disabled,
+#manager-notifications-modal #delete-manager-selected:disabled {
+  background: #e5e7eb !important;
+  border-color: #e5e7eb !important;
+  color: #9ca3af !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+html.dark #manager-notifications-modal .modal-footer #mark-manager-selected-read:disabled,
+html.dark #manager-notifications-modal .modal-footer #delete-manager-selected:disabled {
+  background: #292929 !important;
+  border-color: #3a3a3a !important;
+  color: #777 !important;
+}
+
+html.dark #manager-notifications-modal #mark-manager-selected-read:not(:disabled) {
+  background: #1a1a1a !important;
+  border-color: #444 !important;
+  color: var(--text-primary) !important;
+}
+
 @media screen and (max-width: 600px) {
   #manager-notifications-modal {
     width: calc(100vw - 24px) !important;
+    height: calc(100dvh - 140px) !important;
     max-height: calc(100dvh - 140px) !important;
   }
 
   #manager-notifications-modal.open {
     display: flex !important;
     flex-direction: column;
-    height: auto !important;
+    height: calc(100dvh - 140px) !important;
     top: calc(50% + 28px) !important;
     transform: translate(-50%, -50%) !important;
   }

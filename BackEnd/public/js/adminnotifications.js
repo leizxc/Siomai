@@ -38,8 +38,11 @@ function formatDate(timestamp) {
 
 function renderNotifications(notifications) {
   const badge = document.getElementById("manager-notification-count");
+  const bell = document.getElementById("manager-notification-bell");
   const list = document.getElementById("manager-notification-list");
   const unreadCount = notifications.filter((item) => !item.read).length;
+
+  bell?.classList.toggle("has-notification", unreadCount > 0);
 
   if (badge) {
     badge.textContent = unreadCount > 9 ? "9+" : String(unreadCount);
@@ -53,6 +56,7 @@ function renderNotifications(notifications) {
 
   if (!notifications.length) {
     list.innerHTML = '<p class="manager-notification-empty">No notifications.</p>';
+    syncSelectionControls(notifications);
     return;
   }
 
@@ -100,7 +104,6 @@ function syncSelectionControls(notifications = []) {
   const deleteSelected = document.getElementById("delete-manager-selected");
   const selectedCount = selectedNotificationIds.size;
   const unreadSelectedCount = [...selectedNotificationIds].filter((id) => !notificationsById.get(id)?.read).length;
-
   if (count) count.textContent = `${selectedCount} selected`;
   if (selectAll) {
     selectAll.checked = notifications.length > 0 && selectedCount === notifications.length;
@@ -180,7 +183,11 @@ export function initManagerNotifications() {
     );
   }
   modalElement._outsideCloseHandler = (event) => {
-    if (modal.isOpen && !modalElement.contains(event.target)) {
+    if (
+      modal.isOpen &&
+      !deleteModal?.isOpen &&
+      !modalElement.contains(event.target)
+    ) {
       modal.close();
     }
   };
@@ -219,7 +226,10 @@ export function initManagerNotifications() {
 
   document.getElementById("mark-manager-selected-read")?.addEventListener("click", async () => {
     const ids = [...selectedNotificationIds].filter((id) => !notificationsById.get(id)?.read);
-    if (!ids.length) return;
+    if (!ids.length) {
+      showToast("The selected notifications are already read.", "orange");
+      return;
+    }
     await Promise.all(ids.map((id) => markNotificationRead(id)));
     selectedNotificationIds.clear();
     showToast(`${ids.length} notification${ids.length > 1 ? "s" : ""} marked as read.`, "green");

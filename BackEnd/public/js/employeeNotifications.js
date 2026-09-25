@@ -115,7 +115,11 @@ export async function initEmployeeNotifications() {
     );
   }
   modalElement._outsideCloseHandler = (event) => {
-    if (modal.isOpen && !modalElement.contains(event.target)) {
+    if (
+      modal.isOpen &&
+      !deleteModal.isOpen &&
+      !modalElement.contains(event.target)
+    ) {
       modal.close();
     }
   };

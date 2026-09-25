@@ -29,6 +29,7 @@ let unsubscribeAttendance = null;
 let statsTimer = null;
 let attendanceHistory = [];
 let selectedAttendanceRange = "today";
+let pendingAttendanceAction = null;
 
 // ========================================
 // INITIALIZE ATTENDANCE
@@ -306,6 +307,7 @@ export function stopAttendancePage() {
   clearInterval(statsTimer);
   statsTimer = null;
   attendanceHistory = [];
+  closeAttendanceConfirmation();
 
   console.log(
     "Attendance page stopped."
@@ -551,25 +553,72 @@ function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
     Time In
   `;
 
-  timeInButton.onclick = async () => {
+  timeInButton.onclick = () => {
     if (currentAttendance) return;
 
+    openAttendanceConfirmation("time-in");
+  };
+}
+
+function openAttendanceConfirmation(action) {
+  const modal = document.querySelector("#attendance-confirmation");
+  const title = document.querySelector("#attendance-confirmation-title");
+  const message = document.querySelector("#attendance-confirmation-message");
+  const confirmButton = document.querySelector("#attendance-confirm-action");
+  if (!modal || !confirmButton) return;
+
+  const isTimeOut = action === "time-out";
+  pendingAttendanceAction = action;
+  title.textContent = isTimeOut ? "Confirm Time Out" : "Confirm Time In";
+  message.textContent = isTimeOut
+    ? "Are you sure you want to submit your time-out request?"
+    : "Are you sure you want to submit your time-in request?";
+  confirmButton.textContent = isTimeOut ? "Yes, Time Out" : "Yes, Time In";
+  const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
+  instance.open();
+}
+
+function closeAttendanceConfirmation() {
+  const modal = document.querySelector("#attendance-confirmation");
+  const instance = modal && M.Modal.getInstance(modal);
+  if (instance?.isOpen) instance.close();
+  pendingAttendanceAction = null;
+}
+
+async function submitConfirmedAttendanceAction() {
+  const action = pendingAttendanceAction;
+  const confirmButton = document.querySelector("#attendance-confirm-action");
+  const timeInButton = document.querySelector("#time-in-button");
+  if (!action || !confirmButton || !timeInButton) return;
+
+  closeAttendanceConfirmation();
+
+  if (action === "time-in") {
+    const user = auth.currentUser;
+    const attendanceRef = currentAttendanceRef;
+    if (!user || !attendanceRef || currentAttendance) return;
     timeInButton.disabled = true;
     timeInButton.textContent = "Sending request...";
 
-    const attendanceData = {
-      userId: user.uid,
-      fname,
-      lname,
-      email: user.email || "",
-      status: "pending",
-      type: "time_in_request",
-      attendanceDate: today,
-      requestedAt: serverTimestamp(),
-      createdAt: serverTimestamp(),
-    };
-
     try {
+      const employeeQuery = query(collection(db, "employees"), where("uid", "==", user.uid));
+      const employeeSnapshot = await getDocs(employeeQuery);
+      if (employeeSnapshot.empty) throw new Error("Employee information not found.");
+      const employeeData = employeeSnapshot.docs[0].data();
+      const fname = employeeData.fname || "";
+      const lname = employeeData.lname || "";
+      const attendanceData = {
+        userId: user.uid,
+        fname,
+        lname,
+        email: user.email || "",
+        status: "pending",
+        type: "time_in_request",
+        attendanceDate: getTodayDate(),
+        requestedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      };
+
       await setDoc(attendanceRef, attendanceData);
       await setDoc(doc(db, "managerNotifications", `time-in-${attendanceRef.id}`), {
         type: "time_in_request",
@@ -592,7 +641,34 @@ function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
       `;
       showNoAttendance("Unable to send time-in request. Please try again.");
     }
-  };
+    return;
+  }
+
+  if (currentAttendance?.status !== "active" || !currentAttendanceRef) return;
+  timeInButton.disabled = true;
+  timeInButton.textContent = "Recording time out...";
+  try {
+    await updateDoc(currentAttendanceRef, {
+      status: "time_out_pending",
+      type: "time_out_request",
+      timeOutRequestedAt: serverTimestamp(),
+    });
+    const attendanceId = currentAttendanceRef.id;
+    await setDoc(doc(db, "managerNotifications", `time-out-${attendanceId}`), {
+      type: "time_out_request",
+      attendanceId,
+      title: "Employee time-out request",
+      message: `${currentAttendance.fname || ""} ${currentAttendance.lname || ""}`.trim() + " requested to time out.",
+      read: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Time out error:", error);
+    timeInButton.disabled = false;
+    timeInButton.innerHTML = `<span class="material-icons">logout</span> Time Out`;
+    M.toast({ html: "Unable to send time-out request. Please try again.", classes: "red rounded" });
+  }
 }
 
 function setTimeInButtonPending() {
@@ -634,36 +710,19 @@ function setTimeInButtonActive() {
     Time Out
   `;
 
-  timeInButton.onclick = async () => {
+  timeInButton.onclick = () => {
     if (currentAttendance?.status !== "active" || !currentAttendanceRef) return;
-
-    timeInButton.disabled = true;
-    timeInButton.textContent = "Recording time out...";
-
-    try {
-      await updateDoc(currentAttendanceRef, {
-        status: "time_out_pending",
-        type: "time_out_request",
-        timeOutRequestedAt: serverTimestamp(),
-      });
-      const attendanceId = currentAttendanceRef.id;
-      await setDoc(doc(db, "managerNotifications", `time-out-${attendanceId}`), {
-        type: "time_out_request",
-        attendanceId,
-        title: "Employee time-out request",
-        message: `${currentAttendance.fname || ""} ${currentAttendance.lname || ""}`.trim() + " requested to time out.",
-        read: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error("Time out error:", error);
-      timeInButton.disabled = false;
-      timeInButton.innerHTML = `
-        <span class="material-icons">logout</span>
-        Time Out
-      `;
-      M.toast({ html: "Unable to send time-out request. Please try again.", classes: "red rounded" });
-    }
+    openAttendanceConfirmation("time-out");
   };
 }
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-confirm-cancel]")) closeAttendanceConfirmation();
+  if (event.target.closest("#attendance-confirm-action")) submitConfirmedAttendanceAction();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !document.querySelector("#attendance-confirmation")?.hidden) {
+    closeAttendanceConfirmation();
+  }
+});
