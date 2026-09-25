@@ -66,12 +66,12 @@ function renderStockPage() {
     const status = quantity <= 0 ? "Out of stock" : isLowStock(product) ? "Low stock" : "In stock";
     const statusClass = quantity <= 0 ? "out" : isLowStock(product) ? "low" : "in";
     return `<tr>
-      <td><div class="assigned-product-name"><span>${escapeHtml(name.charAt(0).toUpperCase())}</span><strong>${escapeHtml(name)}</strong></div></td>
-      <td>${escapeHtml(product.category || product.role || "Uncategorized")}</td>
-      <td><strong>${formatQuantity(quantity)}</strong> <small>${escapeHtml(formatUnit(product.unit))}</small></td>
-      <td>${formatCurrency(Number(product.price || 0))}</td>
-      <td><span class="assigned-stock-badge ${statusClass}">${status}</span></td>
-      <td>${formatDate(product.last_updated || product.created_at)}</td>
+      <td data-label="Product"><div class="assigned-product-name"><span>${escapeHtml(name.charAt(0).toUpperCase())}</span><strong>${escapeHtml(name)}</strong></div></td>
+      <td data-label="Category">${escapeHtml(product.category || product.role || "Uncategorized")}</td>
+      <td data-label="Assigned stock"><strong>${formatQuantity(quantity)}</strong> <small>${escapeHtml(formatUnit(product.unit))}</small></td>
+      <td data-label="Unit price">${formatCurrency(Number(product.price || 0))}</td>
+      <td data-label="Status"><span class="assigned-stock-badge ${statusClass}">${status}</span></td>
+      <td data-label="Last updated">${formatDate(product.last_updated || product.created_at)}</td>
     </tr>`;
   }).join("");
 }

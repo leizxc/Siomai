@@ -2891,12 +2891,65 @@ html.dark .assigned-summary-icon {
   .assigned-stock-summary {
     grid-template-columns: 1fr;
   }
-  .assigned-stock-table th,
-  .assigned-stock-table td {
-    padding: 13px 16px;
+  .assigned-stock-table-wrap {
+    overflow: visible;
   }
+
   .assigned-stock-table {
-    min-width: 760px;
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .assigned-stock-table thead {
+    display: none;
+  }
+
+  .assigned-stock-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .assigned-stock-table tbody tr {
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+  }
+
+  .assigned-stock-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 13px;
+    border-top: 1px solid var(--border-soft);
+    text-align: right;
+  }
+
+  .assigned-stock-table td:first-child {
+    border-top: 0;
+  }
+
+  .assigned-stock-table td[data-label]::before {
+    flex: 0 0 100px;
+    color: var(--text-muted);
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .assigned-stock-table td.assigned-stock-empty {
+    display: block;
+    padding: 28px 16px !important;
+    border: 0;
+    text-align: center;
+  }
+
+  .assigned-stock-table td.assigned-stock-empty::before {
+    content: none;
   }
 }
 
@@ -2990,7 +3043,6 @@ html.dark .assigned-summary-icon {
   }
 
   .employee-icon-button.has-notification .material-icons {
-    color: #d48710 !important;
     animation: employee-bell-pulse 1.5s ease-in-out infinite;
   }
 
@@ -4105,6 +4157,88 @@ html.dark .expense-report-guide {
   font-weight: 800;
 }
 
+.expense-history-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 14px;
+}
+
+.expense-history-filters label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.expense-history-filters input[type="date"] {
+  width: auto;
+  min-width: 150px;
+  height: 36px;
+  margin: 0;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.expense-history-filters .btn-flat {
+  margin: 0;
+  padding: 0 10px;
+  color: var(--text-secondary);
+  text-transform: none;
+}
+
+.report-selection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.report-selection-toolbar label,
+.expense-report-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.report-selection-toolbar input,
+.expense-report-select input {
+  position: static;
+  width: 18px !important;
+  height: 18px;
+  margin: 0;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.report-selection-toolbar > span {
+  margin-left: auto;
+}
+
+.report-selection-toolbar button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #ef4444;
+  border-radius: 7px;
+  color: #dc2626;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.report-selection-toolbar button:disabled {
+  opacity: 0.5;
+}
+
 html.dark .expense-history-heading > span {
   background: #713f12;
   color: #fde68a;
@@ -4156,6 +4290,15 @@ html.dark .expense-history-heading > span {
   font-size: 13px;
 }
 
+.expense-history-select {
+  flex: 0 0 auto;
+}
+
+.expense-history-item .expense-history-details {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .report-status {
   display: inline-block;
   margin-top: 4px;
@@ -4197,6 +4340,9 @@ html.dark .report-status {
   }
   .expense-report-history {
     padding: 18px;
+  }
+  .expense-history-filters {
+    flex-wrap: wrap;
   }
   .expense-history-item p {
     max-width: 180px;
@@ -4262,7 +4408,12 @@ html.dark .report-status {
 }
 
 #employee-notifications-modal.open .modal-footer {
+  display: flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 8px;
 }
 
 @media screen and (max-width: 600px) {
@@ -4292,13 +4443,29 @@ html.dark .report-status {
 
   #employee-notifications-modal.open {
     height: auto !important;
-    max-height: calc(100dvh - 32px) !important;
+    top: calc(50% + 28px) !important;
+    max-height: calc(100dvh - 140px) !important;
+    transform: translate(-50%, -50%) !important;
   }
 
   #employee-notifications-modal.open .modal-content {
     flex: 1 1 auto;
-    max-height: calc(100dvh - 108px);
+    max-height: calc(100dvh - 216px);
     padding: 18px 16px !important;
+  }
+
+  #employee-notifications-modal.open .modal-footer {
+    min-height: 60px;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  #employee-notifications-modal.open .modal-footer button {
+    flex: 0 0 auto;
+    margin: 0;
+    padding-inline: 10px;
+    font-size: 12px;
   }
 
   #employee-notification-list {
@@ -4445,6 +4612,38 @@ html.dark .employee-notification.unread {
 
 .employee-notification .btn-flat {
   margin-left: auto;
+}
+
+.employee-notification-select {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.employee-notification-select input,
+.employee-notification-toolbar input {
+  position: static;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.employee-notification-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 6px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.employee-notification-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
 }
 
 html.dark .employee-notification {

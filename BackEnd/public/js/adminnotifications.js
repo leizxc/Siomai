@@ -8,6 +8,8 @@ import {
   doc,
   deleteDoc,
   serverTimestamp,
+  getDoc,
+  setDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   requestDeviceNotificationPermission,
@@ -57,7 +59,7 @@ function renderNotifications(notifications) {
   list.innerHTML = notifications.map(({ id, ...item }) => `
     <article class="manager-notification ${item.read ? "" : "unread"}" data-id="${id}">
       <label class="manager-notification-select" aria-label="Select notification"><input type="checkbox" value="${id}" ${selectedNotificationIds.has(id) ? "checked" : ""} /><span></span></label>
-      <i class="material-icons">${item.type === "expense_report" ? "receipt_long" : "warning"}</i>
+      <i class="material-icons">${item.type === "expense_report" ? "receipt_long" : item.type === "time_in_request" ? "login" : item.type === "time_out_request" ? "logout" : "warning"}</i>
       <div>
         <strong>${escapeHtml(item.title || `Low stock: ${item.productName}`)}</strong>
         <p>${escapeHtml(item.message || `${item.remainingStock} ${item.unit} remaining`)}</p>
@@ -124,10 +126,25 @@ async function markNotificationRead(id) {
   ];
 
   if (notification.type === "expense_report" && notification.reportId) {
-    updates.push(updateDoc(doc(db, "expenseReports", notification.reportId), {
+    const reportRef = doc(db, "expenseReports", notification.reportId);
+    updates.push(updateDoc(reportRef, {
       status: "read",
       reviewedAt: serverTimestamp(),
     }));
+    const reportSnapshot = await getDoc(reportRef);
+    const report = reportSnapshot.data();
+    if (report?.employeeUid) {
+      updates.push(setDoc(doc(db, "employeeNotifications", `expense-report-read-${notification.reportId}`), {
+        type: "expense_report_read",
+        reportId: notification.reportId,
+        userId: report.employeeUid,
+        title: "Expense report read",
+        message: "The admin/manager has read your expense report.",
+        read: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+    }
   }
 
   await Promise.all(updates);

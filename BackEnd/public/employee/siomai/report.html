@@ -22,5 +22,14 @@
     <aside class="expense-report-guide"><span class="material-icons">notifications_active</span><h3>Manager notification</h3><p>Once you confirm, the manager receives an expense-report notification for review.</p><ul><li>Enter the exact amount</li><li>Add a clear description</li><li>Keep your receipt for verification</li></ul></aside>
   </section>
 
-  <section class="expense-report-history"><div class="expense-history-heading"><div><h3>Your recent reports</h3><p>Latest expense submissions from your account.</p></div><span id="reportPendingCount">0 pending</span></div><div id="expenseReportHistory" class="expense-history-list"></div></section>
+  <section class="expense-report-history">
+    <div class="expense-history-heading"><div><h3>Your recent reports</h3><p>Latest expense submissions from your account.</p></div><span id="reportPendingCount">0 pending</span></div>
+    <div class="expense-history-filters"><label for="reportHistoryDateFilter">Filter by date</label><input id="reportHistoryDateFilter" type="date" /><button id="clearReportHistoryDate" type="button" class="btn-flat">Clear date</button></div>
+    <div class="report-selection-toolbar"><label><input id="selectAllExpenseReports" type="checkbox" /><span>Select all</span></label><span id="selectedExpenseReportCount">0 selected</span><button id="deleteSelectedExpenseReports" type="button" disabled>Delete selected</button></div>
+    <div id="expenseReportHistory" class="expense-history-list"></div>
+  </section>
+  <div id="confirmDeleteExpenseReportsModal" class="modal">
+    <div class="modal-content"><h4>Delete expense reports?</h4><p id="confirmDeleteExpenseReportsMessage">Selected reports will be permanently deleted.</p></div>
+    <div class="modal-footer"><button id="cancelDeleteExpenseReports" type="button" class="modal-close btn-flat">Cancel</button><button id="confirmDeleteExpenseReports" type="button" class="btn red">Delete</button></div>
+  </div>
 </div>

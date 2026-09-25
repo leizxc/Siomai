@@ -171,9 +171,28 @@
     <div id="employee-notifications-modal" class="modal employee-notifications-modal">
       <div class="modal-content">
         <h4>Notifications</h4>
+        <div class="notification-selection-toolbar employee-notification-toolbar">
+          <label><input id="employee-select-all-notifications" type="checkbox" /><span>Select all</span></label>
+          <span id="employee-selected-notification-count">0 selected</span>
+        </div>
         <div id="employee-notification-list"></div>
       </div>
-      <div class="modal-footer"><button type="button" class="modal-close btn-flat">Close</button></div>
+      <div class="modal-footer">
+        <button id="mark-employee-selected-notifications-read" type="button" class="btn-flat" disabled>Mark as read</button>
+        <button id="delete-employee-selected-notifications" type="button" class="btn red" disabled>Delete</button>
+        <button type="button" class="modal-close btn-flat">Close</button>
+      </div>
+    </div>
+
+    <div id="delete-employee-notifications-modal" class="modal">
+      <div class="modal-content">
+        <h4>Delete notifications?</h4>
+        <p id="delete-employee-notifications-message">Selected notifications will be permanently deleted.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="modal-close btn-flat">Cancel</button>
+        <button id="confirm-delete-employee-notifications" type="button" class="btn red">Delete</button>
+      </div>
     </div>
 
     <!-- Bottom Navigation -->

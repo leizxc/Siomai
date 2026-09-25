@@ -67,6 +67,9 @@ function renderAttendanceRows() {
   document.querySelectorAll(".time-out-attendance").forEach((button) => {
     button.onclick = () => timeOutAttendance(button.dataset.id, button);
   });
+  document.querySelectorAll(".approve-time-out-request").forEach((button) => {
+    button.onclick = () => approveTimeOutRequest(button.dataset.id, button);
+  });
 }
 
 async function timeOutAttendance(id, button) {
@@ -74,11 +77,13 @@ async function timeOutAttendance(id, button) {
   button.textContent = "Recording...";
 
   try {
+    const attendance = attendanceRows.find((item) => item.id === id);
     await updateDoc(doc(db, "attendance", id), {
       status: "completed",
       type: "clocked_out",
       clockedOutAt: serverTimestamp(),
     });
+    await notifyEmployeeTimeOut(attendance, id);
   } catch (error) {
     console.error("Unable to record time out:", error);
     button.disabled = false;
@@ -91,12 +96,14 @@ async function timeOutAttendance(id, button) {
 
 function formatStatus(status) {
   if (status === "pending") return "Pending approval";
+  if (status === "time_out_pending") return "Time-out pending approval";
   if (status === "completed") return "Timed out";
   return "Active";
 }
 
 function getNotes(item) {
   if (item.status === "pending") return "Awaiting manager approval";
+  if (item.status === "time_out_pending") return "Awaiting time-out approval";
   if (item.status === "completed") return "Time out recorded";
   return "Approved";
 }
@@ -104,6 +111,9 @@ function getNotes(item) {
 function getAction(item) {
   if (item.status === "pending") {
     return `<button class="btn green approve-attendance" data-id="${item.id}">Accept</button>`;
+  }
+  if (item.status === "time_out_pending") {
+    return `<button class="btn green approve-time-out-request" data-id="${item.id}">Approve Time Out</button>`;
   }
   if (item.status === "active") {
     return `<button class="btn orange time-out-attendance" data-id="${item.id}">Time Out</button>`;
@@ -144,6 +154,44 @@ async function approveAttendance(id, button) {
       M.toast({ html: "Unable to accept the time-in request.", classes: "red" });
     }
   }
+}
+
+async function approveTimeOutRequest(id, button) {
+  button.disabled = true;
+  button.textContent = "Approving...";
+
+  try {
+    const attendance = attendanceRows.find((item) => item.id === id);
+    await updateDoc(doc(db, "attendance", id), {
+      status: "completed",
+      type: "clocked_out",
+      clockedOutAt: serverTimestamp(),
+      timeOutApprovedAt: serverTimestamp(),
+      timeOutApprovedBy: auth.currentUser?.uid || "",
+    });
+    await notifyEmployeeTimeOut(attendance, id);
+  } catch (error) {
+    console.error("Unable to approve time-out request:", error);
+    button.disabled = false;
+    button.textContent = "Approve Time Out";
+    if (typeof M !== "undefined") {
+      M.toast({ html: "Unable to approve the time-out request.", classes: "red" });
+    }
+  }
+}
+
+async function notifyEmployeeTimeOut(attendance, id) {
+  if (!attendance?.userId) return;
+  await setDoc(doc(db, "employeeNotifications", `time-out-approved-${id}`), {
+    type: "time_out_approved",
+    attendanceId: id,
+    userId: attendance.userId,
+    title: "Time-out approved",
+    message: "Your manager approved your time-out request.",
+    read: false,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
 }
 
 function getTimestamp(value) {

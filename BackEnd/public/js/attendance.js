@@ -571,6 +571,15 @@ function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
 
     try {
       await setDoc(attendanceRef, attendanceData);
+      await setDoc(doc(db, "managerNotifications", `time-in-${attendanceRef.id}`), {
+        type: "time_in_request",
+        attendanceId: attendanceRef.id,
+        title: "Employee time-in request",
+        message: `${fname} ${lname}`.trim() + " submitted a time-in request.",
+        read: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
       currentAttendance = attendanceData;
       setTimeInButtonPending();
       displayPendingAttendance(attendanceData);
@@ -633,9 +642,19 @@ function setTimeInButtonActive() {
 
     try {
       await updateDoc(currentAttendanceRef, {
-        status: "completed",
-        type: "clocked_out",
-        clockedOutAt: serverTimestamp(),
+        status: "time_out_pending",
+        type: "time_out_request",
+        timeOutRequestedAt: serverTimestamp(),
+      });
+      const attendanceId = currentAttendanceRef.id;
+      await setDoc(doc(db, "managerNotifications", `time-out-${attendanceId}`), {
+        type: "time_out_request",
+        attendanceId,
+        title: "Employee time-out request",
+        message: `${currentAttendance.fname || ""} ${currentAttendance.lname || ""}`.trim() + " requested to time out.",
+        read: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
     } catch (error) {
       console.error("Time out error:", error);
@@ -644,7 +663,7 @@ function setTimeInButtonActive() {
         <span class="material-icons">logout</span>
         Time Out
       `;
-      M.toast({ html: "Unable to record time out. Please try again.", classes: "red rounded" });
+      M.toast({ html: "Unable to send time-out request. Please try again.", classes: "red rounded" });
     }
   };
 }
