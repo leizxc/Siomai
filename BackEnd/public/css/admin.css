@@ -5512,6 +5512,49 @@ html.dark #manager-notifications-modal #mark-manager-selected-read:not(:disabled
 .dashboard-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
 .dashboard-chart-legend i { width:9px; height:9px; border-radius:50%; background:var(--legend-color); }
 #dashboard-income-chart { display:block; width:100%; }
+.income-cart-page { padding: 4px 0 24px; }
+.income-cart-header { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin:0 0 20px; }
+.income-cart-header h4 { margin:0 0 6px; color:var(--text-primary); }
+.income-cart-header p { margin:0; color:var(--text-secondary); }
+.income-cart-filters { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.income-cart-filters label { color:var(--text-secondary); font-size:13px; }
+.income-cart-filters input,.income-cart-filters select { width:auto; min-width:155px; margin:0; padding:8px 10px; border:1px solid var(--border); border-radius:8px; color:var(--text-primary); background:var(--bg-card); }
+.income-cart-kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:20px; }
+.income-cart-kpi,.income-cart-table-card { padding:20px; border:1px solid var(--border); border-radius:14px; background:var(--bg-card); box-shadow:var(--shadow); }
+.income-cart-kpi { display:flex; flex-direction:column; gap:8px; }
+.income-cart-kpi span { color:var(--text-secondary); font-size:13px; }
+.income-cart-kpi strong { color:var(--text-primary); font-size:25px; }
+.income-cart-kpi small { color:var(--text-secondary); }
+.income-cart-table-card { padding:8px 16px; }
+.sales-page { padding:4px 0 24px; }
+.sales-page-header { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin:0 0 20px; }
+.sales-page-header h4 { margin:0 0 6px; color:var(--text-primary); }
+.sales-page-header p { margin:0; color:var(--text-secondary); }
+.sales-page-filters { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.sales-page-filters label { color:var(--text-secondary); font-size:13px; }
+.sales-page-filters input,.sales-page-filters select { width:auto; min-width:155px; margin:0; padding:8px 10px; border:1px solid var(--border); border-radius:8px; color:var(--text-primary); background:var(--bg-card); }
+.sales-page-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:20px; }
+.sales-page-kpi { display:flex; flex-direction:column; gap:8px; padding:20px; border:1px solid var(--border); border-radius:14px; background:var(--bg-card); box-shadow:var(--shadow); }
+.sales-page-kpi span { color:var(--text-secondary); font-size:13px; }
+.sales-page-kpi strong { color:var(--text-primary); font-size:25px; }
+.sales-page-table { padding:8px 16px; }
+.sales-page-pagination { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 4px; color:var(--text-secondary); }
+.sales-page-pagination > div { display:flex; align-items:center; gap:8px; }
+.sales-page-pagination button:disabled { opacity:.45; cursor:default; }
+@media (max-width:700px) {
+  .income-cart-header { align-items:stretch; flex-direction:column; }
+  .income-cart-filters { align-items:stretch; }
+  .income-cart-filters label { width:100%; }
+  .income-cart-filters input,.income-cart-filters select { width:100%; }
+  .income-cart-kpis { grid-template-columns:1fr; }
+  .sales-page-header { align-items:stretch; flex-direction:column; }
+  .sales-page-filters { align-items:stretch; }
+  .sales-page-filters label { width:100%; }
+  .sales-page-filters input,.sales-page-filters select { width:100%; }
+  .sales-page-kpis { grid-template-columns:1fr; }
+  .sales-page-pagination { align-items:flex-start; flex-direction:column; }
+  .sales-page-pagination > div { width:100%; justify-content:space-between; }
+}
 .dashboard-action-counts { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .dashboard-action-counts a { display:flex; flex-direction:column; gap:4px; padding:12px; border:1px solid var(--border); border-radius:10px; color:var(--text-primary); text-decoration:none; }
 .dashboard-action-counts strong { font-size:15px; }

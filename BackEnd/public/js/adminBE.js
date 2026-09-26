@@ -522,10 +522,10 @@ function bindInventoryRowButtons() {
         return;
       }
 
-      editNameInput.value = row.children[0].textContent;
+      editNameInput.value = row.children[1].textContent.trim();
       editCategoryInput.value = row.dataset.categoryId;
-      editPacksInput.value = row.children[2].textContent.replace(/\D/g, "");
-      editPriceInput.value = row.children[4].textContent.replace("₱", "");
+      editPacksInput.value = row.children[3].textContent.replace(/[^\d.]/g, "");
+      editPriceInput.value = row.children[5].textContent.replace(/[^\d.]/g, "");
 
       bindLiveUppercase(editNameInput);
 
@@ -935,7 +935,7 @@ export function loadCategories() {
 
   unsubscribeCategories = onSnapshot(
     collection(db, "categoriesINV"),
-    (snapshot) => {
+    async (snapshot) => {
       const pillsContainerNow = document.getElementById(
         "filter-category-pills",
       );
@@ -973,7 +973,7 @@ export function loadCategories() {
       if (selectsNow.length) M.FormSelect.init(selectsNow);
 
       if (pillsContainerNow) {
-        renderCategoryPills(pillsContainerNow, snapshot);
+        await renderCategoryPills(pillsContainerNow, snapshot);
       }
     },
   );
@@ -986,7 +986,7 @@ export function stopLoadingCategories() {
   }
 }
 
-function renderCategoryPills(container, snapshot) {
+async function renderCategoryPills(container, snapshot) {
   container.innerHTML = "";
 
   // Get all categories with data
@@ -1007,15 +1007,34 @@ function renderCategoryPills(container, snapshot) {
     return;
   }
 
+  // On initial entry, choose a category that has inventory so the page does
+  // not open on an empty category.
+  let firstCategoryWithInventory = null;
+  try {
+    const inventorySnapshot = await getDocs(collection(db, "inventory"));
+    const populatedCategoryIds = new Set();
+    inventorySnapshot.forEach((inventoryDoc) => {
+      const categoryId = inventoryDoc.data().category_id;
+      if (categoryId) populatedCategoryIds.add(categoryId);
+    });
+    firstCategoryWithInventory =
+      categoriesWithData.find((category) =>
+        populatedCategoryIds.has(category.id),
+      )?.id || null;
+  } catch (error) {
+    console.error("Error finding populated inventory category:", error);
+  }
+
   // Check if current selected category still exists
   const selectedExists = categoriesWithData.some(
     (cat) => cat.id === selectedCategoryFilter,
   );
 
-  // If "all" or invalid selection, select the first category
+  // If "all" or invalid selection, select the first populated category.
   const selectionChanged = !selectedExists || selectedCategoryFilter === "all";
   if (selectionChanged) {
-    selectedCategoryFilter = categoriesWithData[0].id;
+    selectedCategoryFilter =
+      firstCategoryWithInventory || categoriesWithData[0].id;
   }
 
   // Render each category as a pill
@@ -1855,6 +1874,7 @@ function bindArchiveHistoryButtons() {
 
 export async function initInventoryPage() {
   currentPage = 1;
+  selectedCategoryFilter = "all";
   shouldLoadInventoryAfterCategories = true;
   processExpiredArchives().catch(console.error);
 

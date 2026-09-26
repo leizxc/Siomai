@@ -475,35 +475,39 @@ function initUppercaseProductName() {
   });
 }
 
-async function loadCategoryFilter() {
+function syncCategoryFilter(menuDocs) {
   const select = document.getElementById("filterCategory");
   if (!select) return;
 
-  const snap = await getDocs(collection(db, "categoriesINV"));
   const categories = new Set();
-
-  snap.forEach((docSnap) => {
-    const data = docSnap.data();
-    if (data.name) categories.add(data.name.trim());
+  menuDocs.forEach(({ data }) => {
+    const category = String(data.inv_category || data.category || "").trim();
+    if (category) categories.add(category);
   });
 
+  const previousValue = select.value;
   select.innerHTML = "";
-  let defaultCategory = null;
-
-  categories.forEach((category) => {
+  if (categories.size === 0) {
     const option = document.createElement("option");
-    option.value = category;
-    option.textContent = category;
-    if (!defaultCategory) {
-      option.selected = true;
-      defaultCategory = category;
-    }
+    option.value = "";
+    option.textContent = "No categories yet";
+    option.disabled = true;
+    option.selected = true;
     select.appendChild(option);
-  });
+  } else {
+    categories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category;
+      option.textContent = category;
+      select.appendChild(option);
+    });
+    select.value = categories.has(previousValue)
+      ? previousValue
+      : select.options[0].value;
+  }
 
   reinitSelect(select);
-  if (defaultCategory) select.value = defaultCategory;
-  return defaultCategory;
+  select.dispatchEvent(new Event("change"));
 }
 
 function confirmDeletion(title, message) {
@@ -601,8 +605,6 @@ export async function loadmenu() {
 
         document.getElementById("edit-menu-name").value =
           data.product_name || "";
-        document.getElementById("edit-menu-stock").value =
-          data.current_stock ?? "";
         document.getElementById("edit-menu-price").value = data.price ?? "";
         M.updateTextFields();
 
@@ -619,14 +621,11 @@ export async function loadmenu() {
             .getElementById("edit-menu-name")
             .value.trim()
             .toUpperCase();
-          const newStock = Number(
-            document.getElementById("edit-menu-stock").value,
-          );
           const newPrice = Number(
             document.getElementById("edit-menu-price").value,
           );
 
-          if (!newName || newStock < 0 || newPrice < 0) {
+          if (!newName || !Number.isFinite(newPrice) || newPrice < 0) {
             M.toast({
               html: "Please enter valid values.",
               classes: "red rounded",
@@ -637,7 +636,6 @@ export async function loadmenu() {
           try {
             await updateDoc(menuRef, {
               product_name: newName,
-              ...buildCurrentQuantityFields(data, newStock),
               price: newPrice,
               last_updated: serverTimestamp(),
             });
@@ -892,6 +890,7 @@ export async function loadmenu() {
       snapshot.forEach((docSnap) => {
         menuDocs.push({ id: docSnap.id, data: docSnap.data() });
       });
+      syncCategoryFilter(menuDocs);
 
       const inventoryIds = new Set();
       menuDocs.forEach(({ data }) => {
@@ -1020,8 +1019,6 @@ export function cleanupProductMenuPage() {
 export async function initProductPage() {
   loadInventoryOptions();
   loadroles();
-
-  await loadCategoryFilter();
 
   previewNextProductId();
   addproductmenu();

@@ -1,0 +1,59 @@
+<section class="sales-page">
+  <header class="sales-page-header">
+    <div class="sales-page-filters">
+      <label for="sales-date-filter">Date</label>
+      <input type="date" id="sales-date-filter" />
+      <label for="sales-employee-filter">Employee</label>
+      <select id="sales-employee-filter" class="browser-default">
+        <option value="">All Employees</option>
+      </select>
+      <label for="sales-payment-filter">Payment</label>
+      <select id="sales-payment-filter" class="browser-default">
+        <option value="cash" selected>Cash</option>
+        <option value="cashless">Cashless</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="sales-page-kpis">
+    <article class="sales-page-kpi">
+      <span>Paid Sales</span>
+      <strong id="sales-total">₱0.00</strong>
+    </article>
+    <article class="sales-page-kpi">
+      <span>Orders</span>
+      <strong id="sales-order-count">0</strong>
+    </article>
+  </div>
+
+  <section class="sales-page-table card">
+    <div class="table-container">
+      <table class="striped responsive-table">
+        <thead>
+          <tr>
+            <th>Date &amp; Time</th>
+            <th>Employee</th>
+            <th>Items</th>
+            <th>Payment</th>
+            <th id="sales-reference-header" hidden>Reference No.</th>
+            <th id="sales-cash-header">Cash Received</th>
+            <th id="sales-change-header">Change</th>
+            <th>Status</th>
+            <th>Order Total</th>
+          </tr>
+        </thead>
+        <tbody id="sales-order-rows">
+          <tr><td colspan="8" class="center-align">Loading orders...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <footer class="sales-page-pagination">
+      <span id="sales-page-info">Showing 0 orders</span>
+      <div>
+        <button type="button" id="sales-prev" class="btn-flat" disabled>Previous</button>
+        <span id="sales-page-number">Page 1 of 1</span>
+        <button type="button" id="sales-next" class="btn-flat" disabled>Next</button>
+      </div>
+    </footer>
+  </section>
+</section>

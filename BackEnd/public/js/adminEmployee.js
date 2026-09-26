@@ -34,8 +34,10 @@ function toLocalDateValue(date) {
 // Kept live (not a one-time snapshot) so a just-added employee's
 let usersMap = {};
 let latestEmployeeDocs = [];
+let latestAttendanceDocs = [];
 let unsubscribeUsers = null;
 let unsubscribeEmployees = null;
+let unsubscribeEmployeeAttendance = null;
 
 // Load employees list with username from users collection
 export async function loadEmployees() {
@@ -44,6 +46,7 @@ export async function loadEmployees() {
 
   if (unsubscribeUsers) unsubscribeUsers();
   if (unsubscribeEmployees) unsubscribeEmployees();
+  if (unsubscribeEmployeeAttendance) unsubscribeEmployeeAttendance();
 
   unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
     usersMap = {};
@@ -68,6 +71,17 @@ export async function loadEmployees() {
       rebuildEmployeeData();
     },
   );
+
+  unsubscribeEmployeeAttendance = onSnapshot(
+    collection(db, "attendance"),
+    (querySnapshot) => {
+      latestAttendanceDocs = querySnapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        data: docSnap.data(),
+      }));
+      rebuildEmployeeData();
+    },
+  );
 }
 
 // Recomputes the summary cards + employeeListCache from whichever
@@ -76,6 +90,22 @@ function rebuildEmployeeData() {
   if (!tbody || !tbody.isConnected) return;
 
   const today = toLocalDateValue(new Date());
+  const onlineUserIds = new Set(
+    latestAttendanceDocs
+      .filter(({ data }) => {
+        const attendanceDate = data.attendanceDate ||
+          (data.clockedInAt?.toDate
+            ? toLocalDateValue(data.clockedInAt.toDate())
+            : "");
+        return (
+          attendanceDate === today &&
+          ["active", "time_out_pending"].includes(data.status) &&
+          !data.clockedOutAt &&
+          data.userId
+        );
+      })
+      .map(({ data }) => data.userId),
+  );
 
   let activeCount = 0;
   let todayCount = 0;
@@ -83,7 +113,7 @@ function rebuildEmployeeData() {
   employeeListCache = latestEmployeeDocs.map(({ id, data }) => {
     const userInfo = usersMap[data.email] || {};
 
-    if (userInfo.status === "active") activeCount++;
+    if (onlineUserIds.has(data.uid || id)) activeCount++;
 
     if (data.created_at) {
       const createdDate = toLocalDateValue(data.created_at.toDate());
@@ -208,8 +238,15 @@ function bindRowButtons() {
 
       document.getElementById("edit-fname").value = originalFname;
       document.getElementById("edit-lname").value = originalLname;
-      document.getElementById("edit-email").value = originalEmail;
       document.getElementById("edit-role").value = originalRole;
+      const passwordInput = document.getElementById("edit-password");
+      const passwordToggle = document.getElementById("toggleEditPassword");
+      passwordInput.value = "";
+      passwordInput.type = "password";
+      if (passwordToggle) passwordToggle.textContent = "visibility_off";
+
+      const employee = latestEmployeeDocs.find((item) => item.id === id);
+      const targetUid = employee?.data.uid;
 
       M.updateTextFields();
       M.FormSelect.init(document.querySelectorAll("select"));
@@ -223,16 +260,37 @@ function bindRowButtons() {
 
       modalInstance.open();
 
+      if (passwordToggle) {
+        const togglePassword = () => {
+          const showPassword = passwordInput.type === "password";
+          passwordInput.type = showPassword ? "text" : "password";
+          passwordToggle.textContent = showPassword
+            ? "visibility"
+            : "visibility_off";
+          passwordToggle.setAttribute(
+            "aria-label",
+            showPassword ? "Hide password" : "Show password",
+          );
+        };
+        passwordToggle.onclick = togglePassword;
+        passwordToggle.onkeydown = (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            togglePassword();
+          }
+        };
+      }
+
       const saveBtn = document.getElementById("edit-save");
 
       saveBtn.onclick = async () => {
         const newFname = document.getElementById("edit-fname").value.trim();
         const newLname = document.getElementById("edit-lname").value.trim();
-        const newEmail = document.getElementById("edit-email").value.trim();
         const newRole = document.getElementById("edit-role").value;
+        const newPassword = passwordInput.value;
 
         // Walang pwedeng maiwan na blangko.
-        if (!newFname || !newLname || !newEmail || !newRole) {
+        if (!newFname || !newLname || !newRole) {
           M.toast({
             html: "Please fill in all fields before saving.",
             classes: "red rounded",
@@ -244,8 +302,8 @@ function bindRowButtons() {
         const noChanges =
           newFname === originalFname &&
           newLname === originalLname &&
-          newEmail === originalEmail &&
-          newRole === originalRole;
+          newRole === originalRole &&
+          !newPassword;
 
         if (noChanges) {
           M.toast({
@@ -256,25 +314,72 @@ function bindRowButtons() {
           return;
         }
 
+        if (newPassword && newPassword.length < 6) {
+          M.toast({
+            html: "Password must be at least 6 characters.",
+            classes: "red rounded",
+          });
+          return;
+        }
+
+        if (newPassword) {
+          if (!targetUid) {
+            M.toast({
+              html: "Unable to find this employee's account.",
+              classes: "red rounded",
+            });
+            return;
+          }
+
+          try {
+            const idToken = await auth.currentUser.getIdToken();
+            const response = await fetch(
+              `${window.location.origin}/updateAuthPassword`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${idToken}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ uid: targetUid, password: newPassword }),
+              },
+            );
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+              throw new Error(result.error || "Unable to change password.");
+            }
+          } catch (error) {
+            console.error("Password update error:", error);
+            M.toast({
+              html: error.message || "Unable to change password.",
+              classes: "red rounded",
+            });
+            return;
+          }
+        }
+
         await updateDoc(doc(db, "employees", id), {
           fname: newFname,
           lname: newLname,
-          email: newEmail,
           role: newRole,
           last_updated: serverTimestamp(),
         });
 
         const q = query(
           collection(db, "users"),
-          where("email", "==", newEmail),
+          where("email", "==", originalEmail),
         );
 
         const snapshot = await getDocs(q);
 
         try {
+          const newPasswordHash = newPassword
+            ? await hashPassword(newPassword)
+            : null;
           for (const docSnap of snapshot.docs) {
             await updateDoc(docSnap.ref, {
               role: newRole,
+              ...(newPasswordHash ? { passwordHash: newPasswordHash } : {}),
               last_updated: serverTimestamp(),
             });
           }

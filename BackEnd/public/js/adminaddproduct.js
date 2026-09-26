@@ -372,7 +372,6 @@ function renderHistoryPage() {
     pageRows.length === 0
       ? `<tr><td colspan="8" class="center-align grey-text" style="padding: 30px 0;"><i class="material-icons" style="font-size: 48px; display: block; margin-bottom: 10px;">history</i>No completed products yet.</td></tr>`
       : pageRows.join("");
-
   const prev = document.getElementById("history-assign-prev");
   const next = document.getElementById("history-assign-next");
   const pageLabel = document.getElementById("history-assign-page");
@@ -409,6 +408,7 @@ function renderHistoryPage() {
         : `Showing: ${(historyCurrentPage - 1) * HISTORY_PAGE_SIZE + 1} - ${Math.min(historyCurrentPage * HISTORY_PAGE_SIZE, totalRecords)} of ${totalRecords} records`;
   }
 }
+
 
 export function stopLoadingHistoryAssign() {
   if (unsubscribeProductHistory) {
@@ -1366,120 +1366,6 @@ export async function loadProducts() {
         }
       };
     });
-
-    tbody.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.onclick = async (e) => {
-        const id = e.target.closest("button").dataset.id;
-        const row = e.target.closest("tr");
-
-        document.getElementById("edit-name").value =
-          row.children[0].textContent;
-        document.getElementById("edit-price").value =
-          row.children[1].textContent.replace("₱", "");
-        document.getElementById("edit-stock").value =
-          row.children[3].textContent;
-
-        M.updateTextFields();
-
-        const modalElem = document.getElementById("modal-edit-product");
-        let modalInstance = M.Modal.getInstance(modalElem);
-        if (!modalInstance) modalInstance = M.Modal.init(modalElem);
-        modalInstance.open();
-
-        const productRef = doc(db, "products", id);
-        const productSnap = await getDoc(productRef);
-        const oldData = productSnap.data();
-        const oldStock = Number(oldData.pieces ?? oldData.stock) || 0;
-        const saveBtn = document.getElementById("edit-save");
-
-        saveBtn.onclick = async () => {
-          const newName = document.getElementById("edit-name").value;
-          const newPrice = parseFloat(
-            document.getElementById("edit-price").value,
-          );
-          const rawStock = document.getElementById("edit-stock").value;
-
-          const newStock = isContainerUnit(oldData.unit)
-            ? parseFloat(rawStock)
-            : parseInt(rawStock, 10);
-
-          const diff = newStock - oldStock;
-
-          const menuRef = doc(db, "productMenu", oldData.inventoryId);
-          const menuSnap = await getDoc(menuRef);
-          const menuData = menuSnap.data();
-          const isContainer = isContainerUnit(oldData.unit);
-          const menuUnit = (menuData.unit || "").toLowerCase();
-          const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
-
-          let diffQty = diff;
-          if (menuUnit === "kaban" && weightPerKaban > 0) {
-            diffQty = diff / weightPerKaban;
-          }
-
-          if (isContainer && diff > 0) {
-            const maxContainers = getMaxAvailableContainers(menuData);
-            if (diffQty > maxContainers) {
-              M.toast({
-                html: `Not enough containers! Available: ${maxContainers}`,
-                classes: "red rounded",
-              });
-              return;
-            }
-          }
-
-          let updatedStock;
-          if (diff > 0) {
-            if (menuData.current_stock < diff) {
-              M.toast({
-                html: "Not enough inventory stock!",
-                classes: "red rounded",
-              });
-              return;
-            }
-            updatedStock = menuData.current_stock - diff;
-          } else {
-            updatedStock = menuData.current_stock + Math.abs(diff);
-          }
-
-          await updateDoc(doc(db, "products", id), {
-            name: newName,
-            price: newPrice,
-            ...buildAssignedQuantityFields(oldData, newStock),
-          });
-
-          await updateDoc(menuRef, {
-            ...buildCurrentQuantityFields(menuData, updatedStock),
-            ...(isContainer
-              ? {
-                  kaldero_count: Math.max(
-                    0,
-                    getMaxAvailableContainers(menuData) - diffQty,
-                  ),
-                  container_count: Math.max(
-                    0,
-                    getMaxAvailableContainers(menuData) - diffQty,
-                  ),
-                }
-              : {}),
-            status: updatedStock <= 0 ? "On Selling" : "Available",
-            last_updated: serverTimestamp(),
-          });
-
-          await adjustLinkedInventoryStock(oldData.inventoryId, -diff);
-
-          if (unsubscribeProduct) {
-            unsubscribeProduct();
-            unsubscribeProduct = null;
-          }
-
-          loadInventoryOptions(document.getElementById("productRole").value);
-
-          M.toast({ html: "Successfully Updated!", classes: "green rounded" });
-          modalInstance.close();
-        };
-      };
-    });
   }
 
   function getFilteredData() {
@@ -1603,7 +1489,6 @@ export async function loadProducts() {
           <td data-label="Employee">${empDisplay}</td>
           <td data-label="Capital"><strong style="color: #16a34a;">₱${totalCapital.toFixed(2)}</strong></td>
           <td data-label="Action">
-            <button class="btn blue edit-btn" data-id="${id}"><i class="material-icons">edit</i></button>
             <button class="btn red delete-btn" data-id="${id}"><i class="material-icons">delete</i></button>
           </td>
         </tr>
