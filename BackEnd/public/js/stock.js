@@ -78,6 +78,7 @@ function renderStockPage() {
 }
 
 function getQuantity(product) { return Number(product.pieces ?? product.stock ?? product.current_stock ?? 0); }
+
 function getAssignedStockDisplay(product) {
   const units = [product.unit, product.unit_type]
     .map((value) => String(value || "").trim().toLowerCase())
@@ -100,19 +101,22 @@ function getAssignedStockDisplay(product) {
 
   return { quantity, unit: formatUnit(unit) };
 }
+
 function isLowStock(product) {
   const unit = String(product.unit || "").trim().toLowerCase();
   const category = String(product.category || product.role || "")
     .trim()
     .toLowerCase();
   const isUnlimited =
-    ["kaban", "kg", "packs"].includes(unit) ||
+    ["kaban", "kilogram", "kg", "packs"].includes(unit) ||
     ["drinks", "rice"].includes(category);
   const isPieceBased = ["piece", "pieces", "pcs", "pc", "pack"].includes(unit);
 
   return !isUnlimited && isPieceBased && getQuantity(product) > 0 && getQuantity(product) <= 25;
 }
-function formatUnit(unit) { return ({ piece: "pcs", pieces: "pcs", pc: "pcs", pcs: "pcs", pack: "packs", packs: "packs", kg: "kg", liter: "L" })[(unit || "piece").toLowerCase()] || unit || "pcs"; }
+
+function formatUnit(unit) { return ({ piece: "pcs", pieces: "pcs", pc: "pcs", pcs: "pcs", pack: "packs", packs: "packs", kilogram: "kg", kg: "kg", liter: "L" })[(unit || "piece").toLowerCase()] || unit || "pcs"; }
+
 function formatQuantity(value) { return Number.isInteger(value) ? String(value) : value.toFixed(2); }
 function formatCurrency(value) { return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(value); }
 function formatDate(timestamp) { return timestamp?.toDate ? timestamp.toDate().toLocaleString("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—"; }

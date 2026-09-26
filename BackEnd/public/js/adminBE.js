@@ -45,7 +45,7 @@ function isLowStockExempt(unit, category) {
   const normalizedCategory = String(category || "").trim().toLowerCase();
 
   return (
-    ["kaban", "kg", "packs"].includes(normalizedUnit) ||
+    ["kaban", "kilogram", "kg", "packs"].includes(normalizedUnit) ||
     ["drinks", "rice"].includes(normalizedCategory)
   );
 }
@@ -186,6 +186,7 @@ export function loadInventory() {
       const unitTotals = {
         pack: 0,
         kg: 0,
+        kilogram: 0,
         liter: 0,
         packs: 0,
         kaban: 0,
@@ -246,7 +247,7 @@ export function loadInventory() {
 
         // FIXED: gamit na ng array includes() para hindi na mapunta ang
         // "packs"/"kaban" sa "other" bucket.
-        const bucket = ["pack", "kg", "liter", "packs", "kaban"].includes(
+        const bucket = ["pack", "kg", "kilogram", "liter", "packs", "kaban"].includes(
           data.unit_type,
         )
           ? data.unit_type
@@ -278,7 +279,7 @@ export function loadInventory() {
           // ang dalawang branch dati, kaya sinimplify na lang.
           totalLabel = "Total Weight";
           totalDisplay = `${data.stock_quantity} kg`;
-        } else if (data.unit_type === "kg") {
+        } else if (data.unit_type === "kg" || data.unit_type === "kilogram") {
           totalLabel = "Total Weight";
           totalDisplay = `${data.quantity} kg`;
         } else if (data.unit_type === "liter") {
@@ -346,9 +347,9 @@ export function loadInventory() {
           } else if (unitType === "kaban") {
             totalLabel1 = "Total Weight";
             totalDisplay1 = `${totalStocks} kg`;
-          } else if (unitType === "kg") {
+          } else if (unitType === "kg" || unitType === "kilogram") {
             totalLabel1 = "Total Weight";
-            totalDisplay1 = `${(totalStocks * 2.2).toFixed(2)} lb`;
+            totalDisplay1 = `${totalStocks} kg`;
           } else if (unitType === "liter") {
             totalLabel1 = "Total Volume";
             totalDisplay1 = `${totalStocks} L`;
@@ -360,7 +361,7 @@ export function loadInventory() {
       } else {
         const parts = [];
         if (unitTotals.pack) parts.push(`${unitTotals.pack} pcs`);
-        if (unitTotals.kg) parts.push(`${unitTotals.kg} kg`);
+        if (unitTotals.kg || unitTotals.kilogram) parts.push(`${unitTotals.kg + unitTotals.kilogram} kg`);
         if (unitTotals.liter) parts.push(`${unitTotals.liter} L`);
         // NEW: packs at kaban totals — dati wala ito, kaya nawawala sa
         // "All Categories" summary.
@@ -793,7 +794,7 @@ export async function addProduct(
     totalValue = quantity * unitPrice;
   }
   // KG → kg
-  else if (unitType === "kg") {
+  else if (unitType === "kg" || unitType === "kilogram") {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
   }
@@ -1231,8 +1232,11 @@ function applyCategoryDependentFields(categoryData, els) {
     } else if (unitType === "kaban") {
       qtyLabel.textContent = "Number of Kaban";
       qtyInput.placeholder = "Enter number of kaban";
+    } else if (unitType === "kilogram") {
+      qtyLabel.textContent = "Ingredient Weight (kg)";
+      qtyInput.placeholder = "Enter ingredient weight in kg";
     } else if (unitType === "kg") {
-      qtyLabel.textContent = "Weight (in kilograms)";
+      qtyLabel.textContent = "Product Input (kg)";
       qtyInput.placeholder = "Enter weight in kg";
     } else if (unitType === "liter") {
       qtyLabel.textContent = "Volume (L)";
@@ -1534,8 +1538,8 @@ export function loadArchiveHistory() {
           totalDisplay = `${data.stock_quantity} packs`;
         } else if (data.unit_type === "kaban") {
           totalDisplay = `${data.stock_quantity} kg`;
-        } else if (data.unit_type === "kg") {
-          totalDisplay = `${(data.quantity * 2.2).toFixed(2)} lb`;
+        } else if (data.unit_type === "kg" || data.unit_type === "kilogram") {
+          totalDisplay = `${data.quantity} kg`;
         } else if (data.unit_type === "liter") {
           totalDisplay = `${data.quantity} L`;
         } else {
@@ -1708,8 +1712,8 @@ export function loadProductHistory() {
           totalDisplay = `${data.stock_quantity} packs`;
         } else if (data.unit_type === "kaban") {
           totalDisplay = `${data.stock_quantity} kg`;
-        } else if (data.unit_type === "kg") {
-          totalDisplay = `${(data.quantity * 2.2).toFixed(2)} lb`;
+        } else if (data.unit_type === "kg" || data.unit_type === "kilogram") {
+          totalDisplay = `${data.quantity} kg`;
         } else if (data.unit_type === "liter") {
           totalDisplay = `${data.quantity} L`;
         } else {

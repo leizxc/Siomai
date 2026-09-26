@@ -33,7 +33,7 @@ const HISTORY_PAGE_SIZE = 10;
 
 function isContainerUnit(unit) {
   const u = (unit || "").toLowerCase();
-  return u === "kg" || u === "liter" || u === "packs" || u === "kaban";
+  return u === "kilogram" || u === "liter" || u === "packs" || u === "kaban";
 }
 
 function reinitSelect(selectEl) {
@@ -53,14 +53,16 @@ function buildCurrentQuantityFields(menuData, pieces) {
   };
 }
 
-function buildAssignedQuantityFields(menuData, pieces) {
+function buildAssignedQuantityFields(menuData, pieces, assignedContainers = null) {
   const unit = (menuData.unit || "piece").toLowerCase();
   const isPack = unit === "pack";
   const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
   const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
   const kgUsed = Number(menuData.kg_used || 0);
+  const siomaiPacksUsed = Number(menuData.packs_used || 0);
   const packsUsed = Number(menuData.packs_used || 0);
   const piecesUsed = Number(menuData.pieces_used || 0);
+  const outputContainers = Number(menuData.kaldero_count || 0);
 
   const result = {
     stock: pieces,
@@ -77,6 +79,18 @@ function buildAssignedQuantityFields(menuData, pieces) {
     result.weight_per_kaban = weightPerKaban;
     result.total_kg = pieces;
     result.kg_used = kgUsed;
+  }
+
+  if (["kaban", "kilogram", "packs", "liter"].includes(unit)) {
+    result.kaldero_count = assignedContainers ?? outputContainers;
+  }
+
+  if ((unit === "kilogram" || unit === "kg") && kgUsed > 0) {
+    result.kg_used = kgUsed;
+  }
+
+  if (unit === "pack" && siomaiPacksUsed > 0) {
+    result.packs_used = siomaiPacksUsed;
   }
 
   if (unit === "packs" && packsUsed > 0) {
@@ -98,6 +112,18 @@ function getMaxAvailableContainers(menuData) {
   return Number(menuData.current_stock || 0) > 0 ? 1 : 0;
 }
 
+function getStockUsedPerContainer(menuData, legacyKabanWeight = 0) {
+  const unit = String(menuData.unit || "").toLowerCase();
+  const containers = Number(menuData.kaldero_count || 0);
+  if (containers <= 0) return 0;
+  if (unit === "packs") return Number(menuData.packs_used || 0) / containers;
+  if (unit === "kaban" || unit === "kilogram") {
+    const kgUsed = Number(menuData.kg_used || 0);
+    return kgUsed > 0 ? kgUsed / containers : legacyKabanWeight;
+  }
+  return 0;
+}
+
 function updateUnitDisplay(unit) {
   const unitField = document.getElementById("productUnit");
   if (unitField) {
@@ -108,6 +134,7 @@ function updateUnitDisplay(unit) {
       packs: "PACKS",
       kaban: "KABAN",
       piece: "PIECE",
+      kilogram: "KILOGRAM",
     };
     unitField.value = unitMap[unit] || "-";
   }
@@ -665,7 +692,7 @@ function bindProductFormListeners() {
         if (containerField) containerField.style.display = "none";
         if (containerEl) containerEl.value = "";
       } else if (
-        unit === "kg" ||
+        unit === "kilogram" ||
         unit === "liter" ||
         unit === "packs" ||
         unit === "kaban"
@@ -730,12 +757,15 @@ function bindProductFormListeners() {
         if (piecesField) piecesField.style.display = "block";
 
         if (piecesInput) {
-          piecesInput.dataset.unit = "piece";
+          piecesInput.dataset.unit = unit === "kg" ? "kg" : "piece";
           piecesInput.max = currentStock;
-          piecesInput.step = "1";
+          piecesInput.min = unit === "kg" ? "0.01" : "1";
+          piecesInput.step = unit === "kg" ? "0.01" : "1";
           piecesInput.required = true;
           piecesInput.disabled = false;
         }
+        const piecesLabel = document.querySelector('label[for="assignPieces"]');
+        if (piecesLabel) piecesLabel.textContent = unit === "kg" ? "Kilograms to Assign" : "Number of Pieces";
 
         const packsField = document.getElementById("packs-input-field");
         if (packsField) packsField.style.display = "none";
@@ -894,8 +924,12 @@ function bindProductFormListeners() {
 
           if (menuUnit === "pack") {
             piecesPerEmployee = enteredQty * piecesPerPack;
-          } else if (menuUnit === "kaban" && weightPerKaban > 0) {
-            piecesPerEmployee = enteredQty * weightPerKaban;
+          } else if (["kaban", "kilogram", "packs"].includes(menuUnit)) {
+            const stockPerContainer = getStockUsedPerContainer(menuData, weightPerKaban);
+            if (!(stockPerContainer > 0)) {
+              throw new Error("Set ingredient use and output container count in Product Menu first.");
+            }
+            piecesPerEmployee = enteredQty * stockPerContainer;
           }
 
           const currentStock = Number(menuData.current_stock || 0);
@@ -963,7 +997,7 @@ function bindProductFormListeners() {
 
               transaction.update(existing.ref, {
                 capital_price: mergedCapitalPrice,
-                ...buildAssignedQuantityFields(menuData, mergedPieces),
+                ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
                 last_updated: serverTimestamp(),
               });
             } else {
@@ -977,7 +1011,7 @@ function bindProductFormListeners() {
                   menuData.inv_category || menuData.category || "Unknown",
                 employeeId: emp.id,
                 inventoryId: menuId,
-                ...buildAssignedQuantityFields(menuData, piecesPerEmployee),
+                ...buildAssignedQuantityFields(menuData, piecesPerEmployee, enteredQty),
                 created_at: serverTimestamp(),
                 last_updated: serverTimestamp(),
               });
@@ -1048,8 +1082,12 @@ function bindProductFormListeners() {
 
         if (menuUnit === "pack") {
           piecesToAssign = enteredQty * piecesPerPack;
-        } else if (menuUnit === "kaban" && weightPerKaban > 0) {
-          piecesToAssign = enteredQty * weightPerKaban;
+        } else if (["kaban", "kilogram", "packs"].includes(menuUnit)) {
+          const stockPerContainer = getStockUsedPerContainer(menuData, weightPerKaban);
+          if (!(stockPerContainer > 0)) {
+            throw new Error("Set ingredient use and output container count in Product Menu first.");
+          }
+          piecesToAssign = enteredQty * stockPerContainer;
         }
 
         if (isContainer) {
@@ -1101,7 +1139,7 @@ function bindProductFormListeners() {
 
           transaction.update(existingProductRef, {
             capital_price: mergedCapitalPrice,
-            ...buildAssignedQuantityFields(menuData, mergedPieces),
+            ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
             last_updated: serverTimestamp(),
           });
 
@@ -1117,7 +1155,7 @@ function bindProductFormListeners() {
           category: menuData.inv_category || menuData.category || "Unknown",
           employeeId: employeeId,
           inventoryId: menuId,
-          ...buildAssignedQuantityFields(menuData, piecesToAssign),
+          ...buildAssignedQuantityFields(menuData, piecesToAssign, enteredQty),
           created_at: serverTimestamp(),
           last_updated: serverTimestamp(),
         });
@@ -1490,8 +1528,11 @@ export async function loadProducts() {
 
     const sampleUnit = (filteredData[0]?.data.unit || "").toLowerCase();
 
-    if (sampleUnit === "kg") {
+    if (sampleUnit === "kilogram") {
       packsHeaderEl.textContent = "Container";
+      piecesHeaderEl.textContent = "KG Used";
+    } else if (sampleUnit === "kg") {
+      packsHeaderEl.textContent = "Quantity";
       piecesHeaderEl.textContent = "KG";
     } else if (sampleUnit === "liter") {
       packsHeaderEl.textContent = "Container";
@@ -1545,15 +1586,9 @@ export async function loadProducts() {
 
       if (data.unit === "pack") {
         packsDisplay = Math.ceil(piecesValue / (data.pieces_per_pack || 1));
-      } else if (data.unit === "kaban") {
-        const weightPerKaban = Number(data.weight_per_kaban || 0);
-        if (weightPerKaban > 0) {
-          packsDisplay = Math.ceil(piecesValue / weightPerKaban);
-        } else {
-          packsDisplay = piecesValue;
-        }
-
-        piecesDisplay = kgUsedValue > 0 ? kgUsedValue : piecesValue;
+      } else if (["kaban", "kilogram", "packs", "liter"].includes(unit)) {
+        packsDisplay = Number(data.kaldero_count || 0);
+        piecesDisplay = piecesValue;
       } else if (isContainerUnit(data.unit)) {
         packsDisplay = piecesValue;
       }

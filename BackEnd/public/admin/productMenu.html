@@ -18,7 +18,7 @@
         <label for="inputProduct">Product Name (e.g. Pork Siomai)</label>
       </div>
 
-      <!-- PACK: Packs Used -->
+      <!-- PACK / PACKS: units used -->
       <div
         class="input-field col s12 m6"
         id="packs-used-field"
@@ -38,13 +38,13 @@
         <label for="piecesUsed">Pieces Used</label>
       </div>
 
-      <!-- KG / KABAN / LITER: Kilograms Used -->
+      <!-- KABAN / KILOGRAM / KG: kilograms used or entered -->
       <div
         class="input-field col s12 m6"
         id="kg-used-field"
         style="display: none"
       >
-        <input type="number" id="KgUsed" step="0.01" min="0" />
+        <input type="number" id="KgUsed" step="0.01" min="0.01" />
         <label for="KgUsed" id="kg-used-label">Kilograms Used</label>
       </div>
 
@@ -54,7 +54,7 @@
         id="kaldero-count-field"
         style="display: none"
       >
-        <input type="number" id="kalderocCount" min="0" step="1" />
+        <input type="number" id="kalderocCount" min="1" step="1" />
         <label for="kalderocCount" id="kaldero-label"
           >Number of Container Reached</label
         >

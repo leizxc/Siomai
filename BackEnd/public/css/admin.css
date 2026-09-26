@@ -361,6 +361,23 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+  border: 1px solid var(--border);
+}
+
+.dashboard-kpi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  border-color: var(--accent);
+}
+
+html.dark .dashboard-kpi-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border-color: var(--accent);
 }
 
 .kpi-icon {
@@ -5476,4 +5493,49 @@ html.dark #manager-notifications-modal #mark-manager-selected-read:not(:disabled
 #expenseTable tbody tr,
 #employeeTable tbody tr {
   transition: none !important;
+}
+
+/* Manager dashboard */
+.dashboard-welcome { display:flex; align-items:center; justify-content:space-between; gap:20px; margin:0 0 20px; }
+.dashboard-welcome h2 { margin:0; color:var(--text-primary); font-size:28px; }
+.dashboard-welcome p { margin:5px 0 0; color:var(--text-secondary); }
+.dashboard-welcome .dashboard-eyebrow { margin:0 0 4px; color:var(--accent); font-size:11px; font-weight:700; letter-spacing:.12em; }
+.dashboard-date { display:flex; align-items:center; gap:8px; color:var(--text-secondary); }
+.dashboard-manager-kpis .dashboard-kpi-card { cursor:default; }
+.dashboard-manager-grid { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr); gap:18px; margin-bottom:18px; }
+.dashboard-manager-grid-lower { grid-template-columns:1fr 1fr; }
+.dashboard-manager-grid .dashboard-panel { min-width:0; margin:0; }
+.dashboard-chart-panel { min-height:370px; }
+.dashboard-chart-panel .panel-header a,.dashboard-manager-grid .panel-header a { display:inline-flex; align-items:center; gap:3px; color:var(--accent); font-size:12px; white-space:nowrap; text-decoration:none; }
+.dashboard-chart-panel .panel-header a i,.dashboard-manager-grid .panel-header a i { font-size:16px; }
+.dashboard-chart-legend { display:flex; gap:18px; margin:4px 0 8px; color:var(--text-secondary); font-size:12px; }
+.dashboard-chart-legend span { display:inline-flex; align-items:center; gap:6px; }
+.dashboard-chart-legend i { width:9px; height:9px; border-radius:50%; background:var(--legend-color); }
+#dashboard-income-chart { display:block; width:100%; }
+.dashboard-action-counts { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.dashboard-action-counts a { display:flex; flex-direction:column; gap:4px; padding:12px; border:1px solid var(--border); border-radius:10px; color:var(--text-primary); text-decoration:none; }
+.dashboard-action-counts strong { font-size:15px; }
+.dashboard-action-counts span { color:var(--text-secondary); font-size:11px; }
+.dashboard-queue { margin-top:8px; }
+.dashboard-queue-item,.dashboard-stock-item { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 2px; border-bottom:1px solid var(--border-soft); color:var(--text-primary); text-decoration:none; }
+.dashboard-queue-item span,.dashboard-stock-item span { display:flex; min-width:0; flex-direction:column; gap:3px; }
+.dashboard-queue-item strong,.dashboard-stock-item strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+.dashboard-queue-item small,.dashboard-stock-item small { color:var(--text-secondary); font-size:11px; }
+.dashboard-queue-item > i { color:var(--text-secondary); }
+.dashboard-stock-item b { flex-shrink:0; font-size:12px; }
+.dashboard-stock-item .stock-low { color:#d97706; }
+.dashboard-stock-item .stock-out { color:#dc2626; }
+.dashboard-empty { margin:14px 0; color:var(--text-secondary); font-size:13px; }
+html.dark .dashboard-action-counts a { background:var(--bg-card); }
+@media (max-width:900px) {
+  .dashboard-manager-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .dashboard-manager-grid,.dashboard-manager-grid-lower { grid-template-columns:1fr; }
+}
+@media (max-width:600px) {
+  .dashboard-welcome { align-items:flex-start; flex-direction:column; margin:0 16px; }
+  .dashboard-date { font-size:12px; }
+  .dashboard-manager-kpis { grid-template-columns:1fr; }
+  .dashboard-manager-grid { margin:0 16px 16px; }
+  .dashboard-manager-grid .panel-header { flex-direction:column; }
+  .dashboard-action-counts { grid-template-columns:1fr; }
 }
