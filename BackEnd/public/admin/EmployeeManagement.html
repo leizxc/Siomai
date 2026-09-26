@@ -15,7 +15,7 @@
     <div class="summary-box">
       <span>Active Employees</span>
       <h3 id="activeEmployees">0</h3>
-      <small>Currently Active</small>
+      <small>Currently clocked in</small>
 
       <div class="summary-icon icon-green">
         <i class="material-icons">verified_user</i>
@@ -178,16 +178,22 @@
     </div>
 
     <div class="input-field">
-      <input id="edit-email" type="email" readonly/>
-      <label for="edit-email">Email</label>
-    </div>
-
-    <div class="input-field">
       <select id="edit-role">
         <option disabled selected>Select Role</option>
       </select>
 
       <label>Role</label>
+    </div>
+
+    <div class="input-field password-field">
+      <input
+        id="edit-password"
+        type="password"
+        autocomplete="new-password"
+        placeholder="Leave blank to keep current password"
+      />
+      <label for="edit-password" class="active">Change Password</label>
+      <i id="toggleEditPassword" class="material-icons password-toggle-icon" role="button" tabindex="0" aria-label="Show password">visibility_off</i>
     </div>
   </div>
 

@@ -496,6 +496,12 @@ async function addOrder(orderItems) {
   const orderRef = await addDoc(collection(db, "orders"), {
     items: orderItems,
     employee: user ? user.uid : "guest",
+    employeeUid: user?.uid || "",
+    employeeId: currentEmployeeId || "",
+    total: orderItems.reduce(
+      (sum, item) => sum + (Number(item.price) || 0) * (Number(item.qty) || 0),
+      0,
+    ),
     created_at: serverTimestamp(),
     status: "paid",
   });

@@ -190,40 +190,6 @@
   </div>
 </section>
 
-<!-- ==================== EDIT PRODUCT MODAL ==================== -->
-<div id="modal-edit-product" class="modal">
-  <div class="modal-content">
-    <h4>Update Product</h4>
-    <form id="updateProductForm">
-      <input type="hidden" id="updateProductId" />
-      <div class="row">
-        <div class="input-field col s12">
-          <input type="text" id="edit-name" required />
-          <label for="edit-name">Product Name</label>
-        </div>
-      </div>
-      <div class="row">
-        <div class="input-field col s12 m6">
-          <input type="number" id="edit-price" step="0.01" min="0" required />
-          <label for="edit-price">Product Price (₱)</label>
-        </div>
-        <div class="input-field col s12 m6">
-          <input type="number" id="edit-stock" min="0" step="0.01" required />
-          <label for="edit-stock">Stock</label>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" id="edit-cancel" class="modal-close btn-flat">
-          Cancel
-        </button>
-        <button type="button" id="edit-save" class="btn blue">
-          Save Changes
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <!-- ==================== PRODUCT HISTORY MODAL ==================== -->
 <div id="modal-product-history-assign" class="modal modal-fixed-footer">
   <div class="modal-content">

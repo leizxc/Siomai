@@ -1,4 +1,4 @@
-import { db } from "/js/firebase.js";
+import { db, auth } from "/js/firebase.js";
 
 import {
   addDoc,
@@ -49,6 +49,11 @@ const cashModal = M.Modal.init(cashModalElement);
 const cashlessModal = M.Modal.init(cashlessModalElement);
 
 async function completeCheckout() {
+  const employee = auth.currentUser;
+  if (!employee) {
+    throw new Error("Employee session expired. Please sign in again.");
+  }
+
   await runTransaction(db, async (transaction) => {
     const productSnapshots = await Promise.all(
       cart.map((item) =>
@@ -90,6 +95,8 @@ async function completeCheckout() {
 
   await addDoc(collection(db, "orders"), {
     items: cart,
+    employee: employee.uid,
+    employeeUid: employee.uid,
     payment_method: paymentMethod,
     payment_info: paymentInfo,
     payment_provider:

@@ -684,6 +684,19 @@ function setTimeInButtonPending() {
   `;
 }
 
+function setTimeOutButtonPending() {
+  const timeInButton = document.querySelector("#time-in-button");
+  if (!timeInButton) return;
+
+  timeInButton.disabled = true;
+  timeInButton.classList.remove("active", "completed");
+  timeInButton.classList.add("pending");
+  timeInButton.innerHTML = `
+    <span class="material-icons">hourglass_top</span>
+    Time Out Awaiting Approval
+  `;
+}
+
 function setTimeInButtonCompleted() {
   const timeInButton = document.querySelector("#time-in-button");
   if (!timeInButton) return;

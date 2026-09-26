@@ -169,6 +169,45 @@ app.post("/createAuthUser", requireAdmin, async (req, res) => {
   }
 });
 
+// Update an employee Firebase Auth password from the admin panel.
+app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
+  try {
+    const { uid, password } = req.body;
+    if (typeof uid !== "string" || !uid.trim() || typeof password !== "string") {
+      return res.status(400).json({
+        success: false,
+        error: "A user ID and password are required",
+      });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 6 characters",
+      });
+    }
+
+    const targetUser = await admin.auth().getUser(uid);
+    if (
+      uid === req.user.uid ||
+      (targetUser.email && adminEmails.has(targetUser.email.toLowerCase()))
+    ) {
+      return res.status(403).json({
+        success: false,
+        error: "Admin account passwords cannot be changed here",
+      });
+    }
+
+    await admin.auth().updateUser(uid, { password });
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Update Auth Password Error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Unable to update the employee password",
+    });
+  }
+});
+
 // Delete Firebase Auth User
 app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
   try {

@@ -1,70 +1,50 @@
-<!-- FILTERS -->
-<div class="filters">
-  <input type="date" value="2026-05-22" />
+<section class="income-cart-page">
+  <div class="income-cart-header">
+    <div class="income-cart-filters">
+      <label for="income-date-filter">Date</label>
+      <input type="date" id="income-date-filter" />
+      <label for="income-employee-filter">Employee</label>
+      <select id="income-employee-filter" class="browser-default">
+        <option value="">All Employees</option>
+      </select>
+    </div>
+  </div>
 
-  <select>
-    <option>All Carts</option>
-    <option>Cart 1</option>
-    <option>Cart 2</option>
-    <option>Cart 3</option>
-    <option>Cart 4</option>
-    <option>Cart 5</option>
-    <option>Cart 6</option>
-  </select>
-</div>
+  <div class="income-cart-kpis">
+    <article class="income-cart-kpi">
+      <span>Total Income</span>
+      <strong id="income-total">₱0.00</strong>
+      <small>Paid orders in the selected date and employee filter</small>
+    </article>
+    <article class="income-cart-kpi">
+      <span>Employees Timed Out</span>
+      <strong id="income-cart-count">0</strong>
+      <small>Completed shifts in the selected results</small>
+    </article>
+    <article class="income-cart-kpi">
+      <span>Paid Carts</span>
+      <strong id="income-cart-average">0</strong>
+      <small>Orders placed during completed shifts</small>
+    </article>
+  </div>
 
-<!-- TABLE -->
-<section class="table-section">
-  <table class="responsive-table">
-    <thead>
-      <tr>
-        <th>Time</th>
-        <th>Total Sales (₱)</th>
-        <th>Total Expenses (₱)</th>
-        <th>Net Income (₱)</th>
-        <th>Net Income per Cart (₱)</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      <tr>
-        <td data-label="Time">Morning (6:00 AM - 11:59 AM)</td>
-        <td data-label="Total Sales">3,250.00</td>
-        <td data-label="Total Expenses">1,950.00</td>
-        <td data-label="Net Income">1,300.00</td>
-        <td data-label="Net Income per Cart">1,300.00</td>
-      </tr>
-
-      <tr>
-        <td data-label="Time">Afternoon (12:00 PM - 4:59 PM)</td>
-        <td data-label="Total Sales">5,100.00</td>
-        <td data-label="Total Expenses">2,950.00</td>
-        <td data-label="Net Income">2,150.00</td>
-        <td data-label="Net Income per Cart">2,150.00</td>
-      </tr>
-
-      <tr>
-        <td data-label="Time">Evening (5:00 PM - 10:00 PM)</td>
-        <td data-label="Total Sales">7,250.00</td>
-        <td data-label="Total Expenses">4,450.00</td>
-        <td data-label="Net Income">2,800.00</td>
-        <td data-label="Net Income per Cart">2,800.00</td>
-      </tr>
-
-      <tr class="total-row">
-        <td data-label="Time">Total (All Day)</td>
-        <td data-label="Total Sales">15,600.00</td>
-        <td data-label="Total Expenses">9,350.00</td>
-        <td data-label="Net Income">6,250.00</td>
-        <td data-label="Net Income per Cart">1,250.00</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <p class="note">
-    * Net Income per cart is the average per cart for the selected date.
-  </p>
+  <section class="income-cart-table-card">
+    <div class="table-container">
+      <table id="income-cart-table" class="striped responsive-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Completed Shifts</th>
+            <th>Paid Carts</th>
+            <th>Total Income</th>
+          </tr>
+        </thead>
+        <tbody id="income-cart-rows">
+          <tr>
+            <td colspan="4" class="center-align">Loading income records...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </section>
-
-<script src="/js/functionalnav.js"></script>
-<script src="/js/refresh.js"></script>

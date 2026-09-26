@@ -86,6 +86,8 @@ function loadSection(page) {
         "expenses.html": "Capital Management",
         "EmployeeManagement.html": "Employees Management",
         "EmployeeMonitoring.html": "Employee Monitoring",
+        "IncomeCart.html": "Income Per Cart",
+        "sales.html": "Sales Orders",
       };
 
       if (title) title.textContent = pageTitles[page] || "Administrator";
@@ -178,6 +180,28 @@ function loadSection(page) {
             currentCleanup = attendanceModule.stopAttendanceMonitoring || null;
           } catch (err) {
             console.error("Attendance monitoring init error:", err);
+          }
+          break;
+
+        case "IncomeCart.html":
+          try {
+            const incomeModule = await import("/js/incomeCart.js");
+            if (myToken !== currentLoadToken) return;
+            incomeModule.initIncomeCart?.();
+            currentCleanup = incomeModule.cleanupIncomeCart || null;
+          } catch (err) {
+            console.error("Income Per Cart Init Error:", err);
+          }
+          break;
+
+        case "sales.html":
+          try {
+            const salesModule = await import("/js/sales.js");
+            if (myToken !== currentLoadToken) return;
+            salesModule.initSalesPage?.();
+            currentCleanup = salesModule.cleanupSalesPage || null;
+          } catch (err) {
+            console.error("Sales Orders Init Error:", err);
           }
           break;
       }
