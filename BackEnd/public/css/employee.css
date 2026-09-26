@@ -3617,7 +3617,7 @@ html.dark .order-item .qty {
   }
 
   body:has(.product-list) .cart-section {
-    display: block;
+    display: none;
   }
 
   body:has(.product-list) .checkout-bar {
@@ -4546,6 +4546,13 @@ button.employee-profile {
 
 .employee-profile-menu-panel[hidden] {
   display: none;
+}
+
+.employee-profile-menu-user {
+  padding: 9px 10px 11px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .employee-profile-menu-action {

@@ -64,7 +64,7 @@
         </li>
 
         <li>
-          <a href="../../index.html">
+          <a href="../../index.html" data-employee-logout>
             <i class="material-icons">logout</i>
             Logout
           </a>
@@ -95,13 +95,13 @@
           <div class="employee-profile-menu">
           <button id="employee-profile-menu-button" type="button" class="employee-profile" aria-label="Open account menu" aria-expanded="false" aria-controls="employee-profile-menu-panel">
             <span class="material-icons">account_circle</span>
-            <div><strong id="employee-profile-name">Employee</strong><small>Employee</small></div>
           </button>
           <div id="employee-profile-menu-panel" class="employee-profile-menu-panel" hidden>
+            <div class="employee-profile-menu-user"><strong id="employee-profile-name">Employee</strong></div>
             <button type="button" class="employee-profile-menu-action" data-theme-toggle>
               <i class="material-icons" data-theme-icon>dark_mode</i><span>Dark mode</span>
             </button>
-            <a class="employee-profile-menu-action" href="../../index.html"><i class="material-icons">logout</i><span>Logout</span></a>
+            <a class="employee-profile-menu-action" href="../../index.html" data-employee-logout><i class="material-icons">logout</i><span>Logout</span></a>
           </div>
           </div>
         </div>
@@ -218,7 +218,7 @@
         <span>Report</span>
       </a>
 
-      <a>
+      <a href="../../index.html" data-employee-logout>
         <i class="material-icons">logout</i>
         <span>Logout</span>
       </a>

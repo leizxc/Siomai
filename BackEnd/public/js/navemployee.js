@@ -279,6 +279,12 @@ document.addEventListener(
       document.querySelector(".bottom-nav");
     loadEmployeeProfile();
 
+    document.querySelectorAll("[data-employee-logout]").forEach((logoutLink) => {
+      logoutLink.addEventListener("click", () => {
+        localStorage.removeItem("cart");
+      });
+    });
+
     const profileMenuButton = document.querySelector("#employee-profile-menu-button");
     const profileMenuPanel = document.querySelector("#employee-profile-menu-panel");
     const closeProfileMenu = () => {
