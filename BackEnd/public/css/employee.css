@@ -2798,6 +2798,12 @@ html.dark .assigned-summary-icon {
   color: var(--text-primary);
 }
 
+.assigned-stock-quantity {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
 .assigned-stock-table td small {
   color: var(--text-muted);
   font-size: 11px;

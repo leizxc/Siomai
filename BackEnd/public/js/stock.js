@@ -69,7 +69,7 @@ function renderStockPage() {
     return `<tr>
       <td data-label="Product"><div class="assigned-product-name"><span>${escapeHtml(name.charAt(0).toUpperCase())}</span><strong>${escapeHtml(name)}</strong></div></td>
       <td data-label="Category">${escapeHtml(product.category || product.role || "Uncategorized")}</td>
-      <td data-label="Assigned stock"><strong>${formatQuantity(assignedStock.quantity)}</strong> <small>${escapeHtml(assignedStock.unit)}</small></td>
+      <td data-label="Assigned stock"><span class="assigned-stock-quantity"><strong>${formatQuantity(assignedStock.quantity)}</strong><small>${escapeHtml(assignedStock.unit)}</small></span></td>
       <td data-label="Unit price">${formatCurrency(Number(product.price || 0))}</td>
       <td data-label="Status"><span class="assigned-stock-badge ${statusClass}">${status}</span></td>
       <td data-label="Last updated">${formatDate(product.last_updated || product.created_at)}</td>

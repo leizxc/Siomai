@@ -45,8 +45,10 @@ function preserveEmployeeNotificationModal(root) {
 }
 
 async function loadEmployeeProfile() {
-  const nameElement = document.querySelector("#employee-profile-name");
-  if (!nameElement) return;
+  const nameElements = document.querySelectorAll(
+    "#employee-profile-name, #employee-profile-name-desktop",
+  );
+  if (!nameElements.length) return;
 
   const user = await new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -60,7 +62,10 @@ async function loadEmployeeProfile() {
     const snapshot = await getDocs(query(collection(db, "employees"), where("uid", "==", user.uid)));
     const employee = snapshot.docs[0]?.data();
     const name = `${employee?.fname || ""} ${employee?.lname || ""}`.trim();
-    nameElement.textContent = name || user.displayName || "Employee";
+    const displayName = name || user.displayName || "Employee";
+    nameElements.forEach((nameElement) => {
+      nameElement.textContent = displayName;
+    });
   } catch (error) {
     console.error("Unable to load employee profile:", error);
   }
