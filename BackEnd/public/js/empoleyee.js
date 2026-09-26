@@ -55,7 +55,7 @@ function hasUnlimitedOrder(product) {
     .trim()
     .toLowerCase();
   return (
-    ["kaban", "kg", "packs"].includes(unit) ||
+    ["kaban", "kilogram", "kg", "packs"].includes(unit) ||
     ["drinks", "rice"].includes(category)
   );
 }
@@ -70,16 +70,18 @@ function isLowStock(product) {
 
 function getProductStockLabel(product) {
   const pieces = Number(product.pieces ?? product.stock) || 0;
-  if (String(product.unit || "").trim().toLowerCase() === "pack") {
+  const unit = String(product.unit || "").trim().toLowerCase();
+  if (unit === "pack") {
     return `${formatQuantity(product.packs)} packs (${formatQuantity(pieces)} pcs)`;
   }
+  if (unit === "kilogram") return `${formatQuantity(pieces)} kg`;
   return `${formatQuantity(pieces)} ${product.unit || "pcs"}`;
 }
 
 function getCardStockLabel(product) {
   const unit = String(product.unit || "").trim().toLowerCase();
   if (unit === "kaban") return "Kaldero";
-  if (unit === "packs") return "Container";
+  if (["packs", "kilogram"].includes(unit)) return "Container";
   return getProductStockLabel(product);
 }
 

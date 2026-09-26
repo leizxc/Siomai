@@ -34,7 +34,7 @@
 
   <body>
     <div class="container">
-      <!-- Side Bar -->
+      <!-- Sidebar -->
       <aside class="sidebar">
         <h2 class="logo">Queen Casy</h2>
         <p class="role">Admin</p>
@@ -61,7 +61,7 @@
             >
           </li>
           <li>
-            <a href="#" onclick="loadSection('incomecart.html', this)"
+            <a href="#" onclick="loadSection('IncomeCart.html', this)"
               ><i class="material-icons">bar_chart</i>Income Per Cart</a
             >
           </li>
@@ -90,7 +90,7 @@
 
       <div class="overlay"></div>
 
-      <!-- MAIN -->
+      <!-- Main -->
       <main class="main">
         <div class="mobile-header">
           <button id="menu-toggle">
@@ -135,474 +135,78 @@
         </div>
 
         <div id="content" class="dashboard-content">
-          <!-- =====================================================
-       KPI CARDS
-  ====================================================== -->
+          <div class="dashboard-kpi-grid dashboard-manager-kpis">
+            <section class="dashboard-kpi-card sales-kpi"><div class="kpi-icon"><i class="material-icons">payments</i></div><div class="kpi-info"><p>SALES TODAY</p><h2 id="dashboard-sales-today">&#8369;0.00</h2><span>Paid orders</span></div></section>
+            <section class="dashboard-kpi-card expense-kpi"><div class="kpi-icon"><i class="material-icons">receipt_long</i></div><div class="kpi-info"><p>EXPENSES TODAY</p><h2 id="dashboard-expenses-today">&#8369;0.00</h2><span>Recorded expenses</span></div></section>
+            <section class="dashboard-kpi-card profit-kpi"><div class="kpi-icon"><i class="material-icons">account_balance_wallet</i></div><div class="kpi-info"><p>NET TODAY</p><h2 id="dashboard-net-today">&#8369;0.00</h2><span>Sales minus expenses</span></div></section>
+            <section class="dashboard-kpi-card income-kpi"><div class="kpi-icon"><i class="material-icons">pending_actions</i></div><div class="kpi-info"><p>ATTENDANCE REQUESTS</p><h2 id="dashboard-attendance-pending">0</h2><span>Awaiting review</span></div></section>
+          </div>
 
-          <div class="dashboard-kpi-grid">
-            <!-- Network Income -->
-            <section class="dashboard-kpi-card income-kpi">
-              <div class="kpi-icon">
-                <i class="material-icons">shopping_cart</i>
-              </div>
-
-              <div class="kpi-info">
-                <p>NETWORK INCOME PER CART</p>
-                <h2>₱ 1,250.00</h2>
-                <span class="kpi-positive">
-                  <i class="material-icons">arrow_upward</i>
-                  Average per cart
-                </span>
-              </div>
+          <div class="dashboard-manager-grid">
+            <section class="dashboard-panel dashboard-chart-panel">
+              <div class="panel-header simple-header"><div><h3><i class="material-icons">show_chart</i>Sales &amp; Expenses</h3><p>Daily totals for the last 7 days</p></div><a href="#" onclick="loadSection('IncomeCart.html', this); return false">Income module <i class="material-icons">arrow_forward</i></a></div>
+              <div id="dashboard-chart-legend" class="dashboard-chart-legend"></div><canvas id="dashboard-income-chart" aria-label="Sales and expenses graph for the last seven days"></canvas>
             </section>
-
-            <!-- Total Sales -->
-            <section class="dashboard-kpi-card sales-kpi">
-              <div class="kpi-icon">
-                <i class="material-icons">payments</i>
-              </div>
-
-              <div class="kpi-info">
-                <p>TOTAL SALES</p>
-                <h2>₱ 15,600.00</h2>
-                <span class="kpi-positive">
-                  <i class="material-icons">trending_up</i>
-                  All carts
-                </span>
-              </div>
-            </section>
-
-            <!-- Expenses -->
-            <section class="dashboard-kpi-card expense-kpi">
-              <div class="kpi-icon">
-                <i class="material-icons">receipt_long</i>
-              </div>
-
-              <div class="kpi-info">
-                <p>TOTAL EXPENSES</p>
-                <h2>₱ 9,350.00</h2>
-                <span class="kpi-negative">
-                  <i class="material-icons">trending_down</i>
-                  All expenses
-                </span>
-              </div>
-            </section>
-
-            <!-- Net Income -->
-            <section class="dashboard-kpi-card profit-kpi">
-              <div class="kpi-icon">
-                <i class="material-icons">pie_chart</i>
-              </div>
-
-              <div class="kpi-info">
-                <p>NET INCOME</p>
-                <h2>₱ 6,250.00</h2>
-                <span class="kpi-positive">
-                  <i class="material-icons">trending_up</i>
-                  Total net income
-                </span>
-              </div>
+            <section class="dashboard-panel dashboard-attention-panel">
+              <div class="panel-header simple-header"><div><h3><i class="material-icons">task_alt</i>Manager actions</h3><p>Requests that need your attention</p></div></div>
+              <div class="dashboard-action-counts"><a href="#" onclick="loadSection('EmployeeMonitoring.html', this); return false"><strong id="dashboard-attendance-pending-small">Review attendance</strong><span>Time in and time out requests</span></a><a href="#" onclick="document.getElementById('manager-notification-bell')?.click(); return false"><strong id="dashboard-reports-pending">0</strong><span>Unread expense report alerts</span></a></div>
+              <div id="dashboard-manager-queue" class="dashboard-queue"></div>
             </section>
           </div>
 
-          <!-- =====================================================
-       MIDDLE SECTION
-  ====================================================== -->
-
-          <div class="dashboard-middle-grid">
-            <!-- INCOME PER CART -->
-            <section class="dashboard-panel income-panel">
-              <div class="panel-header">
-                <div>
-                  <h3>
-                    <i class="material-icons">bar_chart</i>
-                    Income Per Cart
-                  </h3>
-
-                  <p>Income breakdown per time of day</p>
-                </div>
-
-                <div class="panel-filters">
-                  <input type="date" value="2026-05-22" />
-
-                  <select>
-                    <option>All Carts</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="dashboard-table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>TIME</th>
-                      <th>TOTAL SALES (₱)</th>
-                      <th>TOTAL EXPENSES (₱)</th>
-                      <th>NET INCOME (₱)</th>
-                      <th>NET INCOME / CART (₱)</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    <tr>
-                      <td>Morning (6:00 AM - 11:59 AM)</td>
-                      <td>3,250.00</td>
-                      <td>1,950.00</td>
-                      <td>1,300.00</td>
-                      <td>1,300.00</td>
-                    </tr>
-
-                    <tr>
-                      <td>Afternoon (12:00 PM - 4:59 PM)</td>
-                      <td>5,100.00</td>
-                      <td>2,950.00</td>
-                      <td>2,150.00</td>
-                      <td>2,150.00</td>
-                    </tr>
-
-                    <tr>
-                      <td>Evening (5:00 PM - 10:00 PM)</td>
-                      <td>7,250.00</td>
-                      <td>4,450.00</td>
-                      <td>2,800.00</td>
-                      <td>2,800.00</td>
-                    </tr>
-
-                    <tr class="dashboard-total-row">
-                      <td>Total (All Day)</td>
-                      <td>15,600.00</td>
-                      <td>9,350.00</td>
-                      <td>6,250.00</td>
-                      <td>1,250.00</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <p class="dashboard-note">
-                * Net Income per Cart is the average per cart for the selected
-                date.
-              </p>
+          <div class="dashboard-manager-grid dashboard-manager-grid-lower">
+            <section class="dashboard-panel dashboard-stock-panel">
+              <div class="panel-header simple-header"><div><h3><i class="material-icons">inventory_2</i>Inventory watch</h3><p><span id="dashboard-inventory-total">0</span> inventory records | <span id="dashboard-low-stock">0</span> low | <span id="dashboard-out-stock">0</span> out of stock</p></div><a href="#" onclick="loadSection('inventory.html', this); return false">Open inventory <i class="material-icons">arrow_forward</i></a></div>
+              <div id="dashboard-stock-list" class="dashboard-stock-list"></div>
             </section>
-
-            <!-- INVENTORY SUMMARY -->
-            <section class="dashboard-panel inventory-summary-panel">
-              <div class="panel-header simple-header">
-                <div>
-                  <h3>
-                    <i class="material-icons">inventory</i>
-                    Inventory Summary
-                  </h3>
-
-                  <p>Overview of your inventory</p>
-                </div>
-              </div>
-
-              <div class="inventory-summary-grid">
-                <div class="inventory-stat">
-                  <div class="inventory-stat-icon blue">
-                    <i class="material-icons">inventory_2</i>
-                  </div>
-
-                  <div>
-                    <span>TOTAL PRODUCTS</span>
-                    <strong>4</strong>
-                    <small>All Items</small>
-                  </div>
-                </div>
-
-                <div class="inventory-stat">
-                  <div class="inventory-stat-icon green">
-                    <i class="material-icons">layers</i>
-                  </div>
-
-                  <div>
-                    <span>TOTAL STOCK QUANTITY</span>
-                    <strong>650 pcs</strong>
-                    <small>All Items</small>
-                  </div>
-                </div>
-
-                <div class="inventory-stat">
-                  <div class="inventory-stat-icon orange">
-                    <i class="material-icons">warning</i>
-                  </div>
-
-                  <div>
-                    <span>LOW STOCK ITEMS</span>
-                    <strong>0</strong>
-                    <small>View items</small>
-                  </div>
-                </div>
-
-                <div class="inventory-stat">
-                  <div class="inventory-stat-icon red">
-                    <i class="material-icons">cancel</i>
-                  </div>
-
-                  <div>
-                    <span>OUT OF STOCK ITEMS</span>
-                    <strong>0</strong>
-                    <small>View items</small>
-                  </div>
-                </div>
-              </div>
-
-              <a
-                href="#"
-                class="dashboard-panel-link"
-                onclick="loadSection('inventory.html', this)"
-              >
-                Go to Inventory
-                <i class="material-icons">arrow_forward</i>
-              </a>
-            </section>
-          </div>
-          <!-- Botoom section -->
-          <div class="dashboard-bottom-grid">
-            <!-- INVENTORY -->
-            <section class="dashboard-panel inventory-panel">
-              <div class="panel-header simple-header">
-                <div>
-                  <h3>
-                    <i class="material-icons">inventory_2</i>
-                    Inventory
-                  </h3>
-
-                  <p>Product List and Stocks</p>
-                </div>
-              </div>
-
-              <div class="dashboard-table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>PRODUCT</th>
-                      <th>CATEGORY</th>
-                      <th>STOCK</th>
-                      <th>UNIT PRICE</th>
-                      <th>TOTAL VALUE</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    <tr>
-                      <td>Siomai</td>
-                      <td>Food</td>
-                      <td>200 pcs</td>
-                      <td>6.00</td>
-                      <td>1,200.00</td>
-                    </tr>
-
-                    <tr>
-                      <td>Siomai Rice</td>
-                      <td>Food</td>
-                      <td>150 pcs</td>
-                      <td>20.00</td>
-                      <td>3,000.00</td>
-                    </tr>
-
-                    <tr>
-                      <td>Siomai Pork</td>
-                      <td>Food</td>
-                      <td>120 pcs</td>
-                      <td>7.00</td>
-                      <td>840.00</td>
-                    </tr>
-
-                    <tr>
-                      <td>Drinks</td>
-                      <td>Drinks</td>
-                      <td>180 pcs</td>
-                      <td>15.00</td>
-                      <td>2,700.00</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="inventory-footer">
-                <span>
-                  Total Inventory Value:
-                  <strong>₱ 7,740.00</strong>
-                </span>
-
-                <a href="#" onclick="loadSection('inventory.html', this)">
-                  View Inventory
-                  <i class="material-icons">arrow_forward</i>
-                </a>
-              </div>
-            </section>
-
-            <!-- TOP PRODUCTS -->
-            <section class="dashboard-panel top-products-panel">
-              <div class="panel-header simple-header">
-                <div>
-                  <h3>
-                    <i class="material-icons">local_fire_department</i>
-                    Top Products
-                  </h3>
-
-                  <p>Today's top products</p>
-                </div>
-              </div>
-
-              <div class="top-product-list">
-                <div class="top-product">
-                  <strong>1</strong>
-
-                  <div class="product-placeholder">
-                    <i class="material-icons">restaurant</i>
-                  </div>
-
-                  <span>Siomai (4pcs)</span>
-
-                  <b>₱8,250.00</b>
-                </div>
-
-                <div class="top-product">
-                  <strong>2</strong>
-
-                  <div class="product-placeholder">
-                    <i class="material-icons">restaurant</i>
-                  </div>
-
-                  <span>Lugaw</span>
-
-                  <b>₱6,750.00</b>
-                </div>
-
-                <div class="top-product">
-                  <strong>3</strong>
-
-                  <div class="product-placeholder">
-                    <i class="material-icons">restaurant</i>
-                  </div>
-
-                  <span>Pares</span>
-
-                  <b>₱5,600.00</b>
-                </div>
-
-                <div class="top-product">
-                  <strong>4</strong>
-
-                  <div class="product-placeholder">
-                    <i class="material-icons">restaurant</i>
-                  </div>
-
-                  <span>Tokwa't Baboy</span>
-
-                  <b>₱4,200.00</b>
-                </div>
-
-                <div class="top-product">
-                  <strong>5</strong>
-
-                  <div class="product-placeholder">
-                    <i class="material-icons">local_drink</i>
-                  </div>
-
-                  <span>Softdrinks</span>
-
-                  <b>₱3,100.00</b>
-                </div>
-              </div>
-            </section>
-
-            <!-- RECENT EXPENSES -->
-            <section class="dashboard-panel expenses-panel">
-              <div class="panel-header simple-header">
-                <div>
-                  <h3>
-                    <i class="material-icons">receipt_long</i>
-                    Recent Expenses
-                  </h3>
-
-                  <p>Latest expense records</p>
-                </div>
-              </div>
-
-              <div class="dashboard-table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>DESCRIPTION</th>
-                      <th>CATEGORY</th>
-                      <th>AMOUNT</th>
-                      <th>DATE</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    <tr>
-                      <td>Raw Materials</td>
-                      <td>Supplies</td>
-                      <td>1,250.00</td>
-                      <td>May 27</td>
-                    </tr>
-
-                    <tr>
-                      <td>Packaging</td>
-                      <td>Supplies</td>
-                      <td>650.00</td>
-                      <td>May 27</td>
-                    </tr>
-
-                    <tr>
-                      <td>Gas Refill</td>
-                      <td>Utilities</td>
-                      <td>450.00</td>
-                      <td>May 26</td>
-                    </tr>
-
-                    <tr>
-                      <td>Cart Maintenance</td>
-                      <td>Maintenance</td>
-                      <td>850.00</td>
-                      <td>May 26</td>
-                    </tr>
-
-                    <tr>
-                      <td>Condiments</td>
-                      <td>Supplies</td>
-                      <td>300.00</td>
-                      <td>May 26</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <a
-                href="#"
-                class="dashboard-panel-link"
-                onclick="loadSection('expenses.html', this)"
-              >
-                View all expenses
-                <i class="material-icons">arrow_forward</i>
-              </a>
+            <section class="dashboard-panel dashboard-recent-expenses-panel">
+              <div class="panel-header simple-header"><div><h3><i class="material-icons">receipt_long</i>Recent expenses</h3><p>Latest entries from Capital Management</p></div><a href="#" onclick="loadSection('expenses.html', this); return false">View all <i class="material-icons">arrow_forward</i></a></div>
+              <div class="dashboard-table-wrapper"><table><thead><tr><th>Description</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead><tbody id="dashboard-recent-expenses"><tr><td colspan="4" class="dashboard-empty">Loading expenses...</td></tr></tbody></table></div>
             </section>
           </div>
         </div>
       </main>
     </div>
 
-    <div id="manager-notifications-modal" class="modal manager-notifications-modal">
+    <!-- Manager Notifications Modal -->
+    <div
+      id="manager-notifications-modal"
+      class="modal manager-notifications-modal"
+    >
       <div class="modal-content">
         <h4>Manager notifications</h4>
         <div class="notification-selection-toolbar">
-          <label><input id="manager-select-all" type="checkbox" /><span>Select all</span></label>
+          <label
+            ><input id="manager-select-all" type="checkbox" /><span
+              >Select all</span
+            ></label
+          >
           <span id="manager-selected-count">0 selected</span>
         </div>
         <div id="manager-notification-list"></div>
       </div>
       <div class="modal-footer">
-        <button id="mark-manager-selected-read" type="button" class="btn-flat" disabled>Mark as read</button>
-        <button id="delete-manager-selected" type="button" class="btn red" disabled>Delete selected</button>
+        <button
+          id="mark-manager-selected-read"
+          type="button"
+          class="btn-flat"
+          disabled
+        >
+          Mark as read
+        </button>
+        <button
+          id="delete-manager-selected"
+          type="button"
+          class="btn red"
+          disabled
+        >
+          Delete selected
+        </button>
         <button type="button" class="modal-close btn-flat">Close</button>
       </div>
     </div>
 
+    <!-- Delete Notifications Modal -->
     <div id="delete-notifications-modal" class="modal">
       <div class="modal-content">
         <h4>Delete notifications?</h4>
@@ -619,12 +223,14 @@
     </div>
   </body>
 
-  <!-- JS Files -->
+  <!-- JS -->
   <script src="/js/refresh.js"></script>
   <script src="/js/functionalnav.js"></script>
   <script type="module" src="/js/IndexDB.js"></script>
   <script src="/js/theme.js"></script>
   <script type="module">
+    import "/js/adminIdleLogout.js";
+    import "/js/adminDashboard.js";
     import { initManagerNotifications } from "/js/adminnotifications.js";
     initManagerNotifications();
   </script>

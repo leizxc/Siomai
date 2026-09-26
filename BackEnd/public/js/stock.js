@@ -83,13 +83,13 @@ function isLowStock(product) {
     .trim()
     .toLowerCase();
   const isUnlimited =
-    ["kaban", "kg", "packs"].includes(unit) ||
+    ["kaban", "kilogram", "kg", "packs"].includes(unit) ||
     ["drinks", "rice"].includes(category);
   const isPieceBased = ["piece", "pieces", "pcs", "pc", "pack"].includes(unit);
 
   return !isUnlimited && isPieceBased && getQuantity(product) > 0 && getQuantity(product) <= 25;
 }
-function formatUnit(unit) { return ({ piece: "pcs", pieces: "pcs", pack: "packs", kg: "kg", liter: "L" })[(unit || "piece").toLowerCase()] || unit || "pcs"; }
+function formatUnit(unit) { return ({ piece: "pcs", pieces: "pcs", pack: "packs", kilogram: "kg", kg: "kg", liter: "L" })[(unit || "piece").toLowerCase()] || unit || "pcs"; }
 function formatQuantity(value) { return Number.isInteger(value) ? String(value) : value.toFixed(2); }
 function formatCurrency(value) { return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(value); }
 function formatDate(timestamp) { return timestamp?.toDate ? timestamp.toDate().toLocaleString("en-PH", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—"; }
