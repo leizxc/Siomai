@@ -19,10 +19,10 @@ export async function initReportPage() {
 
   const form = document.querySelector("#expenseReportForm");
   unsubscribeShift?.();
-  unsubscribeShift = watchActiveShift((active) => {
-    reportShiftActive = active;
-    if (form) form.inert = !active;
-    showShiftRequired(form?.closest(".expense-report-page"), !active);
+  unsubscribeShift = watchActiveShift((shift) => {
+    reportShiftActive = shift.active;
+    if (form) form.inert = !shift.active;
+    showShiftRequired(form?.closest(".expense-report-page"), !shift.active, shift.timedOut);
   });
 
   document.querySelector("#reportExpenseDate").value = localDate();

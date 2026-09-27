@@ -20,10 +20,10 @@ const cashlessBtn = document.getElementById("cashlessBtn");
 const checkoutBtn = document.getElementById("checkoutBtn");
 const backBtn = document.getElementById("backBtn");
 let shiftActive = false;
-const stopShiftWatch = watchActiveShift((active) => {
-  shiftActive = active;
-  showShiftRequired(document.querySelector(".order-container"), !active);
-  document.querySelector(".summary-card")?.toggleAttribute("inert", !active);
+const stopShiftWatch = watchActiveShift((shift) => {
+  shiftActive = shift.active;
+  showShiftRequired(document.querySelector(".order-container"), !shift.active, shift.timedOut);
+  document.querySelector(".summary-card")?.toggleAttribute("inert", !shift.active);
 });
 
 const cashModalElement = document.getElementById("cashModal");

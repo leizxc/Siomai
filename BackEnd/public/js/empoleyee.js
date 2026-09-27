@@ -188,13 +188,13 @@ export async function initPOS() {
   if (session !== posSession || !document.getElementById("productList")) return;
 
   unsubscribeShift?.();
-  unsubscribeShift = watchActiveShift((active) => {
+  unsubscribeShift = watchActiveShift((shift) => {
     if (session !== posSession) return;
-    posShiftActive = active;
+    posShiftActive = shift.active;
     const content = document.getElementById("content");
-    showShiftRequired(content, !active);
+    showShiftRequired(content, !shift.active, shift.timedOut);
     content?.querySelectorAll(":scope > *").forEach((section) => {
-      section.inert = !active && !section.hasAttribute("data-shift-required");
+      section.inert = !shift.active && !section.hasAttribute("data-shift-required");
     });
   });
 

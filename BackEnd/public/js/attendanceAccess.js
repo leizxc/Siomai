@@ -15,15 +15,19 @@ export function watchActiveShift(callback) {
   const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
     unsubscribeAttendance?.();
     if (!user) {
-      callback(false);
+      callback({ active: false, timedOut: false });
       return;
     }
     unsubscribeAttendance = onSnapshot(doc(db, "attendance", `${user.uid}_${todayKey()}`), (snapshot) => {
       const shift = snapshot.exists() ? snapshot.data() : null;
-      callback(Boolean(shift && shift.status === "active" && shift.clockedInAt && !shift.clockedOutAt));
+      const timedOut = Boolean(shift && (shift.status === "completed" || shift.clockedOutAt));
+      callback({
+        active: Boolean(shift && shift.status === "active" && shift.clockedInAt && !shift.clockedOutAt),
+        timedOut,
+      });
     }, (error) => {
       console.error("Unable to verify employee shift:", error);
-      callback(false);
+      callback({ active: false, timedOut: false });
     });
   });
   return () => {
@@ -32,7 +36,7 @@ export function watchActiveShift(callback) {
   };
 }
 
-export function showShiftRequired(container, visible) {
+export function showShiftRequired(container, visible, timedOut = false) {
   if (!container) return;
   let notice = container.querySelector("[data-shift-required]");
   if (visible && !notice) {
@@ -41,10 +45,10 @@ export function showShiftRequired(container, visible) {
     notice.setAttribute("role", "status");
     notice.className = "shift-required-notice";
     notice.innerHTML = `
-      <span class="material-icons shift-required-icon" aria-hidden="true">lock_clock</span>
+      <span class="material-icons shift-required-icon" data-shift-notice-icon aria-hidden="true"></span>
       <div class="shift-required-copy">
-        <strong>Need to time in</strong>
-        <span>Timed in and wait for the manager's approval before using POS or report expense.</span>
+        <strong data-shift-notice-title></strong>
+        <span data-shift-notice-message></span>
       </div>
       <button type="button" class="shift-required-action" data-go-to-attendance>Go to Attendance</button>
     `;
@@ -53,5 +57,16 @@ export function showShiftRequired(container, visible) {
     });
     container.prepend(notice);
   }
-  if (notice) notice.hidden = !visible;
+  if (notice) {
+    notice.hidden = !visible;
+    if (visible) {
+      notice.querySelector("[data-shift-notice-icon]").textContent = timedOut ? "task_alt" : "lock_clock";
+      notice.querySelector("[data-shift-notice-title]").textContent = timedOut ? "You already timed out" : "Need to time in";
+      notice.querySelector("[data-shift-notice-message]").textContent = timedOut
+        ? "All records have been saved."
+        : "Time in and wait for the manager's approval before using POS or reporting an expense.";
+      const attendanceButton = notice.querySelector("[data-go-to-attendance]");
+      attendanceButton.hidden = timedOut;
+    }
+  }
 }
