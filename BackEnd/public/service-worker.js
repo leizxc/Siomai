@@ -1,5 +1,5 @@
-const staticCacheName = "site-static-v17";
-const dynamicCache = "site-dynamic-v17";
+const staticCacheName = "site-static-v20";
+const dynamicCache = "site-dynamic-v20";
 
 //firebase cloud messaging
 importScripts(
@@ -12,6 +12,7 @@ const assets = [
   "./index.html",
   "./manifest.json",
   "./admin/adminpanel.html",
+  "./admin/payroll.html",
   "./employee/siomai/userpanel.html",
 
   // CSS
@@ -28,6 +29,7 @@ const assets = [
   "./js/firebase.js",
   "./js/frontfirebase.js",
   "./js/IndexDB.js",
+  "./js/payroll.js",
   "./js/navemployee.js",
   "./js/empoleyee.js",
   "./js/deviceNotifications.js",

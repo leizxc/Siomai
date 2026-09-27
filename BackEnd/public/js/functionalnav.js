@@ -88,6 +88,7 @@ function loadSection(page) {
         "EmployeeMonitoring.html": "Employee Monitoring",
         "IncomeCart.html": "Income Per Cart",
         "sales.html": "Sales Orders",
+        "payroll.html": "Employee Payroll",
       };
 
       if (title) title.textContent = pageTitles[page] || "Administrator";
@@ -202,6 +203,17 @@ function loadSection(page) {
             currentCleanup = salesModule.cleanupSalesPage || null;
           } catch (err) {
             console.error("Sales Orders Init Error:", err);
+          }
+          break;
+
+        case "payroll.html":
+          try {
+            const payrollModule = await import("/js/payroll.js");
+            if (myToken !== currentLoadToken) return;
+            payrollModule.initPayroll?.();
+            currentCleanup = payrollModule.cleanupPayroll || null;
+          } catch (err) {
+            console.error("Payroll Init Error:", err);
           }
           break;
       }
