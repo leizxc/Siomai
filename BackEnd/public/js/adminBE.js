@@ -259,7 +259,7 @@ export function loadInventory() {
           isPieceBasedUnit(data.unit_type) &&
           !isLowStockExempt(data.unit_type, data.category);
 
-        if (data.quantity <= 0) {
+        if (data.status === "On Selling" || data.quantity <= 0) {
           status = "On Selling";
         } else if (canShowLowStock && data.stock_quantity <= 25) {
           status = "Low Stock";

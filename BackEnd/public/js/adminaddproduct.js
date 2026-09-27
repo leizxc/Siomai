@@ -231,7 +231,7 @@ async function saveToProductHistory(productData, productId) {
         pieces_per_pack: Number(productData.pieces_per_pack || 60),
         last_updated: serverTimestamp(),
       });
-      return;
+      return true;
     }
 
     const historyData = {
@@ -261,8 +261,10 @@ async function saveToProductHistory(productData, productId) {
       html: `📦 ${productName} moved to Product History`,
       classes: "blue rounded",
     });
+    return true;
   } catch (error) {
     console.error("Error saving to product history:", error);
+    return false;
   }
 }
 
@@ -420,7 +422,15 @@ export function stopLoadingHistoryAssign() {
 async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
   if (!inventoryId) return;
 
-  const inventoryRef = doc(db, "inventory", inventoryId);
+  // Assigned products store the Product Menu document ID. Resolve that menu
+  // entry to its actual Inventory document before changing its quantity.
+  const menuSnap = await getDoc(doc(db, "productMenu", inventoryId));
+  const linkedInventoryId = menuSnap.exists()
+    ? menuSnap.data().inventory_id || menuSnap.data().inventoryId
+    : inventoryId;
+  if (!linkedInventoryId) return;
+
+  const inventoryRef = doc(db, "inventory", linkedInventoryId);
   const inventorySnap = await getDoc(inventoryRef);
   if (!inventorySnap.exists()) return;
 
@@ -444,20 +454,107 @@ async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
     }
   }
 
-  const newQuantity = (invData.quantity || 0) + deltaInInventoryUnit;
+  const newQuantity = Math.max(
+    0,
+    (Number(invData.quantity) || 0) + deltaInInventoryUnit,
+  );
   const newStockQuantity =
     invUnit === "pack" ? newQuantity * piecesPerPack : newQuantity;
 
   const unitPrice = Number(invData.unit_price || 0);
   const newTotalValue = newQuantity * unitPrice;
+  const activeAssignments = await getDocs(
+    query(
+      collection(db, "products"),
+      where("inventoryId", "==", inventoryId),
+    ),
+  );
+  const hasActiveAssignments = activeAssignments.docs.some((assignment) => {
+    const assigned = assignment.data();
+    return Number(assigned.pieces ?? assigned.stock ?? 0) > 0;
+  });
 
   await updateDoc(inventoryRef, {
     quantity: newQuantity,
     stock_quantity: newStockQuantity,
     total_value: newTotalValue,
-    status: newQuantity <= 0 ? "On Selling" : "Available",
+    status:
+      hasActiveAssignments || newQuantity <= 0 ? "On Selling" : "Available",
     last_updated: serverTimestamp(),
   });
+
+  if (menuSnap.exists()) {
+    const menuData = menuSnap.data();
+    const menuStock = Number(menuData.current_stock ?? 0);
+    await updateDoc(doc(db, "productMenu", inventoryId), {
+      status:
+        hasActiveAssignments || menuStock <= 0 ? "On Selling" : "Available",
+      last_updated: serverTimestamp(),
+    });
+  }
+}
+
+async function archiveDepletedMenuIfReady(menuId) {
+  const menuRef = doc(db, "productMenu", menuId);
+  const menuSnap = await getDoc(menuRef);
+  if (!menuSnap.exists()) return;
+
+  const menuData = menuSnap.data();
+  const assignments = await getDocs(
+    query(collection(db, "products"), where("inventoryId", "==", menuId)),
+  );
+  const hasRemainingStock = assignments.docs.some((assignment) => {
+    const data = assignment.data();
+    return Number(data.pieces ?? data.stock ?? 0) > 0;
+  });
+  if (hasRemainingStock) return;
+
+  const linkedInventoryId = menuData.inventory_id || menuData.inventoryId;
+  if (Number(menuData.current_stock ?? 0) > 0) {
+    await updateDoc(menuRef, {
+      status: "Available",
+      last_updated: serverTimestamp(),
+    });
+    if (linkedInventoryId) {
+      const inventoryRef = doc(db, "inventory", linkedInventoryId);
+      const inventorySnap = await getDoc(inventoryRef);
+      if (inventorySnap.exists()) {
+        const inventoryData = inventorySnap.data();
+        await updateDoc(inventoryRef, {
+          status:
+            Number(inventoryData.quantity ?? 0) > 0
+              ? "Available"
+              : "On Selling",
+          last_updated: serverTimestamp(),
+        });
+      }
+    }
+    return;
+  }
+
+  await deleteDoc(menuRef);
+
+  if (!linkedInventoryId) return;
+
+  const otherMenus = await getDocs(
+    query(
+      collection(db, "productMenu"),
+      where("inventory_id", "==", linkedInventoryId),
+    ),
+  );
+  if (!otherMenus.empty) return;
+
+  const inventoryRef = doc(db, "inventory", linkedInventoryId);
+  const inventorySnap = await getDoc(inventoryRef);
+  if (!inventorySnap.exists()) return;
+
+  await addDoc(collection(db, "archivedInventory"), {
+    ...inventorySnap.data(),
+    original_id: linkedInventoryId,
+    archived_at: serverTimestamp(),
+    archived_by: "System",
+  });
+  await deleteDoc(inventoryRef);
 }
 
 async function getCapitalPriceForMenuItem(menuData, transaction = null) {
@@ -505,7 +602,8 @@ function loadInventoryOptions(role = "") {
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data.status !== "Available") return;
+      const availableStock = Number(data.current_stock ?? 0);
+      if (availableStock <= 0) return;
       const option = document.createElement("option");
       option.value = docSnap.id;
       option.textContent = data.product_name;
@@ -976,7 +1074,7 @@ function bindProductFormListeners() {
                   container_count: Math.max(0, maxContainers - totalQtyUsed),
                 }
               : {}),
-            status: updatedStock <= 0 ? "On Selling" : "Available",
+            status: "On Selling",
             assigned: true,
             last_updated: serverTimestamp(),
           });
@@ -1120,7 +1218,7 @@ function bindProductFormListeners() {
                 ),
               }
             : {}),
-          status: updatedStock <= 0 ? "On Selling" : "Available",
+          status: "On Selling",
           assigned: true,
           last_updated: serverTimestamp(),
         });
@@ -1419,7 +1517,7 @@ export async function loadProducts() {
       piecesHeaderEl.textContent = "KG Used";
     } else if (sampleUnit === "kg") {
       packsHeaderEl.textContent = "Quantity";
-      piecesHeaderEl.textContent = "KG";
+      piecesHeaderEl.textContent = "Unit";
     } else if (sampleUnit === "liter") {
       packsHeaderEl.textContent = "Container";
       piecesHeaderEl.textContent = "Liter";
@@ -1452,7 +1550,14 @@ export async function loadProducts() {
     let rowsHtml = "";
     for (const item of pageItems) {
       const { id, data, empDisplay } = item;
-      const piecesValue = data.pieces ?? data.stock ?? 0;
+      const piecesValue =
+        data.pieces ??
+        data.stock ??
+        data.quantity ??
+        data.stock_quantity ??
+        data.current_stock ??
+        data.current_pieces ??
+        0;
       const priceValue = Number(data.price || 0);
       const capitalPriceValue = Number(data.capital_price || 0);
       const kgUsedValue = Number(data.kg_used || 0);
@@ -1472,6 +1577,9 @@ export async function loadProducts() {
 
       if (data.unit === "pack") {
         packsDisplay = Math.ceil(piecesValue / (data.pieces_per_pack || 1));
+      } else if (unit === "kg") {
+        packsDisplay = piecesValue;
+        piecesDisplay = "KG";
       } else if (["kaban", "kilogram", "packs", "liter"].includes(unit)) {
         packsDisplay = Number(data.kaldero_count || 0);
         piecesDisplay = piecesValue;
@@ -1606,7 +1714,7 @@ export async function loadProducts() {
               ? `${empData.fname} ${empData.lname}`.trim()
               : "Unknown";
 
-            await saveToProductHistory(
+            const archived = await saveToProductHistory(
               {
                 ...data,
                 employee_name: employeeName,
@@ -1617,7 +1725,12 @@ export async function loadProducts() {
               productId,
             );
 
+            // Preserve the exhausted allocation when archiving fails so the
+            // next snapshot can retry instead of losing its history record.
+            if (!archived) continue;
+
             await deleteDoc(doc(db, "products", productId));
+            await archiveDepletedMenuIfReady(data.inventoryId);
             continue;
           } catch (error) {
             console.error("Error processing product:", error);

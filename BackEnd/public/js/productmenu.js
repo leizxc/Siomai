@@ -149,7 +149,7 @@ export function loadInventoryOptions(role = "") {
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data.status === "On Selling") return;
+      if (Number(data.quantity ?? 0) <= 0) return;
 
       const option = document.createElement("option");
       option.value = docSnap.id;
