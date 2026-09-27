@@ -20,11 +20,14 @@ import {
 
 import { app } from "/js/firebase.js";
 import { loadProductsOffline } from "./IndexDB.js";
+import { watchActiveShift, showShiftRequired } from "./attendanceAccess.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
 
 let unsubscribePOS = null;
+let unsubscribeShift = null;
+let posShiftActive = false;
 // Bawat pagpasok/alis sa POS ay may sariling session. Pinipigilan nito ang
 // mabagal na async load mula sa dating DOM na mag-render sa bagong section.
 let posSession = 0;
@@ -183,6 +186,17 @@ export async function initPOS() {
   // Kung nakalipat na sa ibang DOM habang hinihintay ang Firebase Auth,
   // huwag nang magpatuloy sa lumang POS page.
   if (session !== posSession || !document.getElementById("productList")) return;
+
+  unsubscribeShift?.();
+  unsubscribeShift = watchActiveShift((active) => {
+    if (session !== posSession) return;
+    posShiftActive = active;
+    const content = document.getElementById("content");
+    showShiftRequired(content, !active);
+    content?.querySelectorAll(":scope > *").forEach((section) => {
+      section.inert = !active && !section.hasAttribute("data-shift-required");
+    });
+  });
 
   if (!navigator.onLine) {
     console.log("Offline mode: loading from IndexedDB");
@@ -548,6 +562,10 @@ function setupCartEvents() {
   checkoutBtn.dataset.ready = "true";
 
   checkoutBtn.addEventListener("click", () => {
+    if (!posShiftActive) {
+      M.toast({ html: "Timed in first before using POS.", classes: "red rounded" });
+      return;
+    }
     if (cart.length === 0) {
       M.toast({ html: "Cart is empty!", classes: "red rounded" });
       return;
@@ -573,6 +591,9 @@ window.addEventListener("pageshow", restoreCartOnPageShow);
 // Tinatawag ng navemployee.js bago palitan ang #content.
 export function stopPosPage() {
   posSession += 1;
+  unsubscribeShift?.();
+  unsubscribeShift = null;
+  posShiftActive = false;
 
   if (unsubscribePOS) {
     unsubscribePOS();

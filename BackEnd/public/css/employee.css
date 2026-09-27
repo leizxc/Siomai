@@ -4357,6 +4357,15 @@ html.dark .report-status {
     font-size: 20px;
     margin-left: 15px;
   }
+  .expense-report-header-icon {
+    width: 40px;
+    height: 40px;
+    margin-right: 4px;
+    border-radius: 11px;
+  }
+  .expense-report-header-icon .material-icons {
+    font-size: 21px;
+  }
 }
 
 /* Shared modal placement */
@@ -4786,5 +4795,149 @@ html.dark .employee-notification-empty {
   }
   .bottom-nav a:last-child {
     display: none;
+  }
+}
+.shift-required-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 18px 22px;
+  margin: 16px 0;
+  border: 1px solid #f0ce72;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fff8e5, #fff1cb);
+  color: #583d00;
+  box-shadow: 0 6px 18px rgba(91, 65, 0, 0.09);
+  text-align: left;
+}
+
+.shift-required-icon {
+  flex: 0 0 auto;
+  color: #b77900 !important;
+  font-size: 34px;
+}
+
+.shift-required-copy {
+  display: grid;
+  flex: 1 1 260px;
+  gap: 4px;
+  line-height: 1.45;
+}
+
+.shift-required-copy strong {
+  font-size: 1.05rem;
+}
+
+.shift-required-action {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #8a5b00;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shift-required-action:hover,
+.shift-required-action:focus-visible {
+  background: #684400;
+}
+
+.expense-report-page > .shift-required-notice {
+  align-self: start;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  margin: 10px 0;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(91, 65, 0, 0.07);
+}
+
+.expense-report-page > .shift-required-notice .shift-required-icon {
+  font-size: 25px;
+}
+
+.expense-report-page > .shift-required-notice .shift-required-copy {
+  flex-basis: 0;
+  font-size: 0.84rem;
+}
+
+.expense-report-page > .shift-required-notice .shift-required-copy strong {
+  font-size: 0.95rem;
+}
+
+.expense-report-page > .shift-required-notice .shift-required-action {
+  padding: 8px 11px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+@media screen and (min-width: 769px) {
+  body:has(.product-list) .shift-required-notice {
+    width: calc(100% - 410px);
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    padding: 16px 18px;
+  }
+
+  body:has(.product-list) .shift-required-copy {
+    flex-basis: 0;
+  }
+
+  body:has(.product-list) .shift-required-action {
+    white-space: nowrap;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .shift-required-notice {
+    justify-content: flex-start;
+    gap: 9px 11px;
+    padding: 12px 14px;
+    margin: 10px 0;
+    border-radius: 11px;
+  }
+
+  .shift-required-icon {
+    font-size: 25px;
+  }
+
+  .shift-required-copy {
+    flex-basis: calc(100% - 40px);
+    font-size: 0.82rem;
+  }
+
+  .shift-required-copy strong {
+    font-size: 0.94rem;
+  }
+
+  .shift-required-action {
+    margin-left: 36px;
+    padding: 8px 11px;
+    font-size: 0.8rem;
+  }
+
+  .expense-report-page > .shift-required-notice {
+    gap: 8px 10px;
+    padding: 10px 12px;
+    margin: 8px 0;
+  }
+
+  .expense-report-page > .shift-required-notice .shift-required-copy {
+    flex-basis: calc(100% - 36px);
+    font-size: 0.78rem;
+  }
+
+  .expense-report-page > .shift-required-notice .shift-required-copy strong {
+    font-size: 0.9rem;
+  }
+
+  .expense-report-page > .shift-required-notice .shift-required-action {
+    margin-left: 35px;
+    padding: 7px 10px;
+    font-size: 0.76rem;
   }
 }

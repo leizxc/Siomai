@@ -121,6 +121,9 @@ async function loadSection(page) {
     } else {
       main.innerHTML = parsedPage.body.innerHTML;
     }
+    // POS sets inert on #content while a shift is inactive. The element
+    // survives section swaps, so clear that lock before showing Attendance.
+    main.inert = false;
 
     const title = document.getElementById("mobile-title");
 

@@ -1,6 +1,7 @@
 import { app } from "/js/firebase.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { addDoc, collection, deleteDoc, doc, getDocs, getFirestore, onSnapshot, query, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { watchActiveShift, showShiftRequired } from "/js/attendanceAccess.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -9,13 +10,23 @@ let currentEmployee = null;
 let currentReports = [];
 const selectedReportIds = new Set();
 let pendingDeleteReportIds = [];
+let unsubscribeShift = null;
+let reportShiftActive = false;
 
 export async function initReportPage() {
   currentEmployee = await getCurrentEmployee();
   if (!currentEmployee) return;
 
+  const form = document.querySelector("#expenseReportForm");
+  unsubscribeShift?.();
+  unsubscribeShift = watchActiveShift((active) => {
+    reportShiftActive = active;
+    if (form) form.inert = !active;
+    showShiftRequired(form?.closest(".expense-report-page"), !active);
+  });
+
   document.querySelector("#reportExpenseDate").value = localDate();
-  document.querySelector("#expenseReportForm").onsubmit = submitExpenseReport;
+  form.onsubmit = submitExpenseReport;
   document.querySelector("#reportHistoryDateFilter").onchange = renderReportHistory;
   document.querySelector("#clearReportHistoryDate").onclick = () => {
     document.querySelector("#reportHistoryDateFilter").value = "";
@@ -38,6 +49,10 @@ export async function initReportPage() {
 
 async function submitExpenseReport(event) {
   event.preventDefault();
+  if (!reportShiftActive) {
+    if (typeof M !== "undefined") M.toast({ html: "Timed in first before reporting expense.", classes: "red rounded" });
+    return;
+  }
   const button = document.querySelector("#submitExpenseReport");
   const date = document.querySelector("#reportExpenseDate").value;
   const amount = Number(document.querySelector("#reportExpenseAmount").value);
@@ -177,4 +192,4 @@ function localDate() { const now = new Date(); return `${now.getFullYear()}-${St
 function formatCurrency(value) { return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(Number(value || 0)); }
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]); }
 
-export function stopReportPage() { unsubscribeReports?.(); unsubscribeReports = null; currentEmployee = null; currentReports = []; selectedReportIds.clear(); pendingDeleteReportIds = []; }
+export function stopReportPage() { unsubscribeReports?.(); unsubscribeReports = null; unsubscribeShift?.(); unsubscribeShift = null; reportShiftActive = false; currentEmployee = null; currentReports = []; selectedReportIds.clear(); pendingDeleteReportIds = []; }

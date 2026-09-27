@@ -1,4 +1,5 @@
 import { db, auth } from "/js/firebase.js";
+import { watchActiveShift, showShiftRequired } from "/js/attendanceAccess.js";
 
 import {
   addDoc,
@@ -18,6 +19,12 @@ const cashBtn = document.getElementById("cashBtn");
 const cashlessBtn = document.getElementById("cashlessBtn");
 const checkoutBtn = document.getElementById("checkoutBtn");
 const backBtn = document.getElementById("backBtn");
+let shiftActive = false;
+const stopShiftWatch = watchActiveShift((active) => {
+  shiftActive = active;
+  showShiftRequired(document.querySelector(".order-container"), !active);
+  document.querySelector(".summary-card")?.toggleAttribute("inert", !active);
+});
 
 const cashModalElement = document.getElementById("cashModal");
 const cashlessModalElement = document.getElementById("cashlessModal");
@@ -49,6 +56,7 @@ const cashModal = M.Modal.init(cashModalElement);
 const cashlessModal = M.Modal.init(cashlessModalElement);
 
 async function completeCheckout() {
+  if (!shiftActive) throw new Error("Timed in first before checkout.");
   const employee = auth.currentUser;
   if (!employee) {
     throw new Error("Employee session expired. Please sign in again.");
@@ -262,6 +270,10 @@ cashlessBtn.onclick = () => {
 };
 
 checkoutBtn.onclick = () => {
+  if (!shiftActive) {
+    M.toast({ html: "Timed in first before checkout.", classes: "red rounded" });
+    return;
+  }
   if (cart.length === 0) {
     M.toast({
       html: "Cart is empty!",
