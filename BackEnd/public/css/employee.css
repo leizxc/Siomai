@@ -60,7 +60,7 @@ body {
   color: var(--text-primary) !important;
 }
 
-/* Sidebar – match admin */
+/* Sidebar â€“ match admin */
 
 .sidebar a,
 .sidebar .nav li a,
@@ -720,7 +720,7 @@ body {
   font-size: 34px;
 }
 
-/* Colored icons inside light circle – match admin inventory style */
+/* Colored icons inside light circle â€“ match admin inventory style */
 .stock-page .purple i,
 .stock-page .icon.purple i {
   color: #9333ea !important;
@@ -1163,7 +1163,7 @@ html.dark .stock-page .icon {
   cursor: pointer !important;
 }
 
-/* ===================== VIEW ORDER – MOBILE ===================== */
+/* ===================== VIEW ORDER â€“ MOBILE ===================== */
 @media screen and (max-width: 768px) {
   .order-container {
     display: flex;
@@ -1809,7 +1809,7 @@ html.dark .stock-page .icon {
   font-size: 11px;
 }
 
-/* Dark mode – attendance */
+/* Dark mode â€“ attendance */
 html.dark #content .attendance-page-heading h2,
 html.dark #content .attendance-status-banner strong,
 html.dark #content .attendance-empty strong,
@@ -3009,7 +3009,7 @@ html.dark .assigned-summary-icon {
   }
 }
 
-/* Employee desktop header — aligned with the manager dashboard header. */
+/* Employee desktop header â€” aligned with the manager dashboard header. */
 @media (min-width: 769px) {
   body:has(.employee-topbar) .sidebar {
     width: 260px;
@@ -3209,7 +3209,7 @@ html.dark .assigned-summary-icon {
 }
 
 /* ============================================
-   DARK MODE – SHARED EMPLOYEE THEME
+   DARK MODE â€“ SHARED EMPLOYEE THEME
    (same tokens as admin)
    ============================================ */
 
@@ -4995,5 +4995,1212 @@ html.dark .employee-notification-empty {
     margin-left: 35px;
     padding: 7px 10px;
     font-size: 0.76rem;
+  }
+}
+
+/* Responsive layout refinements for employee pages. */
+@media (min-width: 1101px) {
+  body:has(.product-list) .search-section {
+    left: 440px;
+    right: 420px;
+  }
+
+  body:has(.product-list) .search-box {
+    width: min(100%, 520px);
+    max-width: 100%;
+  }
+
+  body:has(.product-list) .search-box input {
+    width: 100%;
+    height: 46px;
+    margin-top: 0;
+  }
+
+  body:has(.product-list) .search-box i {
+    top: 50%;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  body:has(.product-list) .search-section {
+    top: auto;
+    right: auto;
+    left: auto;
+    height: auto;
+  }
+}
+
+/* Restore the desktop/tablet cart dock while keeping product browsing left. */
+@media (min-width: 769px) {
+  body:has(.product-list) #content {
+    width: 100%;
+    max-width: none;
+  }
+
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .categories,
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .shift-required-notice {
+    width: calc(100% - 400px);
+    max-width: none;
+  }
+
+  body:has(.product-list) .search-box {
+    width: min(100%, 560px);
+    max-width: 100%;
+  }
+
+  body:has(.product-list) .cart-section {
+    position: fixed;
+    top: 101px;
+    right: 25px;
+    bottom: 140px;
+    left: auto;
+    z-index: 10;
+    width: 370px;
+    max-height: none;
+    margin: 0;
+    border-radius: 15px 15px 0 0;
+  }
+
+  body:has(.product-list) .checkout-bar {
+    position: fixed;
+    right: 25px;
+    bottom: 25px;
+    left: auto;
+    z-index: 15;
+    width: 370px;
+    margin: 0;
+    padding: 16px 18px 18px;
+    border-radius: 0 0 15px 15px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .categories,
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .shift-required-notice {
+    width: calc(100% - 350px);
+  }
+
+  body:has(.product-list) .cart-section,
+  body:has(.product-list) .checkout-bar {
+    right: 22px;
+    width: 320px;
+  }
+
+  body:has(.product-list) .cart-section {
+    top: 96px;
+    bottom: 132px;
+  }
+
+  body:has(.product-list) .checkout-bar {
+    bottom: 22px;
+  }
+}
+
+/* Keep the desktop and tablet POS workspace anchored to the left. */
+@media (min-width: 769px) {
+  body:has(.product-list) .main {
+    padding: 100px 25px 32px;
+  }
+
+  body:has(.product-list) #content {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0;
+  }
+
+  body:has(.product-list) .search-section {
+    position: relative;
+    inset: auto;
+    z-index: auto;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    margin: 0 0 14px;
+  }
+
+  body:has(.product-list) .search-box {
+    width: min(100%, 560px);
+    max-width: 560px;
+  }
+
+  body:has(.product-list) .search-box input {
+    width: 100%;
+    height: 46px;
+    margin: 0;
+  }
+
+  body:has(.product-list) .search-box i {
+    top: 50%;
+  }
+
+  body:has(.product-list) .categories {
+    width: 100%;
+    padding: 0 0 16px;
+  }
+
+  body:has(.product-list) .product-list {
+    width: 100%;
+  }
+
+  body:has(.product-list) .product-card {
+    width: 100%;
+  }
+
+  body:has(.product-list) .cart-section {
+    position: static;
+    inset: auto;
+    width: 100%;
+    max-height: 360px;
+    margin: 14px 0 0;
+    border-radius: 14px 14px 0 0;
+  }
+
+  body:has(.product-list) .checkout-bar {
+    position: static;
+    inset: auto;
+    width: 100%;
+    margin: 0 0 24px;
+    border-radius: 0 0 14px 14px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  body:has(.employee-topbar) .sidebar,
+  body:has(.product-list) .sidebar {
+    width: 220px;
+  }
+
+  body:has(.employee-topbar) .main,
+  body:has(.product-list) .main {
+    width: calc(100% - 220px);
+    margin-left: 220px;
+    padding: 96px 22px 28px;
+  }
+
+  .mobile-header.employee-topbar {
+    left: 220px;
+    height: 72px;
+    min-height: 72px;
+    padding-inline: 22px;
+  }
+
+  body:has(.product-list) .main::before {
+    left: 220px;
+    height: 72px;
+    padding-left: 22px;
+  }
+
+  body:has(.product-list) .search-section {
+    top: 0;
+    left: 405px;
+    right: 22px;
+    height: 72px;
+  }
+
+  body:has(.product-list) .search-box {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  body:has(.product-list) .search-box input {
+    width: 100%;
+    height: 42px;
+    margin: 0;
+    font-size: 14px;
+  }
+
+  body:has(.product-list) .search-box i {
+    top: 50%;
+    font-size: 21px;
+  }
+
+  body:has(.product-list) .categories {
+    gap: 9px;
+    padding: 0 0 14px;
+  }
+
+  body:has(.product-list) .category {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  body:has(.product-list) .product-list {
+    display: flex;
+    width: 100%;
+    padding: 0;
+    gap: 12px;
+  }
+
+  body:has(.product-list) .product-card {
+    width: 100%;
+    min-height: 108px;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  body:has(.product-list) .product-image {
+    flex-basis: 76px;
+    width: 76px;
+    height: 76px;
+    margin-left: 0;
+  }
+
+  body:has(.product-list) .product-info h4,
+  body:has(.product-list) .product-card h5 {
+    font-size: 17px;
+  }
+
+  body:has(.product-list) .add-btn {
+    flex-basis: 44px;
+    width: 44px;
+    height: 44px;
+    margin-right: 0;
+  }
+
+  body:has(.product-list) .cart-section {
+    position: static;
+    display: block;
+    width: 100%;
+    max-height: 320px;
+    margin: 18px 0 0;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  body:has(.product-list) .checkout-bar {
+    position: static;
+    width: 100%;
+    margin: 0 0 20px;
+    padding: 14px;
+    border-radius: 0 0 14px 14px;
+  }
+
+  .stock-page,
+  .assigned-stock-page {
+    padding: 22px;
+  }
+
+  .stock-page .summary-grid,
+  .stock-page .overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stock-page .table-card {
+    overflow-x: auto;
+    padding: 18px;
+  }
+
+  .stock-page .stock-table {
+    min-width: 640px;
+  }
+
+  .assigned-stock-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .expense-report-page {
+    max-width: 100%;
+  }
+
+  .expense-report-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .expense-report-guide {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 12px;
+    align-items: start;
+  }
+
+  .expense-report-guide > .material-icons {
+    grid-row: span 3;
+  }
+
+  #content .container {
+    padding-inline: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  html,
+  body {
+    min-width: 320px;
+  }
+
+  body:has(.employee-topbar) .main {
+    padding-top: 56px;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  body:has(.product-list) .main {
+    padding-bottom: calc(230px + env(safe-area-inset-bottom));
+  }
+
+  #content {
+    min-width: 0;
+  }
+
+  #content > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #content .container {
+    width: 100%;
+    padding: 0 16px 22px;
+  }
+
+  #content .attendance-page-heading {
+    align-items: flex-start;
+    gap: 12px;
+    padding: 6px 16px 14px;
+  }
+
+  #content .attendance-page-heading p {
+    line-height: 1.45;
+  }
+
+  #content .time-in-button {
+    flex: 0 0 auto;
+    min-height: 42px;
+    margin-top: 0;
+    padding-inline: 12px;
+    white-space: nowrap;
+  }
+
+  #content .attendance-dashboard {
+    padding-inline: 16px;
+  }
+
+  #content .attendance-dashboard .stats-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  #content .attendance-dashboard .status-stat-card {
+    grid-column: 1 / -1;
+  }
+
+  #content .attendance-dashboard .stat-card {
+    min-width: 0;
+    min-height: 100px;
+    padding: 12px;
+  }
+
+  #content .tabs {
+    gap: 8px;
+  }
+
+  #content .tab {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 44px;
+  }
+
+  #content .activity-item {
+    min-width: 0;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .stock-page {
+    padding: 16px;
+  }
+
+  .stock-page .page-header,
+  .stock-page .table-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .stock-page .header-left h2 {
+    font-size: 27px;
+  }
+
+  .stock-page .header-right {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stock-page .header-right input,
+  .stock-page .header-right select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .stock-page .summary-grid,
+  .stock-page .overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .stock-page .summary-card {
+    min-width: 0;
+    padding: 18px 12px;
+  }
+
+  .stock-page .summary-card h2 {
+    font-size: 30px;
+  }
+
+  .stock-page .overview-card,
+  .stock-page .table-card {
+    padding: 16px;
+  }
+
+  .stock-page .overview-box {
+    min-width: 0;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .stock-page .table-card {
+    overflow-x: auto;
+  }
+
+  .stock-page .stock-table {
+    min-width: 600px;
+  }
+
+  .assigned-stock-page {
+    padding: 18px 16px;
+  }
+
+  .assigned-stock-header,
+  .assigned-stock-table-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .assigned-stock-user,
+  .assigned-stock-search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .assigned-stock-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .assigned-summary-card {
+    min-width: 0;
+    min-height: 100px;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .assigned-summary-icon {
+    width: 46px !important;
+    height: 46px !important;
+  }
+
+  .assigned-summary-card strong {
+    overflow-wrap: anywhere;
+    font-size: 18px;
+  }
+
+  .assigned-stock-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .assigned-stock-table {
+    min-width: 680px;
+  }
+
+  .expense-report-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 8px 16px 24px;
+  }
+
+  .expense-report-header {
+    gap: 12px;
+    margin: 4px 0 16px;
+  }
+
+  .expense-report-header h2 {
+    margin: 0;
+    font-size: clamp(20px, 5vw, 25px);
+    line-height: 1.2;
+  }
+
+  .expense-report-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .expense-report-form,
+  .expense-report-guide,
+  .expense-report-history {
+    min-width: 0;
+    padding: 16px;
+  }
+
+  .expense-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .expense-form-footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .expense-form-footer button {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .expense-history-heading {
+    align-items: flex-start;
+  }
+
+  .expense-history-filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .expense-history-filters label {
+    grid-column: 1 / -1;
+  }
+
+  .expense-history-filters input[type="date"] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .report-selection-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .report-selection-toolbar > span {
+    margin-left: auto;
+  }
+
+  .expense-history-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 10px;
+  }
+
+  .expense-history-item p {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .expense-history-item > div:last-child {
+    min-width: 0;
+  }
+
+  .order-container {
+    min-height: 100dvh;
+  }
+
+  .order-list {
+    min-width: 0;
+  }
+
+  .order-item {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .order-info {
+    overflow-wrap: anywhere;
+  }
+
+  .summary-card {
+    max-height: 48dvh;
+    overflow-y: auto;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .modal {
+    width: calc(100vw - 24px) !important;
+    max-width: 640px !important;
+    max-height: 86dvh !important;
+  }
+
+  .modal.modal-fixed-footer {
+    height: 86dvh !important;
+  }
+
+  .modal .modal-footer {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .toast {
+    right: 12px !important;
+    left: 12px !important;
+    width: auto !important;
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+    transform: none !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .employee-header-actions {
+    gap: 2px;
+  }
+
+  .employee-profile > .material-icons {
+    font-size: 26px;
+  }
+
+  #content .attendance-page-heading {
+    padding-inline: 12px;
+  }
+
+  #content .attendance-dashboard {
+    padding-inline: 12px;
+  }
+
+  #content .attendance-dashboard .stat-card {
+    padding: 10px;
+  }
+
+  .assigned-stock-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stock-page .header-right {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .expense-report-page {
+    padding-inline: 12px;
+  }
+
+  .expense-report-form,
+  .expense-report-guide,
+  .expense-report-history {
+    padding: 13px;
+  }
+
+  .expense-history-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .expense-history-item > div:last-child {
+    grid-column: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    text-align: left;
+  }
+}
+
+@media (min-width: 1101px) {
+  .order-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    grid-template-rows: auto minmax(0, 1fr);
+    min-height: 100dvh;
+  }
+
+  .order-header {
+    grid-column: 1 / -1;
+  }
+
+  .order-list {
+    min-width: 0;
+    padding: 20px clamp(20px, 4vw, 56px);
+  }
+
+  .summary-card {
+    position: sticky;
+    top: 18px;
+    align-self: start;
+    margin: 18px 20px 18px 0;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  body:has(.product-list) .search-section {
+    top: auto;
+    right: auto;
+    left: auto;
+    height: auto;
+  }
+}
+
+/* Restore the desktop/tablet cart dock while keeping product browsing left. */
+@media (min-width: 769px) {
+  body:has(.product-list) #content {
+    width: 100%;
+    max-width: none;
+  }
+
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .categories,
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .shift-required-notice {
+    width: calc(100% - 400px);
+    max-width: none;
+  }
+
+  body:has(.product-list) .search-section {
+    position: relative;
+    inset: auto;
+    z-index: auto;
+    height: auto;
+    padding: 0;
+    margin: 0 0 14px;
+  }
+
+  body:has(.product-list) .search-box {
+    width: min(100%, 560px);
+    max-width: 100%;
+  }
+
+  body:has(.product-list) .search-box input {
+    width: 100%;
+    height: 46px;
+    margin: 0;
+  }
+
+  body:has(.product-list) .search-box i {
+    top: 50%;
+  }
+
+  body:has(.product-list) .categories {
+    padding: 0 0 16px;
+  }
+
+  body:has(.product-list) .cart-section {
+    position: fixed;
+    top: 101px;
+    right: 25px;
+    bottom: 140px;
+    left: auto;
+    z-index: 10;
+    width: 370px;
+    max-height: none;
+    margin: 0;
+    border-radius: 15px 15px 0 0;
+  }
+
+  body:has(.product-list) .checkout-bar {
+    position: fixed;
+    right: 25px;
+    bottom: 25px;
+    left: auto;
+    z-index: 15;
+    width: 370px;
+    margin: 0;
+    padding: 16px 18px 18px;
+    border-radius: 0 0 15px 15px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .categories,
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .shift-required-notice {
+    width: calc(100% - 350px);
+  }
+
+  body:has(.product-list) .search-section {
+    top: auto;
+    right: auto;
+    left: auto;
+  }
+
+  body:has(.product-list) .cart-section,
+  body:has(.product-list) .checkout-bar {
+    right: 22px;
+    width: 320px;
+  }
+
+  body:has(.product-list) .cart-section {
+    top: 96px;
+    bottom: 132px;
+  }
+
+  body:has(.product-list) .checkout-bar {
+    bottom: 22px;
+  }
+}
+
+/* Tablet POS: keep the cart dock inside the available viewport. */
+@media (min-width: 769px) and (max-width: 1100px) {
+  body:has(.product-list) .main { padding: 88px 18px 24px; }
+  body:has(.product-list) #content { min-width: 0; }
+
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .categories,
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .shift-required-notice { width: calc(100% - 340px); }
+
+  body:has(.product-list) .search-section {
+    top: auto;
+    right: auto;
+    left: auto;
+    height: auto;
+  }
+
+  body:has(.product-list) .search-box,
+  body:has(.product-list) .search-box input { width: 100%; max-width: 100%; }
+
+  body:has(.product-list) .categories {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  body:has(.product-list) .product-card { min-width: 0; min-height: 96px; padding: 10px; }
+  body:has(.product-list) .product-image { flex-basis: 64px; width: 64px; height: 64px; }
+  body:has(.product-list) .product-info h4,
+  body:has(.product-list) .product-card h5 { font-size: 15px; }
+
+  body:has(.product-list) .cart-section {
+    top: 88px;
+    right: 18px;
+    bottom: 112px;
+    width: 310px;
+    padding: 12px;
+  }
+
+  body:has(.product-list) .checkout-bar {
+    right: 18px;
+    bottom: 10px;
+    width: 310px;
+    padding: 10px 12px;
+  }
+
+  body:has(.product-list) .checkout-info { margin-bottom: 8px; }
+  body:has(.product-list) .checkout-btn {
+    min-height: 44px;
+    height: auto;
+    padding: 9px 12px;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 900px) {
+  body:has(.product-list) .main { padding-inline: 16px; padding-bottom: 120px; }
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .categories,
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .shift-required-notice { width: 100%; }
+
+  body:has(.product-list) .cart-section {
+    position: static;
+    width: 100%;
+    max-height: 260px;
+    margin-top: 14px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  body:has(.product-list) .checkout-bar {
+    right: 16px;
+    bottom: 12px;
+    width: calc(100% - 252px);
+    max-width: 560px;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1100px) and (max-height: 700px) {
+  body:has(.product-list) .cart-section { top: 82px; bottom: 104px; }
+  body:has(.product-list) .checkout-bar { bottom: 8px; padding: 8px 10px; }
+  body:has(.product-list) .checkout-btn { min-height: 40px; padding-block: 7px; }
+}
+/* ============================================================
+   TABLET POS – KEEP SIDE CART (improved proportions)
+   Target: 769px – 1200px (covers most tablets landscape/portrait)
+   ============================================================ */
+@media (min-width: 769px) and (max-width: 1200px) {
+
+  body:has(.product-list) .main {
+    padding: 88px 18px 30px !important;
+  }
+
+  body:has(.product-list) #content {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Product area leaves space for cart */
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .categories,
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .shift-required-notice {
+    width: calc(100% - 300px) !important;
+    max-width: none !important;
+  }
+
+  body:has(.product-list) .search-section {
+    position: relative !important;
+    inset: auto !important;
+    height: auto !important;
+    margin: 0 0 14px !important;
+  }
+
+  body:has(.product-list) .search-box {
+    width: 100% !important;
+    max-width: 480px !important;
+  }
+
+  body:has(.product-list) .search-box input {
+    width: 100% !important;
+    height: 44px !important;
+    margin: 0 !important;
+  }
+
+  body:has(.product-list) .search-box i {
+    top: 50% !important;
+  }
+
+  body:has(.product-list) .categories {
+    padding: 0 0 14px !important;
+  }
+
+  body:has(.product-list) .product-list {
+    width: 100% !important;
+  }
+
+  body:has(.product-list) .product-card {
+    width: 100% !important;
+    min-height: 96px;
+    padding: 10px 12px;
+  }
+
+  body:has(.product-list) .product-image {
+    flex-basis: 68px !important;
+    width: 68px !important;
+    height: 68px !important;
+  }
+
+  body:has(.product-list) .product-info h4,
+  body:has(.product-list) .product-card h5 {
+    font-size: 16px !important;
+  }
+
+  /* Cart stays on the RIGHT but narrower + cleaner */
+  body:has(.product-list) .cart-section {
+    position: fixed !important;
+    top: 90px !important;
+    right: 16px !important;
+    bottom: 110px !important;
+    left: auto !important;
+    width: 280px !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    border-radius: 14px 14px 0 0 !important;
+    overflow-y: auto !important;
+  }
+
+  /* Checkout bar under the cart */
+  body:has(.product-list) .checkout-bar {
+    position: fixed !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    left: auto !important;
+    width: 280px !important;
+    max-width: 280px !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    border-radius: 0 0 14px 14px !important;
+  }
+
+  body:has(.product-list) .checkout-btn,
+  body:has(.product-list) #checkoutBtn {
+    width: 100% !important;
+    min-height: 46px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* Empty cart looks less broken */
+body:has(.product-list) .cart-section:empty,
+body:has(.product-list) .cart-section table:empty {
+  min-height: 120px;
+}
+
+/* ============================================================
+   TABLET POS FIX – huwag mag-dikit ang search sa cart
+   (769px – 1200px)
+   ============================================================ */
+@media (min-width: 769px) and (max-width: 1200px) {
+
+  /* Main spacing */
+  body:has(.product-list) .main {
+    padding: 90px 20px 30px !important;
+  }
+
+  body:has(.product-list) #content {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  /* Product area – leave clear space for cart (no collision) */
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .categories,
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .shift-required-notice {
+    width: calc(100% - 310px) !important;   /* 280px cart + 30px gap */
+    max-width: none !important;
+    margin-right: 0 !important;
+  }
+
+  /* Search – normal flow, never fixed/overlapping */
+  body:has(.product-list) .search-section {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    height: auto !important;
+    margin: 0 0 16px !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  body:has(.product-list) .search-box {
+    width: 100% !important;
+    max-width: 480px !important;
+  }
+
+  body:has(.product-list) .search-box input {
+    width: 100% !important;
+    height: 44px !important;
+    margin: 0 !important;
+  }
+
+  body:has(.product-list) .search-box i {
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+  }
+
+  body:has(.product-list) .categories {
+    padding: 0 0 14px !important;
+  }
+
+  body:has(.product-list) .product-list {
+    width: 100% !important;
+  }
+
+  /* Cart – fixed right, with clear gap from products */
+  body:has(.product-list) .cart-section {
+    position: fixed !important;
+    top: 90px !important;
+    right: 18px !important;
+    bottom: 115px !important;
+    left: auto !important;
+    width: 280px !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    border-radius: 14px 14px 0 0 !important;
+    overflow-y: auto !important;
+    z-index: 10 !important;
+  }
+
+  /* Checkout under cart */
+  body:has(.product-list) .checkout-bar {
+    position: fixed !important;
+    right: 18px !important;
+    bottom: 18px !important;
+    left: auto !important;
+    width: 280px !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    border-radius: 0 0 14px 14px !important;
+    z-index: 15 !important;
+  }
+
+  body:has(.product-list) .checkout-btn,
+  body:has(.product-list) #checkoutBtn {
+    width: 100% !important;
+    min-height: 46px !important;
+  }
+}
+/* ============================================================
+   TABLET ONLY – search-section width sakto (hindi dikit sa cart)
+   ============================================================ */
+@media (min-width: 769px) and (max-width: 1100px) {
+
+  /* Product side (search + categories + products) */
+  body:has(.product-list) .search-section,
+  body:has(.product-list) .categories,
+  body:has(.product-list) .product-list,
+  body:has(.product-list) .shift-required-notice {
+    width: calc(100% - 310px) !important;   /* 280px cart + 30px gap */
+    max-width: none !important;
+  }
+
+  /* Search bar mismo – full width ng product side, hindi sobra */
+  body:has(.product-list) .search-section {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    height: auto !important;
+    margin: 0 0 14px !important;
+    padding: 0 !important;
+  }
+
+  body:has(.product-list) .search-box {
+    width: 100% !important;
+    max-width: 100% !important;   /* sakto lang sa available space */
+  }
+
+  body:has(.product-list) .search-box input {
+    width: 100% !important;
+    height: 44px !important;
+    margin: 0 !important;
+  }
+
+  body:has(.product-list) .search-box i {
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+  }
+
+  /* Cart fixed right (280px) – para may consistent gap */
+  body:has(.product-list) .cart-section {
+    position: fixed !important;
+    top: 90px !important;
+    right: 16px !important;
+    bottom: 110px !important;
+    width: 280px !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    border-radius: 14px 14px 0 0 !important;
+    z-index: 10 !important;
+  }
+
+  body:has(.product-list) .checkout-bar {
+    position: fixed !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    width: 280px !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    border-radius: 0 0 14px 14px !important;
+    z-index: 15 !important;
   }
 }

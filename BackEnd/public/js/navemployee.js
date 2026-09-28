@@ -331,36 +331,37 @@ document.addEventListener(
 
     const navItems =
       bottomNav.querySelectorAll("a");
-
-    // Keep POS and Report visibly unavailable until today's time-in is
-    // approved and active. Attendance remains available so the employee can
-    // submit or check their time-in request.
-    watchActiveShift((shift) => {
-      employeeShiftActive = shift.active;
+    const mobileNavigation = window.matchMedia("(max-width: 768px)");
+    const updateShiftNavigation = () => {
+      const locked = !employeeShiftActive && !mobileNavigation.matches;
       [navItems[0], navItems[3]].forEach((item) => {
         if (!item) return;
-        item.classList.toggle("shift-locked-nav", !shift.active);
-        item.setAttribute("aria-disabled", String(!shift.active));
-        item.setAttribute("title", shift.active ? "" : "Time in to use this section");
-        if (shift.active) {
+        item.classList.toggle("shift-locked-nav", locked);
+        item.setAttribute("aria-disabled", String(locked));
+        item.setAttribute("title", locked ? "Time in to use this section" : "");
+        if (!locked) {
           item.style.removeProperty("opacity");
           item.style.removeProperty("filter");
           item.style.removeProperty("pointer-events");
         } else {
-          // Inline important styles keep the locked state visible even when
-          // other theme or mobile navigation rules set their own opacity.
           item.style.setProperty("opacity", "0.3", "important");
           item.style.setProperty("filter", "grayscale(1)", "important");
           item.style.setProperty("pointer-events", "none", "important");
         }
       });
+    };
+    mobileNavigation.addEventListener("change", updateShiftNavigation);
+
+    watchActiveShift((shift) => {
+      employeeShiftActive = shift.active;
+      updateShiftNavigation();
     });
 
     navItems[0]?.addEventListener(
       "click",
       (event) => {
         event.preventDefault();
-        if (!employeeShiftActive) return;
+        if (!employeeShiftActive && !mobileNavigation.matches) return;
         loadSection("userpanel.html");
       }
     );
@@ -385,7 +386,7 @@ document.addEventListener(
       "click",
       (event) => {
         event.preventDefault();
-        if (!employeeShiftActive) return;
+        if (!employeeShiftActive && !mobileNavigation.matches) return;
         loadSection("report.html");
       }
     );
