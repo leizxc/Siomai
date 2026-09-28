@@ -15,7 +15,7 @@ export function watchActiveShift(callback) {
   const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
     unsubscribeAttendance?.();
     if (!user) {
-      callback({ active: false, timedOut: false });
+      callback({ active: false, timedOut: false, pending: false });
       return;
     }
     unsubscribeAttendance = onSnapshot(doc(db, "attendance", `${user.uid}_${todayKey()}`), (snapshot) => {
@@ -24,10 +24,11 @@ export function watchActiveShift(callback) {
       callback({
         active: Boolean(shift && shift.status === "active" && shift.clockedInAt && !shift.clockedOutAt),
         timedOut,
+        pending: Boolean(shift && shift.status === "pending"),
       });
     }, (error) => {
       console.error("Unable to verify employee shift:", error);
-      callback({ active: false, timedOut: false });
+      callback({ active: false, timedOut: false, pending: false });
     });
   });
   return () => {
@@ -36,7 +37,7 @@ export function watchActiveShift(callback) {
   };
 }
 
-export function showShiftRequired(container, visible, timedOut = false) {
+export function showShiftRequired(container, visible, timedOut = false, pending = false) {
   if (!container) return;
   let notice = container.querySelector("[data-shift-required]");
   if (visible && !notice) {
@@ -60,11 +61,13 @@ export function showShiftRequired(container, visible, timedOut = false) {
   if (notice) {
     notice.hidden = !visible;
     if (visible) {
-      notice.querySelector("[data-shift-notice-icon]").textContent = timedOut ? "task_alt" : "lock_clock";
-      notice.querySelector("[data-shift-notice-title]").textContent = timedOut ? "You already timed out" : "Need to time in";
+      notice.querySelector("[data-shift-notice-icon]").textContent = timedOut ? "task_alt" : pending ? "hourglass_top" : "lock_clock";
+      notice.querySelector("[data-shift-notice-title]").textContent = timedOut ? "You already timed out" : pending ? "Waiting for Approval" : "Need to time in";
       notice.querySelector("[data-shift-notice-message]").textContent = timedOut
         ? "All records have been saved."
-        : "Time in and wait for the manager's approval before using POS or reporting an expense.";
+        : pending
+          ? "Your time-in request has been sent. Please wait for the manager's approval before using POS or reporting an expense."
+          : "Time in and wait for the manager's approval before using POS or reporting an expense.";
       const attendanceButton = notice.querySelector("[data-go-to-attendance]");
       attendanceButton.hidden = timedOut;
     }

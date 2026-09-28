@@ -138,7 +138,7 @@ function getTodayDate() {
 function displayAttendance(attendance) {
   currentAttendance = attendance;
   if (attendance.status === "pending") {
-    updateTodayStatus("Awaiting approval", "Your time-in request has been sent to the manager.", "pending");
+    updateTodayStatus("Waiting for Approval", "Your time-in request has been sent. Please wait for manager approval.", "pending");
     setTimeInButtonPending();
     displayPendingAttendance(attendance);
     return;
@@ -315,7 +315,7 @@ export function stopAttendancePage() {
 }
 
 function displayPendingAttendance(attendance) {
-  updateTodayStatus("Awaiting approval", "Your time-in request has been sent to the manager.", "pending");
+  updateTodayStatus("Waiting for Approval", "Your time-in request has been sent. Please wait for manager approval.", "pending");
   const activityList = document.querySelector(".activity-list");
   if (!activityList) return;
 

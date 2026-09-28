@@ -1,10 +1,12 @@
 import { app } from "/js/firebase.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { collection, getDocs, getFirestore, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { watchActiveShift } from "/js/attendanceAccess.js";
 
 let currentLoadToken = 0;
 let isNavigating = false;
 let currentCleanup = null;
+let employeeShiftActive = false;
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -121,6 +123,9 @@ async function loadSection(page) {
     } else {
       main.innerHTML = parsedPage.body.innerHTML;
     }
+    // #content survives section swaps, so clear the POS-only lock before
+    // rendering Attendance and its Time In control.
+    main.classList.remove("shift-inactive");
     // POS sets inert on #content while a shift is inactive. The element
     // survives section swaps, so clear that lock before showing Attendance.
     main.inert = false;
@@ -327,10 +332,35 @@ document.addEventListener(
     const navItems =
       bottomNav.querySelectorAll("a");
 
+    // Keep POS and Report visibly unavailable until today's time-in is
+    // approved and active. Attendance remains available so the employee can
+    // submit or check their time-in request.
+    watchActiveShift((shift) => {
+      employeeShiftActive = shift.active;
+      [navItems[0], navItems[3]].forEach((item) => {
+        if (!item) return;
+        item.classList.toggle("shift-locked-nav", !shift.active);
+        item.setAttribute("aria-disabled", String(!shift.active));
+        item.setAttribute("title", shift.active ? "" : "Time in to use this section");
+        if (shift.active) {
+          item.style.removeProperty("opacity");
+          item.style.removeProperty("filter");
+          item.style.removeProperty("pointer-events");
+        } else {
+          // Inline important styles keep the locked state visible even when
+          // other theme or mobile navigation rules set their own opacity.
+          item.style.setProperty("opacity", "0.3", "important");
+          item.style.setProperty("filter", "grayscale(1)", "important");
+          item.style.setProperty("pointer-events", "none", "important");
+        }
+      });
+    });
+
     navItems[0]?.addEventListener(
       "click",
       (event) => {
         event.preventDefault();
+        if (!employeeShiftActive) return;
         loadSection("userpanel.html");
       }
     );
@@ -355,6 +385,7 @@ document.addEventListener(
       "click",
       (event) => {
         event.preventDefault();
+        if (!employeeShiftActive) return;
         loadSection("report.html");
       }
     );

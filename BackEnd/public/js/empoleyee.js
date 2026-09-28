@@ -28,6 +28,7 @@ const auth = getAuth(app);
 let unsubscribePOS = null;
 let unsubscribeShift = null;
 let posShiftActive = false;
+let shiftControlsObserver = null;
 // Bawat pagpasok/alis sa POS ay may sariling session. Pinipigilan nito ang
 // mabagal na async load mula sa dating DOM na mag-render sa bagong section.
 let posSession = 0;
@@ -191,8 +192,45 @@ export async function initPOS() {
   unsubscribeShift = watchActiveShift((shift) => {
     if (session !== posSession) return;
     posShiftActive = shift.active;
+    const checkoutBtn = document.getElementById("checkoutBtn");
+    if (checkoutBtn) {
+      checkoutBtn.disabled = !shift.active;
+      checkoutBtn.setAttribute("aria-disabled", String(!shift.active));
+      checkoutBtn.title = shift.active ? "" : "Time in to enable checkout";
+    }
     const content = document.getElementById("content");
-    showShiftRequired(content, !shift.active, shift.timedOut);
+    content?.classList.toggle("shift-inactive", !shift.active);
+    showShiftRequired(content, !shift.active, shift.timedOut, shift.pending);
+    const updateShiftDisabledButtons = (root = content) => {
+      root?.querySelectorAll("button").forEach((button) => {
+        if (button.matches("[data-go-to-attendance], #checkoutBtn")) return;
+        if (!shift.active) {
+          if (button.dataset.shiftWasDisabled === undefined) {
+            button.dataset.shiftWasDisabled = String(button.disabled);
+          }
+          button.disabled = true;
+          button.setAttribute("aria-disabled", "true");
+        } else if (button.dataset.shiftWasDisabled !== undefined) {
+          button.disabled = button.dataset.shiftWasDisabled === "true";
+          button.removeAttribute("data-shift-was-disabled");
+          if (!button.disabled) button.removeAttribute("aria-disabled");
+        }
+      });
+    };
+    updateShiftDisabledButtons();
+    shiftControlsObserver?.disconnect();
+    if (content && !shift.active) {
+      shiftControlsObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+            if (node.matches("button")) updateShiftDisabledButtons(node.parentElement || content);
+            else updateShiftDisabledButtons(node);
+          });
+        });
+      });
+      shiftControlsObserver.observe(content, { childList: true, subtree: true });
+    }
     content?.querySelectorAll(":scope > *").forEach((section) => {
       section.inert = !shift.active && !section.hasAttribute("data-shift-required");
     });
@@ -593,6 +631,8 @@ export function stopPosPage() {
   posSession += 1;
   unsubscribeShift?.();
   unsubscribeShift = null;
+  shiftControlsObserver?.disconnect();
+  shiftControlsObserver = null;
   posShiftActive = false;
 
   if (unsubscribePOS) {

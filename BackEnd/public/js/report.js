@@ -12,8 +12,39 @@ const selectedReportIds = new Set();
 let pendingDeleteReportIds = [];
 let unsubscribeShift = null;
 let reportShiftActive = false;
+let reportButtonsObserver = null;
+
+function setReportButtonsDisabled(disabled, root = document.querySelector(".expense-report-page")) {
+  root?.querySelectorAll("button").forEach((button) => {
+    if (button.matches("[data-go-to-attendance]")) return;
+    if (disabled) {
+      if (button.dataset.shiftWasDisabled === undefined) {
+        button.dataset.shiftWasDisabled = String(button.disabled);
+      }
+      button.disabled = true;
+      button.setAttribute("aria-disabled", "true");
+    } else if (button.dataset.shiftWasDisabled !== undefined) {
+      button.disabled = button.dataset.shiftWasDisabled === "true";
+      button.removeAttribute("data-shift-was-disabled");
+      if (!button.disabled) button.removeAttribute("aria-disabled");
+    }
+  });
+}
 
 export async function initReportPage() {
+  const page = document.querySelector(".expense-report-page");
+  page?.classList.add("shift-inactive");
+  setReportButtonsDisabled(true, page);
+  reportButtonsObserver?.disconnect();
+  if (page) {
+    reportButtonsObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => mutation.addedNodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) setReportButtonsDisabled(!reportShiftActive, node);
+      }));
+    });
+    reportButtonsObserver.observe(page, { childList: true, subtree: true });
+  }
+
   currentEmployee = await getCurrentEmployee();
   if (!currentEmployee) return;
 
@@ -21,8 +52,11 @@ export async function initReportPage() {
   unsubscribeShift?.();
   unsubscribeShift = watchActiveShift((shift) => {
     reportShiftActive = shift.active;
+    page?.classList.toggle("shift-inactive", !shift.active);
+    setReportButtonsDisabled(!shift.active, page);
+    syncReportSelection();
     if (form) form.inert = !shift.active;
-    showShiftRequired(form?.closest(".expense-report-page"), !shift.active, shift.timedOut);
+    showShiftRequired(page, !shift.active, shift.timedOut, shift.pending);
   });
 
   document.querySelector("#reportExpenseDate").value = localDate();
@@ -129,7 +163,7 @@ function syncReportSelection() {
     selectAll.indeterminate = selectedVisible > 0 && selectedVisible < visibleIds.length;
   }
   if (count) count.textContent = `${selectedReportIds.size} selected`;
-  if (deleteButton) deleteButton.disabled = selectedReportIds.size === 0;
+  if (deleteButton) deleteButton.disabled = !reportShiftActive || selectedReportIds.size === 0;
 }
 
 function initReportDeleteModal() {
@@ -192,4 +226,4 @@ function localDate() { const now = new Date(); return `${now.getFullYear()}-${St
 function formatCurrency(value) { return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(Number(value || 0)); }
 function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]); }
 
-export function stopReportPage() { unsubscribeReports?.(); unsubscribeReports = null; unsubscribeShift?.(); unsubscribeShift = null; reportShiftActive = false; currentEmployee = null; currentReports = []; selectedReportIds.clear(); pendingDeleteReportIds = []; }
+export function stopReportPage() { unsubscribeReports?.(); unsubscribeReports = null; unsubscribeShift?.(); unsubscribeShift = null; reportButtonsObserver?.disconnect(); reportButtonsObserver = null; reportShiftActive = false; currentEmployee = null; currentReports = []; selectedReportIds.clear(); pendingDeleteReportIds = []; }
