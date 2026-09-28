@@ -139,7 +139,11 @@ export function initExpensesModal() {
     return;
   }
 
-  const modalInstance = M.Modal.init(modalElem);
+  // The navigator initializes page modals first. Reuse that instance instead
+  // of registering another set of Materialize handlers every time this page
+  // is loaded.
+  const modalInstance =
+    M.Modal.getInstance(modalElem) || M.Modal.init(modalElem);
 
   loadExpenseCategories();
 
@@ -150,7 +154,7 @@ export function initExpensesModal() {
   const btnAdd = document.querySelector(".expense-btn");
   const saveBtn = document.getElementById("save-expense");
 
-  btnAdd?.addEventListener("click", () => {
+  if (btnAdd) btnAdd.onclick = () => {
     document.getElementById("expenses-date").value = "";
 
     document.getElementById("expenses-description").value = "";
@@ -168,10 +172,11 @@ export function initExpensesModal() {
     M.FormSelect.init(document.querySelectorAll("select"));
 
     modalInstance.open();
-  });
+  };
 
-  saveBtn?.addEventListener("click", async () => {
+  if (saveBtn) saveBtn.onclick = async () => {
     if (saveBtn.textContent === "Update Expense") return;
+    if (saveBtn.disabled) return;
 
     const date = document.getElementById("expenses-date").value;
 
@@ -194,6 +199,7 @@ export function initExpensesModal() {
       return;
     }
 
+    saveBtn.disabled = true;
     try {
       await addExpense(date, category, description, amount, status);
 
@@ -224,8 +230,10 @@ export function initExpensesModal() {
         html: "Failed to save expense.",
         classes: "red rounded",
       });
+    } finally {
+      saveBtn.disabled = false;
     }
-  });
+  };
 
   bindAddCategoryButton();
   bindDeleteCategoryButton();
@@ -267,6 +275,7 @@ function bindAddCategoryButton() {
   /* ================= SAVE CATEGORY ================= */
 
   saveCategoryBtn.onclick = async () => {
+    if (saveCategoryBtn.disabled) return;
     const categoryName = categoryInput.value.trim().toUpperCase();
 
     if (!categoryName) {
@@ -277,6 +286,7 @@ function bindAddCategoryButton() {
       return;
     }
 
+    saveCategoryBtn.disabled = true;
     try {
       // Check duplicate
       const existing = await getDocs(
@@ -321,6 +331,8 @@ function bindAddCategoryButton() {
         html: "Failed to save category.",
         classes: "red rounded",
       });
+    } finally {
+      saveCategoryBtn.disabled = false;
     }
   };
 }

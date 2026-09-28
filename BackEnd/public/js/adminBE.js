@@ -21,6 +21,7 @@ let unsubscribeCategories = null;
 
 let selectedCategoryFilter = "all";
 let categoryNameMap = {};
+let shouldLoadInventoryAfterCategories = false;
 
 // PAGINATION
 const PAGE_SIZE = 10;
@@ -29,6 +30,36 @@ let inventoryRowsCache = [];
 
 function toUpper(value) {
   return (value || "").trim().toUpperCase();
+}
+
+// Low-stock status is only relevant for products whose stock is counted in
+// pieces. Bulk units and the Drinks/Rice categories do not use this limit.
+function isPieceBasedUnit(unit) {
+  return ["piece", "pieces", "pcs", "pc", "pack"].includes(
+    String(unit || "").trim().toLowerCase(),
+  );
+}
+
+function isLowStockExempt(unit, category) {
+  const normalizedUnit = String(unit || "").trim().toLowerCase();
+  const normalizedCategory = String(category || "").trim().toLowerCase();
+
+  return (
+    ["kaban", "kilogram", "kg", "packs"].includes(normalizedUnit) ||
+    ["drinks", "rice"].includes(normalizedCategory)
+  );
+}
+
+// M.Modal.init() does not replace an existing instance by itself. Recreating
+// one without destroying the old instance leaves duplicate listeners and
+// overlays behind after several opens.
+function replaceModalInstance(element, options) {
+  const existing = M.Modal.getInstance(element);
+  if (existing) {
+    if (existing.isOpen) existing.close();
+    existing.destroy();
+  }
+  return M.Modal.init(element, options);
 }
 
 function bindLiveUppercase(input) {
@@ -60,7 +91,9 @@ function confirmDeletion(title, message) {
   if (!modalElement || !confirmButton || !cancelButton) {
     return Promise.resolve(false);
   }
-  const modalInstance = M.Modal.init(modalElement, { dismissible: false });
+  const modalInstance = replaceModalInstance(modalElement, {
+    dismissible: false,
+  });
 
   if (titleElement) titleElement.textContent = title;
   if (messageElement) messageElement.textContent = message;
@@ -96,9 +129,9 @@ function confirmRecover(
     return Promise.resolve(false);
   }
 
-  let modalInstance = M.Modal.getInstance(modalElement);
-  if (modalInstance) modalInstance.destroy();
-  modalInstance = M.Modal.init(modalElement, { dismissible: false });
+  const modalInstance = replaceModalInstance(modalElement, {
+    dismissible: false,
+  });
 
   if (titleElement) titleElement.textContent = title;
   if (messageElement) messageElement.textContent = message;
@@ -153,6 +186,7 @@ export function loadInventory() {
       const unitTotals = {
         pack: 0,
         kg: 0,
+        kilogram: 0,
         liter: 0,
         packs: 0,
         kaban: 0,
@@ -213,7 +247,7 @@ export function loadInventory() {
 
         // FIXED: gamit na ng array includes() para hindi na mapunta ang
         // "packs"/"kaban" sa "other" bucket.
-        const bucket = ["pack", "kg", "liter", "packs", "kaban"].includes(
+        const bucket = ["pack", "kg", "kilogram", "liter", "packs", "kaban"].includes(
           data.unit_type,
         )
           ? data.unit_type
@@ -221,11 +255,13 @@ export function loadInventory() {
         unitTotals[bucket] += data.stock_quantity;
 
         let status = "Available";
-        const lowStockThreshold = data.low_stock_threshold || 25;
+        const canShowLowStock =
+          isPieceBasedUnit(data.unit_type) &&
+          !isLowStockExempt(data.unit_type, data.category);
 
-        if (data.quantity <= 0) {
+        if (data.status === "On Selling" || data.quantity <= 0) {
           status = "On Selling";
-        } else if (data.stock_quantity <= lowStockThreshold) {
+        } else if (canShowLowStock && data.stock_quantity <= 25) {
           status = "Low Stock";
         }
 
@@ -243,7 +279,7 @@ export function loadInventory() {
           // ang dalawang branch dati, kaya sinimplify na lang.
           totalLabel = "Total Weight";
           totalDisplay = `${data.stock_quantity} kg`;
-        } else if (data.unit_type === "kg") {
+        } else if (data.unit_type === "kg" || data.unit_type === "kilogram") {
           totalLabel = "Total Weight";
           totalDisplay = `${data.quantity} kg`;
         } else if (data.unit_type === "liter") {
@@ -311,9 +347,9 @@ export function loadInventory() {
           } else if (unitType === "kaban") {
             totalLabel1 = "Total Weight";
             totalDisplay1 = `${totalStocks} kg`;
-          } else if (unitType === "kg") {
+          } else if (unitType === "kg" || unitType === "kilogram") {
             totalLabel1 = "Total Weight";
-            totalDisplay1 = `${(totalStocks * 2.2).toFixed(2)} lb`;
+            totalDisplay1 = `${totalStocks} kg`;
           } else if (unitType === "liter") {
             totalLabel1 = "Total Volume";
             totalDisplay1 = `${totalStocks} L`;
@@ -325,7 +361,7 @@ export function loadInventory() {
       } else {
         const parts = [];
         if (unitTotals.pack) parts.push(`${unitTotals.pack} pcs`);
-        if (unitTotals.kg) parts.push(`${unitTotals.kg} kg`);
+        if (unitTotals.kg || unitTotals.kilogram) parts.push(`${unitTotals.kg + unitTotals.kilogram} kg`);
         if (unitTotals.liter) parts.push(`${unitTotals.liter} L`);
         // NEW: packs at kaban totals — dati wala ito, kaya nawawala sa
         // "All Categories" summary.
@@ -486,10 +522,10 @@ function bindInventoryRowButtons() {
         return;
       }
 
-      editNameInput.value = row.children[0].textContent;
+      editNameInput.value = row.children[1].textContent.trim();
       editCategoryInput.value = row.dataset.categoryId;
-      editPacksInput.value = row.children[2].textContent.replace(/\D/g, "");
-      editPriceInput.value = row.children[4].textContent.replace("₱", "");
+      editPacksInput.value = row.children[3].textContent.replace(/[^\d.]/g, "");
+      editPriceInput.value = row.children[5].textContent.replace(/[^\d.]/g, "");
 
       bindLiveUppercase(editNameInput);
 
@@ -575,7 +611,7 @@ function bindInventoryRowButtons() {
 
       const modalElem = document.getElementById("modal-edit");
       if (!modalElem) return;
-      const modalInstance = M.Modal.init(modalElem);
+      const modalInstance = replaceModalInstance(modalElem);
       modalInstance.open();
 
       const saveBtn = document.getElementById("edit-save");
@@ -625,7 +661,11 @@ function bindInventoryRowButtons() {
         } else {
           newStock = newQuantity;
         }
-        const newTotalValue = newStock * newPrice;
+        // Kaban prices are per kaban, not per kilogram.  Keep `newStock`
+        // in kg for inventory tracking, but calculate its monetary value
+        // from the number of kaban entered.
+        const newTotalValue =
+          unitType === "kaban" ? newQuantity * newPrice : newStock * newPrice;
 
         const updateData = {
           product_name: newName,
@@ -739,7 +779,8 @@ export async function addProduct(
     stockQty = quantity;
     totalValue = quantity * unitPrice;
   }
-  // KABAN → kg (quantity × weight per kaban)
+  // KABAN → kg (quantity × weight per kaban) for stock tracking.
+  // Its unit price remains per kaban, so value uses the original quantity.
   else if (unitType === "kaban") {
     const weightPerKaban = Number(extraFields.weight_per_kaban || 0);
     if (weightPerKaban <= 0) {
@@ -750,10 +791,10 @@ export async function addProduct(
       return;
     }
     stockQty = quantity * weightPerKaban;
-    totalValue = stockQty * unitPrice;
+    totalValue = quantity * unitPrice;
   }
   // KG → kg
-  else if (unitType === "kg") {
+  else if (unitType === "kg" || unitType === "kilogram") {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
   }
@@ -894,7 +935,7 @@ export function loadCategories() {
 
   unsubscribeCategories = onSnapshot(
     collection(db, "categoriesINV"),
-    (snapshot) => {
+    async (snapshot) => {
       const pillsContainerNow = document.getElementById(
         "filter-category-pills",
       );
@@ -932,7 +973,7 @@ export function loadCategories() {
       if (selectsNow.length) M.FormSelect.init(selectsNow);
 
       if (pillsContainerNow) {
-        renderCategoryPills(pillsContainerNow, snapshot);
+        await renderCategoryPills(pillsContainerNow, snapshot);
       }
     },
   );
@@ -945,7 +986,7 @@ export function stopLoadingCategories() {
   }
 }
 
-function renderCategoryPills(container, snapshot) {
+async function renderCategoryPills(container, snapshot) {
   container.innerHTML = "";
 
   // Get all categories with data
@@ -966,14 +1007,34 @@ function renderCategoryPills(container, snapshot) {
     return;
   }
 
+  // On initial entry, choose a category that has inventory so the page does
+  // not open on an empty category.
+  let firstCategoryWithInventory = null;
+  try {
+    const inventorySnapshot = await getDocs(collection(db, "inventory"));
+    const populatedCategoryIds = new Set();
+    inventorySnapshot.forEach((inventoryDoc) => {
+      const categoryId = inventoryDoc.data().category_id;
+      if (categoryId) populatedCategoryIds.add(categoryId);
+    });
+    firstCategoryWithInventory =
+      categoriesWithData.find((category) =>
+        populatedCategoryIds.has(category.id),
+      )?.id || null;
+  } catch (error) {
+    console.error("Error finding populated inventory category:", error);
+  }
+
   // Check if current selected category still exists
   const selectedExists = categoriesWithData.some(
     (cat) => cat.id === selectedCategoryFilter,
   );
 
-  // If "all" or invalid selection, select the first category
-  if (!selectedExists || selectedCategoryFilter === "all") {
-    selectedCategoryFilter = categoriesWithData[0].id;
+  // If "all" or invalid selection, select the first populated category.
+  const selectionChanged = !selectedExists || selectedCategoryFilter === "all";
+  if (selectionChanged) {
+    selectedCategoryFilter =
+      firstCategoryWithInventory || categoriesWithData[0].id;
   }
 
   // Render each category as a pill
@@ -990,6 +1051,14 @@ function renderCategoryPills(container, snapshot) {
   });
 
   syncDeleteCategoryButtonState();
+
+  // Wait for the category snapshot before loading inventory. This prevents
+  // the initial Summary card from briefly rendering the combined “All” data.
+  if (selectionChanged || shouldLoadInventoryAfterCategories) {
+    shouldLoadInventoryAfterCategories = false;
+    currentPage = 1;
+    loadInventory();
+  }
 }
 
 function selectCategoryPill(categoryId) {
@@ -1137,7 +1206,7 @@ function bindAddCategoryButton() {
     const modalElem = document.getElementById("modal-add-category");
     if (!modalElem) return;
 
-    const modalInstance = M.Modal.init(modalElem, {
+    const modalInstance = replaceModalInstance(modalElem, {
       onOpenEnd() {
         const selects = document.querySelectorAll("select");
         if (selects.length) M.FormSelect.init(selects);
@@ -1182,8 +1251,11 @@ function applyCategoryDependentFields(categoryData, els) {
     } else if (unitType === "kaban") {
       qtyLabel.textContent = "Number of Kaban";
       qtyInput.placeholder = "Enter number of kaban";
+    } else if (unitType === "kilogram") {
+      qtyLabel.textContent = "Ingredient Weight (kg)";
+      qtyInput.placeholder = "Enter ingredient weight in kg";
     } else if (unitType === "kg") {
-      qtyLabel.textContent = "Weight (in kilograms)";
+      qtyLabel.textContent = "Product Input (kg)";
       qtyInput.placeholder = "Enter weight in kg";
     } else if (unitType === "liter") {
       qtyLabel.textContent = "Volume (L)";
@@ -1485,8 +1557,8 @@ export function loadArchiveHistory() {
           totalDisplay = `${data.stock_quantity} packs`;
         } else if (data.unit_type === "kaban") {
           totalDisplay = `${data.stock_quantity} kg`;
-        } else if (data.unit_type === "kg") {
-          totalDisplay = `${(data.quantity * 2.2).toFixed(2)} lb`;
+        } else if (data.unit_type === "kg" || data.unit_type === "kilogram") {
+          totalDisplay = `${data.quantity} kg`;
         } else if (data.unit_type === "liter") {
           totalDisplay = `${data.quantity} L`;
         } else {
@@ -1659,8 +1731,8 @@ export function loadProductHistory() {
           totalDisplay = `${data.stock_quantity} packs`;
         } else if (data.unit_type === "kaban") {
           totalDisplay = `${data.stock_quantity} kg`;
-        } else if (data.unit_type === "kg") {
-          totalDisplay = `${(data.quantity * 2.2).toFixed(2)} lb`;
+        } else if (data.unit_type === "kg" || data.unit_type === "kilogram") {
+          totalDisplay = `${data.quantity} kg`;
         } else if (data.unit_type === "liter") {
           totalDisplay = `${data.quantity} L`;
         } else {
@@ -1802,15 +1874,15 @@ function bindArchiveHistoryButtons() {
 
 export async function initInventoryPage() {
   currentPage = 1;
+  selectedCategoryFilter = "all";
+  shouldLoadInventoryAfterCategories = true;
   processExpiredArchives().catch(console.error);
 
   // Load categories first para malaman ang unang category
   loadCategories();
 
-  // Then load inventory with the first category selected
-  setTimeout(() => {
-    loadInventory();
-  }, 100);
+  // loadInventory() is started by renderCategoryPills() only after a real
+  // category has been selected, so the first summary is never "All".
 
   bindInventoryPageButtons();
 

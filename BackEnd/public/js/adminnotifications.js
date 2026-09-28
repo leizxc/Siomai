@@ -8,12 +8,19 @@ import {
   doc,
   deleteDoc,
   serverTimestamp,
+  getDoc,
+  setDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  requestDeviceNotificationPermission,
+  showDeviceNotification,
+} from "/js/deviceNotifications.js";
 
 let unsubscribeNotifications = null;
 let selectedNotificationIds = new Set();
 let notificationsById = new Map();
 let pendingDeleteNotificationIds = [];
+let hasLoadedInitialNotifications = false;
 
 function escapeHtml(value) {
   const div = document.createElement("div");
@@ -31,8 +38,11 @@ function formatDate(timestamp) {
 
 function renderNotifications(notifications) {
   const badge = document.getElementById("manager-notification-count");
+  const bell = document.getElementById("manager-notification-bell");
   const list = document.getElementById("manager-notification-list");
   const unreadCount = notifications.filter((item) => !item.read).length;
+
+  bell?.classList.toggle("has-notification", unreadCount > 0);
 
   if (badge) {
     badge.textContent = unreadCount > 9 ? "9+" : String(unreadCount);
@@ -46,13 +56,14 @@ function renderNotifications(notifications) {
 
   if (!notifications.length) {
     list.innerHTML = '<p class="manager-notification-empty">No notifications.</p>';
+    syncSelectionControls(notifications);
     return;
   }
 
   list.innerHTML = notifications.map(({ id, ...item }) => `
     <article class="manager-notification ${item.read ? "" : "unread"}" data-id="${id}">
       <label class="manager-notification-select" aria-label="Select notification"><input type="checkbox" value="${id}" ${selectedNotificationIds.has(id) ? "checked" : ""} /><span></span></label>
-      <i class="material-icons">${item.type === "expense_report" ? "receipt_long" : "warning"}</i>
+      <i class="material-icons">${item.type === "expense_report" ? "receipt_long" : item.type === "time_in_request" ? "login" : item.type === "time_out_request" ? "logout" : "warning"}</i>
       <div>
         <strong>${escapeHtml(item.title || `Low stock: ${item.productName}`)}</strong>
         <p>${escapeHtml(item.message || `${item.remainingStock} ${item.unit} remaining`)}</p>
@@ -93,7 +104,6 @@ function syncSelectionControls(notifications = []) {
   const deleteSelected = document.getElementById("delete-manager-selected");
   const selectedCount = selectedNotificationIds.size;
   const unreadSelectedCount = [...selectedNotificationIds].filter((id) => !notificationsById.get(id)?.read).length;
-
   if (count) count.textContent = `${selectedCount} selected`;
   if (selectAll) {
     selectAll.checked = notifications.length > 0 && selectedCount === notifications.length;
@@ -119,10 +129,25 @@ async function markNotificationRead(id) {
   ];
 
   if (notification.type === "expense_report" && notification.reportId) {
-    updates.push(updateDoc(doc(db, "expenseReports", notification.reportId), {
+    const reportRef = doc(db, "expenseReports", notification.reportId);
+    updates.push(updateDoc(reportRef, {
       status: "read",
       reviewedAt: serverTimestamp(),
     }));
+    const reportSnapshot = await getDoc(reportRef);
+    const report = reportSnapshot.data();
+    if (report?.employeeUid) {
+      updates.push(setDoc(doc(db, "employeeNotifications", `expense-report-read-${notification.reportId}`), {
+        type: "expense_report_read",
+        reportId: notification.reportId,
+        userId: report.employeeUid,
+        title: "Expense report read",
+        message: "The admin/manager has read your expense report.",
+        read: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+    }
   }
 
   await Promise.all(updates);
@@ -145,13 +170,50 @@ export function initManagerNotifications() {
     unsubscribeNotifications
   ) return;
 
-  const modal = M.Modal.init(modalElement);
+  const modal = M.Modal.getInstance(modalElement) || M.Modal.init(modalElement);
+  const closeButton = modalElement.querySelector(".modal-close");
+  if (closeButton) {
+    closeButton.onclick = () => modal.close();
+  }
+  if (modalElement._outsideCloseHandler) {
+    document.removeEventListener(
+      "pointerdown",
+      modalElement._outsideCloseHandler,
+      true,
+    );
+  }
+  modalElement._outsideCloseHandler = (event) => {
+    if (
+      modal.isOpen &&
+      !deleteModal?.isOpen &&
+      !modalElement.contains(event.target)
+    ) {
+      modal.close();
+    }
+  };
+  document.addEventListener(
+    "pointerdown",
+    modalElement._outsideCloseHandler,
+    true,
+  );
+  const existingDeleteModal = M.Modal.getInstance(deleteModalElement);
+  if (existingDeleteModal) {
+    if (existingDeleteModal.isOpen) existingDeleteModal.close();
+    existingDeleteModal.destroy();
+  }
   const deleteModal = M.Modal.init(deleteModalElement, {
     onCloseEnd: () => {
       pendingDeleteNotificationIds = [];
     },
   });
-  bell.addEventListener("click", () => modal.open());
+  bell.onclick = async () => {
+    const userDocId = sessionStorage.getItem("adminUserDocId");
+    const permission = await requestDeviceNotificationPermission(userDocId);
+    if (permission === "denied") {
+      showToast("Allow notifications in your browser settings to receive phone alerts.", "orange");
+    }
+    modal.open();
+  };
 
   document.getElementById("manager-select-all")?.addEventListener("change", (event) => {
     document.querySelectorAll(".manager-notification-select input").forEach((checkbox) => {
@@ -164,7 +226,10 @@ export function initManagerNotifications() {
 
   document.getElementById("mark-manager-selected-read")?.addEventListener("click", async () => {
     const ids = [...selectedNotificationIds].filter((id) => !notificationsById.get(id)?.read);
-    if (!ids.length) return;
+    if (!ids.length) {
+      showToast("The selected notifications are already read.", "orange");
+      return;
+    }
     await Promise.all(ids.map((id) => markNotificationRead(id)));
     selectedNotificationIds.clear();
     showToast(`${ids.length} notification${ids.length > 1 ? "s" : ""} marked as read.`, "green");
@@ -199,10 +264,30 @@ export function initManagerNotifications() {
 
   unsubscribeNotifications = onSnapshot(
     query(collection(db, "managerNotifications"), orderBy("updatedAt", "desc")),
-    (snapshot) => renderNotifications(snapshot.docs.map((entry) => ({
-      id: entry.id,
-      ...entry.data(),
-    }))),
+    (snapshot) => {
+      const notifications = snapshot.docs.map((entry) => ({
+        id: entry.id,
+        ...entry.data(),
+      }));
+
+      // The first snapshot contains old notifications, so do not replay them
+      // as phone alerts. Only genuinely new, unread notifications alert.
+      if (hasLoadedInitialNotifications) {
+        snapshot.docChanges()
+          .filter((change) => change.type === "added" && !change.doc.data().read)
+          .forEach((change) => {
+            const item = change.doc.data();
+            showDeviceNotification({
+              title: item.title || (item.type === "expense_report" ? "New expense report" : "Low stock alert"),
+              body: item.message || `${item.productName || "A product"} is running low on stock.`,
+              tag: `manager-notification-${change.doc.id}`,
+              url: "/admin/adminpanel.html",
+            }).catch((error) => console.error("Unable to show device notification:", error));
+          });
+      }
+      hasLoadedInitialNotifications = true;
+      renderNotifications(notifications);
+    },
     (error) => console.error("Unable to load manager notifications:", error),
   );
 }

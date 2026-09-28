@@ -186,7 +186,8 @@
         <option value="pack">Pack (Siomai)</option>
         <option value="packs">Packs (Palamig)</option>
         <option value="kaban">Kaban (Rice)</option>
-        <option value="kg">Kilogram</option>
+        <option value="kilogram">Kilogram (Ingredients)</option>
+        <option value="kg">kg (Product Input)</option>
         <option value="liter">Liter</option>
       </select>
       <label for="new-category-unit">Unit Type</label>
@@ -272,7 +273,8 @@
     <h4>Edit Product</h4>
 
     <div class="input-field">
-      <input id="edit-name" type="text" />
+      <input id="edit-name" type="text" placeholder="Product Name" />
+      <label for="edit-name" class="active">Product Name</label>
     </div>
 
     <div class="input-field">
@@ -289,7 +291,8 @@
     </div>
 
     <div class="input-field">
-      <input id="edit-price" type="number" />
+      <input id="edit-price" type="number" step="0.01" placeholder="Unit Price" />
+      <label for="edit-price" class="active">Unit Price</label>
     </div>
 
     <div

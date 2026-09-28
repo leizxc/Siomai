@@ -8,9 +8,47 @@ let currentCleanup = null;
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Sections are replaced with innerHTML.  A Materialize modal keeps its
+// overlay and keyboard/focus listeners outside that markup, so dispose every
+// section modal first to prevent a stale overlay from blocking future clicks.
+function disposeSectionModals(root) {
+  if (typeof M === "undefined" || !root) return;
+
+  root.querySelectorAll(".modal").forEach((modalElement) => {
+    const modal = M.Modal.getInstance(modalElement);
+    if (!modal) return;
+
+    if (modal.isOpen) modal.close();
+    modal.destroy();
+  });
+
+  root.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
+
+  if (!document.querySelector(".modal.open")) {
+    document.body.style.overflow = "";
+    if (M.Modal && typeof M.Modal._modalsOpen === "number") {
+      M.Modal._modalsOpen = 0;
+    }
+  }
+}
+
+// The notification bell lives in the persistent employee header while its
+// modal is supplied by userpanel.html. Keep that modal outside #content so a
+// section change cannot leave the bell pointing to a detached modal instance.
+function preserveEmployeeNotificationModal(root) {
+  const notificationModal = root?.querySelector(
+    "#employee-notifications-modal",
+  );
+  if (notificationModal && notificationModal.parentElement !== document.body) {
+    document.body.appendChild(notificationModal);
+  }
+}
+
 async function loadEmployeeProfile() {
-  const nameElement = document.querySelector("#employee-profile-name");
-  if (!nameElement) return;
+  const nameElements = document.querySelectorAll(
+    "#employee-profile-name, #employee-profile-name-desktop",
+  );
+  if (!nameElements.length) return;
 
   const user = await new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -24,7 +62,10 @@ async function loadEmployeeProfile() {
     const snapshot = await getDocs(query(collection(db, "employees"), where("uid", "==", user.uid)));
     const employee = snapshot.docs[0]?.data();
     const name = `${employee?.fname || ""} ${employee?.lname || ""}`.trim();
-    nameElement.textContent = name || user.displayName || "Employee";
+    const displayName = name || user.displayName || "Employee";
+    nameElements.forEach((nameElement) => {
+      nameElement.textContent = displayName;
+    });
   } catch (error) {
     console.error("Unable to load employee profile:", error);
   }
@@ -69,11 +110,20 @@ async function loadSection(page) {
 
     const pageContent = parsedPage.querySelector("#content");
 
+    preserveEmployeeNotificationModal(main);
+    // userpanel.html includes the original markup as well. The persistent
+    // instance above is the only notification modal that should remain.
+    parsedPage.querySelector("#employee-notifications-modal")?.remove();
+    disposeSectionModals(main);
+
     if (pageContent) {
       main.innerHTML = pageContent.innerHTML;
     } else {
       main.innerHTML = parsedPage.body.innerHTML;
     }
+    // POS sets inert on #content while a shift is inactive. The element
+    // survives section swaps, so clear that lock before showing Attendance.
+    main.inert = false;
 
     const title = document.getElementById("mobile-title");
 
@@ -237,6 +287,12 @@ document.addEventListener(
       document.querySelector(".bottom-nav");
     loadEmployeeProfile();
 
+    document.querySelectorAll("[data-employee-logout]").forEach((logoutLink) => {
+      logoutLink.addEventListener("click", () => {
+        localStorage.removeItem("cart");
+      });
+    });
+
     const profileMenuButton = document.querySelector("#employee-profile-menu-button");
     const profileMenuPanel = document.querySelector("#employee-profile-menu-panel");
     const closeProfileMenu = () => {
@@ -245,7 +301,7 @@ document.addEventListener(
       profileMenuButton.setAttribute("aria-expanded", "false");
     };
     profileMenuButton?.addEventListener("click", () => {
-      if (!profileMenuPanel || !window.matchMedia("(max-width: 768px)").matches) return;
+      if (!profileMenuPanel) return;
       const willOpen = profileMenuPanel.hidden;
       profileMenuPanel.hidden = !willOpen;
       profileMenuButton.setAttribute("aria-expanded", String(willOpen));
@@ -300,15 +356,6 @@ document.addEventListener(
       (event) => {
         event.preventDefault();
         loadSection("report.html");
-      }
-    );
-
-    navItems[4]?.addEventListener(
-      "click",
-      (event) => {
-        event.preventDefault();
-        window.location.href =
-          "/index.html";
       }
     );
 

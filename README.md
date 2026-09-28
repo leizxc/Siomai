@@ -1,1 +1,1 @@
-This project made by lei librora
+This project made by lei librora and Dave Cando

@@ -1,4 +1,5 @@
-import { db } from "/js/firebase.js";
+import { db, auth } from "/js/firebase.js";
+import { watchActiveShift, showShiftRequired } from "/js/attendanceAccess.js";
 
 import {
   addDoc,
@@ -18,6 +19,12 @@ const cashBtn = document.getElementById("cashBtn");
 const cashlessBtn = document.getElementById("cashlessBtn");
 const checkoutBtn = document.getElementById("checkoutBtn");
 const backBtn = document.getElementById("backBtn");
+let shiftActive = false;
+const stopShiftWatch = watchActiveShift((shift) => {
+  shiftActive = shift.active;
+  showShiftRequired(document.querySelector(".order-container"), !shift.active, shift.timedOut);
+  document.querySelector(".summary-card")?.toggleAttribute("inert", !shift.active);
+});
 
 const cashModalElement = document.getElementById("cashModal");
 const cashlessModalElement = document.getElementById("cashlessModal");
@@ -49,6 +56,12 @@ const cashModal = M.Modal.init(cashModalElement);
 const cashlessModal = M.Modal.init(cashlessModalElement);
 
 async function completeCheckout() {
+  if (!shiftActive) throw new Error("Timed in first before checkout.");
+  const employee = auth.currentUser;
+  if (!employee) {
+    throw new Error("Employee session expired. Please sign in again.");
+  }
+
   await runTransaction(db, async (transaction) => {
     const productSnapshots = await Promise.all(
       cart.map((item) =>
@@ -90,6 +103,8 @@ async function completeCheckout() {
 
   await addDoc(collection(db, "orders"), {
     items: cart,
+    employee: employee.uid,
+    employeeUid: employee.uid,
     payment_method: paymentMethod,
     payment_info: paymentInfo,
     payment_provider:
@@ -255,6 +270,10 @@ cashlessBtn.onclick = () => {
 };
 
 checkoutBtn.onclick = () => {
+  if (!shiftActive) {
+    M.toast({ html: "Timed in first before checkout.", classes: "red rounded" });
+    return;
+  }
   if (cart.length === 0) {
     M.toast({
       html: "Cart is empty!",

@@ -2,6 +2,31 @@ let currentLoadToken = 0;
 let isNavigating = false;
 let currentCleanup = null;
 
+// Materialize keeps modal instances and their overlays outside of application
+function disposeSectionModals(root) {
+  if (typeof M === "undefined" || !root) return;
+
+  root.querySelectorAll(".modal").forEach((modal) => {
+    const instance = M.Modal.getInstance(modal);
+    if (!instance) return;
+
+    // close() updates Materialize's internal open-modal counter before
+    if (instance.isOpen) instance.close();
+    instance.destroy();
+  });
+
+  // A previous interrupted navigation may already have detached a modal but
+  // left an overlay in this section. Remove only overlays owned by #content.
+  root.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
+
+  if (!document.querySelector(".modal.open")) {
+    document.body.style.overflow = "";
+    if (M.Modal && typeof M.Modal._modalsOpen === "number") {
+      M.Modal._modalsOpen = 0;
+    }
+  }
+}
+
 function applyTableDataLabels(root = document) {
   root.querySelectorAll("table").forEach((table) => {
     const headers = Array.from(table.querySelectorAll("thead th")).map((th) =>
@@ -47,6 +72,7 @@ function loadSection(page) {
       if (myToken !== currentLoadToken) return;
 
       const main = document.getElementById("content");
+      disposeSectionModals(main);
       main.innerHTML = data;
       applyTableDataLabels(main);
 
@@ -60,6 +86,9 @@ function loadSection(page) {
         "expenses.html": "Capital Management",
         "EmployeeManagement.html": "Employees Management",
         "EmployeeMonitoring.html": "Employee Monitoring",
+        "IncomeCart.html": "Income Per Cart",
+        "sales.html": "Sales Orders",
+        "payroll.html": "Employee Payroll",
       };
 
       if (title) title.textContent = pageTitles[page] || "Administrator";
@@ -152,6 +181,39 @@ function loadSection(page) {
             currentCleanup = attendanceModule.stopAttendanceMonitoring || null;
           } catch (err) {
             console.error("Attendance monitoring init error:", err);
+          }
+          break;
+
+        case "IncomeCart.html":
+          try {
+            const incomeModule = await import("/js/incomeCart.js");
+            if (myToken !== currentLoadToken) return;
+            incomeModule.initIncomeCart?.();
+            currentCleanup = incomeModule.cleanupIncomeCart || null;
+          } catch (err) {
+            console.error("Income Per Cart Init Error:", err);
+          }
+          break;
+
+        case "sales.html":
+          try {
+            const salesModule = await import("/js/sales.js");
+            if (myToken !== currentLoadToken) return;
+            salesModule.initSalesPage?.();
+            currentCleanup = salesModule.cleanupSalesPage || null;
+          } catch (err) {
+            console.error("Sales Orders Init Error:", err);
+          }
+          break;
+
+        case "payroll.html":
+          try {
+            const payrollModule = await import("/js/payroll.js");
+            if (myToken !== currentLoadToken) return;
+            payrollModule.initPayroll?.();
+            currentCleanup = payrollModule.cleanupPayroll || null;
+          } catch (err) {
+            console.error("Payroll Init Error:", err);
           }
           break;
       }

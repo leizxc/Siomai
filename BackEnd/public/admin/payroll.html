@@ -1,0 +1,46 @@
+<section class="payroll-page">
+  <div class="payroll-header">
+    <div class="payroll-filters">
+      <label for="payroll-date">Shift date</label>
+      <input id="payroll-date" type="date" />
+      <label for="payroll-role">Role</label>
+      <select id="payroll-role" class="browser-default">
+        <option value="" disabled selected>Choose Role</option>
+      </select>
+      <label for="payroll-employee">Employee</label>
+      <select id="payroll-employee" class="browser-default">
+        <option value="" disabled selected>Choose Employee</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="income-cart-kpis payroll-kpis">
+    <article class="income-cart-kpi">
+      <span>Unpaid Payroll</span>
+      <strong id="payroll-unpaid-total">&#8369;0.00</strong>
+      <small>Completed shifts ready for payment</small>
+    </article>
+    <article class="income-cart-kpi">
+      <span>Paid Payroll</span>
+      <strong id="payroll-paid-total">&#8369;0.00</strong>
+      <small>Payments for the selected date</small>
+    </article>
+    <article class="income-cart-kpi">
+      <span>Completed Shifts</span>
+      <strong id="payroll-shift-count">0</strong>
+      <small>Manager-approved time outs</small>
+    </article>
+  </div>
+
+  <div id="payroll-table-section" class="income-cart-table-card payroll-table-section" hidden>
+    <h4 id="payroll-table-title"></h4>
+    <div class="table-container">
+      <table class="striped responsive-table payroll-table">
+        <thead id="payroll-table-head"></thead>
+        <tbody id="payroll-rows">
+          <tr><td class="center-align">Choose a role to view payroll.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

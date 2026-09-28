@@ -20,11 +20,14 @@ import {
 
 import { app } from "/js/firebase.js";
 import { loadProductsOffline } from "./IndexDB.js";
+import { watchActiveShift, showShiftRequired } from "./attendanceAccess.js";
 
 const db = getFirestore(app);
 const auth = getAuth(app);
 
 let unsubscribePOS = null;
+let unsubscribeShift = null;
+let posShiftActive = false;
 // Bawat pagpasok/alis sa POS ay may sariling session. Pinipigilan nito ang
 // mabagal na async load mula sa dating DOM na mag-render sa bagong section.
 let posSession = 0;
@@ -47,34 +50,54 @@ function formatQuantity(value) {
 // ========================================
 // LOW STOCK CHECK
 // ========================================
-// pack -> low kapag <= 1 pack na lang
-// kg   -> low kapag <= 1 kg na lang
-// piece/pcs (default) -> low kapag <= 20 pcs na lang
+// Low-stock warnings apply only to products counted by pieces.  Bulk units
+// and the Drinks/Rice categories do not have a low-stock/order limit.
+function hasUnlimitedOrder(product) {
+  const unit = String(product.unit || "").trim().toLowerCase();
+  const category = String(product.category || product.role || "")
+    .trim()
+    .toLowerCase();
+  return (
+    ["kaban", "kilogram", "kg", "packs"].includes(unit) ||
+    ["drinks", "rice"].includes(category)
+  );
+}
+
 function isLowStock(product) {
-  const unit = product.unit || "piece";
+  const unit = String(product.unit || "piece").trim().toLowerCase();
+  const isPieceBased = ["piece", "pieces", "pcs", "pc", "pack"].includes(unit);
+  const quantity = Number(product.pieces ?? product.stock) || 0;
 
-  if (unit === "pack") {
-    return Number(product.packs) <= 1;
-  }
-
-  if (unit === "kg") {
-    return Number(product.pieces) <= 1;
-  }
-
-  return Number(product.pieces) <= 20;
+  return !hasUnlimitedOrder(product) && isPieceBased && quantity > 0 && quantity <= 25;
 }
 
 function getProductStockLabel(product) {
   const pieces = Number(product.pieces ?? product.stock) || 0;
-  if (product.unit === "pack") {
+  const unit = String(product.unit || "").trim().toLowerCase();
+  if (unit === "pack") {
     return `${formatQuantity(product.packs)} packs (${formatQuantity(pieces)} pcs)`;
   }
+  if (unit === "kilogram") return `${formatQuantity(pieces)} kg`;
   return `${formatQuantity(pieces)} ${product.unit || "pcs"}`;
+}
+
+function getCardStockLabel(product) {
+  const unit = String(product.unit || "").trim().toLowerCase();
+  if (unit === "kaban") return "Kaldero";
+  if (["packs", "kilogram"].includes(unit)) return "Container";
+  return getProductStockLabel(product);
 }
 
 async function openLowStockConfirmation(product) {
   const existing = document.getElementById("low-stock-confirmation-modal");
-  if (existing) existing.remove();
+  if (existing) {
+    const existingModal = M.Modal.getInstance(existing);
+    if (existingModal) {
+      if (existingModal.isOpen) existingModal.close();
+      existingModal.destroy();
+    }
+    existing.remove();
+  }
 
   const modalElement = document.createElement("div");
   modalElement.id = "low-stock-confirmation-modal";
@@ -163,6 +186,17 @@ export async function initPOS() {
   // Kung nakalipat na sa ibang DOM habang hinihintay ang Firebase Auth,
   // huwag nang magpatuloy sa lumang POS page.
   if (session !== posSession || !document.getElementById("productList")) return;
+
+  unsubscribeShift?.();
+  unsubscribeShift = watchActiveShift((shift) => {
+    if (session !== posSession) return;
+    posShiftActive = shift.active;
+    const content = document.getElementById("content");
+    showShiftRequired(content, !shift.active, shift.timedOut);
+    content?.querySelectorAll(":scope > *").forEach((section) => {
+      section.inert = !shift.active && !section.hasAttribute("data-shift-required");
+    });
+  });
 
   if (!navigator.onLine) {
     console.log("Offline mode: loading from IndexedDB");
@@ -306,19 +340,35 @@ function updateCartCount() {
 
   cartCount.textContent = `${totalItems} ${totalItems === 1 ? "Item" : "Items"}`;
 }
+
+function updateCheckoutVisibility() {
+  const hasItems = cart.some((item) => Number(item.qty || 0) > 0);
+  const checkoutInfo = document.querySelector(".checkout-info");
+  const checkoutBar = document.querySelector(".checkout-bar");
+
+  if (checkoutInfo) {
+    checkoutInfo.hidden = !hasItems;
+  }
+
+  if (checkoutBar) {
+    checkoutBar.classList.toggle("has-items", hasItems);
+    checkoutBar.classList.toggle("is-empty", !hasItems);
+  }
+}
+
 // ADD TO CART
 function addToCart(product) {
   const existing = cart.find((item) => item.id === product.id);
 
   if (existing) {
-    if (existing.qty < product.stock) {
+    if (hasUnlimitedOrder(product) || existing.qty < product.stock) {
       existing.qty += 1;
     } else {
       M.toast({ html: "Not enough stock!", classes: "red rounded" });
       return;
     }
   } else {
-    if (product.stock <= 0) {
+    if (!hasUnlimitedOrder(product) && product.stock <= 0) {
       M.toast({ html: "Out of stock!", classes: "red rounded" });
       return;
     }
@@ -333,6 +383,7 @@ function addToCart(product) {
 // RENDER CART
 function identifyCart() {
   updateCartCount();
+  updateCheckoutVisibility();
 
   if (window.innerWidth <= 768) {
     renderMobileCart();
@@ -381,7 +432,7 @@ function renderCart() {
 
     row.innerHTML = `
       <td>${item.name}</td>
-      <td><input type="number" min="1" max="${item.stock}" value="${item.qty}" data-index="${index}" class="qty-input"></td>
+      <td><input type="number" min="1" ${hasUnlimitedOrder(item) ? "" : `max="${item.stock}"`} value="${item.qty}" data-index="${index}" class="qty-input"></td>
       <td>₱${item.price.toFixed(2)}</td>
       <td>₱${total.toFixed(2)}</td>
       <td><button class="btn red remove-btn" data-index="${index}"><i class="material-icons">delete</i></button></td>
@@ -403,7 +454,7 @@ function renderCart() {
         quantity = 1;
       }
 
-      if (quantity > cart[idx].stock) {
+      if (!hasUnlimitedOrder(cart[idx]) && quantity > cart[idx].stock) {
         quantity = cart[idx].stock;
 
         M.toast({
@@ -459,6 +510,12 @@ async function addOrder(orderItems) {
   const orderRef = await addDoc(collection(db, "orders"), {
     items: orderItems,
     employee: user ? user.uid : "guest",
+    employeeUid: user?.uid || "",
+    employeeId: currentEmployeeId || "",
+    total: orderItems.reduce(
+      (sum, item) => sum + (Number(item.price) || 0) * (Number(item.qty) || 0),
+      0,
+    ),
     created_at: serverTimestamp(),
     status: "paid",
   });
@@ -505,6 +562,10 @@ function setupCartEvents() {
   checkoutBtn.dataset.ready = "true";
 
   checkoutBtn.addEventListener("click", () => {
+    if (!posShiftActive) {
+      M.toast({ html: "Timed in first before using POS.", classes: "red rounded" });
+      return;
+    }
     if (cart.length === 0) {
       M.toast({ html: "Cart is empty!", classes: "red rounded" });
       return;
@@ -530,6 +591,9 @@ window.addEventListener("pageshow", restoreCartOnPageShow);
 // Tinatawag ng navemployee.js bago palitan ang #content.
 export function stopPosPage() {
   posSession += 1;
+  unsubscribeShift?.();
+  unsubscribeShift = null;
+  posShiftActive = false;
 
   if (unsubscribePOS) {
     unsubscribePOS();
@@ -650,7 +714,7 @@ function filterProducts() {
   const filteredProducts = allProducts.filter((product) => {
     const stock = Number(product.pieces ?? product.stock) || 0;
 
-    if (stock <= 0) return false;
+    if (stock <= 0 && !hasUnlimitedOrder(product)) return false;
 
     // Safety net: enforce role AND employeeId visibility here too, in
     // case allProducts was ever populated from a path that skipped the
@@ -744,7 +808,7 @@ function renderProducts(products) {
           lowStock
             ? `<button class="lowstock-btn" type="button" data-id="${product.id}">
                  <i class="material-icons" aria-hidden="true">warning</i>
-                 <span class="sr-only">Low stock</span>
+                 <span>Low stock</span>
                </button>`
             : ""
         }
@@ -758,11 +822,15 @@ function renderProducts(products) {
           data-packs="${product.packs ?? ""}"
           data-pieces-per-pack="${product.piecesPerPack}"
           data-unit="${product.unit || "piece"}"
+          data-category="${product.category || product.role || ""}"
         >
           <i class="material-icons">add</i>
         </button>
       </div>
     `;
+
+    const productStock = card.querySelector(".product-stock");
+    if (productStock) productStock.textContent = getCardStockLabel(product);
 
     productList.appendChild(card);
   });
@@ -782,6 +850,7 @@ function renderProducts(products) {
         packs: btn.dataset.packs === "" ? null : Number(btn.dataset.packs),
         pieces_per_pack: Number(btn.dataset.piecesPerPack) || 1,
         unit: btn.dataset.unit,
+        category: btn.dataset.category,
       });
     });
   });

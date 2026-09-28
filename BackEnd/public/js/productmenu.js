@@ -56,6 +56,8 @@ function resetAllDynamicValues() {
   if (piecesUsedInput) piecesUsedInput.value = "";
   if (packsUsedInput) packsUsedInput.value = "";
   if (kgUsedInput) kgUsedInput.value = "";
+  if (kgUsedInput) kgUsedInput.removeAttribute("max");
+  if (packsUsedInput) packsUsedInput.removeAttribute("max");
   if (kalderoCountInput) kalderoCountInput.value = "";
 }
 
@@ -147,7 +149,7 @@ export function loadInventoryOptions(role = "") {
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data.status === "On Selling") return;
+      if (Number(data.quantity ?? 0) <= 0) return;
 
       const option = document.createElement("option");
       option.value = docSnap.id;
@@ -193,7 +195,7 @@ function bindInventoryAllocationChange() {
       // Rice — kaban converted to kg (stock_quantity) sa adminBE.js.
       stock = data.stock_quantity;
       unitLabel = `${data.quantity} KABAN = ${data.stock_quantity} KG`;
-    } else if (unit === "kg") {
+    } else if (unit === "kg" || unit === "kilogram") {
       stock = data.quantity;
       unitLabel = "KG";
     } else if (unit === "liter") {
@@ -204,6 +206,14 @@ function bindInventoryAllocationChange() {
     }
 
     stockInput.value = stock;
+    const packsUsedInput = document.getElementById("packsUsed");
+    const kgUsedInput = document.getElementById("KgUsed");
+    if (packsUsedInput && (unit === "pack" || unit === "packs")) {
+      packsUsedInput.max = Number(data.quantity || 0);
+    }
+    if (kgUsedInput && ["kaban", "kilogram", "kg"].includes(unit)) {
+      kgUsedInput.max = Number(stock || 0);
+    }
     if (stockUnit) stockUnit.value = unitLabel;
 
     const piecesUsedField = document.getElementById("pieces-used-field");
@@ -214,20 +224,20 @@ function bindInventoryAllocationChange() {
     const kalderoLabel = document.getElementById("kaldero-label");
 
     if (unit === "pack") {
-      // FIXED: Siomai-type — dapat "Pieces Used" field ang lumalabas,
-      // hindi "Packs Used". Dati nagpapakita ng packsUsedField dito,
-      // kaya laging blangko ang pieces_used sa Firestore.
-      if (piecesUsedField) piecesUsedField.style.display = "block";
+      if (packsUsedField) packsUsedField.style.display = "block";
+      const packsUsedLabel = document.querySelector('label[for="packsUsed"]');
+      if (packsUsedLabel) packsUsedLabel.textContent = "Siomai Packs Used";
     } else if (unit === "packs") {
       // Gulaman Powder / Powdered Juice: "Packs Used" + "Number of
       // Container Reached".
       if (packsUsedField) packsUsedField.style.display = "block";
+      const packsUsedLabel = document.querySelector('label[for="packsUsed"]');
+      if (packsUsedLabel) packsUsedLabel.textContent = "Palamig Packs Used";
       if (kalderoCountField) kalderoCountField.style.display = "block";
       if (kalderoLabel)
         kalderoLabel.textContent = "Number of Container Reached";
-    } else if (unit === "kaban") {
-      // Rice: "Kilograms Used" + "Number of Container Reached" — same
-      // shape as KG.
+    } else if (unit === "kaban" || unit === "kilogram") {
+      // Rice and ingredient kilograms track both consumed kg and output containers.
       if (kgUsedField) kgUsedField.style.display = "block";
       if (kalderoCountField) kalderoCountField.style.display = "block";
       if (kgLabel) kgLabel.textContent = "Kilograms Used"; // reset (di na "(Rice)")
@@ -235,10 +245,7 @@ function bindInventoryAllocationChange() {
         kalderoLabel.textContent = "Number of Container Reached";
     } else if (unit === "kg") {
       if (kgUsedField) kgUsedField.style.display = "block";
-      if (kalderoCountField) kalderoCountField.style.display = "block";
-      if (kgLabel) kgLabel.textContent = "Kilograms Used"; // reset kung galing "kaban"
-      if (kalderoLabel)
-        kalderoLabel.textContent = "Number of Container Reached";
+      if (kgLabel) kgLabel.textContent = "Kilograms per Product";
     }
     // NOTE: LITER — ibinalik sa simpleng behavior (walang extra fields),
     // dahil wala ito sa spec mo. Kung gusto mo palang gawing kagaya ng
@@ -369,12 +376,10 @@ export function addproductmenu() {
       let kalderoCount = null;
 
       if (unit === "pack") {
-        // FIXED: kunin na ang "Pieces Used" input (dati "packsUsed"
-        // ang nire-read dito, kaya mali).
-        piecesUsed = Number(document.getElementById("piecesUsed").value);
-        if (!(piecesUsed > 0)) {
+        packsUsed = Number(document.getElementById("packsUsed").value);
+        if (!(packsUsed > 0) || packsUsed > Number(inventory.quantity || 0)) {
           M.toast({
-            html: "Please enter Pieces Used.",
+            html: "Enter a valid number of Siomai packs within available stock.",
             classes: "red rounded",
           });
           return;
@@ -382,23 +387,27 @@ export function addproductmenu() {
       } else if (unit === "packs") {
         packsUsed = Number(document.getElementById("packsUsed").value);
         kalderoCount = Number(document.getElementById("kalderocCount").value);
-        if (!(packsUsed > 0) || !(kalderoCount > 0)) {
+        if (!(packsUsed > 0) || packsUsed > Number(inventory.quantity || 0) || !(kalderoCount > 0)) {
           M.toast({
             html: "Please complete all fields.",
             classes: "red rounded",
           });
           return;
         }
-      } else if (unit === "kaban" || unit === "kg") {
-        // KABAN (Rice) reuses the exact same "Kilograms Used" +
-        // "Number of Container Reached" fields as KG.
+      } else if (unit === "kaban" || unit === "kilogram") {
         kgUsed = Number(document.getElementById("KgUsed").value);
         kalderoCount = Number(document.getElementById("kalderocCount").value);
-        if (!(kgUsed > 0) || !(kalderoCount > 0)) {
+        if (!(kgUsed > 0) || kgUsed > Number(inventory.stock_quantity || 0) || !(kalderoCount > 0)) {
           M.toast({
             html: "Please complete all fields.",
             classes: "red rounded",
           });
+          return;
+        }
+      } else if (unit === "kg") {
+        kgUsed = Number(document.getElementById("KgUsed").value);
+        if (!(kgUsed > 0) || kgUsed > Number(inventory.quantity || 0)) {
+          M.toast({ html: "Please enter Kilograms per Product.", classes: "red rounded" });
           return;
         }
       }
@@ -466,35 +475,39 @@ function initUppercaseProductName() {
   });
 }
 
-async function loadCategoryFilter() {
+function syncCategoryFilter(menuDocs) {
   const select = document.getElementById("filterCategory");
   if (!select) return;
 
-  const snap = await getDocs(collection(db, "categoriesINV"));
   const categories = new Set();
-
-  snap.forEach((docSnap) => {
-    const data = docSnap.data();
-    if (data.name) categories.add(data.name.trim());
+  menuDocs.forEach(({ data }) => {
+    const category = String(data.inv_category || data.category || "").trim();
+    if (category) categories.add(category);
   });
 
+  const previousValue = select.value;
   select.innerHTML = "";
-  let defaultCategory = null;
-
-  categories.forEach((category) => {
+  if (categories.size === 0) {
     const option = document.createElement("option");
-    option.value = category;
-    option.textContent = category;
-    if (!defaultCategory) {
-      option.selected = true;
-      defaultCategory = category;
-    }
+    option.value = "";
+    option.textContent = "No categories yet";
+    option.disabled = true;
+    option.selected = true;
     select.appendChild(option);
-  });
+  } else {
+    categories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category;
+      option.textContent = category;
+      select.appendChild(option);
+    });
+    select.value = categories.has(previousValue)
+      ? previousValue
+      : select.options[0].value;
+  }
 
   reinitSelect(select);
-  if (defaultCategory) select.value = defaultCategory;
-  return defaultCategory;
+  select.dispatchEvent(new Event("change"));
 }
 
 function confirmDeletion(title, message) {
@@ -506,6 +519,11 @@ function confirmDeletion(title, message) {
   const titleElement = document.getElementById("delete-confirmation-title");
   const messageElement = document.getElementById("delete-confirmation-message");
 
+  const existingModal = M.Modal.getInstance(modalElement);
+  if (existingModal) {
+    if (existingModal.isOpen) existingModal.close();
+    existingModal.destroy();
+  }
   const modalInstance = M.Modal.init(modalElement, { dismissible: false });
   titleElement.textContent = title;
   messageElement.textContent = message;
@@ -587,8 +605,6 @@ export async function loadmenu() {
 
         document.getElementById("edit-menu-name").value =
           data.product_name || "";
-        document.getElementById("edit-menu-stock").value =
-          data.current_stock ?? "";
         document.getElementById("edit-menu-price").value = data.price ?? "";
         M.updateTextFields();
 
@@ -605,14 +621,11 @@ export async function loadmenu() {
             .getElementById("edit-menu-name")
             .value.trim()
             .toUpperCase();
-          const newStock = Number(
-            document.getElementById("edit-menu-stock").value,
-          );
           const newPrice = Number(
             document.getElementById("edit-menu-price").value,
           );
 
-          if (!newName || newStock < 0 || newPrice < 0) {
+          if (!newName || !Number.isFinite(newPrice) || newPrice < 0) {
             M.toast({
               html: "Please enter valid values.",
               classes: "red rounded",
@@ -623,7 +636,6 @@ export async function loadmenu() {
           try {
             await updateDoc(menuRef, {
               product_name: newName,
-              ...buildCurrentQuantityFields(data, newStock),
               price: newPrice,
               last_updated: serverTimestamp(),
             });
@@ -689,6 +701,7 @@ export async function loadmenu() {
     const thPacks = document.getElementById("th-packs");
     const thPieces = document.getElementById("th-pieces");
     const thContainer = document.getElementById("th-container");
+    const thKgUsed = document.getElementById("th-kg-used");
     if (!thPacks || !thPieces || !thContainer) return;
 
     const sampleUnit = (filteredData[0]?.data.unit || "").toLowerCase();
@@ -697,27 +710,46 @@ export async function loadmenu() {
       thPacks.style.display = "";
       thPieces.style.display = "";
       thContainer.style.display = "none";
+      if (thKgUsed) thKgUsed.style.display = "none";
       thPacks.textContent = "Packs";
-      thPieces.textContent = "Pieces Used";
+      thPieces.textContent = "Packs Used";
     } else if (sampleUnit === "packs") {
       thPacks.style.display = "";
       thPieces.style.display = "none";
       thContainer.style.display = "";
+      if (thKgUsed) thKgUsed.style.display = "none";
       thPacks.textContent = "Packs Used";
       thContainer.textContent = "Container";
     } else if (
       sampleUnit === "kaban" ||
-      sampleUnit === "kg" ||
-      sampleUnit === "liter"
+      sampleUnit === "kilogram"
     ) {
       thPacks.style.display = "none";
       thPieces.style.display = "none";
       thContainer.style.display = "";
       thContainer.textContent = "Container";
+      if (thKgUsed) {
+        thKgUsed.style.display = "";
+        thKgUsed.textContent = "KG Used";
+      }
+    } else if (sampleUnit === "kg") {
+      thPacks.style.display = "none";
+      thPieces.style.display = "none";
+      thContainer.style.display = "none";
+      if (thKgUsed) {
+        thKgUsed.style.display = "";
+        thKgUsed.textContent = "KG per Product";
+      }
+    } else if (sampleUnit === "liter") {
+      thPacks.style.display = "none";
+      thPieces.style.display = "none";
+      thContainer.style.display = "none";
+      if (thKgUsed) thKgUsed.style.display = "none";
     } else {
       thPacks.style.display = "none";
       thPieces.style.display = "none";
       thContainer.style.display = "none";
+      if (thKgUsed) thKgUsed.style.display = "none";
     }
   }
 
@@ -806,27 +838,25 @@ export async function loadmenu() {
         (data.current_pieces ?? data.current_stock) /
           (data.pieces_per_pack || 1),
       );
-      const pieces = data.current_pieces ?? data.current_stock ?? 0;
-
       quantityColumns = `
         <td data-label="Packs">${formatQuantity(packs)}</td>
-        <td data-label="Pieces Used">${formatQuantity(data.pieces_used ?? pieces)}</td>
+        <td data-label="Packs Used">${formatQuantity(data.packs_used)}</td>
       `;
     } else if (data.unit === "packs") {
       quantityColumns = `
         <td data-label="Packs Used">${formatQuantity(data.packs_used)}</td>
         <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
       `;
-    } else if (data.unit === "kaban") {
+    } else if (data.unit === "kaban" || data.unit === "kilogram") {
       quantityColumns = `
         <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
+        <td data-label="KG Used">${formatQuantity(data.kg_used)}</td>
       `;
-    } else if (data.unit === "kg" || data.unit === "liter") {
-      quantityColumns = `
-        <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
-      `;
+    } else if (data.unit === "kg") {
+      quantityColumns = `<td data-label="KG per Product">${formatQuantity(data.kg_used)}</td>`;
+    } else if (data.unit === "liter") {
+      quantityColumns = "";
     }
-
     return `
       <tr>
         <td data-label="Product Code"><strong>${data.product_code || "-"}</strong></td>
@@ -860,6 +890,7 @@ export async function loadmenu() {
       snapshot.forEach((docSnap) => {
         menuDocs.push({ id: docSnap.id, data: docSnap.data() });
       });
+      syncCategoryFilter(menuDocs);
 
       const inventoryIds = new Set();
       menuDocs.forEach(({ data }) => {
@@ -988,8 +1019,6 @@ export function cleanupProductMenuPage() {
 export async function initProductPage() {
   loadInventoryOptions();
   loadroles();
-
-  await loadCategoryFilter();
 
   previewNextProductId();
   addproductmenu();

@@ -33,7 +33,7 @@ const HISTORY_PAGE_SIZE = 10;
 
 function isContainerUnit(unit) {
   const u = (unit || "").toLowerCase();
-  return u === "kg" || u === "liter" || u === "packs" || u === "kaban";
+  return u === "kilogram" || u === "liter" || u === "packs" || u === "kaban";
 }
 
 function reinitSelect(selectEl) {
@@ -53,14 +53,16 @@ function buildCurrentQuantityFields(menuData, pieces) {
   };
 }
 
-function buildAssignedQuantityFields(menuData, pieces) {
+function buildAssignedQuantityFields(menuData, pieces, assignedContainers = null) {
   const unit = (menuData.unit || "piece").toLowerCase();
   const isPack = unit === "pack";
   const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
   const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
   const kgUsed = Number(menuData.kg_used || 0);
+  const siomaiPacksUsed = Number(menuData.packs_used || 0);
   const packsUsed = Number(menuData.packs_used || 0);
   const piecesUsed = Number(menuData.pieces_used || 0);
+  const outputContainers = Number(menuData.kaldero_count || 0);
 
   const result = {
     stock: pieces,
@@ -77,6 +79,18 @@ function buildAssignedQuantityFields(menuData, pieces) {
     result.weight_per_kaban = weightPerKaban;
     result.total_kg = pieces;
     result.kg_used = kgUsed;
+  }
+
+  if (["kaban", "kilogram", "packs", "liter"].includes(unit)) {
+    result.kaldero_count = assignedContainers ?? outputContainers;
+  }
+
+  if ((unit === "kilogram" || unit === "kg") && kgUsed > 0) {
+    result.kg_used = kgUsed;
+  }
+
+  if (unit === "pack" && siomaiPacksUsed > 0) {
+    result.packs_used = siomaiPacksUsed;
   }
 
   if (unit === "packs" && packsUsed > 0) {
@@ -98,6 +112,18 @@ function getMaxAvailableContainers(menuData) {
   return Number(menuData.current_stock || 0) > 0 ? 1 : 0;
 }
 
+function getStockUsedPerContainer(menuData, legacyKabanWeight = 0) {
+  const unit = String(menuData.unit || "").toLowerCase();
+  const containers = Number(menuData.kaldero_count || 0);
+  if (containers <= 0) return 0;
+  if (unit === "packs") return Number(menuData.packs_used || 0) / containers;
+  if (unit === "kaban" || unit === "kilogram") {
+    const kgUsed = Number(menuData.kg_used || 0);
+    return kgUsed > 0 ? kgUsed / containers : legacyKabanWeight;
+  }
+  return 0;
+}
+
 function updateUnitDisplay(unit) {
   const unitField = document.getElementById("productUnit");
   if (unitField) {
@@ -108,6 +134,7 @@ function updateUnitDisplay(unit) {
       packs: "PACKS",
       kaban: "KABAN",
       piece: "PIECE",
+      kilogram: "KILOGRAM",
     };
     unitField.value = unitMap[unit] || "-";
   }
@@ -204,7 +231,7 @@ async function saveToProductHistory(productData, productId) {
         pieces_per_pack: Number(productData.pieces_per_pack || 60),
         last_updated: serverTimestamp(),
       });
-      return;
+      return true;
     }
 
     const historyData = {
@@ -234,8 +261,10 @@ async function saveToProductHistory(productData, productId) {
       html: `📦 ${productName} moved to Product History`,
       classes: "blue rounded",
     });
+    return true;
   } catch (error) {
     console.error("Error saving to product history:", error);
+    return false;
   }
 }
 
@@ -345,7 +374,6 @@ function renderHistoryPage() {
     pageRows.length === 0
       ? `<tr><td colspan="8" class="center-align grey-text" style="padding: 30px 0;"><i class="material-icons" style="font-size: 48px; display: block; margin-bottom: 10px;">history</i>No completed products yet.</td></tr>`
       : pageRows.join("");
-
   const prev = document.getElementById("history-assign-prev");
   const next = document.getElementById("history-assign-next");
   const pageLabel = document.getElementById("history-assign-page");
@@ -383,6 +411,7 @@ function renderHistoryPage() {
   }
 }
 
+
 export function stopLoadingHistoryAssign() {
   if (unsubscribeProductHistory) {
     unsubscribeProductHistory();
@@ -393,7 +422,15 @@ export function stopLoadingHistoryAssign() {
 async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
   if (!inventoryId) return;
 
-  const inventoryRef = doc(db, "inventory", inventoryId);
+  // Assigned products store the Product Menu document ID. Resolve that menu
+  // entry to its actual Inventory document before changing its quantity.
+  const menuSnap = await getDoc(doc(db, "productMenu", inventoryId));
+  const linkedInventoryId = menuSnap.exists()
+    ? menuSnap.data().inventory_id || menuSnap.data().inventoryId
+    : inventoryId;
+  if (!linkedInventoryId) return;
+
+  const inventoryRef = doc(db, "inventory", linkedInventoryId);
   const inventorySnap = await getDoc(inventoryRef);
   if (!inventorySnap.exists()) return;
 
@@ -417,20 +454,107 @@ async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
     }
   }
 
-  const newQuantity = (invData.quantity || 0) + deltaInInventoryUnit;
+  const newQuantity = Math.max(
+    0,
+    (Number(invData.quantity) || 0) + deltaInInventoryUnit,
+  );
   const newStockQuantity =
     invUnit === "pack" ? newQuantity * piecesPerPack : newQuantity;
 
   const unitPrice = Number(invData.unit_price || 0);
   const newTotalValue = newQuantity * unitPrice;
+  const activeAssignments = await getDocs(
+    query(
+      collection(db, "products"),
+      where("inventoryId", "==", inventoryId),
+    ),
+  );
+  const hasActiveAssignments = activeAssignments.docs.some((assignment) => {
+    const assigned = assignment.data();
+    return Number(assigned.pieces ?? assigned.stock ?? 0) > 0;
+  });
 
   await updateDoc(inventoryRef, {
     quantity: newQuantity,
     stock_quantity: newStockQuantity,
     total_value: newTotalValue,
-    status: newQuantity <= 0 ? "On Selling" : "Available",
+    status:
+      hasActiveAssignments || newQuantity <= 0 ? "On Selling" : "Available",
     last_updated: serverTimestamp(),
   });
+
+  if (menuSnap.exists()) {
+    const menuData = menuSnap.data();
+    const menuStock = Number(menuData.current_stock ?? 0);
+    await updateDoc(doc(db, "productMenu", inventoryId), {
+      status:
+        hasActiveAssignments || menuStock <= 0 ? "On Selling" : "Available",
+      last_updated: serverTimestamp(),
+    });
+  }
+}
+
+async function archiveDepletedMenuIfReady(menuId) {
+  const menuRef = doc(db, "productMenu", menuId);
+  const menuSnap = await getDoc(menuRef);
+  if (!menuSnap.exists()) return;
+
+  const menuData = menuSnap.data();
+  const assignments = await getDocs(
+    query(collection(db, "products"), where("inventoryId", "==", menuId)),
+  );
+  const hasRemainingStock = assignments.docs.some((assignment) => {
+    const data = assignment.data();
+    return Number(data.pieces ?? data.stock ?? 0) > 0;
+  });
+  if (hasRemainingStock) return;
+
+  const linkedInventoryId = menuData.inventory_id || menuData.inventoryId;
+  if (Number(menuData.current_stock ?? 0) > 0) {
+    await updateDoc(menuRef, {
+      status: "Available",
+      last_updated: serverTimestamp(),
+    });
+    if (linkedInventoryId) {
+      const inventoryRef = doc(db, "inventory", linkedInventoryId);
+      const inventorySnap = await getDoc(inventoryRef);
+      if (inventorySnap.exists()) {
+        const inventoryData = inventorySnap.data();
+        await updateDoc(inventoryRef, {
+          status:
+            Number(inventoryData.quantity ?? 0) > 0
+              ? "Available"
+              : "On Selling",
+          last_updated: serverTimestamp(),
+        });
+      }
+    }
+    return;
+  }
+
+  await deleteDoc(menuRef);
+
+  if (!linkedInventoryId) return;
+
+  const otherMenus = await getDocs(
+    query(
+      collection(db, "productMenu"),
+      where("inventory_id", "==", linkedInventoryId),
+    ),
+  );
+  if (!otherMenus.empty) return;
+
+  const inventoryRef = doc(db, "inventory", linkedInventoryId);
+  const inventorySnap = await getDoc(inventoryRef);
+  if (!inventorySnap.exists()) return;
+
+  await addDoc(collection(db, "archivedInventory"), {
+    ...inventorySnap.data(),
+    original_id: linkedInventoryId,
+    archived_at: serverTimestamp(),
+    archived_by: "System",
+  });
+  await deleteDoc(inventoryRef);
 }
 
 async function getCapitalPriceForMenuItem(menuData, transaction = null) {
@@ -478,7 +602,8 @@ function loadInventoryOptions(role = "") {
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data.status !== "Available") return;
+      const availableStock = Number(data.current_stock ?? 0);
+      if (availableStock <= 0) return;
       const option = document.createElement("option");
       option.value = docSnap.id;
       option.textContent = data.product_name;
@@ -665,7 +790,7 @@ function bindProductFormListeners() {
         if (containerField) containerField.style.display = "none";
         if (containerEl) containerEl.value = "";
       } else if (
-        unit === "kg" ||
+        unit === "kilogram" ||
         unit === "liter" ||
         unit === "packs" ||
         unit === "kaban"
@@ -730,12 +855,15 @@ function bindProductFormListeners() {
         if (piecesField) piecesField.style.display = "block";
 
         if (piecesInput) {
-          piecesInput.dataset.unit = "piece";
+          piecesInput.dataset.unit = unit === "kg" ? "kg" : "piece";
           piecesInput.max = currentStock;
-          piecesInput.step = "1";
+          piecesInput.min = unit === "kg" ? "0.01" : "1";
+          piecesInput.step = unit === "kg" ? "0.01" : "1";
           piecesInput.required = true;
           piecesInput.disabled = false;
         }
+        const piecesLabel = document.querySelector('label[for="assignPieces"]');
+        if (piecesLabel) piecesLabel.textContent = unit === "kg" ? "Kilograms to Assign" : "Number of Pieces";
 
         const packsField = document.getElementById("packs-input-field");
         if (packsField) packsField.style.display = "none";
@@ -894,8 +1022,12 @@ function bindProductFormListeners() {
 
           if (menuUnit === "pack") {
             piecesPerEmployee = enteredQty * piecesPerPack;
-          } else if (menuUnit === "kaban" && weightPerKaban > 0) {
-            piecesPerEmployee = enteredQty * weightPerKaban;
+          } else if (["kaban", "kilogram", "packs"].includes(menuUnit)) {
+            const stockPerContainer = getStockUsedPerContainer(menuData, weightPerKaban);
+            if (!(stockPerContainer > 0)) {
+              throw new Error("Set ingredient use and output container count in Product Menu first.");
+            }
+            piecesPerEmployee = enteredQty * stockPerContainer;
           }
 
           const currentStock = Number(menuData.current_stock || 0);
@@ -942,7 +1074,7 @@ function bindProductFormListeners() {
                   container_count: Math.max(0, maxContainers - totalQtyUsed),
                 }
               : {}),
-            status: updatedStock <= 0 ? "On Selling" : "Available",
+            status: "On Selling",
             assigned: true,
             last_updated: serverTimestamp(),
           });
@@ -963,7 +1095,7 @@ function bindProductFormListeners() {
 
               transaction.update(existing.ref, {
                 capital_price: mergedCapitalPrice,
-                ...buildAssignedQuantityFields(menuData, mergedPieces),
+                ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
                 last_updated: serverTimestamp(),
               });
             } else {
@@ -977,7 +1109,7 @@ function bindProductFormListeners() {
                   menuData.inv_category || menuData.category || "Unknown",
                 employeeId: emp.id,
                 inventoryId: menuId,
-                ...buildAssignedQuantityFields(menuData, piecesPerEmployee),
+                ...buildAssignedQuantityFields(menuData, piecesPerEmployee, enteredQty),
                 created_at: serverTimestamp(),
                 last_updated: serverTimestamp(),
               });
@@ -1048,8 +1180,12 @@ function bindProductFormListeners() {
 
         if (menuUnit === "pack") {
           piecesToAssign = enteredQty * piecesPerPack;
-        } else if (menuUnit === "kaban" && weightPerKaban > 0) {
-          piecesToAssign = enteredQty * weightPerKaban;
+        } else if (["kaban", "kilogram", "packs"].includes(menuUnit)) {
+          const stockPerContainer = getStockUsedPerContainer(menuData, weightPerKaban);
+          if (!(stockPerContainer > 0)) {
+            throw new Error("Set ingredient use and output container count in Product Menu first.");
+          }
+          piecesToAssign = enteredQty * stockPerContainer;
         }
 
         if (isContainer) {
@@ -1082,7 +1218,7 @@ function bindProductFormListeners() {
                 ),
               }
             : {}),
-          status: updatedStock <= 0 ? "On Selling" : "Available",
+          status: "On Selling",
           assigned: true,
           last_updated: serverTimestamp(),
         });
@@ -1101,7 +1237,7 @@ function bindProductFormListeners() {
 
           transaction.update(existingProductRef, {
             capital_price: mergedCapitalPrice,
-            ...buildAssignedQuantityFields(menuData, mergedPieces),
+            ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
             last_updated: serverTimestamp(),
           });
 
@@ -1117,7 +1253,7 @@ function bindProductFormListeners() {
           category: menuData.inv_category || menuData.category || "Unknown",
           employeeId: employeeId,
           inventoryId: menuId,
-          ...buildAssignedQuantityFields(menuData, piecesToAssign),
+          ...buildAssignedQuantityFields(menuData, piecesToAssign, enteredQty),
           created_at: serverTimestamp(),
           last_updated: serverTimestamp(),
         });
@@ -1328,120 +1464,6 @@ export async function loadProducts() {
         }
       };
     });
-
-    tbody.querySelectorAll(".edit-btn").forEach((btn) => {
-      btn.onclick = async (e) => {
-        const id = e.target.closest("button").dataset.id;
-        const row = e.target.closest("tr");
-
-        document.getElementById("edit-name").value =
-          row.children[0].textContent;
-        document.getElementById("edit-price").value =
-          row.children[1].textContent.replace("₱", "");
-        document.getElementById("edit-stock").value =
-          row.children[3].textContent;
-
-        M.updateTextFields();
-
-        const modalElem = document.getElementById("modal-edit-product");
-        let modalInstance = M.Modal.getInstance(modalElem);
-        if (!modalInstance) modalInstance = M.Modal.init(modalElem);
-        modalInstance.open();
-
-        const productRef = doc(db, "products", id);
-        const productSnap = await getDoc(productRef);
-        const oldData = productSnap.data();
-        const oldStock = Number(oldData.pieces ?? oldData.stock) || 0;
-        const saveBtn = document.getElementById("edit-save");
-
-        saveBtn.onclick = async () => {
-          const newName = document.getElementById("edit-name").value;
-          const newPrice = parseFloat(
-            document.getElementById("edit-price").value,
-          );
-          const rawStock = document.getElementById("edit-stock").value;
-
-          const newStock = isContainerUnit(oldData.unit)
-            ? parseFloat(rawStock)
-            : parseInt(rawStock, 10);
-
-          const diff = newStock - oldStock;
-
-          const menuRef = doc(db, "productMenu", oldData.inventoryId);
-          const menuSnap = await getDoc(menuRef);
-          const menuData = menuSnap.data();
-          const isContainer = isContainerUnit(oldData.unit);
-          const menuUnit = (menuData.unit || "").toLowerCase();
-          const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
-
-          let diffQty = diff;
-          if (menuUnit === "kaban" && weightPerKaban > 0) {
-            diffQty = diff / weightPerKaban;
-          }
-
-          if (isContainer && diff > 0) {
-            const maxContainers = getMaxAvailableContainers(menuData);
-            if (diffQty > maxContainers) {
-              M.toast({
-                html: `Not enough containers! Available: ${maxContainers}`,
-                classes: "red rounded",
-              });
-              return;
-            }
-          }
-
-          let updatedStock;
-          if (diff > 0) {
-            if (menuData.current_stock < diff) {
-              M.toast({
-                html: "Not enough inventory stock!",
-                classes: "red rounded",
-              });
-              return;
-            }
-            updatedStock = menuData.current_stock - diff;
-          } else {
-            updatedStock = menuData.current_stock + Math.abs(diff);
-          }
-
-          await updateDoc(doc(db, "products", id), {
-            name: newName,
-            price: newPrice,
-            ...buildAssignedQuantityFields(oldData, newStock),
-          });
-
-          await updateDoc(menuRef, {
-            ...buildCurrentQuantityFields(menuData, updatedStock),
-            ...(isContainer
-              ? {
-                  kaldero_count: Math.max(
-                    0,
-                    getMaxAvailableContainers(menuData) - diffQty,
-                  ),
-                  container_count: Math.max(
-                    0,
-                    getMaxAvailableContainers(menuData) - diffQty,
-                  ),
-                }
-              : {}),
-            status: updatedStock <= 0 ? "On Selling" : "Available",
-            last_updated: serverTimestamp(),
-          });
-
-          await adjustLinkedInventoryStock(oldData.inventoryId, -diff);
-
-          if (unsubscribeProduct) {
-            unsubscribeProduct();
-            unsubscribeProduct = null;
-          }
-
-          loadInventoryOptions(document.getElementById("productRole").value);
-
-          M.toast({ html: "Successfully Updated!", classes: "green rounded" });
-          modalInstance.close();
-        };
-      };
-    });
   }
 
   function getFilteredData() {
@@ -1490,9 +1512,12 @@ export async function loadProducts() {
 
     const sampleUnit = (filteredData[0]?.data.unit || "").toLowerCase();
 
-    if (sampleUnit === "kg") {
+    if (sampleUnit === "kilogram") {
       packsHeaderEl.textContent = "Container";
-      piecesHeaderEl.textContent = "KG";
+      piecesHeaderEl.textContent = "KG Used";
+    } else if (sampleUnit === "kg") {
+      packsHeaderEl.textContent = "Quantity";
+      piecesHeaderEl.textContent = "Unit";
     } else if (sampleUnit === "liter") {
       packsHeaderEl.textContent = "Container";
       piecesHeaderEl.textContent = "Liter";
@@ -1525,7 +1550,14 @@ export async function loadProducts() {
     let rowsHtml = "";
     for (const item of pageItems) {
       const { id, data, empDisplay } = item;
-      const piecesValue = data.pieces ?? data.stock ?? 0;
+      const piecesValue =
+        data.pieces ??
+        data.stock ??
+        data.quantity ??
+        data.stock_quantity ??
+        data.current_stock ??
+        data.current_pieces ??
+        0;
       const priceValue = Number(data.price || 0);
       const capitalPriceValue = Number(data.capital_price || 0);
       const kgUsedValue = Number(data.kg_used || 0);
@@ -1545,15 +1577,12 @@ export async function loadProducts() {
 
       if (data.unit === "pack") {
         packsDisplay = Math.ceil(piecesValue / (data.pieces_per_pack || 1));
-      } else if (data.unit === "kaban") {
-        const weightPerKaban = Number(data.weight_per_kaban || 0);
-        if (weightPerKaban > 0) {
-          packsDisplay = Math.ceil(piecesValue / weightPerKaban);
-        } else {
-          packsDisplay = piecesValue;
-        }
-
-        piecesDisplay = kgUsedValue > 0 ? kgUsedValue : piecesValue;
+      } else if (unit === "kg") {
+        packsDisplay = piecesValue;
+        piecesDisplay = "KG";
+      } else if (["kaban", "kilogram", "packs", "liter"].includes(unit)) {
+        packsDisplay = Number(data.kaldero_count || 0);
+        piecesDisplay = piecesValue;
       } else if (isContainerUnit(data.unit)) {
         packsDisplay = piecesValue;
       }
@@ -1568,7 +1597,6 @@ export async function loadProducts() {
           <td data-label="Employee">${empDisplay}</td>
           <td data-label="Capital"><strong style="color: #16a34a;">₱${totalCapital.toFixed(2)}</strong></td>
           <td data-label="Action">
-            <button class="btn blue edit-btn" data-id="${id}"><i class="material-icons">edit</i></button>
             <button class="btn red delete-btn" data-id="${id}"><i class="material-icons">delete</i></button>
           </td>
         </tr>
@@ -1686,7 +1714,7 @@ export async function loadProducts() {
               ? `${empData.fname} ${empData.lname}`.trim()
               : "Unknown";
 
-            await saveToProductHistory(
+            const archived = await saveToProductHistory(
               {
                 ...data,
                 employee_name: employeeName,
@@ -1697,7 +1725,12 @@ export async function loadProducts() {
               productId,
             );
 
+            // Preserve the exhausted allocation when archiving fails so the
+            // next snapshot can retry instead of losing its history record.
+            if (!archived) continue;
+
             await deleteDoc(doc(db, "products", productId));
+            await archiveDepletedMenuIfReady(data.inventoryId);
             continue;
           } catch (error) {
             console.error("Error processing product:", error);
@@ -1767,7 +1800,10 @@ export async function initProductPage() {
   const modals = document.querySelectorAll(".modal");
   modals.forEach((modal) => {
     const instance = M.Modal.getInstance(modal);
-    if (instance) instance.destroy();
+    if (instance) {
+      if (instance.isOpen) instance.close();
+      instance.destroy();
+    }
     M.Modal.init(modal, { dismissible: false });
   });
 

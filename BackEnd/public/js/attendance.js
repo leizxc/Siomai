@@ -14,6 +14,7 @@ import {
   getDocs,
   doc,
   setDoc,
+  updateDoc,
   serverTimestamp,
   onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -23,10 +24,12 @@ const db = getFirestore(app);
 
 let attendanceInitialized = false;
 let currentAttendance = null;
+let currentAttendanceRef = null;
 let unsubscribeAttendance = null;
 let statsTimer = null;
 let attendanceHistory = [];
 let selectedAttendanceRange = "today";
+let pendingAttendanceAction = null;
 
 // ========================================
 // INITIALIZE ATTENDANCE
@@ -138,6 +141,13 @@ function displayAttendance(attendance) {
     updateTodayStatus("Awaiting approval", "Your time-in request has been sent to the manager.", "pending");
     setTimeInButtonPending();
     displayPendingAttendance(attendance);
+    return;
+  }
+
+  if (attendance.status === "time_out_pending") {
+    updateTodayStatus("Time out awaiting approval", "Your time-out request has been sent to the manager.", "pending");
+    setTimeOutButtonPending();
+    displayPendingTimeOut(attendance);
     return;
   }
 
@@ -291,11 +301,13 @@ function showNoAttendance(message) {
 export function stopAttendancePage() {
   attendanceInitialized = false;
   currentAttendance = null;
+  currentAttendanceRef = null;
   unsubscribeAttendance?.();
   unsubscribeAttendance = null;
   clearInterval(statsTimer);
   statsTimer = null;
   attendanceHistory = [];
+  closeAttendanceConfirmation();
 
   console.log(
     "Attendance page stopped."
@@ -344,6 +356,26 @@ function displayCompletedAttendance(attendance) {
       </div>
       <div class="activity-right">
         <div class="activity-status completed">Completed</div>
+      </div>
+    </div>
+  `;
+}
+
+function displayPendingTimeOut(attendance) {
+  const activityList = document.querySelector(".activity-list");
+  if (!activityList) return;
+
+  const employeeName = `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
+  activityList.innerHTML = `
+    <div class="activity-item">
+      <div class="activity-icon out"><span class="material-icons">hourglass_top</span></div>
+      <div class="activity-info">
+        <div class="activity-title">Time Out Request Sent</div>
+        <div class="activity-time">${employeeName}</div>
+        <div class="activity-time">Waiting for manager approval</div>
+      </div>
+      <div class="activity-right">
+        <div class="activity-status pending">Pending</div>
       </div>
     </div>
   `;
@@ -493,6 +525,7 @@ function dateFromKey(value) {
 
 function watchAttendance(attendanceRef, context) {
   unsubscribeAttendance?.();
+  currentAttendanceRef = attendanceRef;
 
   unsubscribeAttendance = onSnapshot(attendanceRef, (snapshot) => {
     if (snapshot.exists()) {
@@ -520,26 +553,82 @@ function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
     Time In
   `;
 
-  timeInButton.onclick = async () => {
+  timeInButton.onclick = () => {
     if (currentAttendance) return;
 
+    openAttendanceConfirmation("time-in");
+  };
+}
+
+function openAttendanceConfirmation(action) {
+  const modal = document.querySelector("#attendance-confirmation");
+  const title = document.querySelector("#attendance-confirmation-title");
+  const message = document.querySelector("#attendance-confirmation-message");
+  const confirmButton = document.querySelector("#attendance-confirm-action");
+  if (!modal || !confirmButton) return;
+
+  const isTimeOut = action === "time-out";
+  pendingAttendanceAction = action;
+  title.textContent = isTimeOut ? "Confirm Time Out" : "Confirm Time In";
+  message.textContent = isTimeOut
+    ? "Are you sure you want to submit your time-out request?"
+    : "Are you sure you want to submit your time-in request?";
+  confirmButton.textContent = isTimeOut ? "Yes, Time Out" : "Yes, Time In";
+  const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
+  instance.open();
+}
+
+function closeAttendanceConfirmation() {
+  const modal = document.querySelector("#attendance-confirmation");
+  const instance = modal && M.Modal.getInstance(modal);
+  if (instance?.isOpen) instance.close();
+  pendingAttendanceAction = null;
+}
+
+async function submitConfirmedAttendanceAction() {
+  const action = pendingAttendanceAction;
+  const confirmButton = document.querySelector("#attendance-confirm-action");
+  const timeInButton = document.querySelector("#time-in-button");
+  if (!action || !confirmButton || !timeInButton) return;
+
+  closeAttendanceConfirmation();
+
+  if (action === "time-in") {
+    const user = auth.currentUser;
+    const attendanceRef = currentAttendanceRef;
+    if (!user || !attendanceRef || currentAttendance) return;
     timeInButton.disabled = true;
     timeInButton.textContent = "Sending request...";
 
-    const attendanceData = {
-      userId: user.uid,
-      fname,
-      lname,
-      email: user.email || "",
-      status: "pending",
-      type: "time_in_request",
-      attendanceDate: today,
-      requestedAt: serverTimestamp(),
-      createdAt: serverTimestamp(),
-    };
-
     try {
+      const employeeQuery = query(collection(db, "employees"), where("uid", "==", user.uid));
+      const employeeSnapshot = await getDocs(employeeQuery);
+      if (employeeSnapshot.empty) throw new Error("Employee information not found.");
+      const employeeData = employeeSnapshot.docs[0].data();
+      const fname = employeeData.fname || "";
+      const lname = employeeData.lname || "";
+      const attendanceData = {
+        userId: user.uid,
+        fname,
+        lname,
+        email: user.email || "",
+        status: "pending",
+        type: "time_in_request",
+        attendanceDate: getTodayDate(),
+        requestedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+      };
+
       await setDoc(attendanceRef, attendanceData);
+      await setDoc(doc(db, "managerNotifications", `time-in-${attendanceRef.id}`), {
+        type: "time_in_request",
+        attendanceId: attendanceRef.id,
+        title: "Employee time-in request",
+        message: `${fname} ${lname}`.trim() + " submitted a time-in request.",
+        read: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
       currentAttendance = attendanceData;
       setTimeInButtonPending();
       displayPendingAttendance(attendanceData);
@@ -552,7 +641,34 @@ function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
       `;
       showNoAttendance("Unable to send time-in request. Please try again.");
     }
-  };
+    return;
+  }
+
+  if (currentAttendance?.status !== "active" || !currentAttendanceRef) return;
+  timeInButton.disabled = true;
+  timeInButton.textContent = "Recording time out...";
+  try {
+    await updateDoc(currentAttendanceRef, {
+      status: "time_out_pending",
+      type: "time_out_request",
+      timeOutRequestedAt: serverTimestamp(),
+    });
+    const attendanceId = currentAttendanceRef.id;
+    await setDoc(doc(db, "managerNotifications", `time-out-${attendanceId}`), {
+      type: "time_out_request",
+      attendanceId,
+      title: "Employee time-out request",
+      message: `${currentAttendance.fname || ""} ${currentAttendance.lname || ""}`.trim() + " requested to time out.",
+      read: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Time out error:", error);
+    timeInButton.disabled = false;
+    timeInButton.innerHTML = `<span class="material-icons">logout</span> Time Out`;
+    M.toast({ html: "Unable to send time-out request. Please try again.", classes: "red rounded" });
+  }
 }
 
 function setTimeInButtonPending() {
@@ -565,6 +681,19 @@ function setTimeInButtonPending() {
   timeInButton.innerHTML = `
     <span class="material-icons">hourglass_top</span>
     Awaiting Approval
+  `;
+}
+
+function setTimeOutButtonPending() {
+  const timeInButton = document.querySelector("#time-in-button");
+  if (!timeInButton) return;
+
+  timeInButton.disabled = true;
+  timeInButton.classList.remove("active", "completed");
+  timeInButton.classList.add("pending");
+  timeInButton.innerHTML = `
+    <span class="material-icons">hourglass_top</span>
+    Time Out Awaiting Approval
   `;
 }
 
@@ -586,11 +715,27 @@ function setTimeInButtonActive() {
 
   if (!timeInButton) return;
 
-  timeInButton.disabled = true;
+  timeInButton.disabled = false;
   timeInButton.classList.remove("pending", "completed");
   timeInButton.classList.add("active");
   timeInButton.innerHTML = `
-    <span class="material-icons">check_circle</span>
-    Time In Active
+    <span class="material-icons">logout</span>
+    Time Out
   `;
+
+  timeInButton.onclick = () => {
+    if (currentAttendance?.status !== "active" || !currentAttendanceRef) return;
+    openAttendanceConfirmation("time-out");
+  };
 }
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-confirm-cancel]")) closeAttendanceConfirmation();
+  if (event.target.closest("#attendance-confirm-action")) submitConfirmedAttendanceAction();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !document.querySelector("#attendance-confirmation")?.hidden) {
+    closeAttendanceConfirmation();
+  }
+});
