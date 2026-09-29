@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Owner Dashboard | Queen Cassy</title>
+    <link rel="stylesheet" href="/css/admin.css" />
+    <link rel="stylesheet" href="/css/owner.css" />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/materialize.min.css" />
+    <link rel="manifest" href="/manifest.json" />
+    <script>
+      (function () {
+        const theme = localStorage.getItem("theme");
+        if (
+          theme === "dark" ||
+          (!theme && matchMedia("(prefers-color-scheme: dark)").matches)
+        ) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <aside class="sidebar">
+        <h2 class="logo">Queen Cassy</h2>
+        <p class="role">Owner</p>
+        <ul class="nav">
+          <li class="active">
+            <a href="/owner/owner.html"
+              ><i class="material-icons">dashboard</i>Dashboard</a
+            >
+          </li>
+          <li>
+            <a
+              href="#"
+              onclick="
+                loadSection('ownersales.html', this);
+                return false;
+              "
+              ><i class="material-icons">receipt_long</i>Sales</a
+            >
+          </li>
+          <li>
+            <a
+              href="#"
+              onclick="
+                loadSection('capitalstatus.html', this);
+                return false;
+              "
+              ><i class="material-icons">account_balance</i>Capital Status</a
+            >
+          </li>
+          <li>
+            <a
+              href="#"
+              onclick="
+                loadSection('orderstatus.html', this);
+                return false;
+              "
+              ><i class="material-icons">inventory</i>Order Status</a
+            >
+          </li>
+          <li>
+            <a href="/"><i class="material-icons">logout</i>Logout</a>
+          </li>
+        </ul>
+      </aside>
+
+      <div class="overlay"></div>
+      <main class="main">
+        <header class="mobile-header">
+          <button id="menu-toggle" type="button" aria-label="Open menu">
+            <i class="material-icons">menu</i>
+          </button>
+          <div class="header-title">
+            <h2 id="mobile-title">Owner Dashboard</h2>
+            <p>Overall business and team activity</p>
+          </div>
+          <div class="header-actions">
+            <button
+              id="theme-toggle"
+              class="theme-toggle"
+              type="button"
+              title="Toggle dark mode"
+            >
+              <i class="material-icons" id="theme-icon">dark_mode</i>
+            </button>
+            <div class="admin-profile">
+              <i class="material-icons">account_circle</i>
+              <div><strong>Owner</strong><small>Business overview</small></div>
+            </div>
+          </div>
+        </header>
+
+        <div id="content" class="dashboard-content owner-dashboard">
+          <div class="dashboard-kpi-grid dashboard-manager-kpis">
+            <section class="dashboard-kpi-card sales-kpi">
+              <div class="kpi-icon"><i class="material-icons">payments</i></div>
+              <div class="kpi-info">
+                <p>SALES TODAY</p>
+                <h2 id="owner-sales-today">₱0.00</h2>
+                <span id="owner-orders-today">0 paid orders</span>
+              </div>
+            </section>
+            <section class="dashboard-kpi-card expense-kpi">
+              <div class="kpi-icon">
+                <i class="material-icons">receipt_long</i>
+              </div>
+              <div class="kpi-info">
+                <p>EXPENSES TODAY</p>
+                <h2 id="owner-expenses-today">₱0.00</h2>
+                <span>Manager recorded expenses</span>
+              </div>
+            </section>
+            <section class="dashboard-kpi-card profit-kpi">
+              <div class="kpi-icon">
+                <i class="material-icons">account_balance_wallet</i>
+              </div>
+              <div class="kpi-info">
+                <p>NET TODAY</p>
+                <h2 id="owner-net-today">₱0.00</h2>
+                <span>Sales minus expenses</span>
+              </div>
+            </section>
+            <section class="dashboard-kpi-card income-kpi">
+              <div class="kpi-icon"><i class="material-icons">groups</i></div>
+              <div class="kpi-info">
+                <p>ACTIVE EMPLOYEES</p>
+                <h2 id="owner-team-active">0</h2>
+                <span id="owner-team-summary">Currently timed in</span
+                >
+              </div>
+            </section>
+          </div>
+
+          <div class="dashboard-manager-grid">
+            <section class="dashboard-panel dashboard-chart-panel">
+              <div class="panel-header simple-header">
+                <div>
+                  <h3>
+                    <i class="material-icons">show_chart</i>Sales &amp; Expenses
+                  </h3>
+                  <p>Daily totals for the last 7 days</p>
+                </div>
+              </div>
+              <div id="owner-chart-legend" class="dashboard-chart-legend"></div>
+              <canvas
+                id="owner-income-chart"
+                aria-label="Sales and expenses for the last seven days"
+              ></canvas>
+            </section>
+            <section class="dashboard-panel">
+              <div class="panel-header simple-header">
+                <div>
+                  <h3>
+                    <i class="material-icons">point_of_sale</i>Sales by employee
+                  </h3>
+                  <p>Paid orders recorded today</p>
+                </div>
+              </div>
+              <div class="dashboard-table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Orders</th>
+                      <th>Sales</th>
+                    </tr>
+                  </thead>
+                  <tbody id="owner-employee-sales">
+                    <tr>
+                      <td colspan="3" class="dashboard-empty">
+                        Loading sales...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <div class="dashboard-manager-grid dashboard-manager-grid-lower">
+            <section class="dashboard-panel dashboard-attention-panel">
+              <div class="panel-header simple-header">
+                <div>
+                  <h3>
+                    <i class="material-icons">monitor_heart</i>Manager &amp;
+                    employee status
+                  </h3>
+                  <p>Attendance and manager alerts needing attention</p>
+                </div>
+              </div>
+              <div class="dashboard-action-counts">
+                <div>
+                  <strong id="owner-pending-count">0</strong
+                  ><span>Attendance requests pending</span>
+                </div>
+                <div>
+                  <strong id="owner-alert-count">0</strong
+                  ><span>Unread manager alerts</span>
+                </div>
+              </div>
+              <div id="owner-activity-list" class="dashboard-queue">
+                <p class="dashboard-empty">Loading team activity...</p>
+              </div>
+            </section>
+            <section class="dashboard-panel dashboard-stock-panel">
+              <div class="panel-header simple-header">
+                <div>
+                  <h3>
+                    <i class="material-icons">inventory_2</i>Inventory overview
+                  </h3>
+                  <p>
+                    <span id="owner-inventory-total">0</span> items |
+                    <span id="owner-low-stock">0</span> low |
+                    <span id="owner-out-stock">0</span> out of stock
+                  </p>
+                </div>
+              </div>
+              <div id="owner-stock-list" class="dashboard-stock-list">
+                <p class="dashboard-empty">Loading inventory...</p>
+              </div>
+            </section>
+          </div>
+
+          <section class="dashboard-panel owner-recent-expenses">
+            <div class="panel-header simple-header">
+              <div>
+                <h3>
+                  <i class="material-icons">receipt_long</i>Recent manager
+                  expenses
+                </h3>
+                <p>Latest expense records</p>
+              </div>
+            </div>
+            <div class="dashboard-table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody id="owner-recent-expenses">
+                  <tr>
+                    <td colspan="4" class="dashboard-empty">
+                      Loading expenses...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <p
+            id="owner-dashboard-error"
+            class="owner-dashboard-error"
+            role="status"
+            hidden
+          ></p>
+        </div>
+      </main>
+    </div>
+    <script src="/js/materialize.min.js"></script>
+    <script src="/js/functionalnav.js"></script>
+    <script src="/js/theme.js"></script>
+    <script type="module">
+      import "/js/adminIdleLogout.js";
+      import "/js/ownerDashboard.js";
+    </script>
+  </body>
+</html>

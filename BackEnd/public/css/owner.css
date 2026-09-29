@@ -1,0 +1,40 @@
+/* Owner dashboard additions use the manager dashboard design tokens. */
+.owner-dashboard {
+  display: grid;
+  gap: 22px;
+}
+
+.owner-dashboard .dashboard-panel {
+  min-width: 0;
+}
+
+.owner-dashboard .dashboard-queue-item.owner-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.owner-activity-item > .material-icons {
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.owner-dashboard-error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+html.dark .owner-dashboard-error {
+  color: #fecaca;
+  background: #451a1a;
+}
+
+@media (max-width: 768px) {
+  .owner-dashboard {
+    gap: 16px;
+  }
+}

@@ -446,7 +446,6 @@ export async function addEmployee(
     }
 
     const normalizedUsername = username.trim().toLowerCase();
-
     if (isWeakUsername(normalizedUsername)) {
       M.toast({
         html: "Username is too weak. Use at least 5 characters, not all numbers, and not a common word like 'admin' or 'test'.",
@@ -457,18 +456,15 @@ export async function addEmployee(
 
     const q = query(collection(db, "users"), where("email", "==", email));
     const snapshot = await getDocs(q);
-
     if (!snapshot.empty) {
       M.toast({ html: "Email already exists!", classes: "red rounded" });
       return;
     }
-
     const usernameQuery = query(
       collection(db, "users"),
       where("username", "==", normalizedUsername),
     );
     const usernameSnapshot = await getDocs(usernameQuery);
-
     if (!usernameSnapshot.empty) {
       M.toast({ html: "Username is already taken.", classes: "red rounded" });
       return;
@@ -476,28 +472,19 @@ export async function addEmployee(
 
     const API_BASE = window.location.origin;
     const idToken = await auth.currentUser.getIdToken();
-
     const authRes = await fetch(`${API_BASE}/createAuthUser`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${idToken}`,
         "Content-type": "application/json",
       },
-      body: JSON.stringify({
-        email,
-        password,
-      }),
+      body: JSON.stringify({ email, password }),
     });
-
     const authResult = await authRes.json();
     if (!authResult.success) {
-      M.toast({
-        html: authResult.error,
-        classes: "red rounded",
-      });
+      M.toast({ html: authResult.error, classes: "red rounded" });
       return;
     }
-
     const uid = authResult.uid;
 
     await addDoc(collection(db, "employees"), {
@@ -514,10 +501,9 @@ export async function addEmployee(
       email,
       role,
       status: "active",
-      passwordHash: hashvalue, // store hashed password
+      passwordHash: hashvalue,
       created_at: serverTimestamp(),
     });
-
     M.toast({ html: "Employee added successfully!", classes: "green rounded" });
   } catch (error) {
     console.error("Error adding employee:", error);

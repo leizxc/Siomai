@@ -22,13 +22,37 @@ function updateBadge(bell, badge) {
   bell.classList.toggle("has-notification", unreadCount > 0);
 }
 
+function getNotificationPage(item) {
+  if (["time_in_approved", "time_out_approved"].includes(item.type)) {
+    return "attendance.html";
+  }
+  if (item.type === "expense_report_read") return "report.html";
+  return null;
+}
+
+async function openEmployeeNotification(item, modal) {
+  const page = getNotificationPage(item);
+  modal?.close();
+
+  if (page && typeof window.loadSection === "function") {
+    await window.loadSection(page);
+  }
+
+  if (!item.read) {
+    await updateDoc(doc(db, "employeeNotifications", item.id), {
+      read: true,
+      readAt: serverTimestamp(),
+    });
+  }
+}
+
 function renderNotifications() {
   const list = document.querySelector("#employee-notification-list");
   if (!list) return;
   const notices = [
     ...attendanceNotifications.map((item) => ({
       ...item,
-      icon: item.type === "expense_report_read" ? "receipt_long" : item.type === "time_out_approved" ? "logout" : "check_circle",
+      icon: item.type === "expense_report_read" ? "receipt_long" : item.type === "low_stock_read" ? "warning" : item.type === "time_out_approved" ? "logout" : "check_circle",
     })),
   ].sort((a, b) => (b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0));
 
@@ -39,7 +63,7 @@ function renderNotifications() {
   }
 
   list.innerHTML = notices.map((item) => `
-    <article class="employee-notification ${item.read ? "" : "unread"}" data-id="${item.id || ""}" data-source="${item.source}">
+    <article class="employee-notification ${item.read ? "" : "unread"}" data-id="${item.id || ""}" data-source="${item.source}" data-type="${item.type || ""}" tabindex="0" role="button" aria-label="Open ${item.title || "notification"}">
       <label class="employee-notification-select" aria-label="Select notification"><input type="checkbox" value="${item.id}" ${selectedNotificationIds.has(item.id) ? "checked" : ""} /><span></span></label>
       <i class="material-icons">${item.icon}</i>
       <div><strong>${item.title}</strong><p>${item.message}</p><small>${formatDate(item.updatedAt || item.createdAt)}</small></div>
@@ -47,11 +71,38 @@ function renderNotifications() {
     </article>
   `).join("");
 
+  list.querySelectorAll(".employee-notification").forEach((element) => {
+    const open = async (event) => {
+      if (event.target.closest("button, input, label, a")) return;
+      const notification = attendanceNotifications.find((item) => item.id === element.dataset.id);
+      if (!notification) return;
+      try {
+        await openEmployeeNotification(notification, M.Modal.getInstance(document.querySelector("#employee-notifications-modal")));
+      } catch (error) {
+        console.error("Unable to open employee notification:", error);
+        if (typeof M !== "undefined") M.toast({ html: "Unable to open this notification.", classes: "red" });
+      }
+    };
+
+    element.addEventListener("click", open);
+    element.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      open(event);
+    });
+  });
+
   list.querySelectorAll(".mark-employee-notification-read").forEach((button) => {
     button.addEventListener("click", async (event) => {
       const item = event.currentTarget.closest("[data-source='employee']");
       if (!item) return;
-      await updateDoc(doc(db, "employeeNotifications", item.dataset.id), { read: true, readAt: serverTimestamp() });
+      try {
+        await updateDoc(doc(db, "employeeNotifications", item.dataset.id), { read: true, readAt: serverTimestamp() });
+        M.Modal.getInstance(document.querySelector("#employee-notifications-modal"))?.close();
+      } catch (error) {
+        console.error("Unable to mark employee notification as read:", error);
+        if (typeof M !== "undefined") M.toast({ html: "Unable to mark this notification as read.", classes: "red" });
+      }
     });
   });
 

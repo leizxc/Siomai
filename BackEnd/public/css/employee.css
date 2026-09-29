@@ -4662,6 +4662,19 @@ html.dark .employee-profile-menu-action:hover {
   gap: 12px;
   padding: 13px 4px;
   border-bottom: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.employee-notification:hover,
+.employee-notification:focus-visible {
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-card));
+  outline: none;
+}
+
+.employee-notification:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .employee-notification.unread {
@@ -4836,6 +4849,24 @@ html.dark .employee-notification-empty {
   }
   button.employee-profile {
     cursor: default;
+  }
+}
+
+/* Keep every employee module on the same desktop canvas as the POS view. */
+@media (min-width: 769px) {
+  body:has(.employee-topbar) #content {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  body:has(.employee-topbar) #content > .container,
+  body:has(.employee-topbar) #content > .stock-page,
+  body:has(.employee-topbar) #content > .assigned-stock-page,
+  body:has(.employee-topbar) #content > .expense-report-page {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
   }
 }
 
@@ -5513,7 +5544,69 @@ html.dark .employee-notification-empty {
   }
 
   .assigned-stock-table {
-    min-width: 680px;
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .assigned-stock-table thead {
+    display: none;
+  }
+
+  .assigned-stock-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .assigned-stock-table tbody tr {
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+  }
+
+  .assigned-stock-table tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 10px 13px;
+    border-top: 1px solid var(--border-soft);
+    text-align: right;
+  }
+
+  .assigned-stock-table tbody td:first-child {
+    border-top: 0;
+  }
+
+  .assigned-stock-table tbody td[data-label]::before {
+    flex: 0 0 100px;
+    color: var(--text-muted);
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .assigned-stock-table tbody td > * {
+    min-width: 0;
+  }
+
+  .assigned-stock-table tbody td:first-child .assigned-product-name {
+    justify-content: flex-end;
+  }
+
+  .assigned-stock-table tbody td.assigned-stock-empty {
+    display: block;
+    padding: 28px 16px !important;
+    border: 0;
+    text-align: center;
+  }
+
+  .assigned-stock-table tbody td.assigned-stock-empty::before {
+    content: none;
   }
 
   .expense-report-page {
@@ -5710,28 +5803,27 @@ html.dark .employee-notification-empty {
 
 @media (min-width: 1101px) {
   .order-container {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     min-height: 100dvh;
   }
 
   .order-header {
-    grid-column: 1 / -1;
+    flex: 0 0 auto;
   }
 
   .order-list {
     min-width: 0;
+    flex: 1 0 auto;
+    overflow-y: visible;
     padding: 20px clamp(20px, 4vw, 56px);
   }
 
   .summary-card {
-    position: sticky;
-    top: 18px;
-    align-self: start;
-    margin: 18px 20px 18px 0;
-    border: 1px solid var(--border);
-    border-radius: 18px;
+    position: static;
+    align-self: stretch;
+    margin: 0;
+    border-radius: 22px 22px 0 0;
     box-shadow: var(--shadow);
   }
 }

@@ -172,16 +172,19 @@
             );
             console.log("Login Success:", userCredential);
 
-                        const role = userDoc.role.toLowerCase();
+            const role = String(userDoc.role || "").toLowerCase();
             isRedirecting = true;
 
-            // Request notification permission and save token
-            await requestDeviceNotificationPermission(userDocSnap.id);
-
             if (role === "admin") {
+              await requestDeviceNotificationPermission(userDocSnap.id);
               sessionStorage.setItem("adminUserDocId", userDocSnap.id);
               window.location.href = "/admin/adminpanel.html";
+            } else if (role === "owner") {
+              await requestDeviceNotificationPermission(userDocSnap.id);
+              sessionStorage.setItem("ownerUserDocId", userDocSnap.id);
+              window.location.href = "/owner/owner.html";
             } else {
+              await requestDeviceNotificationPermission(userDocSnap.id);
 
               // Bawat non-admin role (siomai, pares, at anumang bagong cart sa
               // hinaharap) ay dumadaan na lang sa IISANG POS page. Ang role

@@ -36,6 +36,14 @@ function formatDate(timestamp) {
   });
 }
 
+function getNotificationPage(notification) {
+  if (["time_in_request", "time_out_request"].includes(notification.type)) {
+    return "EmployeeMonitoring.html";
+  }
+  if (notification.type === "low_stock") return "product.html";
+  return null;
+}
+
 function renderNotifications(notifications) {
   const badge = document.getElementById("manager-notification-count");
   const bell = document.getElementById("manager-notification-bell");
@@ -61,7 +69,7 @@ function renderNotifications(notifications) {
   }
 
   list.innerHTML = notifications.map(({ id, ...item }) => `
-    <article class="manager-notification ${item.read ? "" : "unread"}" data-id="${id}">
+    <article class="manager-notification ${item.read ? "" : "unread"} ${getNotificationPage(item) ? "clickable" : ""}" data-id="${id}" data-type="${item.type || ""}" ${getNotificationPage(item) ? 'tabindex="0" role="button"' : ""}>
       <label class="manager-notification-select" aria-label="Select notification"><input type="checkbox" value="${id}" ${selectedNotificationIds.has(id) ? "checked" : ""} /><span></span></label>
       <i class="material-icons">${item.type === "expense_report" ? "receipt_long" : item.type === "time_in_request" ? "login" : item.type === "time_out_request" ? "logout" : "warning"}</i>
       <div>
@@ -73,12 +81,38 @@ function renderNotifications(notifications) {
     </article>
   `).join("");
 
+  list.querySelectorAll(".manager-notification.clickable").forEach((element) => {
+    const open = async (event) => {
+      if (event.target.closest("button, input, label, a")) return;
+      const notification = notificationsById.get(element.dataset.id);
+      const page = notification && getNotificationPage(notification);
+      if (!page || typeof window.loadSection !== "function") return;
+
+      try {
+        M.Modal.getInstance(document.getElementById("manager-notifications-modal"))?.close();
+        window.loadSection(page);
+        await markNotificationRead(element.dataset.id);
+      } catch (error) {
+        console.error("Unable to open manager notification:", error);
+        showToast("Unable to open this notification.", "red");
+      }
+    };
+
+    element.addEventListener("click", open);
+    element.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      open(event);
+    });
+  });
+
   list.querySelectorAll(".mark-notification-read").forEach((button) => {
     button.addEventListener("click", async (event) => {
       const notification = event.currentTarget.closest("[data-id]");
       if (!notification) return;
       try {
         await markNotificationRead(notification.dataset.id);
+        M.Modal.getInstance(document.getElementById("manager-notifications-modal"))?.close();
         showToast("Notification marked as read.", "green");
       } catch (error) {
         console.error("Unable to mark notification as read:", error);
@@ -148,6 +182,23 @@ async function markNotificationRead(id) {
         updatedAt: serverTimestamp(),
       }));
     }
+  }
+
+  if (notification.type === "low_stock" && notification.employeeUid) {
+    updates.push(setDoc(doc(db, "employeeNotifications", `low-stock-read-${id}`), {
+      type: "low_stock_read",
+      managerNotificationId: id,
+      productId: notification.productId || "",
+      productName: notification.productName || "Product",
+      remainingStock: notification.remainingStock ?? null,
+      unit: notification.unit || "",
+      userId: notification.employeeUid,
+      title: "Low-stock warning reviewed",
+      message: `The manager has read your low-stock warning for ${notification.productName || "a product"}.`,
+      read: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }));
   }
 
   await Promise.all(updates);

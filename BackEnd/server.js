@@ -75,6 +75,7 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: "100kb" }));
 
 // Serve static files from BackEnd/public folder
+app.use("/owner", express.static(path.join(__dirname, "owner")));
 app.use(express.static(path.join(__dirname, "public")));
 
 // Root route → serve index.html
@@ -145,10 +146,22 @@ async function requireAdmin(req, res, next) {
 app.post("/createAuthUser", requireAdmin, async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
+    if (typeof email !== "string" || !email.trim() || typeof password !== "string") {
       return res.status(400).json({
         success: false,
         error: "Email and password are required",
+      });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be at least 6 characters",
+      });
+    }
+    if (adminEmails.has(email.trim().toLowerCase())) {
+      return res.status(403).json({
+        success: false,
+        error: "Configured administrator accounts cannot be created here",
       });
     }
     const userRecord = await admin.auth().createUser({

@@ -51,25 +51,13 @@ function formatQuantity(value) {
 // ========================================
 // LOW STOCK CHECK
 // ========================================
-// Low-stock warnings apply only to products counted by pieces.  Bulk units
-// and the Drinks/Rice categories do not have a low-stock/order limit.
-function hasUnlimitedOrder(product) {
-  const unit = String(product.unit || "").trim().toLowerCase();
-  const category = String(product.category || product.role || "")
-    .trim()
-    .toLowerCase();
-  return (
-    ["kaban", "kilogram", "kg", "packs"].includes(unit) ||
-    ["drinks", "rice"].includes(category)
-  );
+// Pack products consume piece-based stock. Other units are sold per order.
+function isPackProduct(product) {
+  return String(product.unit || "").trim().toLowerCase() === "pack";
 }
 
-function isLowStock(product) {
-  const unit = String(product.unit || "piece").trim().toLowerCase();
-  const isPieceBased = ["piece", "pieces", "pcs", "pc", "pack"].includes(unit);
-  const quantity = Number(product.pieces ?? product.stock) || 0;
-
-  return !hasUnlimitedOrder(product) && isPieceBased && quantity > 0 && quantity <= 25;
+function hasUnlimitedOrder(product) {
+  return !isPackProduct(product);
 }
 
 function getProductStockLabel(product) {
@@ -83,10 +71,7 @@ function getProductStockLabel(product) {
 }
 
 function getCardStockLabel(product) {
-  const unit = String(product.unit || "").trim().toLowerCase();
-  if (unit === "kaban") return "Kaldero";
-  if (["packs", "kilogram"].includes(unit)) return "Container";
-  return getProductStockLabel(product);
+  return isPackProduct(product) ? getProductStockLabel(product) : "Order";
 }
 
 async function openLowStockConfirmation(product) {
@@ -399,14 +384,16 @@ function addToCart(product) {
   const existing = cart.find((item) => item.id === product.id);
 
   if (existing) {
-    if (hasUnlimitedOrder(product) || existing.qty < product.stock) {
+    if (isPackProduct(product) && existing.qty < product.stock) {
+      existing.qty += 1;
+    } else if (!isPackProduct(product)) {
       existing.qty += 1;
     } else {
       M.toast({ html: "Not enough stock!", classes: "red rounded" });
       return;
     }
   } else {
-    if (!hasUnlimitedOrder(product) && product.stock <= 0) {
+    if (isPackProduct(product) && product.stock <= 0) {
       M.toast({ html: "Out of stock!", classes: "red rounded" });
       return;
     }
@@ -492,7 +479,7 @@ function renderCart() {
         quantity = 1;
       }
 
-      if (!hasUnlimitedOrder(cart[idx]) && quantity > cart[idx].stock) {
+      if (isPackProduct(cart[idx]) && quantity > cart[idx].stock) {
         quantity = cart[idx].stock;
 
         M.toast({
@@ -561,14 +548,13 @@ async function addOrder(orderItems) {
   for (const item of orderItems) {
     const productRef = doc(db, "products", item.id);
 
-    await updateDoc(productRef, {
-      stock: item.stock - item.qty,
-      pieces: item.stock - item.qty,
-      packs:
-        item.unit === "pack"
-          ? Math.ceil((item.stock - item.qty) / item.pieces_per_pack)
-          : null,
-    });
+    if (isPackProduct(item)) {
+      await updateDoc(productRef, {
+        stock: item.stock - item.qty,
+        pieces: item.stock - item.qty,
+        packs: Math.ceil((item.stock - item.qty) / item.pieces_per_pack),
+      });
+    }
   }
 
   M.toast({ html: "Order placed successfully!", classes: "green rounded" });
@@ -819,8 +805,6 @@ function renderProducts(products) {
 
     card.classList.add("product-card");
 
-    const lowStock = isLowStock(product);
-
     card.innerHTML = `
       <img
         src="${product.image || "/assets/upload-placeholder.png"}"
@@ -832,9 +816,7 @@ function renderProducts(products) {
         <h4>${product.name}</h4>
 
         <span class="product-stock">${
-          product.unit === "pack"
-            ? `${formatQuantity(product.packs)} packs · ${formatQuantity(product.pieces)} pcs`
-            : `${formatQuantity(product.pieces)} ${product.unit || "pcs"}`
+          isPackProduct(product) ? `${formatQuantity(product.packs)} packs (${formatQuantity(product.pieces)} pcs)` : "Order"
         }</span>
 
         <span class="price">
@@ -844,15 +826,10 @@ function renderProducts(products) {
       </div>
 
       <div class="product-actions">
-        ${
-          lowStock
-            ? `<button class="lowstock-btn" type="button" data-id="${product.id}">
-                 <i class="material-icons" aria-hidden="true">warning</i>
-                 <span>Low stock</span>
-               </button>`
-            : ""
-        }
-
+        <button class="lowstock-btn" type="button" data-id="${product.id}">
+          <i class="material-icons" aria-hidden="true">warning</i>
+          <span>low stock</span>
+        </button>
         <button
           class="add-btn"
           data-id="${product.id}"

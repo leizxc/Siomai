@@ -3,6 +3,7 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 
 const INACTIVITY_LIMIT_MS = 10 * 60 * 1000;
 const ACTIVITY_EVENTS = ["pointerdown", "pointermove", "keydown", "scroll", "touchstart"];
+const isOwnerPage = window.location.pathname.startsWith("/owner/");
 let inactivityTimer;
 let isSigningOut = false;
 
@@ -25,7 +26,7 @@ async function logoutAdmin() {
   } catch (error) {
     console.error("Unable to sign out admin:", error);
   } finally {
-    sessionStorage.removeItem("adminUserDocId");
+    sessionStorage.removeItem(isOwnerPage ? "ownerUserDocId" : "adminUserDocId");
     window.location.replace("/index.html");
   }
 }
@@ -34,7 +35,7 @@ ACTIVITY_EVENTS.forEach((eventName) => {
   window.addEventListener(eventName, resetInactivityTimer, { passive: true });
 });
 
-const logoutLink = document.querySelector('.sidebar a[href="../index.html"]');
+const logoutLink = document.querySelector(isOwnerPage ? '.sidebar a[href="/"]' : '.sidebar a[href="../index.html"]');
 logoutLink?.addEventListener("click", (event) => {
   event.preventDefault();
   void logoutAdmin();

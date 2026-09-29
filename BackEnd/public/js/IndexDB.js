@@ -93,6 +93,8 @@ function redirectByRole(role) {
   const lowerRole = role.toLowerCase();
   if (lowerRole === "admin") {
     window.location.href = "/admin/adminpanel.html";
+  } else if (lowerRole === "owner") {
+    window.location.href = "/owner/owner.html";
   } else if (lowerRole === "siomai") {
     window.location.href = "/employee/siomai/userpanel.html";
   } else if (lowerRole === "pares") {
@@ -111,7 +113,7 @@ async function syncUsersFromFirebase() {
 
     snapshot.forEach((docSnap) => {
       const userData = docSnap.data();
-      if (userData.username && userData.passwordHash && userData.role) {
+      if (userData.username && userData.passwordHash && userData.role && ["admin", "owner", "siomai", "pares"].includes(String(userData.role).toLowerCase())) {
         store.put({
           username: userData.username.toLowerCase().trim(),
           passwordHash: userData.passwordHash,

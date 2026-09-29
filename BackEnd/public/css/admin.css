@@ -225,6 +225,9 @@ body {
 }
 
 .manager-notification { display: flex; gap: 12px; padding: 13px 4px; border-bottom: 1px solid var(--border); align-items: center; }
+.manager-notification.clickable { border-radius: 8px; cursor: pointer; transition: background-color 140ms ease, box-shadow 140ms ease; }
+.manager-notification.clickable:hover, .manager-notification.clickable:focus-visible { background: color-mix(in srgb, var(--accent) 9%, var(--bg-card)); outline: none; }
+.manager-notification.clickable:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
 .manager-notification.unread { background: #fff8e1; }
 .manager-notification > i { color: #f9a825; }
 .manager-notification > div { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }

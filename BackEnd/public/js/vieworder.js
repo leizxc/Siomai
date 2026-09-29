@@ -9,6 +9,10 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+function isPackProduct(product) {
+  return String(product.unit || "").trim().toLowerCase() === "pack";
+}
+
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
 const orderList = document.getElementById("orderList");
@@ -81,23 +85,24 @@ async function completeCheckout() {
       const availablePieces =
         Number(product.pieces ?? product.stock) || 0;
 
-      if (availablePieces < item.qty) {
+      if (isPackProduct(product) && availablePieces < item.qty) {
         throw new Error(`Not enough stock for ${item.name}.`);
       }
 
-      const remainingPieces = availablePieces - item.qty;
+      const remainingPieces = isPackProduct(product)
+        ? availablePieces - item.qty
+        : availablePieces;
 
       const piecesPerPack =
         Number(product.pieces_per_pack) || 1;
 
-      transaction.update(productSnap.ref, {
-        stock: remainingPieces,
-        pieces: remainingPieces,
-        packs:
-          product.unit === "pack"
-            ? Math.ceil(remainingPieces / piecesPerPack)
-            : null,
-      });
+      if (isPackProduct(product)) {
+        transaction.update(productSnap.ref, {
+          stock: remainingPieces,
+          pieces: remainingPieces,
+          packs: Math.ceil(remainingPieces / piecesPerPack),
+        });
+      }
     });
   });
 
@@ -209,7 +214,7 @@ function renderOrder() {
     btn.onclick = () => {
       const index = btn.dataset.index;
 
-      if (cart[index].qty >= cart[index].stock) {
+      if (isPackProduct(cart[index]) && cart[index].qty >= cart[index].stock) {
         M.toast({
           html: "Not enough stock!",
           classes: "red rounded",

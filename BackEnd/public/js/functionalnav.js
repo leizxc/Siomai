@@ -58,6 +58,9 @@ function loadSection(page) {
   if (isNavigating) return;
   isNavigating = true;
 
+  const isOwnerPage = window.location.pathname.startsWith("/owner/");
+  const sectionUrl = isOwnerPage ? `/owner/${page}` : page;
+
   // Stop the previous page's listeners before loading the new one
   if (currentCleanup) {
     currentCleanup();
@@ -66,7 +69,7 @@ function loadSection(page) {
 
   const myToken = ++currentLoadToken;
 
-  fetch(page)
+  fetch(sectionUrl)
     .then((response) => response.text())
     .then(async (data) => {
       if (myToken !== currentLoadToken) return;
