@@ -394,12 +394,17 @@ subscribe("attendance", "attendance");
 subscribe("inventory", "inventory");
 subscribe("managerNotifications", "alerts");
 subscribe("employees", "employees");
+function redrawForTheme() {
+  requestAnimationFrame(drawChart);
+}
+
 window.addEventListener("resize", drawChart);
-document
-  .getElementById("theme-toggle")
-  ?.addEventListener("click", () => requestAnimationFrame(drawChart));
-window.addEventListener(
-  "pagehide",
-  () => unsubscribers.forEach((unsubscribe) => unsubscribe()),
-  { once: true },
-);
+document.getElementById("theme-toggle")?.addEventListener("click", redrawForTheme);
+
+export function stopOwnerDashboard() {
+  unsubscribers.splice(0).forEach((unsubscribe) => unsubscribe());
+  window.removeEventListener("resize", drawChart);
+  document.getElementById("theme-toggle")?.removeEventListener("click", redrawForTheme);
+}
+
+window.addEventListener("pagehide", stopOwnerDashboard, { once: true });

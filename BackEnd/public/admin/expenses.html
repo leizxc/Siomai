@@ -1,4 +1,15 @@
 <div class="expenses-page">
+  <!-- CATEGORY PILLS -->
+  <div class="category-row expense-category-row">
+    <div
+      id="expense-category-pills"
+      class="category-pills"
+      aria-label="Filter expenses by category"
+    >
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+
   <!--SUMMARY-->
   <section class="expense-summary">
     <div class="summary-card">
@@ -31,62 +42,43 @@
     </div>
   </section>
 
-  <!--FILTER-->
-  <section class="card inventory-card expense-filter-card">
-    <div class="category-row expense-category-row">
-      <div
-        id="expense-category-pills"
-        class="category-pills"
-        aria-label="Filter expenses by category"
-      >
-        <!-- Populated dynamically -->
-      </div>
-    </div>
+  <!-- ACTION BUTTONS -->
+  <div class="employee-actions expense-actions">
+    <button
+      type="button"
+      id="btn-delete-category"
+      class="btn-flat delete-outline waves-effect"
+    >
+      <i class="material-icons">clear</i>
+      Delete Category
+    </button>
 
-    <div class="row filter-row">
-      <div class="input-field col s12 m6">
-        <input type="date" id="filter-date" />
-        <label for="filter-date" class="active">Date</label>
-      </div>
-    </div>
+    <button
+      type="button"
+      class="btn-flat outline-btn add-expenses-category waves-effect waves-light"
+    >
+      <i class="material-icons left">add_circle_outline</i>
+      Add Expense Category
+    </button>
 
-    <div class="employee-actions expense-actions">
-      <!-- Delete Category -->
-      <button
-        type="button"
-        id="btn-delete-category"
-        class="btn-flat delete-outline waves-effect"
-      >
-        <i class="material-icons">clear</i>
-        Delete Category
-      </button>
-
-      <!-- Add Expense Category -->
-      <button
-        type="button"
-        class="btn-flat outline-btn add-expenses-category waves-effect waves-light"
-      >
-        <i class="material-icons left">add_circle_outline</i>
-        Add Expense Category
-      </button>
-
-      <!-- Add Expense -->
-      <button
-        type="button"
-        class="btn blue expense-btn waves-effect waves-light"
-      >
-        <i class="material-icons left">add</i>
-        Add Expense
-      </button>
-    </div>
-  </section>
+    <button type="button" class="btn blue expense-btn waves-effect waves-light">
+      <i class="material-icons left">add</i>
+      Add Expense
+    </button>
+  </div>
 
   <!--EXPENSE TABLE-->
 
   <!-- ==================== TABLE ==================== -->
   <section class="card inventory-card expenses-card">
-    <h4>Expense Table</h4>
-    <hr style="margin-bottom: 5px" />
+    <div class="inventory-header">
+      <h4>Expense Table</h4>
+    </div>
+    <div class="filter-category-wrapper expense-date-filter">
+      <label for="filter-date">Filter by date</label>
+      <input type="date" id="filter-date" class="date-filter-input" />
+    </div>
+
     <div class="table-container">
       <table id="expenseTable" class="highlight responsive-table">
         <thead>

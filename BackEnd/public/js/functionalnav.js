@@ -59,13 +59,28 @@ function loadSection(page) {
   isNavigating = true;
 
   const isOwnerPage = window.location.pathname.startsWith("/owner/");
-  const sectionUrl = isOwnerPage ? `/owner/${page}` : page;
+  const ownerFeaturePages = new Set([
+    "owner-sales",
+    "owner-capital",
+    "owner-orders",
+    "owner-employee-stock",
+    "owner-inventory",
+    "owner-performance",
+    "owner-attendance",
+    "owner-managers",
+  ]);
+  const sectionUrl = isOwnerPage
+    ? ownerFeaturePages.has(page)
+      ? "/owner/ownerfeature.html"
+      : `/owner/${page}`
+    : page;
 
   // Stop the previous page's listeners before loading the new one
   if (currentCleanup) {
     currentCleanup();
     currentCleanup = null;
   }
+  if (isOwnerPage) window.ownerDashboardCleanup?.();
 
   const myToken = ++currentLoadToken;
 
@@ -92,9 +107,29 @@ function loadSection(page) {
         "IncomeCart.html": "Income Per Cart",
         "sales.html": "Sales Orders",
         "payroll.html": "Employee Payroll",
+        "owner-sales": "Real Time Sales",
+        "owner-capital": "Capital Status Record",
+        "owner-orders": "Order Status",
+        "owner-employee-stock": "Stock by Employee",
+        "owner-inventory": "Real Time Inventory",
+        "owner-performance": "Employee Performance",
+        "owner-attendance": "Employee Attendance",
+        "owner-managers": "Manager Management",
       };
 
       if (title) title.textContent = pageTitles[page] || "Administrator";
+
+      if (isOwnerPage && ownerFeaturePages.has(page)) {
+        try {
+          const ownerModule = await import("/js/ownerFeatures.js");
+          if (myToken !== currentLoadToken) return;
+          ownerModule.initOwnerFeature(page);
+          currentCleanup = ownerModule.cleanupOwnerFeature;
+        } catch (err) {
+          console.error("Owner feature init error:", err);
+        }
+        return;
+      }
 
       M.FormSelect.init(document.querySelectorAll("select"));
       M.Modal.init(document.querySelectorAll(".modal"));

@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Owner Dashboard | Queen Cassy</title>
     <link rel="stylesheet" href="/css/admin.css" />
     <link rel="stylesheet" href="/css/owner.css" />
@@ -39,30 +42,55 @@
             <a
               href="#"
               onclick="
-                loadSection('ownersales.html', this);
+                loadSection('owner-sales', this);
                 return false;
               "
-              ><i class="material-icons">receipt_long</i>Sales</a
+              ><i class="material-icons">receipt_long</i>Real Time Sales</a
             >
           </li>
           <li>
             <a
               href="#"
               onclick="
-                loadSection('capitalstatus.html', this);
+                loadSection('owner-capital', this);
                 return false;
               "
-              ><i class="material-icons">account_balance</i>Capital Status</a
+              ><i class="material-icons">account_balance</i>Capital Status Record</a
             >
           </li>
           <li>
             <a
               href="#"
               onclick="
-                loadSection('orderstatus.html', this);
+                loadSection('owner-orders', this);
                 return false;
               "
-              ><i class="material-icons">inventory</i>Order Status</a
+              ><i class="material-icons">receipt_long</i>Order Status</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('owner-employee-stock', this); return false"
+              ><i class="material-icons">inventory</i>Stock by Employee</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('owner-inventory', this); return false"
+              ><i class="material-icons">inventory_2</i>Real Time Inventory</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('owner-performance', this); return false"
+              ><i class="material-icons">trending_up</i>Employee Performance</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('owner-attendance', this); return false"
+              ><i class="material-icons">event_available</i>Employee Attendance</a
+            >
+          </li>
+          <li>
+            <a href="#" onclick="loadSection('owner-managers', this); return false"
+              ><i class="material-icons">manage_accounts</i>Manager Management</a
             >
           </li>
           <li>
@@ -132,8 +160,7 @@
               <div class="kpi-info">
                 <p>ACTIVE EMPLOYEES</p>
                 <h2 id="owner-team-active">0</h2>
-                <span id="owner-team-summary">Currently timed in</span
-                >
+                <span id="owner-team-summary">Currently timed in</span>
               </div>
             </section>
           </div>
@@ -272,7 +299,8 @@
     <script src="/js/theme.js"></script>
     <script type="module">
       import "/js/adminIdleLogout.js";
-      import "/js/ownerDashboard.js";
+      import { stopOwnerDashboard } from "/js/ownerDashboard.js";
+      window.ownerDashboardCleanup = stopOwnerDashboard;
     </script>
   </body>
 </html>

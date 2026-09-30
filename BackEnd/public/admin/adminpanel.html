@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Queen Cassy</title>
 
     <!-- Custom CSS -->
@@ -146,32 +149,166 @@
 
         <div id="content" class="dashboard-content">
           <div class="dashboard-kpi-grid dashboard-manager-kpis">
-            <section class="dashboard-kpi-card sales-kpi"><div class="kpi-icon"><i class="material-icons">payments</i></div><div class="kpi-info"><p>SALES TODAY</p><h2 id="dashboard-sales-today">&#8369;0.00</h2><span>Paid orders</span></div></section>
-            <section class="dashboard-kpi-card expense-kpi"><div class="kpi-icon"><i class="material-icons">receipt_long</i></div><div class="kpi-info"><p>EXPENSES TODAY</p><h2 id="dashboard-expenses-today">&#8369;0.00</h2><span>Recorded expenses</span></div></section>
-            <section class="dashboard-kpi-card profit-kpi"><div class="kpi-icon"><i class="material-icons">account_balance_wallet</i></div><div class="kpi-info"><p>NET TODAY</p><h2 id="dashboard-net-today">&#8369;0.00</h2><span>Sales minus expenses</span></div></section>
-            <section class="dashboard-kpi-card income-kpi"><div class="kpi-icon"><i class="material-icons">pending_actions</i></div><div class="kpi-info"><p>ATTENDANCE REQUESTS</p><h2 id="dashboard-attendance-pending">0</h2><span>Awaiting review</span></div></section>
+            <section class="dashboard-kpi-card sales-kpi">
+              <div class="kpi-icon"><i class="material-icons">payments</i></div>
+              <div class="kpi-info">
+                <p>SALES TODAY</p>
+                <h2 id="dashboard-sales-today">&#8369;0.00</h2>
+                <span>Paid orders</span>
+              </div>
+            </section>
+            <section class="dashboard-kpi-card expense-kpi">
+              <div class="kpi-icon">
+                <i class="material-icons">receipt_long</i>
+              </div>
+              <div class="kpi-info">
+                <p>EXPENSES TODAY</p>
+                <h2 id="dashboard-expenses-today">&#8369;0.00</h2>
+                <span>Recorded expenses</span>
+              </div>
+            </section>
+            <section class="dashboard-kpi-card profit-kpi">
+              <div class="kpi-icon">
+                <i class="material-icons">account_balance_wallet</i>
+              </div>
+              <div class="kpi-info">
+                <p>NET TODAY</p>
+                <h2 id="dashboard-net-today">&#8369;0.00</h2>
+                <span>Sales minus expenses</span>
+              </div>
+            </section>
+            <section class="dashboard-kpi-card income-kpi">
+              <div class="kpi-icon">
+                <i class="material-icons">pending_actions</i>
+              </div>
+              <div class="kpi-info">
+                <p>ATTENDANCE REQUESTS</p>
+                <h2 id="dashboard-attendance-pending">0</h2>
+                <span>Awaiting review</span>
+              </div>
+            </section>
           </div>
 
           <div class="dashboard-manager-grid">
             <section class="dashboard-panel dashboard-chart-panel">
-              <div class="panel-header simple-header"><div><h3><i class="material-icons">show_chart</i>Sales &amp; Expenses</h3><p>Daily totals for the last 7 days</p></div><a href="#" onclick="loadSection('IncomeCart.html', this); return false">Income module <i class="material-icons">arrow_forward</i></a></div>
-              <div id="dashboard-chart-legend" class="dashboard-chart-legend"></div><canvas id="dashboard-income-chart" aria-label="Sales and expenses graph for the last seven days"></canvas>
+              <div class="panel-header simple-header">
+                <div>
+                  <h3>
+                    <i class="material-icons">show_chart</i>Sales &amp; Expenses
+                  </h3>
+                  <p>Daily totals for the last 7 days</p>
+                </div>
+                <a
+                  href="#"
+                  onclick="
+                    loadSection('IncomeCart.html', this);
+                    return false;
+                  "
+                  >Income module <i class="material-icons">arrow_forward</i></a
+                >
+              </div>
+              <div
+                id="dashboard-chart-legend"
+                class="dashboard-chart-legend"
+              ></div>
+              <canvas
+                id="dashboard-income-chart"
+                aria-label="Sales and expenses graph for the last seven days"
+              ></canvas>
             </section>
             <section class="dashboard-panel dashboard-attention-panel">
-              <div class="panel-header simple-header"><div><h3><i class="material-icons">task_alt</i>Manager actions</h3><p>Requests that need your attention</p></div></div>
-              <div class="dashboard-action-counts"><a href="#" onclick="loadSection('EmployeeMonitoring.html', this); return false"><strong id="dashboard-attendance-pending-small">Review attendance</strong><span>Time in and time out requests</span></a><a href="#" onclick="document.getElementById('manager-notification-bell')?.click(); return false"><strong id="dashboard-reports-pending">0</strong><span>Unread expense report alerts</span></a></div>
+              <div class="panel-header simple-header">
+                <div>
+                  <h3><i class="material-icons">task_alt</i>Manager actions</h3>
+                  <p>Requests that need your attention</p>
+                </div>
+              </div>
+              <div class="dashboard-action-counts">
+                <a
+                  href="#"
+                  onclick="
+                    loadSection('EmployeeMonitoring.html', this);
+                    return false;
+                  "
+                  ><strong id="dashboard-attendance-pending-small"
+                    >Review attendance</strong
+                  ><span>Time in and time out requests</span></a
+                ><a
+                  href="#"
+                  onclick="
+                    document
+                      .getElementById('manager-notification-bell')
+                      ?.click();
+                    return false;
+                  "
+                  ><strong id="dashboard-reports-pending">0</strong
+                  ><span>Unread expense report alerts</span></a
+                >
+              </div>
               <div id="dashboard-manager-queue" class="dashboard-queue"></div>
             </section>
           </div>
 
           <div class="dashboard-manager-grid dashboard-manager-grid-lower">
             <section class="dashboard-panel dashboard-stock-panel">
-              <div class="panel-header simple-header"><div><h3><i class="material-icons">inventory_2</i>Inventory watch</h3><p><span id="dashboard-inventory-total">0</span> inventory records | <span id="dashboard-low-stock">0</span> low | <span id="dashboard-out-stock">0</span> out of stock</p></div><a href="#" onclick="loadSection('inventory.html', this); return false">Open inventory <i class="material-icons">arrow_forward</i></a></div>
+              <div class="panel-header simple-header">
+                <div>
+                  <h3>
+                    <i class="material-icons">inventory_2</i>Inventory watch
+                  </h3>
+                  <p>
+                    <span id="dashboard-inventory-total">0</span> inventory
+                    records | <span id="dashboard-low-stock">0</span> low |
+                    <span id="dashboard-out-stock">0</span> out of stock
+                  </p>
+                </div>
+                <a
+                  href="#"
+                  onclick="
+                    loadSection('inventory.html', this);
+                    return false;
+                  "
+                  >Open inventory <i class="material-icons">arrow_forward</i></a
+                >
+              </div>
               <div id="dashboard-stock-list" class="dashboard-stock-list"></div>
             </section>
             <section class="dashboard-panel dashboard-recent-expenses-panel">
-              <div class="panel-header simple-header"><div><h3><i class="material-icons">receipt_long</i>Recent expenses</h3><p>Latest entries from Capital Management</p></div><a href="#" onclick="loadSection('expenses.html', this); return false">View all <i class="material-icons">arrow_forward</i></a></div>
-              <div class="dashboard-table-wrapper"><table><thead><tr><th>Description</th><th>Category</th><th>Amount</th><th>Date</th></tr></thead><tbody id="dashboard-recent-expenses"><tr><td colspan="4" class="dashboard-empty">Loading expenses...</td></tr></tbody></table></div>
+              <div class="panel-header simple-header">
+                <div>
+                  <h3>
+                    <i class="material-icons">receipt_long</i>Recent expenses
+                  </h3>
+                  <p>Latest entries from Capital Management</p>
+                </div>
+                <a
+                  href="#"
+                  onclick="
+                    loadSection('expenses.html', this);
+                    return false;
+                  "
+                  >View all <i class="material-icons">arrow_forward</i></a
+                >
+              </div>
+              <div class="dashboard-table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th>Category</th>
+                      <th>Amount</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboard-recent-expenses">
+                    <tr>
+                      <td colspan="4" class="dashboard-empty">
+                        Loading expenses...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
           </div>
         </div>

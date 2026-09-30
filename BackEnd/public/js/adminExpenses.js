@@ -164,12 +164,24 @@ function renderExpensePage() {
 
   // Render only 10 rows
   pageItems.forEach(({ id, data }, index) => {
+    const expenseDateValue = String(data.date || "");
+    const parsedExpenseDate = /^\d{4}-\d{2}-\d{2}$/.test(expenseDateValue)
+      ? new Date(`${expenseDateValue}T00:00:00`)
+      : null;
+    const expenseDateLabel = parsedExpenseDate && !Number.isNaN(parsedExpenseDate.getTime())
+      ? parsedExpenseDate.toLocaleDateString("en-PH", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : expenseDateValue;
+
     tbody.innerHTML += `
       <tr data-id="${id}">
         <td data-label="#">${start + index + 1}</td>
 
         <td data-label="Date">
-          ${data.date}
+          <time class="expense-date" datetime="${expenseDateValue}">${expenseDateLabel}</time>
         </td>
 
         <td data-label="Category">
