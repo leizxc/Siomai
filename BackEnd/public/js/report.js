@@ -1,4 +1,4 @@
-import { app } from "/js/firebase.js";
+﻿import { app } from "/js/firebase.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { addDoc, collection, deleteDoc, doc, getDocs, getFirestore, onSnapshot, query, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { watchActiveShift, showShiftRequired } from "/js/attendanceAccess.js";
@@ -89,12 +89,16 @@ async function submitExpenseReport(event) {
   }
   const button = document.querySelector("#submitExpenseReport");
   const date = document.querySelector("#reportExpenseDate").value;
-  const amount = Number(document.querySelector("#reportExpenseAmount").value);
+  const amountValue = document.querySelector("#reportExpenseAmount").value.trim();
+  const amount = amountValue ? Number(amountValue) : null;
   const category = document.querySelector("#reportExpenseCategory").value.trim();
   const reference = document.querySelector("#reportExpenseReference").value.trim();
   const description = document.querySelector("#reportExpenseDescription").value.trim();
 
-  if (!date || !category || !description || !Number.isFinite(amount) || amount <= 0) return;
+  if (!description || (amountValue && (!Number.isFinite(amount) || amount <= 0))) {
+    if (!description && typeof M !== "undefined") M.toast({ html: "Please enter an expense description.", classes: "red rounded" });
+    return;
+  }
   button.disabled = true;
   button.textContent = "Submitting...";
 
@@ -102,7 +106,8 @@ async function submitExpenseReport(event) {
     const employeeName = `${currentEmployee.fname || ""} ${currentEmployee.lname || ""}`.trim() || "Employee";
     const report = { employeeId: currentEmployee.id, employeeUid: auth.currentUser.uid, employeeName, date, amount, category, reference, description, status: "pending", submittedAt: serverTimestamp() };
     const reportRef = await addDoc(collection(db, "expenseReports"), report);
-    await addDoc(collection(db, "managerNotifications"), { type: "expense_report", reportId: reportRef.id, title: "New expense report", message: `${employeeName} submitted ₱${amount.toFixed(2)} for ${category}.`, read: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    const notificationMessage = amount !== null ? `${employeeName} submitted an expense for PHP ${amount.toFixed(2)}${category ? ` in ${category}` : ""}.` : `${employeeName} submitted an expense report${category ? ` for ${category}` : ""}.`;
+    await addDoc(collection(db, "managerNotifications"), { type: "expense_report", reportId: reportRef.id, title: "New expense report", message: notificationMessage, read: false, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     event.target.reset();
     document.querySelector("#reportExpenseDate").value = localDate();
     if (typeof M !== "undefined") M.toast({ html: "Expense report submitted for manager review.", classes: "green rounded" });
@@ -134,7 +139,7 @@ function renderReportHistory() {
   filteredReports.sort((a, b) => timestamp(b.submittedAt) - timestamp(a.submittedAt));
   list.innerHTML = filteredReports.length ? filteredReports.map((report) => {
     const statusLabel = report.status === "read" ? "Read by manager" : report.status;
-    return `<article class="expense-history-item"><label class="expense-report-select"><input type="checkbox" value="${escapeHtml(report.id)}" ${selectedReportIds.has(report.id) ? "checked" : ""} /><span></span></label><div class="expense-history-details"><strong>${escapeHtml(report.category)}</strong><p>${escapeHtml(report.description)}</p><small>${escapeHtml(report.date)}${report.reference ? ` · ${escapeHtml(report.reference)}` : ""}</small></div><div><b>${formatCurrency(report.amount)}</b><span class="report-status ${escapeHtml(report.status)}">${escapeHtml(statusLabel)}</span></div></article>`;
+    return `<article class="expense-history-item"><label class="expense-report-select"><input type="checkbox" value="${escapeHtml(report.id)}" ${selectedReportIds.has(report.id) ? "checked" : ""} /><span></span></label><div class="expense-history-details"><strong>${escapeHtml(report.category)}</strong><p>${escapeHtml(report.description)}</p><small>${escapeHtml(report.date)}${report.reference ? ` Â· ${escapeHtml(report.reference)}` : ""}</small></div><div><b>${formatCurrency(report.amount)}</b><span class="report-status ${escapeHtml(report.status)}">${escapeHtml(statusLabel)}</span></div></article>`;
   }).join("") : `<div class="expense-history-empty">${selectedDate ? "No expense reports found for this date." : "No expense reports submitted yet."}</div>`;
 
   list.querySelectorAll(".expense-report-select input").forEach((checkbox) => {

@@ -24,6 +24,9 @@ const cashlessBtn = document.getElementById("cashlessBtn");
 const checkoutBtn = document.getElementById("checkoutBtn");
 const backBtn = document.getElementById("backBtn");
 let shiftActive = false;
+const isLechon = (value) => /let?chon/i.test(String(value || "").trim());
+const isLechonItem = (item) => isLechon(item.category) || isLechon(item.name);
+const getItemPrice = (item) => isLechonItem(item) && !item.customPriceEntered ? 0 : Number(item.price) || 0;
 const stopShiftWatch = watchActiveShift((shift) => {
   shiftActive = shift.active;
   showShiftRequired(document.querySelector(".order-container"), !shift.active, shift.timedOut);
@@ -108,6 +111,7 @@ async function completeCheckout() {
 
   await addDoc(collection(db, "orders"), {
     items: cart,
+    total: cart.reduce((sum, item) => sum + getItemPrice(item) * (Number(item.qty) || 0), 0),
     employee: employee.uid,
     employeeUid: employee.uid,
     payment_method: paymentMethod,
@@ -146,7 +150,7 @@ function renderOrder() {
   }
 
   cart.forEach((item, index) => {
-    const subtotal = item.price * item.qty;
+    const subtotal = getItemPrice(item) * item.qty;
 
     total += subtotal;
     items += item.qty;
@@ -167,6 +171,8 @@ function renderOrder() {
         <h6>
           ${item.name}
         </h6>
+
+        ${isLechonItem(item) ? `<label class="lechon-price-label">Enter price <input class="lechon-price-input" data-index="${index}" type="number" min="0.01" step="0.01" value="${item.customPriceEntered ? Number(item.price) : ""}" placeholder="₱0.00"></label>` : ""}
 
         <p>
           ₱${Number(item.price).toFixed(2)}
@@ -199,16 +205,34 @@ function renderOrder() {
 
       </div>
 
-      <div class="order-price">
+      <div class="order-price" data-index="${index}">
         ₱${subtotal.toFixed(2)}
       </div>
     `;
+
+    if (isLechonItem(item)) card.querySelector(".order-info > p")?.remove();
 
     orderList.appendChild(card);
   });
 
   totalItems.textContent = items;
   orderTotal.textContent = total.toFixed(2);
+
+  document.querySelectorAll(".lechon-price-input").forEach((input) => {
+    input.addEventListener("input", () => {
+      const index = Number(input.dataset.index);
+      const price = input.value.trim() === "" ? 0 : Number(input.value);
+      const item = cart[index];
+      item.price = Number.isFinite(price) && price > 0 ? price : 0;
+      item.customPriceEntered = Number.isFinite(price) && price > 0;
+      localStorage.setItem("cart", JSON.stringify(cart));
+      const subtotal = getItemPrice(item) * Number(item.qty || 0);
+      const subtotalElement = orderList.querySelector(`.order-price[data-index="${index}"]`);
+      if (subtotalElement) subtotalElement.textContent = `${String.fromCharCode(8369)}${subtotal.toFixed(2)}`;
+      const total = cart.reduce((sum, orderItem) => sum + getItemPrice(orderItem) * (Number(orderItem.qty) || 0), 0);
+      orderTotal.textContent = total.toFixed(2);
+    });
+  });
 
   document.querySelectorAll(".plus-btn").forEach((btn) => {
     btn.onclick = () => {
@@ -285,6 +309,11 @@ checkoutBtn.onclick = () => {
       classes: "red rounded",
     });
 
+    return;
+  }
+
+  if (cart.some((item) => isLechonItem(item) && (!item.customPriceEntered || !Number.isFinite(Number(item.price)) || Number(item.price) <= 0))) {
+    M.toast({ html: "Please enter a valid price for every lechon order.", classes: "red rounded" });
     return;
   }
 

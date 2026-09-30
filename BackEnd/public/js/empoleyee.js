@@ -1,4 +1,4 @@
-// employee.js
+﻿// employee.js
 import {
   getFirestore,
   collection,
@@ -54,6 +54,10 @@ function formatQuantity(value) {
 // Pack products consume piece-based stock. Other units are sold per order.
 function isPackProduct(product) {
   return String(product.unit || "").trim().toLowerCase() === "pack";
+}
+
+function isLechonProduct(product) {
+  return /let?chon/i.test(`${product.category || ""} ${product.name || ""}`);
 }
 
 function hasUnlimitedOrder(product) {
@@ -157,7 +161,7 @@ export async function initPOS() {
 
   cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-  // Firebase Auth restores the session asynchronously — auth.currentUser
+  // Firebase Auth restores the session asynchronously â€” auth.currentUser
   // can still be null right after page load even if the person is
   // already logged in, unless we wait for this to resolve first.
   const user = await new Promise((resolve) => {
@@ -232,7 +236,7 @@ export async function initPOS() {
   }
 
   // loadProducts() resolves quickly (it just sets up the realtime
-  // listener) — the actual product data arrives via onSnapshot whenever
+  // listener) â€” the actual product data arrives via onSnapshot whenever
   // Firestore pushes it, and filterProducts()/renderProducts() get
   // called automatically from inside that listener.
   await loadProducts(session);
@@ -250,7 +254,7 @@ function saveCart() {
 // Kunin ang role at employeeId ng naka-login na employee, hanapin sa
 // "employees" collection gamit ang Auth uid (hindi doc ID mismo).
 // IMPORTANTE: ang "employeeId" na nakalagay sa mga product ay tumutukoy
-// sa DOCUMENT ID ng employee record (snap.docs[0].id) — hindi sa Auth
+// sa DOCUMENT ID ng employee record (snap.docs[0].id) â€” hindi sa Auth
 // uid mismo. Kung magkaiba pala sa Firestore mo, dito lang ito baguhin.
 async function getCurrentEmployeeInfo() {
   const user = auth.currentUser;
@@ -297,7 +301,7 @@ async function loadProducts(session) {
 
   // Ipakita lang ang mga product na naka-assign sa role na ito, o yung
   // naka-mark na "ALL" (shared across every role). employeeId ang
-  // pangalawang gate — kailangan din itong tumugma (o "ALL") bago
+  // pangalawang gate â€” kailangan din itong tumugma (o "ALL") bago
   // mapunta sa allProducts.
   const q = query(
     collection(db, "products"),
@@ -305,7 +309,7 @@ async function loadProducts(session) {
   );
 
   // onSnapshot instead of getDocs: mag-a-update na mismo ang list kapag
-  // may nabago sa Firestore (bagong product, na-out of stock, etc.) —
+  // may nabago sa Firestore (bagong product, na-out of stock, etc.) â€”
   // hindi na kailangan pa ng manual refresh ng page.
   unsubscribePOS = onSnapshot(
     q,
@@ -423,7 +427,7 @@ function renderMobileCart() {
   let items = 0;
 
   cart.forEach((item) => {
-    total += item.price * item.qty;
+    if (!isLechonProduct(item)) total += item.price * item.qty;
     items += item.qty;
   });
 
@@ -436,6 +440,7 @@ function renderMobileCart() {
 
   if (grandTotal) {
     grandTotal.textContent = total.toFixed(2);
+    grandTotal.parentElement?.parentElement?.removeAttribute("hidden");
   }
 }
 
@@ -448,18 +453,24 @@ function renderCart() {
   tbody.innerHTML = "";
 
   let grandTotal = 0;
+  const allItemsAreLechon = cart.length > 0 && cart.every(isLechonProduct);
+
+  document.querySelectorAll("#cartTable thead th:nth-child(3), #cartTable thead th:nth-child(4)")
+    .forEach((header) => { header.hidden = allItemsAreLechon; });
 
   cart.forEach((item, index) => {
-    const total = item.qty * item.price;
-    grandTotal += total;
+    const isLechon = isLechonProduct(item);
+    const total = isLechon ? 0 : item.qty * item.price;
+    if (!isLechon) grandTotal += total;
 
     const row = document.createElement("tr");
+    row.dataset.lechon = String(isLechon);
 
     row.innerHTML = `
       <td>${item.name}</td>
       <td><input type="number" min="1" ${hasUnlimitedOrder(item) ? "" : `max="${item.stock}"`} value="${item.qty}" data-index="${index}" class="qty-input"></td>
-      <td>₱${item.price.toFixed(2)}</td>
-      <td>₱${total.toFixed(2)}</td>
+      <td>${isLechon ? "" : `&#8369;${item.price.toFixed(2)}`}</td>
+      <td>${isLechon ? "" : `&#8369;${total.toFixed(2)}`}</td>
       <td><button class="btn red remove-btn" data-index="${index}"><i class="material-icons">delete</i></button></td>
     `;
 
@@ -470,6 +481,7 @@ function renderCart() {
 
   if (grandTotalElement) {
     grandTotalElement.textContent = grandTotal.toFixed(2);
+    grandTotalElement.parentElement?.parentElement?.removeAttribute("hidden");
   }
 
   // Quantity change
@@ -819,9 +831,7 @@ function renderProducts(products) {
           isPackProduct(product) ? `${formatQuantity(product.packs)} packs (${formatQuantity(product.pieces)} pcs)` : "Order"
         }</span>
 
-        <span class="price">
-          ₱${Number(product.price).toFixed(2)}
-        </span>
+        ${isLechonProduct(product) ? "" : `<span class="price">&#8369;${Number(product.price).toFixed(2)}</span>`}
 
       </div>
 
@@ -839,7 +849,7 @@ function renderProducts(products) {
           data-packs="${product.packs ?? ""}"
           data-pieces-per-pack="${product.piecesPerPack}"
           data-unit="${product.unit || "piece"}"
-          data-category="${product.category || product.role || ""}"
+          data-category="${product.category || ""}"
         >
           <i class="material-icons">add</i>
         </button>
