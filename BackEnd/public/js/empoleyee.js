@@ -62,9 +62,9 @@ function isLechonProduct(product) {
 
 function normalizeComboNames(items) {
   const comboNames = {
-    "siomai-rice": "Siomai Rice",
-    "lechon-rice": "Letchon Rice",
-    "pares-rice": "Pares with Rice",
+    "siomai-rice": "SIOMAI RICE",
+    "lechon-rice": "LETCHON RICE",
+    "pares-rice": "PARES WITH RICE",
   };
   let changed = false;
   items.forEach((item) => {
@@ -153,30 +153,36 @@ function getEmployeeCombos() {
       { product: mainProduct, qty: mainQty, unit: mainUnit || mainProduct.unit || "piece" },
     ].map(({ product, qty, unit }) => ({
       productId: product.id,
-      name: key === "siomai-rice" && product.id === mainProduct.id ? "Siomai" : product.name,
+      name: product.id !== rice.id && key === "siomai-rice"
+        ? "Siomai"
+        : product.id !== rice.id && key === "pares-rice"
+          ? "Pares"
+          : product.name,
       unit,
       qty,
-    }));
+    })).map((component) => ({ ...component, name: String(component.name || "").toUpperCase() }));
     const riceName = rice.name || "Rice";
     const mainDescription = key === "siomai-rice"
       ? "3 pcs Siomai"
       : key === "lechon-rice"
         ? `80 g ${mainProduct.name || fallbackDescription}`
-        : `1 ${mainProduct.name || fallbackDescription}`;
+        : key === "pares-rice"
+          ? "1 Pares"
+          : `1 ${mainProduct.name || fallbackDescription}`;
     combos.push({
       key,
       name,
       price: comboPrice,
-      description: `1 ${riceName} + ${mainDescription}`,
+      description: `1 ${riceName} + ${mainDescription}`.toUpperCase(),
       image: rice.image || mainProduct.image || "/assets/upload-placeholder.png",
       components,
     });
   };
 
-  addCombo("siomai-rice", "Siomai Rice", findComboProduct("siomai", { excludeLechon: true, excludeId: rice?.id, excludeRiceMeals: true }), 40, "siomai", 3, "pcs");
+  addCombo("siomai-rice", "SIOMAI RICE", findComboProduct("siomai", { excludeLechon: true, excludeId: rice?.id, excludeRiceMeals: true }), 40, "siomai", 3, "pcs");
   const lechon = usableProducts.find((product) => product.id !== rice?.id && isLechonProduct(product));
-  addCombo("lechon-rice", "Letchon Rice", lechon, 100, "lechon", 80, "g");
-  addCombo("pares-rice", "Pares with Rice", findComboProduct("pares", { excludeLechon: true, excludeId: rice?.id }), 80, "pares");
+  addCombo("lechon-rice", "LETCHON RICE", lechon, 100, "lechon", 80, "g");
+  addCombo("pares-rice", "PARES WITH RICE", findComboProduct("pares", { excludeLechon: true, excludeId: rice?.id }), 80, "pares");
   return combos;
 }
 
@@ -806,7 +812,7 @@ function setupCategoryButtons() {
         .filter(Boolean),
     ),
   ];
-  if (getEmployeeCombos().length && !categories.includes("Combos")) categories.push("Combos");
+  if (getEmployeeCombos().length && !categories.includes("COMBOS")) categories.push("COMBOS");
 
   if (!categories.includes(selectedCategory)) {
     selectedCategory = "All";
@@ -897,7 +903,7 @@ function filterProducts() {
       .trim()
       .toLowerCase();
 
-    const categoryMatch = selectedCategory === "Combos"
+    const categoryMatch = selectedCategory === "COMBOS"
       ? false
       : selectedCategory === "All" || category === selectedCategory.trim().toLowerCase();
 
@@ -920,7 +926,7 @@ function renderProducts(products) {
 
   productList.innerHTML = "";
   const searchValue = document.getElementById("searchProduct")?.value.trim().toLowerCase() || "";
-  const combos = ["All", "Combos"].includes(selectedCategory)
+  const combos = ["All", "COMBOS"].includes(selectedCategory)
     ? getEmployeeCombos().filter((combo) => combo.name.toLowerCase().includes(searchValue))
     : [];
 
@@ -1048,7 +1054,7 @@ function renderProducts(products) {
         price: combo.price,
         image: combo.image,
         unit: "combo",
-        category: "Combos",
+        category: "COMBOS",
         stock: 0,
         isCombo: true,
         comboComponents: combo.components,

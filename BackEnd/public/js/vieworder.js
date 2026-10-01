@@ -29,9 +29,9 @@ const isLechonItem = (item) => !item.isCombo && (isLechon(item.category) || isLe
 const getItemPrice = (item) => isLechonItem(item) && !item.lechonFixedPrice && !item.customPriceEntered ? 0 : Number(item.price) || 0;
 function normalizeComboNames() {
   const comboNames = {
-    "siomai-rice": "Siomai Rice",
-    "lechon-rice": "Letchon Rice",
-    "pares-rice": "Pares with Rice",
+    "siomai-rice": "SIOMAI RICE",
+    "lechon-rice": "LETCHON RICE",
+    "pares-rice": "PARES WITH RICE",
   };
   let changed = false;
   cart.forEach((item) => {

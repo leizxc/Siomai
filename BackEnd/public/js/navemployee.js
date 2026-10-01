@@ -50,7 +50,10 @@ async function loadEmployeeProfile() {
   const nameElements = document.querySelectorAll(
     "#employee-profile-name, #employee-profile-name-desktop",
   );
-  if (!nameElements.length) return;
+  const roleElements = document.querySelectorAll(
+    "#employee-profile-role, #employee-profile-role-desktop",
+  );
+  if (!nameElements.length && !roleElements.length) return;
 
   const user = await new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -65,8 +68,12 @@ async function loadEmployeeProfile() {
     const employee = snapshot.docs[0]?.data();
     const name = `${employee?.fname || ""} ${employee?.lname || ""}`.trim();
     const displayName = name || user.displayName || "Employee";
+    const role = String(employee?.role || "Employee").trim().toUpperCase();
     nameElements.forEach((nameElement) => {
       nameElement.textContent = displayName;
+    });
+    roleElements.forEach((roleElement) => {
+      roleElement.textContent = role;
     });
   } catch (error) {
     console.error("Unable to load employee profile:", error);

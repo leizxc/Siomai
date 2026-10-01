@@ -1,5 +1,5 @@
-const staticCacheName = "site-static-v35";
-const dynamicCache = "site-dynamic-v35";
+const staticCacheName = "site-static-v41";
+const dynamicCache = "site-dynamic-v41";
 
 //firebase cloud messaging
 importScripts(

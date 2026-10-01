@@ -1637,7 +1637,9 @@ PRODUCT MENU FORM
 }
 
 .product-menu-form .col.s12.m6 {
+  flex: 0 0 50%;
   width: 50%;
+  min-width: 0;
   float: none;
 }
 
@@ -1648,6 +1650,13 @@ PRODUCT MENU FORM
 
 .product-menu-form .input-field {
   margin-bottom: 18px;
+}
+
+.product-menu-form .input-field > input,
+.product-menu-form .input-field > .select-wrapper,
+.product-menu-form .input-field > .select-wrapper input.select-dropdown {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .image-upload {
@@ -3419,7 +3428,9 @@ PRODUCT MENU
 
   .product-menu-form .col.s12.m6,
   .product-menu-form .col.s12 {
+    flex: 0 0 100%;
     width: 100% !important;
+    min-width: 0;
     padding-left: 0;
     padding-right: 0;
   }

@@ -4627,6 +4627,13 @@ button.employee-profile {
   overflow-wrap: anywhere;
 }
 
+.employee-profile-menu-user small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .employee-profile-menu-action {
   display: flex;
   align-items: center;
@@ -6477,4 +6484,8 @@ body:has(.product-list) .cart-section table:empty {
 
 html.dark .lechon-price-input {
   color: #fff;
+}
+
+body:has(.product-list) .categories .category {
+  text-transform: uppercase;
 }
