@@ -76,8 +76,9 @@ function renderNotifications(notifications) {
         <strong>${escapeHtml(item.title || `Low stock: ${item.productName}`)}</strong>
         <p>${escapeHtml(item.message || `${item.remainingStock} ${item.unit} remaining`)}</p>
         <small>${formatDate(item.updatedAt || item.createdAt)}</small>
+        <span class="notification-read-state ${item.read ? "is-read" : "is-unread"}">${item.read ? "Read" : "Unread"}</span>
       </div>
-      ${item.read ? '<span class="notification-read-state">Read</span>' : '<button type="button" class="btn-flat mark-notification-read">Mark read</button>'}
+      ${item.read ? "" : '<button type="button" class="btn-flat mark-notification-read">Mark read</button>'}
     </article>
   `).join("");
 
@@ -89,7 +90,6 @@ function renderNotifications(notifications) {
       if (!page || typeof window.loadSection !== "function") return;
 
       try {
-        M.Modal.getInstance(document.getElementById("manager-notifications-modal"))?.close();
         window.loadSection(page);
         await markNotificationRead(element.dataset.id);
       } catch (error) {
@@ -112,7 +112,6 @@ function renderNotifications(notifications) {
       if (!notification) return;
       try {
         await markNotificationRead(notification.dataset.id);
-        M.Modal.getInstance(document.getElementById("manager-notifications-modal"))?.close();
         showToast("Notification marked as read.", "green");
       } catch (error) {
         console.error("Unable to mark notification as read:", error);

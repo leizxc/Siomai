@@ -557,31 +557,6 @@ async function archiveDepletedMenuIfReady(menuId) {
   await deleteDoc(inventoryRef);
 }
 
-async function getCapitalPriceForMenuItem(menuData, transaction = null) {
-  const inventoryId = menuData.inventory_id || menuData.inventoryId || null;
-  if (!inventoryId) return 0;
-
-  const inventoryRef = doc(db, "inventory", inventoryId);
-  const inventorySnap = transaction
-    ? await transaction.get(inventoryRef)
-    : await getDoc(inventoryRef);
-
-  if (!inventorySnap.exists()) return 0;
-
-  const invData = inventorySnap.data();
-  const invUnit = (invData.unit_type || "").toLowerCase();
-  const unitPrice = Number(invData.unit_price || 0);
-
-  if (invUnit === "kaban") {
-    const weightPerKaban = Number(invData.weight_per_kaban) || 0;
-    if (weightPerKaban > 0) {
-      return unitPrice / weightPerKaban;
-    }
-  }
-
-  return unitPrice;
-}
-
 function loadInventoryOptions(role = "") {
   const select = document.getElementById("productName");
   if (!select) return;
@@ -1013,10 +988,7 @@ function bindProductFormListeners() {
           const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
           const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
 
-          const capitalPrice = await getCapitalPriceForMenuItem(
-            menuData,
-            transaction,
-          );
+          const capitalPrice = Number(menuData.price || 0);
 
           let piecesPerEmployee = enteredQty;
 
@@ -1084,17 +1056,11 @@ function bindProductFormListeners() {
             if (existing && existing.snap.exists()) {
               const oldData = existing.snap.data();
               const oldPieces = Number(oldData.pieces ?? oldData.stock ?? 0);
-              const oldCapital = Number(oldData.capital_price || 0);
               const mergedPieces = oldPieces + piecesPerEmployee;
-              const mergedCapitalPrice =
-                mergedPieces > 0
-                  ? (oldPieces * oldCapital +
-                      piecesPerEmployee * capitalPrice) /
-                    mergedPieces
-                  : capitalPrice;
 
               transaction.update(existing.ref, {
-                capital_price: mergedCapitalPrice,
+                capital_price: capitalPrice,
+                ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
                 ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
                 last_updated: serverTimestamp(),
               });
@@ -1103,6 +1069,7 @@ function bindProductFormListeners() {
               transaction.set(newRef, {
                 name: menuData.product_name || "Unknown",
                 price: Number(menuData.price || 0),
+                ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
                 capital_price: capitalPrice,
                 role: role || menuData.category || "Unknown",
                 category:
@@ -1171,10 +1138,7 @@ function bindProductFormListeners() {
         const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
         const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
 
-        const newCapitalPrice = await getCapitalPriceForMenuItem(
-          menuData,
-          transaction,
-        );
+        const newCapitalPrice = Number(menuData.price || 0);
 
         let piecesToAssign = enteredQty;
 
@@ -1226,17 +1190,12 @@ function bindProductFormListeners() {
         if (existingProductSnap && existingProductSnap.exists()) {
           const oldData = existingProductSnap.data();
           const oldPieces = Number(oldData.pieces ?? oldData.stock ?? 0);
-          const oldCapital = Number(oldData.capital_price || 0);
 
           const mergedPieces = oldPieces + piecesToAssign;
-          const mergedCapitalPrice =
-            mergedPieces > 0
-              ? (oldPieces * oldCapital + piecesToAssign * newCapitalPrice) /
-                mergedPieces
-              : newCapitalPrice;
 
           transaction.update(existingProductRef, {
-            capital_price: mergedCapitalPrice,
+            capital_price: newCapitalPrice,
+            ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
             ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
             last_updated: serverTimestamp(),
           });
@@ -1248,6 +1207,7 @@ function bindProductFormListeners() {
         transaction.set(newProductRef, {
           name: menuData.product_name || "Unknown",
           price: Number(menuData.price || 0),
+          ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
           capital_price: newCapitalPrice,
           role: role || menuData.category || "Unknown",
           category: menuData.inv_category || menuData.category || "Unknown",

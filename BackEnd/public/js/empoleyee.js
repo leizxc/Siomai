@@ -57,7 +57,46 @@ function isPackProduct(product) {
 }
 
 function isLechonProduct(product) {
-  return /let?chon/i.test(`${product.category || ""} ${product.name || ""}`);
+  return !product.isCombo && /let?chon/i.test(`${product.category || ""} ${product.name || ""}`);
+}
+
+function normalizeComboNames(items) {
+  const comboNames = {
+    "siomai-rice": "Siomai Rice",
+    "lechon-rice": "Letchon Rice",
+    "pares-rice": "Pares with Rice",
+  };
+  let changed = false;
+  items.forEach((item) => {
+    if (!item.isCombo) return;
+    const key = Object.keys(comboNames).find((comboKey) => String(item.id || "").endsWith(`-${comboKey}`));
+    if (key && item.name !== comboNames[key]) {
+      item.name = comboNames[key];
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+function restoreFixedLechonPrice(item) {
+  if (!isLechonProduct(item) || item.lechonFixedPrice || item.customPriceEntered) return false;
+
+  const match = String(item.name || "").match(/\((1\/4|1\/2|1)\s*kg\)/i);
+  if (!match) return false;
+
+  const source = allProducts.find((product) => product.id === item.productId || product.id === item.id);
+  const prices = source?.lechonPrices || {};
+  const preset = match[1] === "1/4"
+    ? Number(prices.quarter ?? prices["1/4 kg"] ?? 250)
+    : match[1] === "1/2"
+      ? Number(prices.half ?? prices["1/2 kg"] ?? 500)
+      : Number(prices.one ?? prices["1 kg"] ?? 900);
+
+  if (!Number.isFinite(preset) || preset <= 0) return false;
+  item.price = preset;
+  item.lechonFixedPrice = true;
+  item.customPriceEntered = true;
+  return true;
 }
 
 function hasUnlimitedOrder(product) {
@@ -76,6 +115,69 @@ function getProductStockLabel(product) {
 
 function getCardStockLabel(product) {
   return isPackProduct(product) ? getProductStockLabel(product) : "Order";
+}
+
+function findComboProduct(keyword, { excludeLechon = false, excludeId = "", excludeRiceMeals = false } = {}) {
+  return allProducts.find((product) => {
+    const searchable = `${product.name || ""} ${product.category || ""}`.toLowerCase();
+    if (
+      product.id === excludeId ||
+      !searchable.includes(keyword) ||
+      (excludeLechon && isLechonProduct(product)) ||
+      (excludeRiceMeals && /rice|combo/i.test(String(product.name || "")))
+    ) return false;
+    return hasUnlimitedOrder(product) || (Number(product.pieces ?? product.stock) || 0) > 0;
+  }) || null;
+}
+
+function getEmployeeCombos() {
+  // allProducts is already limited to the signed-in employee's role and
+  // employee assignment by loadProducts(); only build combos from that set.
+  const usableProducts = allProducts.filter((product) =>
+    hasUnlimitedOrder(product) || (Number(product.pieces ?? product.stock) || 0) > 0,
+  );
+  const rice = usableProducts.find((product) =>
+    !/(siomai|lechon|pares)/i.test(String(product.name || "")) &&
+      (/^rice$/i.test(String(product.name || "").trim()) || /^rice$/i.test(String(product.category || "").trim())),
+  ) || usableProducts.find((product) => {
+    const name = String(product.name || "").toLowerCase();
+    return name.includes("rice") && !/(siomai|lechon|pares)/i.test(name);
+  });
+  if (!rice) return [];
+
+  const combos = [];
+  const addCombo = (key, name, mainProduct, comboPrice, fallbackDescription, mainQty = 1, mainUnit = "") => {
+    if (!(comboPrice > 0) || !mainProduct) return;
+    const components = [
+      { product: rice, qty: 1, unit: rice.unit || "piece" },
+      { product: mainProduct, qty: mainQty, unit: mainUnit || mainProduct.unit || "piece" },
+    ].map(({ product, qty, unit }) => ({
+      productId: product.id,
+      name: key === "siomai-rice" && product.id === mainProduct.id ? "Siomai" : product.name,
+      unit,
+      qty,
+    }));
+    const riceName = rice.name || "Rice";
+    const mainDescription = key === "siomai-rice"
+      ? "3 pcs Siomai"
+      : key === "lechon-rice"
+        ? `80 g ${mainProduct.name || fallbackDescription}`
+        : `1 ${mainProduct.name || fallbackDescription}`;
+    combos.push({
+      key,
+      name,
+      price: comboPrice,
+      description: `1 ${riceName} + ${mainDescription}`,
+      image: rice.image || mainProduct.image || "/assets/upload-placeholder.png",
+      components,
+    });
+  };
+
+  addCombo("siomai-rice", "Siomai Rice", findComboProduct("siomai", { excludeLechon: true, excludeId: rice?.id, excludeRiceMeals: true }), 40, "siomai", 3, "pcs");
+  const lechon = usableProducts.find((product) => product.id !== rice?.id && isLechonProduct(product));
+  addCombo("lechon-rice", "Letchon Rice", lechon, 100, "lechon", 80, "g");
+  addCombo("pares-rice", "Pares with Rice", findComboProduct("pares", { excludeLechon: true, excludeId: rice?.id }), 80, "pares");
+  return combos;
 }
 
 async function openLowStockConfirmation(product) {
@@ -388,6 +490,10 @@ function addToCart(product) {
   const existing = cart.find((item) => item.id === product.id);
 
   if (existing) {
+    if (product.isCombo) {
+      existing.price = product.price;
+      existing.comboComponents = product.comboComponents;
+    }
     if (isPackProduct(product) && existing.qty < product.stock) {
       existing.qty += 1;
     } else if (!isPackProduct(product)) {
@@ -411,6 +517,7 @@ function addToCart(product) {
 
 // RENDER CART
 function identifyCart() {
+  if (normalizeComboNames(cart)) saveCart();
   updateCartCount();
   updateCheckoutVisibility();
 
@@ -425,11 +532,14 @@ function identifyCart() {
 function renderMobileCart() {
   let total = 0;
   let items = 0;
+  let restoredPrice = false;
 
   cart.forEach((item) => {
-    if (!isLechonProduct(item)) total += item.price * item.qty;
+    restoredPrice = restoreFixedLechonPrice(item) || restoredPrice;
+    total += (Number(item.price) || 0) * (Number(item.qty) || 0);
     items += item.qty;
   });
+  if (restoredPrice) saveCart();
 
   const cartCount = document.querySelector(".cart-count");
   const grandTotal = document.getElementById("grandTotal");
@@ -453,6 +563,11 @@ function renderCart() {
   tbody.innerHTML = "";
 
   let grandTotal = 0;
+  let restoredPrice = false;
+  cart.forEach((item) => {
+    restoredPrice = restoreFixedLechonPrice(item) || restoredPrice;
+  });
+  if (restoredPrice) saveCart();
   const allItemsAreLechon = cart.length > 0 && cart.every(isLechonProduct);
 
   document.querySelectorAll("#cartTable thead th:nth-child(3), #cartTable thead th:nth-child(4)")
@@ -460,17 +575,19 @@ function renderCart() {
 
   cart.forEach((item, index) => {
     const isLechon = isLechonProduct(item);
-    const total = isLechon ? 0 : item.qty * item.price;
-    if (!isLechon) grandTotal += total;
+    const hasPrice = Number.isFinite(Number(item.price)) && Number(item.price) > 0;
+    const total = item.qty * item.price;
+    grandTotal += total;
 
     const row = document.createElement("tr");
     row.dataset.lechon = String(isLechon);
+    row.dataset.lechonCustom = String(isLechon && !item.lechonFixedPrice && !hasPrice);
 
     row.innerHTML = `
       <td>${item.name}</td>
       <td><input type="number" min="1" ${hasUnlimitedOrder(item) ? "" : `max="${item.stock}"`} value="${item.qty}" data-index="${index}" class="qty-input"></td>
-      <td>${isLechon ? "" : `&#8369;${item.price.toFixed(2)}`}</td>
-      <td>${isLechon ? "" : `&#8369;${total.toFixed(2)}`}</td>
+      <td>${isLechon && !item.lechonFixedPrice && !hasPrice ? "" : `&#8369;${Number(item.price).toFixed(2)}`}</td>
+      <td>${isLechon && !item.lechonFixedPrice && !hasPrice ? "" : `&#8369;${total.toFixed(2)}`}</td>
       <td><button class="btn red remove-btn" data-index="${index}"><i class="material-icons">delete</i></button></td>
     `;
 
@@ -558,7 +675,7 @@ async function addOrder(orderItems) {
   });
 
   for (const item of orderItems) {
-    const productRef = doc(db, "products", item.id);
+    const productRef = doc(db, "products", item.productId || item.id);
 
     if (isPackProduct(item)) {
       await updateDoc(productRef, {
@@ -689,6 +806,7 @@ function setupCategoryButtons() {
         .filter(Boolean),
     ),
   ];
+  if (getEmployeeCombos().length && !categories.includes("Combos")) categories.push("Combos");
 
   if (!categories.includes(selectedCategory)) {
     selectedCategory = "All";
@@ -779,9 +897,9 @@ function filterProducts() {
       .trim()
       .toLowerCase();
 
-    const categoryMatch =
-      selectedCategory === "All" ||
-      category === selectedCategory.trim().toLowerCase();
+    const categoryMatch = selectedCategory === "Combos"
+      ? false
+      : selectedCategory === "All" || category === selectedCategory.trim().toLowerCase();
 
     const searchMatch = productName.includes(searchValue);
 
@@ -801,8 +919,12 @@ function renderProducts(products) {
   if (!productList) return;
 
   productList.innerHTML = "";
+  const searchValue = document.getElementById("searchProduct")?.value.trim().toLowerCase() || "";
+  const combos = ["All", "Combos"].includes(selectedCategory)
+    ? getEmployeeCombos().filter((combo) => combo.name.toLowerCase().includes(searchValue))
+    : [];
 
-  if (products.length === 0) {
+  if (products.length === 0 && combos.length === 0) {
     productList.innerHTML = `
       <div class="no-products">
         No products found.
@@ -813,6 +935,35 @@ function renderProducts(products) {
   }
 
   products.forEach((product) => {
+    const isLechon = isLechonProduct(product);
+    const lechonOptions = [
+      { label: "1/4 kg", price: Number(product.lechonPrices?.quarter ?? product.lechonPrices?.["1/4 kg"] ?? 250) },
+      { label: "1/2 kg", price: Number(product.lechonPrices?.half ?? product.lechonPrices?.["1/2 kg"] ?? 500) },
+      { label: "1 kg", price: Number(product.lechonPrices?.one ?? product.lechonPrices?.["1 kg"] ?? 900) },
+    ];
+
+    if (isLechon) {
+      const makeLechonCard = (weight, presetPrice, custom = false) => {
+        const lechonCard = document.createElement("div");
+        lechonCard.classList.add("product-card", "lechon-product-card");
+        lechonCard.innerHTML = `
+          <img src="${product.image || "/assets/upload-placeholder.png"}" class="product-image" alt="${product.name}">
+          <div class="product-info">
+            <h4>${product.name}${custom ? "" : ` (${weight})`}</h4>
+            <span class="product-stock">Order</span>
+            ${custom ? "" : `<span class="price">₱${presetPrice.toFixed(2)}</span>`}
+          </div>
+          <div class="product-actions">
+            <button type="button" class="add-btn lechon-card-add" data-id="${product.id}" data-name="${product.name}" data-category="${product.category || ""}" data-image="${product.image || ""}" data-weight="${custom ? "Custom price" : weight}" data-price="${custom ? "" : presetPrice}" data-custom="${custom}"><i class="material-icons" aria-hidden="true">add</i></button>
+          </div>
+        `;
+        productList.appendChild(lechonCard);
+      };
+      lechonOptions.forEach((option) => makeLechonCard(option.label, option.price));
+      makeLechonCard("Custom price", 0, true);
+      return;
+    }
+
     const card = document.createElement("div");
 
     card.classList.add("product-card");
@@ -831,7 +982,7 @@ function renderProducts(products) {
           isPackProduct(product) ? `${formatQuantity(product.packs)} packs (${formatQuantity(product.pieces)} pcs)` : "Order"
         }</span>
 
-        ${isLechonProduct(product) ? "" : `<span class="price">&#8369;${Number(product.price).toFixed(2)}</span>`}
+        <span class="price">&#8369;${Number(product.price).toFixed(2)}</span>
 
       </div>
 
@@ -862,7 +1013,75 @@ function renderProducts(products) {
     productList.appendChild(card);
   });
 
-  document.querySelectorAll(".add-btn").forEach((btn) => {
+  // Show ready combo products first in All so they are immediately visible.
+  [...combos].reverse().forEach((combo) => {
+    const comboCard = document.createElement("div");
+    comboCard.classList.add("product-card", "combo-product-card");
+    comboCard.innerHTML = `
+      <img src="${combo.image}" class="product-image" alt="${combo.name}">
+      <div class="product-info">
+        <h4>${combo.name}</h4>
+        <span class="product-stock">${combo.description}</span>
+        <span class="price">₱${combo.price.toFixed(2)}</span>
+      </div>
+      <div class="product-actions">
+        <button type="button" class="add-btn combo-add-btn" aria-label="Add ${combo.name}"><i class="material-icons">add</i></button>
+      </div>
+    `;
+    comboCard.querySelector(".combo-add-btn").addEventListener("click", () => {
+      const existingId = `combo-${currentEmployeeId}-${combo.key}`;
+      const existing = cart.find((item) => item.id === existingId);
+      const nextQty = Number(existing?.qty || 0) + 1;
+      const lacksPackStock = combo.components.some((component) => {
+        const source = allProducts.find((item) => item.id === component.productId);
+        const requiredPieces = (Number(component.qty) || 1) * nextQty;
+        return source && isPackProduct(source) && (Number(source.pieces ?? source.stock) || 0) < requiredPieces;
+      });
+      if (lacksPackStock) {
+        M.toast({ html: `Not enough component stock for ${combo.name}.`, classes: "red rounded" });
+        return;
+      }
+
+      addToCart({
+        id: existingId,
+        name: combo.name,
+        price: combo.price,
+        image: combo.image,
+        unit: "combo",
+        category: "Combos",
+        stock: 0,
+        isCombo: true,
+        comboComponents: combo.components,
+      });
+    });
+    productList.prepend(comboCard);
+  });
+
+  document.querySelectorAll(".lechon-product-card").forEach((card) => {
+    const addButton = card.querySelector(".lechon-card-add");
+    addButton.addEventListener("click", () => {
+      const custom = addButton.dataset.custom === "true";
+      const price = custom ? 0 : Number(addButton.dataset.price);
+      if (!custom && (!Number.isFinite(price) || price <= 0)) {
+        M.toast({ html: "The selected lechon price is invalid.", classes: "red rounded" });
+        return;
+      }
+      addToCart({
+        id: `${addButton.dataset.id}-${addButton.dataset.weight.replace(/[^a-z0-9]/gi, "")}`,
+        productId: addButton.dataset.id,
+        name: `${addButton.dataset.name} (${addButton.dataset.weight})`,
+        price,
+        image: addButton.dataset.image || "",
+        stock: 0,
+        unit: "order",
+        category: addButton.dataset.category,
+        lechonFixedPrice: !custom,
+        customPriceEntered: !custom,
+      });
+    });
+  });
+
+  document.querySelectorAll(".add-btn:not(.lechon-card-add):not(.combo-add-btn)").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id;
       const name = btn.dataset.name;

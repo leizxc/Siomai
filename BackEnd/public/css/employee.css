@@ -56,9 +56,6 @@ body {
   min-height: 100vh;
 }
 
-.material-icons {
-  color: var(--text-primary) !important;
-}
 
 /* Sidebar â€“ match admin */
 
@@ -4484,6 +4481,11 @@ html.dark .report-status {
 }
 
 @media screen and (max-width: 600px) {
+  body:has(#employee-notifications-modal.open) .modal-overlay {
+    background-color: transparent !important;
+    opacity: 0 !important;
+  }
+
   .modal {
     width: 94vw !important;
     max-height: 88vh !important;
@@ -4503,16 +4505,16 @@ html.dark .report-status {
 
   #employee-notifications-modal {
     width: calc(100vw - 24px) !important;
-    height: calc(100dvh - 140px) !important;
+    height: calc(100dvh - 180px) !important;
     max-height: calc(100vh - 32px) !important;
     max-height: calc(100dvh - 32px) !important;
     border-radius: 14px !important;
   }
 
   #employee-notifications-modal.open {
-    height: calc(100dvh - 140px) !important;
-    top: calc(50% + 28px) !important;
-    max-height: calc(100dvh - 140px) !important;
+    height: calc(100dvh - 180px) !important;
+    top: 50% !important;
+    max-height: calc(100dvh - 180px) !important;
     transform: translate(-50%, -50%) !important;
   }
 
@@ -4520,7 +4522,7 @@ html.dark .report-status {
     flex: 1 1 0%;
     min-height: 0;
     height: 0;
-    max-height: calc(100dvh - 216px);
+    max-height: calc(100dvh - 256px);
     padding: 18px 16px !important;
   }
 
@@ -4546,6 +4548,11 @@ html.dark .report-status {
     align-items: flex-start;
     gap: 10px;
     padding: 12px 2px;
+  }
+
+  .employee-notification.unread {
+    gap: 7px;
+    padding: 8px 4px;
   }
 
   .employee-notification > div {
@@ -4679,10 +4686,12 @@ html.dark .employee-profile-menu-action:hover {
 
 .employee-notification.unread {
   background: #fff8e1;
+  border-left: 3px solid #d48710;
 }
 
 html.dark .employee-notification.unread {
   background: #2b2413;
+  border-left-color: #d48710;
 }
 
 .employee-notification > .material-icons {
@@ -4698,6 +4707,25 @@ html.dark .employee-notification.unread {
 .employee-notification-empty {
   margin: 3px 0 0;
   color: var(--text-secondary);
+}
+
+.employee-notification-state {
+  display: block;
+  margin-top: 7px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.employee-notification-state.is-unread {
+  color: #a45d00;
+}
+
+.employee-notification-state.is-read {
+  color: var(--text-secondary);
+}
+
+html.dark .employee-notification-state.is-unread {
+  color: #f5b942;
 }
 
 .employee-notification .btn-flat {
@@ -6312,17 +6340,97 @@ body:has(.product-list) .cart-section table:empty {
   font-size: 16px;
 }
 
-#cartTable tr[data-lechon="true"] td:nth-child(3),
-#cartTable tr[data-lechon="true"] td:nth-child(4) {
-  display: none;
-}
-
 .lechon-price-label {
   display: block;
   width: 100%;
   max-width: 220px;
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+.lechon-size-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.lechon-product-card .product-info {
+  min-width: 0;
+}
+
+.lechon-size-option {
+  padding: 6px 9px;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.lechon-size-option.active {
+  color: #fff;
+  background: #2196f3;
+  border-color: #2196f3;
+}
+
+.lechon-card-price-label {
+  display: block;
+  max-width: 220px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.lechon-card-price {
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  margin-top: 4px;
+  padding: 8px 10px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.lechon-card-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  color: #fff;
+  background: #2196f3;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.lechon-admin-prices {
+  min-width: 210px;
+}
+
+.lechon-admin-price-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(58px, 1fr));
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.lechon-admin-price-fields label {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.lechon-admin-price-fields input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  margin: 3px 0 0;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 
 @media (max-width: 600px) {

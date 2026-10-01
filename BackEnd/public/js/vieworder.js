@@ -25,8 +25,25 @@ const checkoutBtn = document.getElementById("checkoutBtn");
 const backBtn = document.getElementById("backBtn");
 let shiftActive = false;
 const isLechon = (value) => /let?chon/i.test(String(value || "").trim());
-const isLechonItem = (item) => isLechon(item.category) || isLechon(item.name);
-const getItemPrice = (item) => isLechonItem(item) && !item.customPriceEntered ? 0 : Number(item.price) || 0;
+const isLechonItem = (item) => !item.isCombo && (isLechon(item.category) || isLechon(item.name));
+const getItemPrice = (item) => isLechonItem(item) && !item.lechonFixedPrice && !item.customPriceEntered ? 0 : Number(item.price) || 0;
+function normalizeComboNames() {
+  const comboNames = {
+    "siomai-rice": "Siomai Rice",
+    "lechon-rice": "Letchon Rice",
+    "pares-rice": "Pares with Rice",
+  };
+  let changed = false;
+  cart.forEach((item) => {
+    if (!item.isCombo) return;
+    const key = Object.keys(comboNames).find((comboKey) => String(item.id || "").endsWith(`-${comboKey}`));
+    if (key && item.name !== comboNames[key]) {
+      item.name = comboNames[key];
+      changed = true;
+    }
+  });
+  if (changed) localStorage.setItem("cart", JSON.stringify(cart));
+}
 const stopShiftWatch = watchActiveShift((shift) => {
   shiftActive = shift.active;
   showShiftRequired(document.querySelector(".order-container"), !shift.active, shift.timedOut);
@@ -70,42 +87,58 @@ async function completeCheckout() {
   }
 
   await runTransaction(db, async (transaction) => {
+    const usageByProductId = new Map();
+    const recordUsage = (productId, qty, itemName, allowMissing = false) => {
+      if (!productId) return;
+      const existing = usageByProductId.get(productId);
+      if (existing) {
+        existing.qty += qty;
+        existing.allowMissing = existing.allowMissing && allowMissing;
+      } else {
+        usageByProductId.set(productId, { qty, itemName, allowMissing });
+      }
+    };
+
+    cart.forEach((item) => {
+      if (item.isCombo && Array.isArray(item.comboComponents)) {
+        item.comboComponents.forEach((component) => {
+          // Weight portions are displayed on the combo item, but the current
+          // inventory model only decrements pack products in whole pieces.
+          if (String(component.unit || "").toLowerCase() === "g") return;
+          recordUsage(component.productId, (Number(component.qty) || 1) * (Number(item.qty) || 0), item.name);
+        });
+      } else {
+        recordUsage(item.productId || item.id, Number(item.qty) || 0, item.name, Boolean(item.lechonFixedPrice));
+      }
+    });
+
+    const usages = [...usageByProductId.entries()];
     const productSnapshots = await Promise.all(
-      cart.map((item) =>
-        transaction.get(doc(db, "products", item.id))
-      )
+      usages.map(([productId]) => transaction.get(doc(db, "products", productId))),
     );
 
     productSnapshots.forEach((productSnap, index) => {
-      const item = cart[index];
-
+      const [, usage] = usages[index];
       if (!productSnap.exists()) {
-        throw new Error(`${item.name} is no longer available.`);
+        if (!usage.allowMissing) throw new Error(`${usage.itemName} is no longer available.`);
+        return;
       }
 
       const product = productSnap.data();
+      if (!isPackProduct(product)) return;
 
-      const availablePieces =
-        Number(product.pieces ?? product.stock) || 0;
-
-      if (isPackProduct(product) && availablePieces < item.qty) {
-        throw new Error(`Not enough stock for ${item.name}.`);
+      const availablePieces = Number(product.pieces ?? product.stock) || 0;
+      if (availablePieces < usage.qty) {
+        throw new Error(`Not enough stock for ${usage.itemName}.`);
       }
 
-      const remainingPieces = isPackProduct(product)
-        ? availablePieces - item.qty
-        : availablePieces;
-
-      const piecesPerPack =
-        Number(product.pieces_per_pack) || 1;
-
-      if (isPackProduct(product)) {
-        transaction.update(productSnap.ref, {
-          stock: remainingPieces,
-          pieces: remainingPieces,
-          packs: Math.ceil(remainingPieces / piecesPerPack),
-        });
-      }
+      const remainingPieces = availablePieces - usage.qty;
+      const piecesPerPack = Number(product.pieces_per_pack) || 1;
+      transaction.update(productSnap.ref, {
+        stock: remainingPieces,
+        pieces: remainingPieces,
+        packs: Math.ceil(remainingPieces / piecesPerPack),
+      });
     });
   });
 
@@ -126,6 +159,7 @@ async function completeCheckout() {
 }
 
 function renderOrder() {
+  normalizeComboNames();
   orderList.innerHTML = "";
 
   let total = 0;
@@ -172,11 +206,9 @@ function renderOrder() {
           ${item.name}
         </h6>
 
-        ${isLechonItem(item) ? `<label class="lechon-price-label">Enter price <input class="lechon-price-input" data-index="${index}" type="number" min="0.01" step="0.01" value="${item.customPriceEntered ? Number(item.price) : ""}" placeholder="₱0.00"></label>` : ""}
+        ${isLechonItem(item) && !item.lechonFixedPrice ? `<label class="lechon-price-label">Enter price <input class="lechon-price-input" data-index="${index}" type="number" min="0.01" step="0.01" value="${item.customPriceEntered ? Number(item.price) : ""}" placeholder="₱0.00"></label>` : ""}
 
-        <p>
-          ₱${Number(item.price).toFixed(2)}
-        </p>
+        ${!isLechonItem(item) || item.lechonFixedPrice ? `<p class="order-unit-price">&#8369;${Number(item.price).toFixed(2)}</p>` : ""}
       </div>
 
       <div class="qty-control">
@@ -210,8 +242,6 @@ function renderOrder() {
       </div>
     `;
 
-    if (isLechonItem(item)) card.querySelector(".order-info > p")?.remove();
-
     orderList.appendChild(card);
   });
 
@@ -229,6 +259,8 @@ function renderOrder() {
       const subtotal = getItemPrice(item) * Number(item.qty || 0);
       const subtotalElement = orderList.querySelector(`.order-price[data-index="${index}"]`);
       if (subtotalElement) subtotalElement.textContent = `${String.fromCharCode(8369)}${subtotal.toFixed(2)}`;
+      const priceDisplay = orderList.querySelectorAll(".order-info > p")[index];
+      if (priceDisplay && !isLechonItem(item)) priceDisplay.textContent = `${String.fromCharCode(8369)}${item.price.toFixed(2)}`;
       const total = cart.reduce((sum, orderItem) => sum + getItemPrice(orderItem) * (Number(orderItem.qty) || 0), 0);
       orderTotal.textContent = total.toFixed(2);
     });
@@ -312,7 +344,7 @@ checkoutBtn.onclick = () => {
     return;
   }
 
-  if (cart.some((item) => isLechonItem(item) && (!item.customPriceEntered || !Number.isFinite(Number(item.price)) || Number(item.price) <= 0))) {
+  if (cart.some((item) => isLechonItem(item) && !item.lechonFixedPrice && (!item.customPriceEntered || !Number.isFinite(Number(item.price)) || Number(item.price) <= 0))) {
     M.toast({ html: "Please enter a valid price for every lechon order.", classes: "red rounded" });
     return;
   }

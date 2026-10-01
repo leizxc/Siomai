@@ -5228,15 +5228,51 @@ html.dark #modal-product-history-assign td:nth-child(6) strong {
   pointer-events: auto;
 }
 .notification-read-state {
+  display: block;
+  margin-top: 5px;
   color: #31855b;
   font-size: 11px;
   font-weight: 700;
+}
+
+.notification-read-state.is-unread {
+  color: #a45d00;
+}
+
+.notification-read-state.is-read {
+  color: var(--text-secondary);
 }
 .manager-notification .mark-notification-read {
   margin-left: auto;
 }
 .manager-notification-select + .material-icons {
   flex: 0 0 auto;
+}
+
+.edit-menu-lechon-prices > p {
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.edit-menu-lechon-price-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.edit-menu-lechon-price-grid label {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.edit-menu-lechon-price-grid input {
+  box-sizing: border-box;
+  width: 100%;
 }
 
 /* Shared modal placement: keep every manager modal centered and responsive. */
@@ -5348,6 +5384,10 @@ html.dark #manager-notifications-modal .manager-notification small {
   color: var(--text-secondary) !important;
 }
 
+html.dark #manager-notification-list .notification-read-state.is-unread {
+  color: #f5b942;
+}
+
 html.dark #manager-notifications-modal .manager-notification-empty {
   color: var(--text-secondary);
 }
@@ -5433,29 +5473,93 @@ html.dark
     overflow-y: auto !important;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    padding: 18px 16px !important;
+  }
+
+  #manager-notifications-modal.open .modal-content h4 {
+    margin: 0 0 12px;
+    font-size: 30px;
+    font-weight: 400;
+  }
+
+  #manager-notifications-modal .notification-selection-toolbar {
+    margin: 0 0 8px;
+    padding: 9px 0;
+  }
+
+  #manager-notification-list {
+    overflow-wrap: anywhere;
+  }
+
+  #manager-notification-list .manager-notification {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 4px;
+    background: transparent;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0 0 8px 8px;
+  }
+
+  #manager-notification-list .manager-notification.unread {
+    background: #fff8e1;
+    border-left: 3px solid #d48710;
+  }
+
+  html.dark #manager-notification-list .manager-notification.unread {
+    background: #2b2413;
+  }
+
+  #manager-notification-list .manager-notification > div {
+    min-width: 0;
+  }
+
+  #manager-notification-list .manager-notification > i {
+    flex: 0 0 22px;
+    margin-top: 2px;
+    color: #d48710;
+  }
+
+  #manager-notification-list .manager-notification .mark-notification-read {
+    display: inline-flex !important;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    max-width: 74px;
+    margin: 0;
+    padding: 4px 6px;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: normal;
   }
 
   #manager-notifications-modal.open .modal-footer {
     display: flex !important;
     flex: 0 0 auto;
+    flex-direction: row !important;
     align-items: center !important;
     justify-content: flex-end !important;
     flex-wrap: nowrap !important;
     gap: 6px !important;
     margin-top: 0 !important;
     padding: 10px 12px !important;
+    min-height: 60px;
   }
 
   #manager-notifications-modal.open .modal-footer .btn,
   #manager-notifications-modal.open .modal-footer .btn-flat,
   #manager-notifications-modal.open .modal-footer .modal-close {
-    flex: 0 0 auto;
+    display: inline-flex !important;
+    flex: 0 1 auto !important;
     min-width: 0 !important;
     width: auto !important;
     height: 40px !important;
     margin: 0 !important;
     padding: 0 10px !important;
     font-size: 12px !important;
+    line-height: 40px !important;
+    float: none !important;
+    position: static !important;
   }
 }
 

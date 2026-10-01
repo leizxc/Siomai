@@ -30,9 +30,8 @@ function getNotificationPage(item) {
   return null;
 }
 
-async function openEmployeeNotification(item, modal) {
+async function openEmployeeNotification(item) {
   const page = getNotificationPage(item);
-  modal?.close();
 
   if (page && typeof window.loadSection === "function") {
     await window.loadSection(page);
@@ -66,7 +65,7 @@ function renderNotifications() {
     <article class="employee-notification ${item.read ? "" : "unread"}" data-id="${item.id || ""}" data-source="${item.source}" data-type="${item.type || ""}" tabindex="0" role="button" aria-label="Open ${item.title || "notification"}">
       <label class="employee-notification-select" aria-label="Select notification"><input type="checkbox" value="${item.id}" ${selectedNotificationIds.has(item.id) ? "checked" : ""} /><span></span></label>
       <i class="material-icons">${item.icon}</i>
-      <div><strong>${item.title}</strong><p>${item.message}</p><small>${formatDate(item.updatedAt || item.createdAt)}</small></div>
+      <div><strong>${item.title}</strong><p>${item.message}</p><small>${formatDate(item.updatedAt || item.createdAt)}</small><span class="employee-notification-state ${item.read ? "is-read" : "is-unread"}">${item.read ? "Read" : "Unread"}</span></div>
       ${!item.read ? '<button type="button" class="btn-flat mark-employee-notification-read">Mark read</button>' : ""}
     </article>
   `).join("");
@@ -77,7 +76,7 @@ function renderNotifications() {
       const notification = attendanceNotifications.find((item) => item.id === element.dataset.id);
       if (!notification) return;
       try {
-        await openEmployeeNotification(notification, M.Modal.getInstance(document.querySelector("#employee-notifications-modal")));
+        await openEmployeeNotification(notification);
       } catch (error) {
         console.error("Unable to open employee notification:", error);
         if (typeof M !== "undefined") M.toast({ html: "Unable to open this notification.", classes: "red" });
@@ -98,7 +97,6 @@ function renderNotifications() {
       if (!item) return;
       try {
         await updateDoc(doc(db, "employeeNotifications", item.dataset.id), { read: true, readAt: serverTimestamp() });
-        M.Modal.getInstance(document.querySelector("#employee-notifications-modal"))?.close();
       } catch (error) {
         console.error("Unable to mark employee notification as read:", error);
         if (typeof M !== "undefined") M.toast({ html: "Unable to mark this notification as read.", classes: "red" });
@@ -144,7 +142,9 @@ export async function initEmployeeNotifications() {
   const confirmDeleteButton = document.querySelector("#confirm-delete-employee-notifications");
   const deleteMessage = document.querySelector("#delete-employee-notifications-message");
 
-  const modal = M.Modal.getInstance(modalElement) || M.Modal.init(modalElement);
+  const existingNotificationModal = M.Modal.getInstance(modalElement);
+  existingNotificationModal?.destroy();
+  const modal = M.Modal.init(modalElement, { dismissible: false });
   const deleteModal = M.Modal.getInstance(deleteModalElement) || M.Modal.init(deleteModalElement, {
     onCloseEnd: () => { pendingDeleteNotificationIds = []; },
   });
@@ -155,30 +155,6 @@ export async function initEmployeeNotifications() {
   if (closeButton) {
     closeButton.onclick = () => modal.close();
   }
-
-  // Materialize normally handles its overlay click. Keep an explicit fallback
-  // because this modal is preserved while the employee content DOM changes.
-  if (modalElement._outsideCloseHandler) {
-    document.removeEventListener(
-      "pointerdown",
-      modalElement._outsideCloseHandler,
-      true,
-    );
-  }
-  modalElement._outsideCloseHandler = (event) => {
-    if (
-      modal.isOpen &&
-      !deleteModal.isOpen &&
-      !modalElement.contains(event.target)
-    ) {
-      modal.close();
-    }
-  };
-  document.addEventListener(
-    "pointerdown",
-    modalElement._outsideCloseHandler,
-    true,
-  );
 
   bell.onclick = async () => {
     const userDocId = sessionStorage.getItem("employeeUserDocId");

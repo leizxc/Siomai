@@ -606,6 +606,14 @@ export async function loadmenu() {
         document.getElementById("edit-menu-name").value =
           data.product_name || "";
         document.getElementById("edit-menu-price").value = data.price ?? "";
+        const isLechonMenu = /let?chon/i.test(data.product_name || "");
+        const lechonPricesPanel = document.getElementById("edit-menu-lechon-prices");
+        if (lechonPricesPanel) lechonPricesPanel.hidden = !isLechonMenu;
+        if (isLechonMenu) {
+          document.getElementById("edit-menu-lechon-quarter").value = data.lechonPrices?.quarter ?? data.lechonPrices?.["1/4 kg"] ?? 250;
+          document.getElementById("edit-menu-lechon-half").value = data.lechonPrices?.half ?? data.lechonPrices?.["1/2 kg"] ?? 500;
+          document.getElementById("edit-menu-lechon-one").value = data.lechonPrices?.one ?? data.lechonPrices?.["1 kg"] ?? 900;
+        }
         M.updateTextFields();
 
         const modalElem = document.getElementById("modal-edit-menu");
@@ -633,14 +641,43 @@ export async function loadmenu() {
             return;
           }
 
+          let lechonPrices = null;
+          if (isLechonMenu) {
+            lechonPrices = {
+              quarter: Number(document.getElementById("edit-menu-lechon-quarter").value),
+              half: Number(document.getElementById("edit-menu-lechon-half").value),
+              one: Number(document.getElementById("edit-menu-lechon-one").value),
+            };
+            if (Object.values(lechonPrices).some((price) => !Number.isFinite(price) || price < 0)) {
+              M.toast({ html: "Please enter valid prices for all lechon sizes.", classes: "red rounded" });
+              return;
+            }
+          }
+
           try {
-            await updateDoc(menuRef, {
+            const menuUpdate = {
               product_name: newName,
               price: newPrice,
               last_updated: serverTimestamp(),
-            });
+            };
+            if (lechonPrices) menuUpdate.lechonPrices = lechonPrices;
+            await updateDoc(menuRef, menuUpdate);
+
+            const assignedProducts = await getDocs(query(
+              collection(db, "products"),
+              where("inventoryId", "==", id),
+            ));
+            const assignedUpdate = {
+              price: newPrice,
+              capital_price: newPrice,
+              ...(lechonPrices ? { lechonPrices } : {}),
+              last_updated: serverTimestamp(),
+            };
+            await Promise.all(assignedProducts.docs.map((productSnap) =>
+              updateDoc(doc(db, "products", productSnap.id), assignedUpdate),
+            ));
             M.toast({
-              html: "Product menu updated!",
+              html: "Product menu and assigned product prices updated!",
               classes: "green rounded",
             });
             modalInstance.close();
