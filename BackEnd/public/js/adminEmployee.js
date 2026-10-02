@@ -434,6 +434,7 @@ export async function addEmployee(
   username,
   role,
   password,
+  accountRole = "employee",
 ) {
   try {
     // Materialize-enhanced <select> elements don't reliably enforce
@@ -479,7 +480,12 @@ export async function addEmployee(
         Authorization: `Bearer ${idToken}`,
         "Content-type": "application/json",
       },
-      body: JSON.stringify({ email: normalizedEmail, password }),
+      body: JSON.stringify({
+        email: normalizedEmail,
+        password,
+        role: role.trim(),
+        accountRole,
+      }),
     });
     const contentType = authRes.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {

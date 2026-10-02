@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function privileged() {
+      return signedIn() && request.auth.token.role in ['manager', 'admin', 'owner'];
+    }
+    function administrator() {
+      return signedIn() && request.auth.token.role in ['admin', 'owner'];
+    }
+    function owns(data) { return signedIn() && data.uid == request.auth.uid; }
+
+    match /users/{id} {
+      allow read: if privileged() || owns(resource.data);
+      allow create: if privileged() || (signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.role == 'employee');
+      allow update: if (owns(resource.data) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) || (privileged() && !owns(resource.data));
+      allow delete: if privileged();
+    }
+    match /employees/{id} {
+      allow read, update, delete: if privileged() || owns(resource.data);
+      allow create: if privileged() || owns(request.resource.data);
+    }
+    match /orders/{id} {
+      allow read, update: if privileged() || owns(resource.data);
+      allow create: if privileged() || owns(request.resource.data);
+      allow delete: if privileged();
+    }
+    match /expenses/{id} {
+      allow read, update: if privileged() || owns(resource.data);
+      allow create: if privileged() || owns(request.resource.data);
+      allow delete: if privileged();
+    }
+    match /attendance/{id} {
+      allow read, update: if privileged() || owns(resource.data);
+      allow create: if privileged() || owns(request.resource.data);
+      allow delete: if privileged();
+    }
+    match /expenseReports/{id} {
+      allow read, update: if privileged() || owns(resource.data);
+      allow create: if privileged() || owns(request.resource.data);
+      allow delete: if privileged();
+    }
+    match /employeeNotifications/{id} {
+      allow read, update: if privileged() || owns(resource.data);
+      allow create: if privileged() || owns(request.resource.data);
+      allow delete: if privileged();
+    }
+    match /managerNotifications/{id} {
+      allow read, write: if privileged();
+    }
+    match /auditLogs/{id} {
+      allow read: if privileged();
+      allow write: if false;
+    }
+    match /products/{id} {
+      allow read: if signedIn();
+      allow write: if administrator();
+    }
+    match /inventory/{id} {
+      allow read: if signedIn();
+      allow write: if administrator();
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

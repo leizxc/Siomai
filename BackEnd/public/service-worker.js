@@ -1,5 +1,5 @@
-const staticCacheName = "site-static-v41";
-const dynamicCache = "site-dynamic-v41";
+const staticCacheName = "site-static-v44";
+const dynamicCache = "site-dynamic-v44";
 
 //firebase cloud messaging
 importScripts(
@@ -19,6 +19,7 @@ const assets = [
   "./css/login.css",
   "./css/admin.css",
   "./css/materialize.min.css",
+  "./css/owner.css",
   "./css/employee.css",
 
   // JS 

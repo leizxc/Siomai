@@ -1,20 +1,24 @@
 require("dotenv").config();
-console.log("Current Directory:", process.cwd());
-console.log("ADMIN_EMAILS=", process.env.ADMIN_EMAILS);
-console.log("ALLOWED_ORIGINS=", process.env.ALLOWED_ORIGINS);
 const express = require("express");
 const admin = require("firebase-admin");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const path = require("path");
+
+const isProduction = process.env.NODE_ENV === "production";
+const verboseLog = (...args) => { if (!isProduction) console.log(...args); };
 
 let serviceAccount;
 let firebaseReady = false;
 
 try {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    console.log("Using Railway ENV Service Account");
+    verboseLog("Using FIREBASE_SERVICE_ACCOUNT environment configuration");
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } else if (isProduction) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT is required in production");
   } else {
-    console.log("Using Local serviceAccountKey.json");
+    verboseLog("Using local serviceAccountKey.json");
     serviceAccount = require("./serviceAccountKey.json");
   }
 
@@ -23,12 +27,15 @@ try {
   });
 
   firebaseReady = true;
-  console.log("Firebase Admin Initialized");
+  verboseLog("Firebase Admin Initialized");
 } catch (error) {
   console.error("Firebase Admin Initialization Failed:", error.message);
 }
 
 const app = express();
+app.set("trust proxy", 1);
+// The existing pages use inline module bootstrap code and Firebase's gstatic modules.
+app.use(helmet({ contentSecurityPolicy: false }));
 const allowedOrigins = new Set(
   (process.env.ALLOWED_ORIGINS || "")
     .split(",")
@@ -50,12 +57,6 @@ app.use((req, res, next) => {
   const publicHost = forwardedHost || req.get("host");
   const publicProtocol = forwardedProtocol || req.protocol;
   const appOrigin = `${publicProtocol}://${publicHost}`;
-  //ngrok testing
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET, POST");
-  res.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
-  return req.method === "OPTIONS" ? res.sendStatus(204) : next();
-
   if (origin && origin !== appOrigin && !allowedOrigins.has(origin)) {
     return res
       .status(403)
@@ -69,8 +70,18 @@ app.use((req, res, next) => {
     res.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
   }
 
-  return req.method === "OPTIONS" ? res.sendStatus(204) : next();
+  if (req.method === "OPTIONS") {
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    return res.sendStatus(204);
+  }
+
+  return next();
 });
+
+const accountLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false });
+const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: true, legacyHeaders: false });
+app.use(["/createAuthUser", "/updateAuthPassword", "/deleteAuthUser"], accountLimiter);
 
 app.use(express.json({ limit: "100kb" }));
 
@@ -113,14 +124,8 @@ async function requireAdmin(req, res, next) {
   try {
     const user = await admin.auth().verifyIdToken(token);
     const email = user.email?.trim().toLowerCase();
-    let hasPanelAccess = Boolean(email && adminEmails.has(email));
-    if (email && !hasPanelAccess) {
-      const accountSnapshot = await admin.firestore().collection("users").get();
-      hasPanelAccess = accountSnapshot.docs.some((account) =>
-        String(account.data().email || "").trim().toLowerCase() === email &&
-        ["admin", "manager", "owner"].includes(String(account.data().role || "").toLowerCase()),
-      );
-    }
+    const role = String(user.role || "").toLowerCase();
+    const hasPanelAccess = ["admin", "manager", "owner"].includes(role) || Boolean(email && adminEmails.has(email));
 
     if (!hasPanelAccess) {
       return res.status(403).json({
@@ -130,9 +135,10 @@ async function requireAdmin(req, res, next) {
     }
 
     req.user = user;
+    req.userRole = role || (email && adminEmails.has(email) ? "admin" : "");
     return next();
   } catch (error) {
-    console.error("Token verification failed:", error.code || error.message);
+    verboseLog("Token verification failed:", error.code || "unknown error");
     return res.status(401).json({
       success: false,
       error: "Invalid or expired authentication token",
@@ -140,10 +146,37 @@ async function requireAdmin(req, res, next) {
   }
 }
 
+async function writeAudit(actor, action, target) {
+  await admin.firestore().collection("auditLogs").add({
+    actorUid: actor.uid,
+    actorEmail: actor.email || null,
+    action,
+    targetUid: target.uid,
+    targetEmail: target.email || null,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
 //create Auth user
 app.post("/createAuthUser", requireAdmin, async (req, res) => {
   try {
     const { email, password } = req.body;
+    const requestedRole = String(req.body.accountRole || req.body.role || "employee").trim().toLowerCase();
+    // The frontend's `role` may be a job title such as Cashier. Only the
+    // separate accountRole value determines Firebase authorization claims.
+    const role = ["admin", "manager", "employee"].includes(requestedRole)
+      ? requestedRole
+      : req.body.accountRole
+        ? requestedRole
+        : "employee";
+    const allowedRoles = new Set(["admin", "manager", "employee"]);
+    if (!allowedRoles.has(role)) return res.status(400).json({ success: false, error: "Account role must be admin, manager, or employee" });
+    if (role === "manager" && !["owner", "admin"].includes(req.userRole)) {
+      return res.status(403).json({ success: false, error: "Only owners and administrators can create managers" });
+    }
+    if (role === "admin" && req.userRole !== "owner") {
+      return res.status(403).json({ success: false, error: "Only an owner can create administrators" });
+    }
     if (typeof email !== "string" || !email.trim() || typeof password !== "string") {
       return res.status(400).json({
         success: false,
@@ -166,13 +199,15 @@ app.post("/createAuthUser", requireAdmin, async (req, res) => {
       email,
       password,
     });
-    console.log("Created Auth User:", userRecord.uid);
+    await admin.auth().setCustomUserClaims(userRecord.uid, { role });
+    await writeAudit(req.user, "account_created", userRecord);
+    verboseLog("Created Auth User:", userRecord.uid);
     return res.status(200).json({
       success: true,
       uid: userRecord.uid,
     });
   } catch (error) {
-    console.error("Create Auth Error:", error);
+    verboseLog("Create Auth Error:", error.code || "unknown error");
     return res.status(500).json({
       success: false,
       error: error.message,
@@ -209,9 +244,10 @@ app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
     }
 
     await admin.auth().updateUser(uid, { password });
+    await writeAudit(req.user, "password_changed", targetUser);
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error("Update Auth Password Error:", error);
+    verboseLog("Update Auth Password Error:", error.code || "unknown error");
     return res.status(500).json({
       success: false,
       error: "Unable to update the employee password",
@@ -241,13 +277,14 @@ app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
     }
 
     await admin.auth().deleteUser(uid);
-    console.log(`Deleted Auth User: ${uid}`);
+    await writeAudit(req.user, "account_deleted", targetUser);
+    verboseLog(`Deleted Auth User: ${uid}`);
 
     return res
       .status(200)
       .json({ success: true, message: "User deleted successfully" });
   } catch (error) {
-    console.error("Delete Auth Error:", error);
+    verboseLog("Delete Auth Error:", error.code || "unknown error");
     return res
       .status(500)
       .json({ success: false, error: "Unable to delete the user" });
@@ -255,7 +292,7 @@ app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
 });
 
 // Test Firebase Connection
-app.get("/testFirebase", requireAdmin, async (req, res) => {
+app.get("/testFirebase", generalLimiter, requireAdmin, async (req, res) => {
   try {
     const users = await admin.auth().listUsers(1);
     res.status(200).json({
@@ -264,7 +301,7 @@ app.get("/testFirebase", requireAdmin, async (req, res) => {
       count: users.users.length,
     });
   } catch (error) {
-    console.error(error);
+    verboseLog("Firebase request failed:", error.code || "unknown error");
     res.status(500).json({ success: false, error: "Firebase request failed" });
   }
 });

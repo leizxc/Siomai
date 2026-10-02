@@ -2,9 +2,7 @@
 
 import { app } from "/js/firebase.js";
 
-import {
-  getAuth,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 import {
   getFirestore,
@@ -31,26 +29,67 @@ let attendanceHistory = [];
 let selectedAttendanceRange = "today";
 let pendingAttendanceAction = null;
 
+// FIX: lifecycle tracking
+// - attendanceRoot: ang DOM element na kasalukuyang naka-bind (para malaman kung napalitan ang page)
+// - rootObserver: awtomatikong nag-stop kapag nawala sa DOM ang page
+// - initToken: pang-cancel ng mga async na gawain na natapos pagkatapos mag-stop
+let attendanceRoot = null;
+let rootObserver = null;
+let initToken = 0;
+
+function getAttendanceRoot() {
+  return document.querySelector("#time-in-button");
+}
+
+// FIX: kapag inalis sa DOM ang attendance page (lumipat ng ibang content),
+// awtomatikong tatawagin ang stopAttendancePage kahit hindi ito tawagin ng navigation.
+function watchRootRemoval(root) {
+  rootObserver?.disconnect();
+  const container = document.querySelector("#content") || document.body;
+  rootObserver = new MutationObserver(() => {
+    if (attendanceRoot && !attendanceRoot.isConnected) {
+      stopAttendancePage();
+    }
+  });
+  rootObserver.observe(container, { childList: true, subtree: true });
+}
+
 // ========================================
 // INITIALIZE ATTENDANCE
 // ========================================
 
 export async function initAttendance() {
-  if (attendanceInitialized) return;
+  const root = getAttendanceRoot();
+  if (!root) return;
+
+  // FIX: dati, early return agad kapag initialized na. Ngayon, kung ibang DOM na
+  // ang nasa page, i-stop muna ang luma at mag-init ulit.
+  if (attendanceInitialized) {
+    if (attendanceRoot === root) return;
+    stopAttendancePage();
+  }
 
   attendanceInitialized = true;
+  attendanceRoot = root;
+  const token = ++initToken;
+  watchRootRemoval(root);
+
   setAttendanceDate();
   setupAttendanceTabs();
 
   try {
+    // hintayin muna ang auth para hindi null ang currentUser pagka-load
+    try {
+      await auth.authStateReady?.();
+    } catch (_) {}
+    if (token !== initToken) return;
+
     const user = auth.currentUser;
 
     // Walang naka-login
     if (!user) {
       console.warn("No logged-in user found.");
-
       showNoAttendance("No logged-in user.");
-
       return;
     }
 
@@ -62,16 +101,15 @@ export async function initAttendance() {
 
     const employeeQuery = query(
       collection(db, "employees"),
-      where("uid", "==", user.uid)
+      where("uid", "==", user.uid),
     );
 
     const employeeSnapshot = await getDocs(employeeQuery);
+    if (token !== initToken) return; // FIX: na-stop habang naghihintay
 
     if (employeeSnapshot.empty) {
       console.warn("Employee record not found.");
-
       showNoAttendance("Employee information not found.");
-
       return;
     }
 
@@ -87,27 +125,21 @@ export async function initAttendance() {
     // ========================================
 
     const today = getTodayDate();
-
     const attendanceId = `${user.uid}_${today}`;
+    const attendanceRef = doc(db, "attendance", attendanceId);
 
-    const attendanceRef = doc(
-      db,
-      "attendance",
-      attendanceId
-    );
-
-    watchAttendance(attendanceRef, { attendanceRef, user, fname, lname, today });
-    await loadAttendanceStats(user.uid);
-
+    watchAttendance(attendanceRef, {
+      attendanceRef,
+      user,
+      fname,
+      lname,
+      today,
+    });
+    await loadAttendanceStats(user.uid, token);
   } catch (error) {
-    console.error(
-      "Attendance initialization error:",
-      error
-    );
-
-    showNoAttendance(
-      "Unable to load attendance."
-    );
+    console.error("Attendance initialization error:", error);
+    if (token !== initToken) return;
+    showNoAttendance("Unable to load attendance.");
   }
 }
 
@@ -117,17 +149,9 @@ export async function initAttendance() {
 
 function getTodayDate() {
   const date = new Date();
-
   const year = date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
-
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -138,44 +162,53 @@ function getTodayDate() {
 function displayAttendance(attendance) {
   currentAttendance = attendance;
   if (attendance.status === "pending") {
-    updateTodayStatus("Waiting for Approval", "Your time-in request has been sent. Please wait for manager approval.", "pending");
+    updateTodayStatus(
+      "Waiting for Approval",
+      "Your time-in request has been sent. Please wait for manager approval.",
+      "pending",
+    );
     setTimeInButtonPending();
     displayPendingAttendance(attendance);
     return;
   }
 
   if (attendance.status === "time_out_pending") {
-    updateTodayStatus("Time out awaiting approval", "Your time-out request has been sent to the manager.", "pending");
+    updateTodayStatus(
+      "Time out awaiting approval",
+      "Your time-out request has been sent to the manager.",
+      "pending",
+    );
     setTimeOutButtonPending();
     displayPendingTimeOut(attendance);
     return;
   }
 
   if (attendance.status === "completed") {
-    updateTodayStatus("Shift completed", "Your time out has been recorded for today.", "completed");
+    updateTodayStatus(
+      "Shift completed",
+      "Your time out has been recorded for today.",
+      "completed",
+    );
     setTimeInButtonCompleted();
     displayCompletedAttendance(attendance);
     return;
   }
 
   setTimeInButtonActive();
-  updateTodayStatus("Time in active", "You are currently clocked in.", "active");
+  updateTodayStatus(
+    "Time in active",
+    "You are currently clocked in.",
+    "active",
+  );
 
-  const activityList =
-    document.querySelector(".activity-list");
-
+  const activityList = document.querySelector(".activity-list");
   if (!activityList) return;
 
-  let clockedInTime =
-    attendance.clockedInAt;
+  let clockedInTime = attendance.clockedInAt;
 
   // Firebase Timestamp
-  if (
-    clockedInTime &&
-    typeof clockedInTime.toDate === "function"
-  ) {
-    clockedInTime =
-      clockedInTime.toDate();
+  if (clockedInTime && typeof clockedInTime.toDate === "function") {
+    clockedInTime = clockedInTime.toDate();
   }
 
   // Fallback
@@ -183,86 +216,37 @@ function displayAttendance(attendance) {
     clockedInTime = new Date();
   }
 
-  // ========================================
-  // FORMAT TIME
-  // ========================================
+  const formattedTime = clockedInTime.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
-  const formattedTime =
-    clockedInTime.toLocaleTimeString(
-      "en-US",
-      {
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    );
-
-  // ========================================
-  // FORMAT DATE
-  // ========================================
-
-  const formattedDate =
-    clockedInTime.toLocaleDateString(
-      "en-US",
-      {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }
-    );
-
-  // ========================================
-  // EMPLOYEE NAME
-  // ========================================
+  const formattedDate = clockedInTime.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   const employeeName =
-    `${attendance.fname || ""} ${
-      attendance.lname || ""
-    }`.trim();
-
-  // ========================================
-  // DISPLAY
-  // ========================================
+    `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
 
   activityList.innerHTML = `
-
     <div class="activity-item">
-
       <div class="activity-icon">
-        <span class="material-icons">
-          login
-        </span>
+        <span class="material-icons">login</span>
       </div>
-
       <div class="activity-info">
-
-        <div class="activity-title">
-          Clocked In
-        </div>
-
-        <div class="activity-time">
-          ${employeeName}
-        </div>
-
-        <div class="activity-time">
-          ${formattedDate} · ${formattedTime}
-        </div>
-
+        <div class="activity-title">Clocked In</div>
+        <div class="activity-time">${employeeName}</div>
+        <div class="activity-time">${formattedDate} · ${formattedTime}</div>
       </div>
-
       <div class="activity-right">
-
         <div class="activity-status active">
-
           <span class="status-dot"></span>
-
           Active
-
         </div>
-
       </div>
-
     </div>
-
   `;
 }
 
@@ -271,26 +255,20 @@ function displayAttendance(attendance) {
 // ========================================
 
 function showNoAttendance(message) {
-  updateTodayStatus("Ready to time in", "Submit your request when you are ready to start.", "ready");
-  const activityList =
-    document.querySelector(".activity-list");
-
+  updateTodayStatus(
+    "Ready to time in",
+    "Submit your request when you are ready to start.",
+    "ready",
+  );
+  const activityList = document.querySelector(".activity-list");
   if (!activityList) return;
 
   activityList.innerHTML = `
-
     <div class="activity-item">
-
       <div class="activity-info">
-
-        <div class="activity-title">
-          ${message}
-        </div>
-
+        <div class="activity-title">${message}</div>
       </div>
-
     </div>
-
   `;
 }
 
@@ -299,6 +277,13 @@ function showNoAttendance(message) {
 // ========================================
 
 export function stopAttendancePage() {
+  // FIX: i-cancel ang lahat ng async na init/stats na hindi pa tapos
+  initToken++;
+
+  rootObserver?.disconnect();
+  rootObserver = null;
+  attendanceRoot = null;
+
   attendanceInitialized = false;
   currentAttendance = null;
   currentAttendanceRef = null;
@@ -307,19 +292,26 @@ export function stopAttendancePage() {
   clearInterval(statsTimer);
   statsTimer = null;
   attendanceHistory = [];
-  closeAttendanceConfirmation();
+  pendingAttendanceAction = null;
 
-  console.log(
-    "Attendance page stopped."
-  );
+  // FIX: i-destroy ang confirmation modal para walang maiwang overlay
+  // at hindi ma-stuck ang overflow ng body kapag napalitan ang section.
+  closeAttendanceConfirmation({ destroy: true });
+
+  console.log("Attendance page stopped.");
 }
 
 function displayPendingAttendance(attendance) {
-  updateTodayStatus("Waiting for Approval", "Your time-in request has been sent. Please wait for manager approval.", "pending");
+  updateTodayStatus(
+    "Waiting for Approval",
+    "Your time-in request has been sent. Please wait for manager approval.",
+    "pending",
+  );
   const activityList = document.querySelector(".activity-list");
   if (!activityList) return;
 
-  const employeeName = `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
+  const employeeName =
+    `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
   activityList.innerHTML = `
     <div class="activity-item">
       <div class="activity-icon"><span class="material-icons">hourglass_top</span></div>
@@ -336,14 +328,22 @@ function displayPendingAttendance(attendance) {
 }
 
 function displayCompletedAttendance(attendance) {
-  updateTodayStatus("Shift completed", "Your time out has been recorded for today.", "completed");
+  updateTodayStatus(
+    "Shift completed",
+    "Your time out has been recorded for today.",
+    "completed",
+  );
   const activityList = document.querySelector(".activity-list");
   if (!activityList) return;
 
-  const employeeName = `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
+  const employeeName =
+    `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
   const clockedOutAt = toDate(attendance.clockedOutAt);
   const formattedTime = clockedOutAt
-    ? clockedOutAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    ? clockedOutAt.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "—";
 
   activityList.innerHTML = `
@@ -365,7 +365,8 @@ function displayPendingTimeOut(attendance) {
   const activityList = document.querySelector(".activity-list");
   if (!activityList) return;
 
-  const employeeName = `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
+  const employeeName =
+    `${attendance.fname || ""} ${attendance.lname || ""}`.trim();
   activityList.innerHTML = `
     <div class="activity-item">
       <div class="activity-icon out"><span class="material-icons">hourglass_top</span></div>
@@ -381,9 +382,14 @@ function displayPendingTimeOut(attendance) {
   `;
 }
 
-async function loadAttendanceStats(userId) {
+async function loadAttendanceStats(userId, token = initToken) {
   try {
-    const snapshot = await getDocs(query(collection(db, "attendance"), where("userId", "==", userId)));
+    const snapshot = await getDocs(
+      query(collection(db, "attendance"), where("userId", "==", userId)),
+    );
+    // FIX: kung na-stop o napalitan na ang page habang naghihintay, huwag nang mag-render
+    // at huwag nang magsimula ng bagong timer.
+    if (token !== initToken) return;
     attendanceHistory = snapshot.docs.map((item) => item.data());
     renderAttendanceStats();
     renderAttendanceHistory();
@@ -396,14 +402,20 @@ async function loadAttendanceStats(userId) {
 function renderAttendanceStats() {
   const now = new Date();
   const today = getTodayDate();
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+  const weekStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - 6,
+  );
   const activeDates = new Set();
   let totalMilliseconds = 0;
 
   attendanceHistory.forEach((attendance) => {
-    if (attendance.status !== "active" && attendance.status !== "completed") return;
+    if (attendance.status !== "active" && attendance.status !== "completed")
+      return;
     const clockedInAt = toDate(attendance.clockedInAt);
-    const dateKey = attendance.attendanceDate || (clockedInAt ? toDateKey(clockedInAt) : "");
+    const dateKey =
+      attendance.attendanceDate || (clockedInAt ? toDateKey(clockedInAt) : "");
     if (!clockedInAt || !dateKey) return;
 
     activeDates.add(dateKey);
@@ -411,18 +423,28 @@ function renderAttendanceStats() {
     if (attendanceDate < weekStart || attendanceDate > now) return;
 
     const clockedOutAt = toDate(attendance.clockedOutAt);
-    const endOfShift = clockedOutAt || (dateKey === today
-      ? now
-      : new Date(attendanceDate.getFullYear(), attendanceDate.getMonth(), attendanceDate.getDate() + 1));
+    const endOfShift =
+      clockedOutAt ||
+      (dateKey === today
+        ? now
+        : new Date(
+            attendanceDate.getFullYear(),
+            attendanceDate.getMonth(),
+            attendanceDate.getDate() + 1,
+          ));
     totalMilliseconds += Math.max(0, endOfShift - clockedInAt);
   });
 
-  document.querySelector("#total-hours-value")?.replaceChildren(
-    document.createTextNode((totalMilliseconds / 3600000).toFixed(1))
-  );
-  document.querySelector("#shift-streak-value")?.replaceChildren(
-    document.createTextNode(String(getShiftStreak(activeDates, today)))
-  );
+  document
+    .querySelector("#total-hours-value")
+    ?.replaceChildren(
+      document.createTextNode((totalMilliseconds / 3600000).toFixed(1)),
+    );
+  document
+    .querySelector("#shift-streak-value")
+    ?.replaceChildren(
+      document.createTextNode(String(getShiftStreak(activeDates, today))),
+    );
 }
 
 function setAttendanceDate() {
@@ -437,7 +459,8 @@ function setAttendanceDate() {
 
 function setupAttendanceTabs() {
   document.querySelectorAll(".tab[data-range]").forEach((tab) => {
-    tab.addEventListener("click", () => {
+    // FIX: onclick (hindi addEventListener) para hindi dumoble ang handler kapag na-init ulit
+    tab.onclick = () => {
       selectedAttendanceRange = tab.dataset.range;
       document.querySelectorAll(".tab[data-range]").forEach((item) => {
         const active = item === tab;
@@ -445,7 +468,7 @@ function setupAttendanceTabs() {
         item.setAttribute("aria-pressed", String(active));
       });
       renderAttendanceHistory();
-    });
+    };
   });
 }
 
@@ -472,30 +495,69 @@ function renderAttendanceHistory() {
 
   const today = getTodayDate();
   const now = new Date();
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+  const weekStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - 6,
+  );
   const records = attendanceHistory
     .filter((attendance) => {
-      const date = attendance.attendanceDate || (toDate(attendance.clockedInAt) ? toDateKey(toDate(attendance.clockedInAt)) : "");
+      const date =
+        attendance.attendanceDate ||
+        (toDate(attendance.clockedInAt)
+          ? toDateKey(toDate(attendance.clockedInAt))
+          : "");
       return selectedAttendanceRange === "today"
         ? date === today
         : date && dateFromKey(date) >= weekStart;
     })
-    .sort((a, b) => (toDate(b.clockedInAt)?.getTime() || 0) - (toDate(a.clockedInAt)?.getTime() || 0));
+    .sort(
+      (a, b) =>
+        (toDate(b.clockedInAt)?.getTime() || 0) -
+        (toDate(a.clockedInAt)?.getTime() || 0),
+    );
 
   if (!records.length) {
     activityList.innerHTML = `<div class="attendance-empty"><span class="material-icons">event_available</span><strong>No attendance records</strong><small>${selectedAttendanceRange === "today" ? "No shift activity has been recorded today." : "No activity was recorded this week."}</small></div>`;
     return;
   }
 
-  activityList.innerHTML = records.map((attendance) => {
-    const clockedInAt = toDate(attendance.clockedInAt);
-    const label = attendance.status === "pending" ? "Time in request" : attendance.status === "completed" ? "Shift completed" : "Clocked in";
-    const status = attendance.status === "pending" ? "pending" : attendance.status === "completed" ? "completed" : "active";
-    const icon = status === "pending" ? "hourglass_top" : status === "completed" ? "logout" : "login";
-    const dateLabel = clockedInAt ? clockedInAt.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : attendance.attendanceDate || "Today";
-    const timeLabel = clockedInAt ? clockedInAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) : "Awaiting approval";
-    return `<div class="activity-item"><div class="activity-icon ${status === "completed" ? "out" : ""}"><span class="material-icons">${icon}</span></div><div class="activity-info"><div class="activity-title">${label}</div><div class="activity-time">${dateLabel} · ${timeLabel}</div></div><div class="activity-right"><div class="activity-status ${status}">${status === "active" ? '<span class="status-dot"></span>' : ""}${status === "active" ? "Active" : status === "pending" ? "Pending" : "Completed"}</div></div></div>`;
-  }).join("");
+  activityList.innerHTML = records
+    .map((attendance) => {
+      const clockedInAt = toDate(attendance.clockedInAt);
+      const label =
+        attendance.status === "pending"
+          ? "Time in request"
+          : attendance.status === "completed"
+            ? "Shift completed"
+            : "Clocked in";
+      const status =
+        attendance.status === "pending"
+          ? "pending"
+          : attendance.status === "completed"
+            ? "completed"
+            : "active";
+      const icon =
+        status === "pending"
+          ? "hourglass_top"
+          : status === "completed"
+            ? "logout"
+            : "login";
+      const dateLabel = clockedInAt
+        ? clockedInAt.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : attendance.attendanceDate || "Today";
+      const timeLabel = clockedInAt
+        ? clockedInAt.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "Awaiting approval";
+      return `<div class="activity-item"><div class="activity-icon ${status === "completed" ? "out" : ""}"><span class="material-icons">${icon}</span></div><div class="activity-info"><div class="activity-title">${label}</div><div class="activity-time">${dateLabel} · ${timeLabel}</div></div><div class="activity-right"><div class="activity-status ${status}">${status === "active" ? '<span class="status-dot"></span>' : ""}${status === "active" ? "Active" : status === "pending" ? "Pending" : "Completed"}</div></div></div>`;
+    })
+    .join("");
 }
 
 function getShiftStreak(activeDates, today) {
@@ -526,11 +588,15 @@ function dateFromKey(value) {
 function watchAttendance(attendanceRef, context) {
   unsubscribeAttendance?.();
   currentAttendanceRef = attendanceRef;
+  const token = initToken;
 
   unsubscribeAttendance = onSnapshot(attendanceRef, (snapshot) => {
+    // FIX: huwag mag-render kung na-stop na ang page
+    if (token !== initToken) return;
+
     if (snapshot.exists()) {
       displayAttendance(snapshot.data());
-      loadAttendanceStats(context.user.uid);
+      loadAttendanceStats(context.user.uid, token);
       return;
     }
 
@@ -555,7 +621,6 @@ function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
 
   timeInButton.onclick = () => {
     if (currentAttendance) return;
-
     openAttendanceConfirmation("time-in");
   };
 }
@@ -578,10 +643,27 @@ function openAttendanceConfirmation(action) {
   instance.open();
 }
 
-function closeAttendanceConfirmation() {
+function closeAttendanceConfirmation({ destroy = false } = {}) {
   const modal = document.querySelector("#attendance-confirmation");
   const instance = modal && M.Modal.getInstance(modal);
   if (instance?.isOpen) instance.close();
+
+  // FIX: kapag aalis na sa page, i-destroy ang instance at linisin ang naiwang overlay/overflow
+  // (pero huwag galawin kung may ibang modal na bukas, hal. ang notification modal).
+  if (destroy && instance) {
+    try {
+      instance.destroy();
+    } catch (error) {
+      console.warn("Unable to destroy attendance modal:", error);
+    }
+    if (!document.querySelector(".modal.open")) {
+      document
+        .querySelectorAll(".modal-overlay")
+        .forEach((overlay) => overlay.remove());
+      document.body.style.overflow = "";
+    }
+  }
+
   pendingAttendanceAction = null;
 }
 
@@ -601,9 +683,13 @@ async function submitConfirmedAttendanceAction() {
     timeInButton.textContent = "Sending request...";
 
     try {
-      const employeeQuery = query(collection(db, "employees"), where("uid", "==", user.uid));
+      const employeeQuery = query(
+        collection(db, "employees"),
+        where("uid", "==", user.uid),
+      );
       const employeeSnapshot = await getDocs(employeeQuery);
-      if (employeeSnapshot.empty) throw new Error("Employee information not found.");
+      if (employeeSnapshot.empty)
+        throw new Error("Employee information not found.");
       const employeeData = employeeSnapshot.docs[0].data();
       const fname = employeeData.fname || "";
       const lname = employeeData.lname || "";
@@ -620,15 +706,18 @@ async function submitConfirmedAttendanceAction() {
       };
 
       await setDoc(attendanceRef, attendanceData);
-      await setDoc(doc(db, "managerNotifications", `time-in-${attendanceRef.id}`), {
-        type: "time_in_request",
-        attendanceId: attendanceRef.id,
-        title: "Employee time-in request",
-        message: `${fname} ${lname}`.trim() + " submitted a time-in request.",
-        read: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      await setDoc(
+        doc(db, "managerNotifications", `time-in-${attendanceRef.id}`),
+        {
+          type: "time_in_request",
+          attendanceId: attendanceRef.id,
+          title: "Employee time-in request",
+          message: `${fname} ${lname}`.trim() + " submitted a time-in request.",
+          read: false,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+      );
       currentAttendance = attendanceData;
       setTimeInButtonPending();
       displayPendingAttendance(attendanceData);
@@ -658,7 +747,9 @@ async function submitConfirmedAttendanceAction() {
       type: "time_out_request",
       attendanceId,
       title: "Employee time-out request",
-      message: `${currentAttendance.fname || ""} ${currentAttendance.lname || ""}`.trim() + " requested to time out.",
+      message:
+        `${currentAttendance.fname || ""} ${currentAttendance.lname || ""}`.trim() +
+        " requested to time out.",
       read: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -667,7 +758,10 @@ async function submitConfirmedAttendanceAction() {
     console.error("Time out error:", error);
     timeInButton.disabled = false;
     timeInButton.innerHTML = `<span class="material-icons">logout</span> Time Out`;
-    M.toast({ html: "Unable to send time-out request. Please try again.", classes: "red rounded" });
+    M.toast({
+      html: "Unable to send time-out request. Please try again.",
+      classes: "red rounded",
+    });
   }
 }
 
@@ -729,13 +823,21 @@ function setTimeInButtonActive() {
   };
 }
 
-document.addEventListener("click", (event) => {
-  if (event.target.closest("[data-confirm-cancel]")) closeAttendanceConfirmation();
-  if (event.target.closest("#attendance-confirm-action")) submitConfirmedAttendanceAction();
-});
+// FIX: siguraduhing isang beses lang ma-register ang document-level listeners
+if (!window.__attendanceDocListenersBound) {
+  window.__attendanceDocListenersBound = true;
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !document.querySelector("#attendance-confirmation")?.hidden) {
-    closeAttendanceConfirmation();
-  }
-});
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-confirm-cancel]"))
+      closeAttendanceConfirmation();
+    if (event.target.closest("#attendance-confirm-action"))
+      submitConfirmedAttendanceAction();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    // FIX: dati, tumatakbo ito kahit walang modal. Ngayon, kung may pending action lang.
+    if (event.key === "Escape" && pendingAttendanceAction) {
+      closeAttendanceConfirmation();
+    }
+  });
+}

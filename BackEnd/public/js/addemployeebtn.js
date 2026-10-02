@@ -158,6 +158,8 @@ function bindAddEmployeeForm() {
 
   form.onsubmit = async (e) => {
     e.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton?.disabled) return;
 
     const fname = document.getElementById("fname").value;
     const lname = document.getElementById("lname").value;
@@ -174,12 +176,23 @@ function bindAddEmployeeForm() {
       return;
     }
 
-    const created = await addEmployee(fname, lname, email, username, role, password);
-    if (!created) return;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.setAttribute("aria-busy", "true");
+    }
+    try {
+      const created = await addEmployee(fname, lname, email, username, role, password);
+      if (!created) return;
 
-    form.reset();
-    M.updateTextFields();
-    M.FormSelect.init(document.querySelectorAll("select"));
+      form.reset();
+      M.updateTextFields();
+      M.FormSelect.init(document.querySelectorAll("select"));
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.setAttribute("aria-busy", "false");
+      }
+    }
   };
 }
 

@@ -448,17 +448,7 @@ function renderManagers() {
     "Manager Management",
     "Review manager accounts and their latest operational updates.",
     "",
-    `<section class="dashboard-panel owner-manager-create-card">
-      <div class="panel-header"><div><h3>Create manager account</h3><p>Set up login credentials for a new manager.</p></div></div>
-      <form id="owner-manager-create-form" class="owner-manager-create-form">
-        <label>First name<input name="fname" type="text" autocomplete="given-name" required maxlength="60"></label>
-        <label>Last name<input name="lname" type="text" autocomplete="family-name" required maxlength="60"></label>
-        <label>Email<input name="email" type="email" autocomplete="email" required></label>
-        <label>Username<input name="username" type="text" autocomplete="username" required minlength="5" maxlength="40"></label>
-        <label>Password<input name="password" type="password" autocomplete="new-password" required minlength="6"></label>
-        <button class="btn" type="submit"><i class="material-icons">person_add</i><span>Create manager</span></button>
-      </form>
-    </section>${kpis([
+    `${kpis([
       [
         "MANAGERS",
         managers.length,
@@ -477,7 +467,19 @@ function renderManagers() {
         "All employee records",
         "groups",
       ],
-    ])}${tableCard("Manager accounts", ["Manager", "Email", "Username", "Status"], managerRows, "No manager accounts were found in employee records.")}${tableCard("Manager activity", ["Updated", "Type", "Details", "Status"], alertRows, "No manager updates found.")}`,
+    ])}<section class="dashboard-panel owner-manager-create-card">
+      <div class="panel-header"><div><h3>Create manager account</h3><p>Set up login credentials for a new manager.</p></div></div>
+      <form id="owner-manager-create-form" class="owner-manager-create-form">
+        <div class="owner-manager-name-row">
+          <label>First name<input name="fname" type="text" autocomplete="given-name" placeholder="Enter first name" required maxlength="60"></label>
+          <label>Last name<input name="lname" type="text" autocomplete="family-name" placeholder="Enter last name" required maxlength="60"></label>
+        </div>
+        <label>Email<input name="email" type="email" autocomplete="email" placeholder="Enter email address" required></label>
+        <label>Username<input name="username" type="text" autocomplete="username" placeholder="Choose a username" required minlength="5" maxlength="40"></label>
+        <label>Password<div class="owner-manager-password-field"><input name="password" type="password" autocomplete="new-password" placeholder="Create a password" required minlength="6"><button class="owner-manager-password-toggle" type="button" aria-label="Show password" aria-pressed="false"><i class="material-icons" aria-hidden="true">visibility</i></button></div></label>
+        <div class="owner-manager-form-actions"><button class="btn account-create-button" type="submit" aria-busy="false"><span class="account-submit-label"><i class="material-icons" aria-hidden="true">add</i>CREATE MANAGER</span><span class="account-submit-progress"><span class="account-loading-spinner" aria-hidden="true"></span>Adding...</span></button></div>
+      </form>
+    </section>${tableCard("Manager accounts", ["Manager", "Email", "Username", "Status"], managerRows, "No manager accounts were found in employee records.")}${tableCard("Manager activity", ["Updated", "Type", "Details", "Status"], alertRows, "No manager updates found.")}`,
   );
   if (priorValues) {
     const nextForm = root?.querySelector("#owner-manager-create-form");
@@ -557,13 +559,28 @@ export function initOwnerFeature(feature) {
   root.innerHTML =
     '<div class="dashboard-panel"><p class="dashboard-empty">Loading live owner data...</p></div>';
   if (feature === "owner-managers") {
+    root.addEventListener("click", (event) => {
+      const toggle = event.target.closest(".owner-manager-password-toggle");
+      if (!toggle) return;
+      const input = toggle.closest(".owner-manager-password-field")?.querySelector("input");
+      if (!input) return;
+      const visible = input.type === "password";
+      input.type = visible ? "text" : "password";
+      toggle.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+      toggle.setAttribute("aria-pressed", String(visible));
+      toggle.querySelector(".material-icons").textContent = visible ? "visibility_off" : "visibility";
+    });
     root.addEventListener("submit", async (event) => {
       const form = event.target.closest("#owner-manager-create-form");
       if (!form) return;
       event.preventDefault();
       const submit = form.querySelector('button[type="submit"]');
+      if (submit?.disabled) return;
       const values = new FormData(form);
-      submit.disabled = true;
+      if (submit) {
+        submit.disabled = true;
+        submit.setAttribute("aria-busy", "true");
+      }
       try {
         const { addEmployee } = await import("/js/adminEmployee.js");
         const created = await addEmployee(
@@ -573,6 +590,7 @@ export function initOwnerFeature(feature) {
           String(values.get("username") || "").trim(),
           "manager",
           String(values.get("password") || ""),
+          "manager",
         );
         if (created) {
           form.reset();
@@ -584,7 +602,10 @@ export function initOwnerFeature(feature) {
           M.toast({ html: "Unable to create the manager account.", classes: "red rounded" });
         }
       } finally {
-        submit.disabled = false;
+        if (submit) {
+          submit.disabled = false;
+          submit.setAttribute("aria-busy", "false");
+        }
       }
     });
   }

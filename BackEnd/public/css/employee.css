@@ -56,7 +56,6 @@ body {
   min-height: 100vh;
 }
 
-
 /* Sidebar â€“ match admin */
 
 .sidebar a,
@@ -1144,7 +1143,10 @@ html.dark .stock-page .icon {
   box-shadow: none !important;
 }
 
-#content.shift-inactive :is(button, .btn, .btn-small, .btn-large, .checkout-btn):not([data-go-to-attendance]) {
+#content.shift-inactive
+  :is(button, .btn, .btn-small, .btn-large, .checkout-btn):not(
+    [data-go-to-attendance]
+  ) {
   background-color: #9e9e9e !important;
   border-color: #8d8d8d !important;
   color: #f5f5f5 !important;
@@ -2227,10 +2229,7 @@ html.dark #content .stat-value {
     width: 100%;
   }
 
-  .stock-page .stock-table {
-    display: block;
-    overflow-x: auto;
-  }
+  /* stock-table card layout is defined in the unified mobile tables block below */
 
   /* View Order */
 
@@ -4678,7 +4677,9 @@ html.dark .employee-profile-menu-action:hover {
   border-bottom: 1px solid var(--border);
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 140ms ease, box-shadow 140ms ease;
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .employee-notification:hover,
@@ -4716,22 +4717,22 @@ html.dark .employee-notification.unread {
   color: var(--text-secondary);
 }
 
-.employee-notification-state {
+.employee-notification .notification-read-state {
   display: block;
   margin-top: 7px;
   font-size: 11px;
   font-weight: 600;
 }
 
-.employee-notification-state.is-unread {
+.employee-notification .notification-read-state.is-unread {
   color: #a45d00;
 }
 
-.employee-notification-state.is-read {
+.employee-notification .notification-read-state.is-read {
   color: var(--text-secondary);
 }
 
-html.dark .employee-notification-state.is-unread {
+html.dark .employee-notification .notification-read-state.is-unread {
   color: #f5b942;
 }
 
@@ -4804,8 +4805,12 @@ html.dark #employee-notifications-modal input[type="checkbox"] {
   accent-color: var(--accent);
 }
 
-html.dark #employee-notifications-modal #mark-employee-selected-notifications-read:disabled,
-html.dark #employee-notifications-modal #delete-employee-selected-notifications:disabled {
+html.dark
+  #employee-notifications-modal
+  #mark-employee-selected-notifications-read:disabled,
+html.dark
+  #employee-notifications-modal
+  #delete-employee-selected-notifications:disabled {
   background: #292929 !important;
   border-color: #3a3a3a !important;
   color: #777 !important;
@@ -4814,14 +4819,18 @@ html.dark #employee-notifications-modal #delete-employee-selected-notifications:
   box-shadow: none !important;
 }
 
-html.dark #employee-notifications-modal #mark-employee-selected-notifications-read:not(:disabled) {
+html.dark
+  #employee-notifications-modal
+  #mark-employee-selected-notifications-read:not(:disabled) {
   background: #1a1a1a !important;
   border-color: #444 !important;
   color: var(--text-primary) !important;
   opacity: 1;
 }
 
-html.dark #employee-notifications-modal #delete-employee-selected-notifications:not(:disabled) {
+html.dark
+  #employee-notifications-modal
+  #delete-employee-selected-notifications:not(:disabled) {
   background: #c62828 !important;
   border-color: #c62828 !important;
   color: #fff !important;
@@ -5527,11 +5536,12 @@ html.dark .employee-notification-empty {
   }
 
   .stock-page .table-card {
-    overflow-x: auto;
+    overflow-x: visible;
   }
 
+  /* stock-table uses card layout (see unified mobile tables block) */
   .stock-page .stock-table {
-    min-width: 600px;
+    min-width: 0 !important;
   }
 
   .assigned-stock-page {
@@ -5973,13 +5983,19 @@ html.dark .employee-notification-empty {
 
 /* Tablet POS: keep the cart dock inside the available viewport. */
 @media (min-width: 769px) and (max-width: 1100px) {
-  body:has(.product-list) .main { padding: 88px 18px 24px; }
-  body:has(.product-list) #content { min-width: 0; }
+  body:has(.product-list) .main {
+    padding: 88px 18px 24px;
+  }
+  body:has(.product-list) #content {
+    min-width: 0;
+  }
 
   body:has(.product-list) .search-section,
   body:has(.product-list) .categories,
   body:has(.product-list) .product-list,
-  body:has(.product-list) .shift-required-notice { width: calc(100% - 340px); }
+  body:has(.product-list) .shift-required-notice {
+    width: calc(100% - 340px);
+  }
 
   body:has(.product-list) .search-section {
     top: auto;
@@ -5989,7 +6005,10 @@ html.dark .employee-notification-empty {
   }
 
   body:has(.product-list) .search-box,
-  body:has(.product-list) .search-box input { width: 100%; max-width: 100%; }
+  body:has(.product-list) .search-box input {
+    width: 100%;
+    max-width: 100%;
+  }
 
   body:has(.product-list) .categories {
     flex-wrap: nowrap;
@@ -5997,10 +6016,20 @@ html.dark .employee-notification-empty {
     overscroll-behavior-x: contain;
   }
 
-  body:has(.product-list) .product-card { min-width: 0; min-height: 96px; padding: 10px; }
-  body:has(.product-list) .product-image { flex-basis: 64px; width: 64px; height: 64px; }
+  body:has(.product-list) .product-card {
+    min-width: 0;
+    min-height: 96px;
+    padding: 10px;
+  }
+  body:has(.product-list) .product-image {
+    flex-basis: 64px;
+    width: 64px;
+    height: 64px;
+  }
   body:has(.product-list) .product-info h4,
-  body:has(.product-list) .product-card h5 { font-size: 15px; }
+  body:has(.product-list) .product-card h5 {
+    font-size: 15px;
+  }
 
   body:has(.product-list) .cart-section {
     top: 88px;
@@ -6017,7 +6046,9 @@ html.dark .employee-notification-empty {
     padding: 10px 12px;
   }
 
-  body:has(.product-list) .checkout-info { margin-bottom: 8px; }
+  body:has(.product-list) .checkout-info {
+    margin-bottom: 8px;
+  }
   body:has(.product-list) .checkout-btn {
     min-height: 44px;
     height: auto;
@@ -6028,11 +6059,16 @@ html.dark .employee-notification-empty {
 }
 
 @media (min-width: 769px) and (max-width: 900px) {
-  body:has(.product-list) .main { padding-inline: 16px; padding-bottom: 120px; }
+  body:has(.product-list) .main {
+    padding-inline: 16px;
+    padding-bottom: 120px;
+  }
   body:has(.product-list) .search-section,
   body:has(.product-list) .categories,
   body:has(.product-list) .product-list,
-  body:has(.product-list) .shift-required-notice { width: 100%; }
+  body:has(.product-list) .shift-required-notice {
+    width: 100%;
+  }
 
   body:has(.product-list) .cart-section {
     position: static;
@@ -6053,16 +6089,24 @@ html.dark .employee-notification-empty {
 }
 
 @media (min-width: 769px) and (max-width: 1100px) and (max-height: 700px) {
-  body:has(.product-list) .cart-section { top: 82px; bottom: 104px; }
-  body:has(.product-list) .checkout-bar { bottom: 8px; padding: 8px 10px; }
-  body:has(.product-list) .checkout-btn { min-height: 40px; padding-block: 7px; }
+  body:has(.product-list) .cart-section {
+    top: 82px;
+    bottom: 104px;
+  }
+  body:has(.product-list) .checkout-bar {
+    bottom: 8px;
+    padding: 8px 10px;
+  }
+  body:has(.product-list) .checkout-btn {
+    min-height: 40px;
+    padding-block: 7px;
+  }
 }
 /* ============================================================
    TABLET POS – KEEP SIDE CART (improved proportions)
    Target: 769px – 1200px (covers most tablets landscape/portrait)
    ============================================================ */
 @media (min-width: 769px) and (max-width: 1200px) {
-
   body:has(.product-list) .main {
     padding: 88px 18px 30px !important;
   }
@@ -6175,7 +6219,6 @@ body:has(.product-list) .cart-section table:empty {
    (769px – 1200px)
    ============================================================ */
 @media (min-width: 769px) and (max-width: 1200px) {
-
   /* Main spacing */
   body:has(.product-list) .main {
     padding: 90px 20px 30px !important;
@@ -6191,7 +6234,7 @@ body:has(.product-list) .cart-section table:empty {
   body:has(.product-list) .categories,
   body:has(.product-list) .product-list,
   body:has(.product-list) .shift-required-notice {
-    width: calc(100% - 310px) !important;   /* 280px cart + 30px gap */
+    width: calc(100% - 310px) !important; /* 280px cart + 30px gap */
     max-width: none !important;
     margin-right: 0 !important;
   }
@@ -6270,13 +6313,12 @@ body:has(.product-list) .cart-section table:empty {
    TABLET ONLY – search-section width sakto (hindi dikit sa cart)
    ============================================================ */
 @media (min-width: 769px) and (max-width: 1100px) {
-
   /* Product side (search + categories + products) */
   body:has(.product-list) .search-section,
   body:has(.product-list) .categories,
   body:has(.product-list) .product-list,
   body:has(.product-list) .shift-required-notice {
-    width: calc(100% - 310px) !important;   /* 280px cart + 30px gap */
+    width: calc(100% - 310px) !important; /* 280px cart + 30px gap */
     max-width: none !important;
   }
 
@@ -6293,7 +6335,7 @@ body:has(.product-list) .cart-section table:empty {
 
   body:has(.product-list) .search-box {
     width: 100% !important;
-    max-width: 100% !important;   /* sakto lang sa available space */
+    max-width: 100% !important; /* sakto lang sa available space */
   }
 
   body:has(.product-list) .search-box input {
@@ -6488,4 +6530,179 @@ html.dark .lechon-price-input {
 
 body:has(.product-list) .categories .category {
   text-transform: uppercase;
+}
+
+/* =========================================================
+   MOBILE TABLES — Card layout with data-label
+   (stock / assigned-stock / cart)
+   ========================================================= */
+.cart-card,
+.stock-page .table-card,
+.assigned-stock-table-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Cart table stays horizontally scrollable (usually few columns) */
+.cart-card {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  /* ---------- Stock page table → cards ---------- */
+  .stock-page .table-card {
+    overflow-x: visible;
+  }
+
+  .stock-page .stock-table {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .stock-page .stock-table thead {
+    display: none !important;
+  }
+
+  .stock-page .stock-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .stock-page .stock-table tbody tr {
+    display: block;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .stock-page .stock-table td {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+
+  .stock-page .stock-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .stock-page .stock-table td::before {
+    content: attr(data-label);
+    flex: 0 0 38%;
+    max-width: 42%;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+  }
+
+  .stock-page .stock-table td[colspan] {
+    display: block !important;
+    text-align: center !important;
+  }
+
+  .stock-page .stock-table td[colspan]::before {
+    content: none !important;
+  }
+
+  /* Product cell with image — keep image + name together on the right */
+  .stock-page .stock-table .product-cell {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  /* ---------- Assigned stock table → cards (reinforce) ---------- */
+  .assigned-stock-table-wrap {
+    overflow: visible !important;
+  }
+
+  .assigned-stock-table {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .assigned-stock-table thead {
+    display: none !important;
+  }
+
+  .assigned-stock-table tbody {
+    display: grid !important;
+    gap: 12px;
+  }
+
+  .assigned-stock-table tbody tr {
+    display: block !important;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow);
+  }
+
+  .assigned-stock-table tbody td {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 10px 13px;
+    border-top: 1px solid var(--border-soft);
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+
+  .assigned-stock-table tbody td:first-child {
+    border-top: 0;
+  }
+
+  .assigned-stock-table tbody td[data-label]::before {
+    content: attr(data-label) !important;
+    flex: 0 0 100px;
+    max-width: 42%;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .assigned-stock-table tbody td.assigned-stock-empty {
+    display: block !important;
+    padding: 28px 16px !important;
+    border: 0;
+    text-align: center;
+  }
+
+  .assigned-stock-table tbody td.assigned-stock-empty::before {
+    content: none !important;
+  }
+
+  /* Cart: keep simple horizontal scroll (small table) */
+  .cart-card table {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .cart-card th,
+  .cart-card td {
+    white-space: nowrap;
+  }
 }

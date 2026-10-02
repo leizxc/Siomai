@@ -47,45 +47,15 @@
 
   <section class="employee-form-card">
     <form id="employeeForm">
-      <div class="employee-form-grid">
-        <div class="input-field">
-          <input type="text" id="fname" required />
-          <label for="fname">First Name</label>
-        </div>
-
-        <div class="input-field">
-          <input type="text" id="lname" required />
-          <label for="lname">Last Name</label>
-        </div>
-
-        <div class="input-field full-width">
-          <input type="email" id="email" required/>
-          <label for="email">Email Address ex:Thor@gmail.com</label>
-        </div>
-
-        <div class="input-field full-width">
-          <input type="text" id="username" required />
-          <label for="username">Username</label>
-        </div>
-
-        <!-- Eye icon toggles type="password" -->
-        <div class="input-field password-field">
-          <input type="password" id="password" required />
-
-          <i id="togglePassword" class="material-icons password-toggle-icon">
-            visibility_off
-          </i>
-
-          <label for="password">Password</label>
-        </div>
-
-        <div class="input-field">
-          <select id="role">
+      <div class="employee-form-grid owner-style-form">
+        <label>First name<input type="text" id="fname" autocomplete="given-name" placeholder="Enter first name" required maxlength="60" /></label>
+        <label>Last name<input type="text" id="lname" autocomplete="family-name" placeholder="Enter last name" required maxlength="60" /></label>
+        <label class="full-width">Email<input type="email" id="email" autocomplete="email" placeholder="Enter email address" required /></label>
+        <label class="full-width">Username<input type="text" id="username" autocomplete="username" placeholder="Choose a username" required minlength="5" maxlength="40" /></label>
+        <label class="employee-password-label">Password<div class="employee-password-input"><input type="password" id="password" autocomplete="new-password" placeholder="Create a password" required minlength="6" /><i id="togglePassword" class="material-icons password-toggle-icon" role="button" tabindex="0" aria-label="Show password">visibility</i></div></label>
+        <label>Role<select id="role">
             <option value="" disabled selected>Select Role</option>
-          </select>
-
-          <label>Role</label>
-        </div>
+          </select></label>
       </div>
 
       <div class="employee-actions">
@@ -107,10 +77,9 @@
           Add New Role
         </button>
 
-        <button type="submit" class="btn blue waves-effect waves-light">
-          <i class="material-icons left">person_add</i>
-
-          Add Employee
+        <button type="submit" class="btn blue waves-effect waves-light account-create-button" aria-busy="false">
+          <span class="account-submit-label"><i class="material-icons left">person_add</i>Add Employee</span>
+          <span class="account-submit-progress"><span class="account-loading-spinner" aria-hidden="true"></span>Adding...</span>
         </button>
       </div>
     </form>

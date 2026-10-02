@@ -4,6 +4,9 @@ BackEnd/node_modules/
 
 # environment variables
 .env
+**/.env
+serviceAccountKey.json
+node_modules/
 
 # firebase / secrets
 BackEnd/*.json

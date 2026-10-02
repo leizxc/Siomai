@@ -2209,6 +2209,177 @@ EMPLOYEE
   color: var(--accent);
 }
 
+.account-create-button .account-submit-label,
+.account-create-button .account-submit-progress {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.account-create-button .account-submit-label {
+  display: inline-flex;
+}
+
+.account-create-button .account-submit-progress {
+  display: none;
+}
+
+.account-create-button[aria-busy="true"] .account-submit-label {
+  display: none;
+}
+
+.account-create-button[aria-busy="true"] .account-submit-progress {
+  display: inline-flex;
+}
+
+.account-loading-spinner {
+  width: 17px;
+  height: 17px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: account-submit-spin 0.7s linear infinite;
+}
+
+@keyframes account-submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Owner-style employee form controls */
+.employee-form-card .owner-style-form {
+  column-gap: 24px;
+  row-gap: 20px;
+}
+
+.owner-style-form > label,
+.employee-edit-fields > label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-primary, #344054);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.owner-style-form > .full-width {
+  grid-column: 1 / -1;
+}
+
+.owner-style-form input,
+.owner-style-form select,
+.owner-style-form .select-wrapper input.select-dropdown,
+.employee-edit-fields input,
+.employee-edit-fields select {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: var(--bg-card, #fff);
+  color: var(--text-primary, #344054);
+  font: inherit;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+/* Keep Materialize's 80% input width from leaving unused space in the form. */
+.employee-form-card .owner-style-form input:not(.browser-default),
+.employee-form-card .owner-style-form .select-wrapper input.select-dropdown {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: 46px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid #d9dee8;
+  border-radius: 8px;
+  background: var(--bg-card, #fff);
+  color: var(--text-primary, #182230);
+  box-shadow: none;
+}
+
+.employee-form-card .owner-style-form input:not(.browser-default):focus,
+.employee-form-card
+  .owner-style-form
+  .select-wrapper
+  input.select-dropdown:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 14%);
+  outline: none;
+}
+
+.owner-style-form input::placeholder,
+.employee-edit-fields input::placeholder {
+  color: #98a2b3;
+  opacity: 1;
+}
+
+.owner-style-form input:focus,
+.owner-style-form select:focus,
+.owner-style-form .select-wrapper input.select-dropdown:focus,
+.employee-edit-fields input:focus,
+.employee-edit-fields select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 14%);
+  outline: none;
+}
+
+.employee-password-input {
+  position: relative;
+}
+
+.employee-password-input input {
+  padding-right: 44px;
+}
+
+.employee-password-input .password-toggle-icon {
+  top: 50%;
+  right: 10px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  transform: translateY(-50%);
+  font-size: 20px;
+}
+
+.employee-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+html.dark .owner-style-form > label,
+html.dark .employee-edit-fields > label {
+  color: var(--text-primary, #f3f4f6);
+}
+
+html.dark .owner-style-form input,
+html.dark .owner-style-form select,
+html.dark .owner-style-form .select-wrapper input.select-dropdown,
+html.dark .employee-edit-fields input,
+html.dark .employee-edit-fields select {
+  border-color: var(--border, #475467);
+  background: var(--input-bg, #111827);
+  color: var(--text-primary, #f3f4f6);
+}
+
+@media (max-width: 700px) {
+  .employee-form-card .owner-style-form,
+  .employee-edit-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-style-form > .full-width {
+    grid-column: auto;
+  }
+}
+
 .employee-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -6333,6 +6504,195 @@ html.dark .dashboard-action-counts a {
   }
   .dashboard-action-counts {
     grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   MOBILE TABLES — Card layout with data-label
+   (replaces the old force-table + horizontal-scroll rules)
+   ========================================================= */
+@media (max-width: 768px) {
+  /* Containers stay fluid, no sideways page scroll */
+  #content .table-container,
+  #content .table-section,
+  #content .dashboard-table-wrapper,
+  #content .inventory-card,
+  #content .product-list-card,
+  #content .employee-card,
+  #content .sales-page-table,
+  #content .income-cart-table-card,
+  #content .expenses-card {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: visible;
+  }
+
+  /* Shared card pattern for all main admin tables */
+  #content table.responsive-table,
+  #content table.data-table,
+  #content #inventory-table,
+  #content #menutable,
+  #content #productTable,
+  #content #expenseTable,
+  #content #employeeTable,
+  #content .monitorTable,
+  #content .payroll-table {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  #content table.responsive-table thead,
+  #content table.data-table thead,
+  #content #inventory-table thead,
+  #content #menutable thead,
+  #content #productTable thead,
+  #content #expenseTable thead,
+  #content #employeeTable thead,
+  #content .monitorTable thead,
+  #content .payroll-table thead {
+    display: none !important;
+  }
+
+  #content table.responsive-table tbody,
+  #content table.responsive-table tr,
+  #content table.responsive-table td,
+  #content table.data-table tbody,
+  #content table.data-table tr,
+  #content table.data-table td,
+  #content #inventory-table tbody,
+  #content #inventory-table tr,
+  #content #inventory-table td,
+  #content #menutable tbody,
+  #content #menutable tr,
+  #content #menutable td,
+  #content #productTable tbody,
+  #content #productTable tr,
+  #content #productTable td,
+  #content #expenseTable tbody,
+  #content #expenseTable tr,
+  #content #expenseTable td,
+  #content #employeeTable tbody,
+  #content #employeeTable tr,
+  #content #employeeTable td,
+  #content .monitorTable tbody,
+  #content .monitorTable tr,
+  #content .monitorTable td,
+  #content .payroll-table tbody,
+  #content .payroll-table tr,
+  #content .payroll-table td {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Row = card */
+  #content table.responsive-table tr,
+  #content table.data-table tr,
+  #content #inventory-table tr,
+  #content #menutable tr,
+  #content #productTable tr,
+  #content #expenseTable tr,
+  #content #employeeTable tr,
+  #content .monitorTable tr,
+  #content .payroll-table tr {
+    box-sizing: border-box;
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-card);
+    box-shadow: var(--shadow);
+  }
+
+  /* Cell = label left / value right */
+  #content table.responsive-table td,
+  #content table.data-table td,
+  #content #inventory-table td,
+  #content #menutable td,
+  #content #productTable td,
+  #content #expenseTable td,
+  #content #employeeTable td,
+  #content .monitorTable td,
+  #content .payroll-table td {
+    display: flex !important;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-soft);
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+
+  #content table.responsive-table td:last-child,
+  #content table.data-table td:last-child,
+  #content #inventory-table td:last-child,
+  #content #menutable td:last-child,
+  #content #productTable td:last-child,
+  #content #expenseTable td:last-child,
+  #content #employeeTable td:last-child,
+  #content .monitorTable td:last-child,
+  #content .payroll-table td:last-child {
+    border-bottom: 0;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  /* data-label as left-side title */
+  #content table.responsive-table td::before,
+  #content table.data-table td::before,
+  #content #inventory-table td::before,
+  #content #menutable td::before,
+  #content #productTable td::before,
+  #content #expenseTable td::before,
+  #content #employeeTable td::before,
+  #content .monitorTable td::before,
+  #content .payroll-table td::before {
+    content: attr(data-label) !important;
+    flex: 0 0 38%;
+    max-width: 42%;
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
+  }
+
+  /* Keep label on the left for action columns */
+  #content table.responsive-table td:last-child::before,
+  #content table.data-table td:last-child::before,
+  #content #inventory-table td:last-child::before,
+  #content #menutable td:last-child::before,
+  #content #productTable td:last-child::before,
+  #content #expenseTable td:last-child::before,
+  #content #employeeTable td:last-child::before,
+  #content .monitorTable td:last-child::before,
+  #content .payroll-table td:last-child::before {
+    margin-right: auto;
+  }
+
+  /* Empty / colspan cells */
+  #content table td[colspan] {
+    display: block !important;
+    text-align: center !important;
+  }
+  #content table td[colspan]::before {
+    content: none !important;
+  }
+
+  /* No hover/selected look on mobile cards */
+  #content table tr:hover,
+  #content table.data-table.striped > tbody > tr:nth-child(odd),
+  #content table.data-table.striped > tbody > tr:hover {
+    background: var(--bg-card) !important;
+  }
+
+  #content table,
+  #content table td {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
