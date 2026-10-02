@@ -27,7 +27,7 @@
       })();
     </script>
   </head>
-  <body>
+  <body class="owner-app">
     <div class="container">
       <aside class="sidebar">
         <h2 class="logo">Queen Cassy</h2>
@@ -45,7 +45,7 @@
                 loadSection('owner-sales', this);
                 return false;
               "
-              ><i class="material-icons">receipt_long</i>Real Time Sales</a
+              ><i class="material-icons">receipt_long</i>Sales Status</a
             >
           </li>
           <li>
@@ -55,7 +55,7 @@
                 loadSection('owner-capital', this);
                 return false;
               "
-              ><i class="material-icons">account_balance</i>Capital Status Record</a
+              ><i class="material-icons">account_balance</i>Capital Status</a
             >
           </li>
           <li>
@@ -65,17 +65,17 @@
                 loadSection('owner-orders', this);
                 return false;
               "
-              ><i class="material-icons">receipt_long</i>Order Status</a
+              ><i class="material-icons">receipt_long</i>Order product Status</a
             >
           </li>
           <li>
             <a href="#" onclick="loadSection('owner-employee-stock', this); return false"
-              ><i class="material-icons">inventory</i>Stock by Employee</a
+              ><i class="material-icons">inventory</i>Stock status of Employees</a
             >
           </li>
           <li>
             <a href="#" onclick="loadSection('owner-inventory', this); return false"
-              ><i class="material-icons">inventory_2</i>Real Time Inventory</a
+              ><i class="material-icons">inventory_2</i>Inventory Status</a
             >
           </li>
           <li>
@@ -111,16 +111,34 @@
           </div>
           <div class="header-actions">
             <button
-              id="theme-toggle"
-              class="theme-toggle"
+              id="owner-notification-bell"
+              class="manager-notification-bell owner-notification-bell"
               type="button"
-              title="Toggle dark mode"
+              aria-label="View notifications"
+              title="Notifications"
             >
-              <i class="material-icons" id="theme-icon">dark_mode</i>
+              <i class="material-icons">notifications_none</i>
+              <span id="owner-notification-count" hidden>0</span>
             </button>
-            <div class="admin-profile">
+            <div class="darktheme">
+              <button
+                id="theme-toggle"
+                class="theme-toggle"
+                type="button"
+                title="Toggle dark mode"
+              >
+                <i class="material-icons" id="theme-icon">dark_mode</i>
+              </button>
+            </div>
+            <div class="admin-profile-menu">
+              <button id="admin-profile-menu-button" type="button" class="admin-profile admin-profile-trigger" aria-label="Open account menu" aria-expanded="false" aria-controls="admin-profile-menu-panel">
               <i class="material-icons">account_circle</i>
-              <div><strong>Owner</strong><small>Business overview</small></div>
+                <div><strong id="admin-profile-name">Owner</strong><small id="admin-profile-role">Owner</small></div>
+              </button>
+              <div id="admin-profile-menu-panel" class="admin-profile-menu-panel" hidden>
+                <div class="admin-profile-menu-user"><strong id="admin-profile-menu-name">Owner</strong><small id="admin-profile-menu-role">Owner</small></div>
+                <button type="button" class="admin-profile-menu-action" data-theme-toggle><i class="material-icons" data-theme-icon>dark_mode</i><span>Dark mode</span></button>
+              </div>
             </div>
           </div>
         </header>
@@ -294,13 +312,27 @@
         </div>
       </main>
     </div>
+    <div id="owner-notifications-modal" class="modal owner-notifications-modal">
+      <div class="modal-content">
+        <h4>Notifications</h4>
+        <p class="owner-notification-note">View-only notifications</p>
+        <div id="owner-notification-list"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="modal-close btn-flat">Close</button>
+      </div>
+    </div>
     <script src="/js/materialize.min.js"></script>
     <script src="/js/functionalnav.js"></script>
     <script src="/js/theme.js"></script>
     <script type="module">
       import "/js/adminIdleLogout.js";
+      import { initAdminProfileMenu } from "/js/adminProfileMenu.js";
       import { stopOwnerDashboard } from "/js/ownerDashboard.js";
+      import { initOwnerNotifications } from "/js/ownerNotifications.js";
+      initAdminProfileMenu();
       window.ownerDashboardCleanup = stopOwnerDashboard;
+      initOwnerNotifications();
     </script>
   </body>
 </html>

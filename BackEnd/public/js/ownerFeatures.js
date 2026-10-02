@@ -11,6 +11,7 @@ const state = {
   products: [],
   attendance: [],
   employees: [],
+  users: [],
   alerts: [],
 };
 const unsubscribers = [];
@@ -80,10 +81,7 @@ const statusBadge = (status) => {
 function shell(title, description, filtersMarkup = "", content = "") {
   if (!root) return;
   root.innerHTML = `
-    <header class="owner-feature-header">
-      <div><p class="owner-feature-eyebrow">OWNER OVERVIEW</p><h2>${title}</h2><p>${description}</p></div>
-      ${filtersMarkup ? `<div class="owner-feature-filters">${filtersMarkup}</div>` : ""}
-    </header>
+    ${filtersMarkup ? `<div class="owner-feature-filters">${filtersMarkup}</div>` : ""}
     ${content}
     <p class="owner-feature-error" role="status" hidden></p>
   `;
@@ -408,12 +406,29 @@ function renderAttendance() {
 }
 
 function renderManagers() {
-  const managers = state.employees.filter((employee) => {
-    const role = String(employee.role || "").toLowerCase();
-    return (
-      role === "admin" || role === "manager" || employee.isManager === true
-    );
+  const priorForm = root?.querySelector("#owner-manager-create-form");
+  const priorValues = priorForm
+    ? Object.fromEntries(new FormData(priorForm).entries())
+    : null;
+  const employeeManagers = state.employees.filter((employee) =>
+    String(employee.role || "").toLowerCase() === "manager" || employee.isManager === true,
+  );
+  const managerAccounts = state.users.filter(
+    (account) => String(account.role || "").toLowerCase() === "manager",
+  );
+  const byEmail = new Map(employeeManagers.map((employee) => [String(employee.email || "").toLowerCase(), employee]));
+  const managersByEmail = new Map();
+  managerAccounts.forEach((account) => {
+    const email = String(account.email || "").toLowerCase();
+    managersByEmail.set(email || account.id, { ...byEmail.get(email), ...account });
   });
+  employeeManagers.forEach((employee) => {
+    const email = String(employee.email || "").toLowerCase();
+    if (!managersByEmail.has(email || employee.id)) {
+      managersByEmail.set(email || employee.id, employee);
+    }
+  });
+  const managers = [...managersByEmail.values()];
   const alerts = [...state.alerts].sort((a, b) => {
     const left = asDate(a.updatedAt || a.createdAt)?.getTime() || 0;
     const right = asDate(b.updatedAt || b.createdAt)?.getTime() || 0;
@@ -433,7 +448,17 @@ function renderManagers() {
     "Manager Management",
     "Review manager accounts and their latest operational updates.",
     "",
-    `${kpis([
+    `<section class="dashboard-panel owner-manager-create-card">
+      <div class="panel-header"><div><h3>Create manager account</h3><p>Set up login credentials for a new manager.</p></div></div>
+      <form id="owner-manager-create-form" class="owner-manager-create-form">
+        <label>First name<input name="fname" type="text" autocomplete="given-name" required maxlength="60"></label>
+        <label>Last name<input name="lname" type="text" autocomplete="family-name" required maxlength="60"></label>
+        <label>Email<input name="email" type="email" autocomplete="email" required></label>
+        <label>Username<input name="username" type="text" autocomplete="username" required minlength="5" maxlength="40"></label>
+        <label>Password<input name="password" type="password" autocomplete="new-password" required minlength="6"></label>
+        <button class="btn" type="submit"><i class="material-icons">person_add</i><span>Create manager</span></button>
+      </form>
+    </section>${kpis([
       [
         "MANAGERS",
         managers.length,
@@ -454,6 +479,13 @@ function renderManagers() {
       ],
     ])}${tableCard("Manager accounts", ["Manager", "Email", "Username", "Status"], managerRows, "No manager accounts were found in employee records.")}${tableCard("Manager activity", ["Updated", "Type", "Details", "Status"], alertRows, "No manager updates found.")}`,
   );
+  if (priorValues) {
+    const nextForm = root?.querySelector("#owner-manager-create-form");
+    Object.entries(priorValues).forEach(([name, value]) => {
+      const field = nextForm?.elements.namedItem(name);
+      if (field) field.value = value;
+    });
+  }
 }
 
 function render() {
@@ -524,6 +556,38 @@ export function initOwnerFeature(feature) {
 
   root.innerHTML =
     '<div class="dashboard-panel"><p class="dashboard-empty">Loading live owner data...</p></div>';
+  if (feature === "owner-managers") {
+    root.addEventListener("submit", async (event) => {
+      const form = event.target.closest("#owner-manager-create-form");
+      if (!form) return;
+      event.preventDefault();
+      const submit = form.querySelector('button[type="submit"]');
+      const values = new FormData(form);
+      submit.disabled = true;
+      try {
+        const { addEmployee } = await import("/js/adminEmployee.js");
+        const created = await addEmployee(
+          String(values.get("fname") || "").trim(),
+          String(values.get("lname") || "").trim(),
+          String(values.get("email") || "").trim(),
+          String(values.get("username") || "").trim(),
+          "manager",
+          String(values.get("password") || ""),
+        );
+        if (created) {
+          form.reset();
+          root?.querySelector("#owner-manager-create-form")?.reset();
+        }
+      } catch (error) {
+        console.error("Unable to create manager account:", error);
+        if (typeof M !== "undefined") {
+          M.toast({ html: "Unable to create the manager account.", classes: "red rounded" });
+        }
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  }
   render();
   [
     ["orders", "orders"],
@@ -534,4 +598,5 @@ export function initOwnerFeature(feature) {
     ["employees", "employees"],
     ["managerNotifications", "alerts"],
   ].forEach(([name, key]) => subscribe(name, key));
+  if (feature === "owner-managers") subscribe("users", "users");
 }

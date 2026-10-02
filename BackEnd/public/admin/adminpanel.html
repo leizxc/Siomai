@@ -137,12 +137,18 @@
               <span id="manager-notification-count" hidden>0</span>
             </button>
 
-            <div class="admin-profile">
+            <div class="admin-profile-menu">
+            <button id="admin-profile-menu-button" type="button" class="admin-profile admin-profile-trigger" aria-label="Open account menu" aria-expanded="false" aria-controls="admin-profile-menu-panel">
               <i class="material-icons">account_circle</i>
               <div>
-                <strong>Admin</strong>
-                <small>Administrator</small>
+                <strong id="admin-profile-name">Admin</strong>
+                <small id="admin-profile-role">Administrator</small>
               </div>
+            </button>
+            <div id="admin-profile-menu-panel" class="admin-profile-menu-panel" hidden>
+              <div class="admin-profile-menu-user"><strong id="admin-profile-menu-name">Admin</strong><small id="admin-profile-menu-role">Administrator</small></div>
+              <button type="button" class="admin-profile-menu-action" data-theme-toggle><i class="material-icons" data-theme-icon>dark_mode</i><span>Dark mode</span></button>
+            </div>
             </div>
           </div>
         </div>
@@ -378,7 +384,9 @@
   <script type="module">
     import "/js/adminIdleLogout.js";
     import "/js/adminDashboard.js";
+    import { initAdminProfileMenu } from "/js/adminProfileMenu.js";
     import { initManagerNotifications } from "/js/adminnotifications.js";
+    initAdminProfileMenu();
     initManagerNotifications();
   </script>
 </html>

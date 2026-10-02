@@ -174,7 +174,8 @@ function bindAddEmployeeForm() {
       return;
     }
 
-    await addEmployee(fname, lname, email, username, role, password);
+    const created = await addEmployee(fname, lname, email, username, role, password);
+    if (!created) return;
 
     form.reset();
     M.updateTextFields();

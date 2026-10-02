@@ -442,7 +442,7 @@ export async function addEmployee(
         html: "Please select a role before adding the employee.",
         classes: "red rounded",
       });
-      return;
+      return false;
     }
 
     const normalizedUsername = username.trim().toLowerCase();
@@ -451,14 +451,15 @@ export async function addEmployee(
         html: "Username is too weak. Use at least 5 characters, not all numbers, and not a common word like 'admin' or 'test'.",
         classes: "red rounded",
       });
-      return;
+      return false;
     }
 
-    const q = query(collection(db, "users"), where("email", "==", email));
+    const normalizedEmail = email.trim().toLowerCase();
+    const q = query(collection(db, "users"), where("email", "==", normalizedEmail));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       M.toast({ html: "Email already exists!", classes: "red rounded" });
-      return;
+      return false;
     }
     const usernameQuery = query(
       collection(db, "users"),
@@ -467,7 +468,7 @@ export async function addEmployee(
     const usernameSnapshot = await getDocs(usernameQuery);
     if (!usernameSnapshot.empty) {
       M.toast({ html: "Username is already taken.", classes: "red rounded" });
-      return;
+      return false;
     }
 
     const API_BASE = window.location.origin;
@@ -478,12 +479,20 @@ export async function addEmployee(
         Authorization: `Bearer ${idToken}`,
         "Content-type": "application/json",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: normalizedEmail, password }),
     });
+    const contentType = authRes.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const message = authRes.status === 404
+        ? "Account creation API is unavailable. Restart or deploy the BackEnd server, then try again."
+        : "The BackEnd server returned an invalid response. Please try again later.";
+      M.toast({ html: message, classes: "red rounded" });
+      return false;
+    }
     const authResult = await authRes.json();
-    if (!authResult.success) {
-      M.toast({ html: authResult.error, classes: "red rounded" });
-      return;
+    if (!authRes.ok || !authResult.success) {
+      M.toast({ html: authResult.error || "Unable to create the account.", classes: "red rounded" });
+      return false;
     }
     const uid = authResult.uid;
 
@@ -491,23 +500,34 @@ export async function addEmployee(
       uid,
       fname,
       lname,
-      email,
+      email: normalizedEmail,
+      username: normalizedUsername,
       role,
       created_at: serverTimestamp(),
     });
     const hashvalue = await hashPassword(password);
     await addDoc(collection(db, "users"), {
+      uid,
+      fname,
+      lname,
       username: normalizedUsername,
-      email,
+      email: normalizedEmail,
       role,
       status: "active",
       passwordHash: hashvalue,
       created_at: serverTimestamp(),
     });
-    M.toast({ html: "Employee added successfully!", classes: "green rounded" });
+    M.toast({
+      html: String(role).toLowerCase() === "manager"
+        ? "Manager account created successfully!"
+        : "Employee added successfully!",
+      classes: "green rounded",
+    });
+    return true;
   } catch (error) {
     console.error("Error adding employee:", error);
     M.toast({ html: "Failed to add employee.", classes: "red rounded" });
+    return false;
   }
 }
 

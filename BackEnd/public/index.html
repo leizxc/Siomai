@@ -175,7 +175,7 @@
             const role = String(userDoc.role || "").toLowerCase();
             isRedirecting = true;
 
-            if (role === "admin") {
+            if (role === "admin" || role === "manager") {
               await requestDeviceNotificationPermission(userDocSnap.id);
               sessionStorage.setItem("adminUserDocId", userDocSnap.id);
               window.location.href = "/admin/adminpanel.html";
@@ -186,7 +186,7 @@
             } else {
               await requestDeviceNotificationPermission(userDocSnap.id);
 
-              // Bawat non-admin role (siomai, pares, at anumang bagong cart sa
+              // Bawat non-admin/manager role (siomai, pares, at anumang bagong cart sa
               // hinaharap) ay dumadaan na lang sa IISANG POS page. Ang role
               // mismo ang nagpapaiba sa nakikita, hindi ang URL/folder.
               sessionStorage.setItem("employeeRole", role);

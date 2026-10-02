@@ -313,6 +313,84 @@ HEADER
   gap: 10px;
 }
 
+.admin-profile-menu {
+  position: relative;
+}
+
+.admin-profile-trigger {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-profile-menu-panel {
+  position: absolute;
+  z-index: 2000;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  min-width: 190px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+.admin-profile-menu-panel[hidden] {
+  display: none;
+}
+
+.admin-profile-menu-user {
+  padding: 9px 10px 11px;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.admin-profile-menu-user small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.admin-profile-menu-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-profile-menu-action:hover {
+  background: var(--table-hover);
+}
+
+.admin-profile-menu-action .material-icons {
+  font-size: 19px;
+  color: var(--text-primary);
+}
+
+html.dark .admin-profile-menu-panel {
+  border-color: var(--border);
+  background: var(--bg-card);
+}
+
+html.dark .admin-profile-menu-action:hover {
+  background: var(--table-hover);
+}
+
 .admin-profile > i {
   color: var(--logo);
   font-size: 40px;
@@ -2910,6 +2988,14 @@ HEADER / MOBILE HEADER
     display: none !important;
   }
 
+  .header-actions > .darktheme {
+    display: none !important;
+  }
+
+  .admin-profile-menu-panel {
+    min-width: 190px;
+  }
+
   .theme-toggle {
     width: 36px;
     height: 36px;
@@ -4146,6 +4232,16 @@ DARK MODE - MOBILE OVERRIDES
   html.dark .expense-actions #btn-delete-category,
   html.dark .expense-actions .delete-outline {
     background: #141414 !;
+  }
+}
+
+@media (min-width: 769px) {
+  .admin-profile-menu-panel {
+    display: none !important;
+  }
+
+  .admin-profile-trigger {
+    cursor: default;
   }
 }
 

@@ -103,13 +103,6 @@ async function requireAdmin(req, res, next) {
       .json({ success: false, error: "Firebase Admin is unavailable" });
   }
 
-  if (adminEmails.size === 0) {
-    console.error("ADMIN_EMAILS is not configured");
-    return res
-      .status(503)
-      .json({ success: false, error: "Admin authorization is not configured" });
-  }
-
   const token = getBearerToken(req);
   if (!token) {
     return res
@@ -119,15 +112,20 @@ async function requireAdmin(req, res, next) {
 
   try {
     const user = await admin.auth().verifyIdToken(token);
-    const email = user.email?.toLowerCase();
+    const email = user.email?.trim().toLowerCase();
+    let hasPanelAccess = Boolean(email && adminEmails.has(email));
+    if (email && !hasPanelAccess) {
+      const accountSnapshot = await admin.firestore().collection("users").get();
+      hasPanelAccess = accountSnapshot.docs.some((account) =>
+        String(account.data().email || "").trim().toLowerCase() === email &&
+        ["admin", "manager", "owner"].includes(String(account.data().role || "").toLowerCase()),
+      );
+    }
 
-    console.log("logged in email:", email);
-    console.log("Allowed admins", [...adminEmails]);
-
-    if (!email || !adminEmails.has(email)) {
+    if (!hasPanelAccess) {
       return res.status(403).json({
         success: false,
-        error: "Administrator access is required",
+        error: "Manager, owner, or administrator access is required",
       });
     }
 

@@ -21,6 +21,8 @@ let selectedNotificationIds = new Set();
 let notificationsById = new Map();
 let pendingDeleteNotificationIds = [];
 let hasLoadedInitialNotifications = false;
+// FIX: module-level reference para maabot ng renderNotifications() ang modal
+let managerNotificationsModal = null;
 
 function escapeHtml(value) {
   const div = document.createElement("div");
@@ -60,15 +62,20 @@ function renderNotifications(notifications) {
   if (!list) return;
   const activeIds = new Set(notifications.map((item) => item.id));
   notificationsById = new Map(notifications.map((item) => [item.id, item]));
-  selectedNotificationIds = new Set([...selectedNotificationIds].filter((id) => activeIds.has(id)));
+  selectedNotificationIds = new Set(
+    [...selectedNotificationIds].filter((id) => activeIds.has(id)),
+  );
 
   if (!notifications.length) {
-    list.innerHTML = '<p class="manager-notification-empty">No notifications.</p>';
+    list.innerHTML =
+      '<p class="manager-notification-empty">No notifications.</p>';
     syncSelectionControls(notifications);
     return;
   }
 
-  list.innerHTML = notifications.map(({ id, ...item }) => `
+  list.innerHTML = notifications
+    .map(
+      ({ id, ...item }) => `
     <article class="manager-notification ${item.read ? "" : "unread"} ${getNotificationPage(item) ? "clickable" : ""}" data-id="${id}" data-type="${item.type || ""}" ${getNotificationPage(item) ? 'tabindex="0" role="button"' : ""}>
       <label class="manager-notification-select" aria-label="Select notification"><input type="checkbox" value="${id}" ${selectedNotificationIds.has(id) ? "checked" : ""} /><span></span></label>
       <i class="material-icons">${item.type === "expense_report" ? "receipt_long" : item.type === "time_in_request" ? "login" : item.type === "time_out_request" ? "logout" : "warning"}</i>
@@ -80,31 +87,38 @@ function renderNotifications(notifications) {
       </div>
       ${item.read ? "" : '<button type="button" class="btn-flat mark-notification-read">Mark read</button>'}
     </article>
-  `).join("");
+  `,
+    )
+    .join("");
 
-  list.querySelectorAll(".manager-notification.clickable").forEach((element) => {
-    const open = async (event) => {
-      if (event.target.closest("button, input, label, a")) return;
-      const notification = notificationsById.get(element.dataset.id);
-      const page = notification && getNotificationPage(notification);
-      if (!page || typeof window.loadSection !== "function") return;
+  list
+    .querySelectorAll(".manager-notification.clickable")
+    .forEach((element) => {
+      const open = async (event) => {
+        if (event.target.closest("button, input, label, a")) return;
+        const notification = notificationsById.get(element.dataset.id);
+        const page = notification && getNotificationPage(notification);
+        if (!page || typeof window.loadSection !== "function") return;
 
-      try {
-        window.loadSection(page);
-        await markNotificationRead(element.dataset.id);
-      } catch (error) {
-        console.error("Unable to open manager notification:", error);
-        showToast("Unable to open this notification.", "red");
-      }
-    };
+        try {
+          // FIX: isara muna ang modal bago mag-navigate
+          if (managerNotificationsModal?.isOpen)
+            managerNotificationsModal.close();
+          window.loadSection(page);
+          await markNotificationRead(element.dataset.id);
+        } catch (error) {
+          console.error("Unable to open manager notification:", error);
+          showToast("Unable to open this notification.", "red");
+        }
+      };
 
-    element.addEventListener("click", open);
-    element.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      open(event);
+      element.addEventListener("click", open);
+      element.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        open(event);
+      });
     });
-  });
 
   list.querySelectorAll(".mark-notification-read").forEach((button) => {
     button.addEventListener("click", async (event) => {
@@ -119,13 +133,15 @@ function renderNotifications(notifications) {
     });
   });
 
-  list.querySelectorAll(".manager-notification-select input").forEach((checkbox) => {
-    checkbox.addEventListener("change", () => {
-      if (checkbox.checked) selectedNotificationIds.add(checkbox.value);
-      else selectedNotificationIds.delete(checkbox.value);
-      syncSelectionControls(notifications);
+  list
+    .querySelectorAll(".manager-notification-select input")
+    .forEach((checkbox) => {
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) selectedNotificationIds.add(checkbox.value);
+        else selectedNotificationIds.delete(checkbox.value);
+        syncSelectionControls(notifications);
+      });
     });
-  });
 
   syncSelectionControls(notifications);
 }
@@ -136,11 +152,15 @@ function syncSelectionControls(notifications = []) {
   const markRead = document.getElementById("mark-manager-selected-read");
   const deleteSelected = document.getElementById("delete-manager-selected");
   const selectedCount = selectedNotificationIds.size;
-  const unreadSelectedCount = [...selectedNotificationIds].filter((id) => !notificationsById.get(id)?.read).length;
+  const unreadSelectedCount = [...selectedNotificationIds].filter(
+    (id) => !notificationsById.get(id)?.read,
+  ).length;
   if (count) count.textContent = `${selectedCount} selected`;
   if (selectAll) {
-    selectAll.checked = notifications.length > 0 && selectedCount === notifications.length;
-    selectAll.indeterminate = selectedCount > 0 && selectedCount < notifications.length;
+    selectAll.checked =
+      notifications.length > 0 && selectedCount === notifications.length;
+    selectAll.indeterminate =
+      selectedCount > 0 && selectedCount < notifications.length;
   }
   if (markRead) markRead.disabled = unreadSelectedCount === 0;
   if (deleteSelected) deleteSelected.disabled = selectedCount === 0;
@@ -163,41 +183,54 @@ async function markNotificationRead(id) {
 
   if (notification.type === "expense_report" && notification.reportId) {
     const reportRef = doc(db, "expenseReports", notification.reportId);
-    updates.push(updateDoc(reportRef, {
-      status: "read",
-      reviewedAt: serverTimestamp(),
-    }));
+    updates.push(
+      updateDoc(reportRef, {
+        status: "read",
+        reviewedAt: serverTimestamp(),
+      }),
+    );
     const reportSnapshot = await getDoc(reportRef);
     const report = reportSnapshot.data();
     if (report?.employeeUid) {
-      updates.push(setDoc(doc(db, "employeeNotifications", `expense-report-read-${notification.reportId}`), {
-        type: "expense_report_read",
-        reportId: notification.reportId,
-        userId: report.employeeUid,
-        title: "Expense report read",
-        message: "The admin/manager has read your expense report.",
-        read: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      }));
+      updates.push(
+        setDoc(
+          doc(
+            db,
+            "employeeNotifications",
+            `expense-report-read-${notification.reportId}`,
+          ),
+          {
+            type: "expense_report_read",
+            reportId: notification.reportId,
+            userId: report.employeeUid,
+            title: "Expense report read",
+            message: "The admin/manager has read your expense report.",
+            read: false,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          },
+        ),
+      );
     }
   }
 
   if (notification.type === "low_stock" && notification.employeeUid) {
-    updates.push(setDoc(doc(db, "employeeNotifications", `low-stock-read-${id}`), {
-      type: "low_stock_read",
-      managerNotificationId: id,
-      productId: notification.productId || "",
-      productName: notification.productName || "Product",
-      remainingStock: notification.remainingStock ?? null,
-      unit: notification.unit || "",
-      userId: notification.employeeUid,
-      title: "Low-stock warning reviewed",
-      message: `The manager has read your low-stock warning for ${notification.productName || "a product"}.`,
-      read: false,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    }));
+    updates.push(
+      setDoc(doc(db, "employeeNotifications", `low-stock-read-${id}`), {
+        type: "low_stock_read",
+        managerNotificationId: id,
+        productId: notification.productId || "",
+        productName: notification.productName || "Product",
+        remainingStock: notification.remainingStock ?? null,
+        unit: notification.unit || "",
+        userId: notification.employeeUid,
+        title: "Low-stock warning reviewed",
+        message: `The manager has read your low-stock warning for ${notification.productName || "a product"}.`,
+        read: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
   }
 
   await Promise.all(updates);
@@ -207,8 +240,12 @@ async function markNotificationRead(id) {
 export function initManagerNotifications() {
   const bell = document.getElementById("manager-notification-bell");
   const modalElement = document.getElementById("manager-notifications-modal");
-  const deleteModalElement = document.getElementById("delete-notifications-modal");
-  const confirmDeleteButton = document.getElementById("confirm-delete-notifications");
+  const deleteModalElement = document.getElementById(
+    "delete-notifications-modal",
+  );
+  const confirmDeleteButton = document.getElementById(
+    "confirm-delete-notifications",
+  );
   const deleteMessage = document.getElementById("delete-notifications-message");
 
   if (
@@ -218,13 +255,30 @@ export function initManagerNotifications() {
     !confirmDeleteButton ||
     !deleteMessage ||
     unsubscribeNotifications
-  ) return;
+  )
+    return;
 
   const modal = M.Modal.getInstance(modalElement) || M.Modal.init(modalElement);
+  // FIX: i-store para magamit ng renderNotifications()
+  managerNotificationsModal = modal;
+
   const closeButton = modalElement.querySelector(".modal-close");
   if (closeButton) {
     closeButton.onclick = () => modal.close();
   }
+
+  // FIX: inilipat sa itaas ng _outsideCloseHandler para hindi na naka-reference bago ma-declare
+  const existingDeleteModal = M.Modal.getInstance(deleteModalElement);
+  if (existingDeleteModal) {
+    if (existingDeleteModal.isOpen) existingDeleteModal.close();
+    existingDeleteModal.destroy();
+  }
+  const deleteModal = M.Modal.init(deleteModalElement, {
+    onCloseEnd: () => {
+      pendingDeleteNotificationIds = [];
+    },
+  });
+
   if (modalElement._outsideCloseHandler) {
     document.removeEventListener(
       "pointerdown",
@@ -246,53 +300,62 @@ export function initManagerNotifications() {
     modalElement._outsideCloseHandler,
     true,
   );
-  const existingDeleteModal = M.Modal.getInstance(deleteModalElement);
-  if (existingDeleteModal) {
-    if (existingDeleteModal.isOpen) existingDeleteModal.close();
-    existingDeleteModal.destroy();
-  }
-  const deleteModal = M.Modal.init(deleteModalElement, {
-    onCloseEnd: () => {
-      pendingDeleteNotificationIds = [];
-    },
-  });
+
   bell.onclick = async () => {
     const userDocId = sessionStorage.getItem("adminUserDocId");
     const permission = await requestDeviceNotificationPermission(userDocId);
     if (permission === "denied") {
-      showToast("Allow notifications in your browser settings to receive phone alerts.", "orange");
+      showToast(
+        "Allow notifications in your browser settings to receive phone alerts.",
+        "orange",
+      );
     }
     modal.open();
   };
 
-  document.getElementById("manager-select-all")?.addEventListener("change", (event) => {
-    document.querySelectorAll(".manager-notification-select input").forEach((checkbox) => {
-      checkbox.checked = event.currentTarget.checked;
-      if (checkbox.checked) selectedNotificationIds.add(checkbox.value);
-      else selectedNotificationIds.delete(checkbox.value);
+  document
+    .getElementById("manager-select-all")
+    ?.addEventListener("change", (event) => {
+      document
+        .querySelectorAll(".manager-notification-select input")
+        .forEach((checkbox) => {
+          checkbox.checked = event.currentTarget.checked;
+          if (checkbox.checked) selectedNotificationIds.add(checkbox.value);
+          else selectedNotificationIds.delete(checkbox.value);
+        });
+      syncSelectionControls(
+        Array.from(document.querySelectorAll(".manager-notification")),
+      );
     });
-    syncSelectionControls(Array.from(document.querySelectorAll(".manager-notification")));
-  });
 
-  document.getElementById("mark-manager-selected-read")?.addEventListener("click", async () => {
-    const ids = [...selectedNotificationIds].filter((id) => !notificationsById.get(id)?.read);
-    if (!ids.length) {
-      showToast("The selected notifications are already read.", "orange");
-      return;
-    }
-    await Promise.all(ids.map((id) => markNotificationRead(id)));
-    selectedNotificationIds.clear();
-    showToast(`${ids.length} notification${ids.length > 1 ? "s" : ""} marked as read.`, "green");
-  });
+  document
+    .getElementById("mark-manager-selected-read")
+    ?.addEventListener("click", async () => {
+      const ids = [...selectedNotificationIds].filter(
+        (id) => !notificationsById.get(id)?.read,
+      );
+      if (!ids.length) {
+        showToast("The selected notifications are already read.", "orange");
+        return;
+      }
+      await Promise.all(ids.map((id) => markNotificationRead(id)));
+      selectedNotificationIds.clear();
+      showToast(
+        `${ids.length} notification${ids.length > 1 ? "s" : ""} marked as read.`,
+        "green",
+      );
+    });
 
-  document.getElementById("delete-manager-selected")?.addEventListener("click", () => {
-    const ids = [...selectedNotificationIds];
-    if (!ids.length) return;
+  document
+    .getElementById("delete-manager-selected")
+    ?.addEventListener("click", () => {
+      const ids = [...selectedNotificationIds];
+      if (!ids.length) return;
 
-    pendingDeleteNotificationIds = ids;
-    deleteMessage.textContent = `Delete ${ids.length} selected notification${ids.length > 1 ? "s" : ""}? This action cannot be undone.`;
-    deleteModal.open();
-  });
+      pendingDeleteNotificationIds = ids;
+      deleteMessage.textContent = `Delete ${ids.length} selected notification${ids.length > 1 ? "s" : ""}? This action cannot be undone.`;
+      deleteModal.open();
+    });
 
   confirmDeleteButton.addEventListener("click", async () => {
     const ids = [...pendingDeleteNotificationIds];
@@ -300,7 +363,9 @@ export function initManagerNotifications() {
 
     confirmDeleteButton.disabled = true;
     try {
-      await Promise.all(ids.map((id) => deleteDoc(doc(db, "managerNotifications", id))));
+      await Promise.all(
+        ids.map((id) => deleteDoc(doc(db, "managerNotifications", id))),
+      );
       selectedNotificationIds.clear();
       deleteModal.close();
       showToast("Selected notifications deleted.", "green");
@@ -323,16 +388,27 @@ export function initManagerNotifications() {
       // The first snapshot contains old notifications, so do not replay them
       // as phone alerts. Only genuinely new, unread notifications alert.
       if (hasLoadedInitialNotifications) {
-        snapshot.docChanges()
-          .filter((change) => change.type === "added" && !change.doc.data().read)
+        snapshot
+          .docChanges()
+          .filter(
+            (change) => change.type === "added" && !change.doc.data().read,
+          )
           .forEach((change) => {
             const item = change.doc.data();
             showDeviceNotification({
-              title: item.title || (item.type === "expense_report" ? "New expense report" : "Low stock alert"),
-              body: item.message || `${item.productName || "A product"} is running low on stock.`,
+              title:
+                item.title ||
+                (item.type === "expense_report"
+                  ? "New expense report"
+                  : "Low stock alert"),
+              body:
+                item.message ||
+                `${item.productName || "A product"} is running low on stock.`,
               tag: `manager-notification-${change.doc.id}`,
               url: "/admin/adminpanel.html",
-            }).catch((error) => console.error("Unable to show device notification:", error));
+            }).catch((error) =>
+              console.error("Unable to show device notification:", error),
+            );
           });
       }
       hasLoadedInitialNotifications = true;
