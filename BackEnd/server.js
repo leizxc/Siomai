@@ -83,8 +83,11 @@ app.use(
 // ============================================================
 
 const allowedOrigins = new Set(
-  (process.env.ALLOWED_ORIGINS || "")
-    .split(",")
+  [
+    "https://siomai-b3afe.web.app",
+    "https://siomai-b3afe.firebaseapp.com",
+    ...(process.env.ALLOWED_ORIGINS || "").split(","),
+  ]
     .map((origin) => origin.trim().replace(/\/$/, ""))
     .filter(Boolean),
 );
