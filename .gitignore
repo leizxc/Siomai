@@ -11,6 +11,9 @@ node_modules/
 # firebase / secrets
 BackEnd/*.json
 BackEnd/*.key
+!BackEnd/package.json
+!BackEnd/package-lock.json
+!BackEnd/vercel.json
 
 # Firebase Hosting
 .firebase/
@@ -24,3 +27,5 @@ Thumbs.db
 # Firebase configs
 BackEnd/public/js/firebase.js
 BackEnd/public/js/frontfirebase.js
+
+BackEnd/public/package-lock.json
