@@ -7,20 +7,19 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 
 const isProduction = process.env.NODE_ENV === "production";
-const verboseLog = (...args) => { if (!isProduction) console.log(...args); };
+const verboseLog = (...args) => {
+  if (!isProduction) console.log(...args);
+};
 
+let serviceAccount;
 let firebaseReady = false;
 
 try {
-  let credential;
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     verboseLog("Using FIREBASE_SERVICE_ACCOUNT environment configuration");
-    credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   } else if (isProduction) {
-    // Google-managed runtimes can supply Application Default Credentials.
-    // Other hosts should provide FIREBASE_SERVICE_ACCOUNT as a secret variable.
-    verboseLog("Using Google Application Default Credentials");
-    credential = admin.credential.applicationDefault();
+    throw new Error("FIREBASE_SERVICE_ACCOUNT is required in production");
   } else {
     const localKeyPath = [
       path.join(__dirname, "serviceAccountKey.json"),
@@ -29,13 +28,14 @@ try {
     if (!localKeyPath) {
       throw new Error("Local Firebase service account file was not found");
     }
-    verboseLog(`Using local Firebase service account file: ${path.basename(localKeyPath)}`);
-    credential = admin.credential.cert(require(localKeyPath));
+    verboseLog(
+      `Using local Firebase service account file: ${path.basename(localKeyPath)}`,
+    );
+    serviceAccount = require(localKeyPath);
   }
 
   admin.initializeApp({
-    credential,
-    ...(process.env.FIREBASE_PROJECT_ID ? { projectId: process.env.FIREBASE_PROJECT_ID } : {}),
+    credential: admin.credential.cert(serviceAccount),
   });
 
   firebaseReady = true;
@@ -97,9 +97,22 @@ app.use((req, res, next) => {
   return next();
 });
 
-const accountLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false });
-const generalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 100, standardHeaders: true, legacyHeaders: false });
-app.use(["/createAuthUser", "/updateAuthPassword", "/deleteAuthUser"], accountLimiter);
+const accountLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(
+  ["/createAuthUser", "/updateAuthPassword", "/deleteAuthUser"],
+  accountLimiter,
+);
 
 app.use(express.json({ limit: "100kb" }));
 
@@ -128,13 +141,21 @@ async function getStoredAccountRole(uid) {
   const db = admin.firestore();
   const directMatch = await db.collection("users").doc(uid).get();
   if (directMatch.exists) {
-    return String(directMatch.data()?.role || "").trim().toLowerCase();
+    return String(directMatch.data()?.role || "")
+      .trim()
+      .toLowerCase();
   }
 
-  const matches = await db.collection("users").where("uid", "==", uid).limit(1).get();
+  const matches = await db
+    .collection("users")
+    .where("uid", "==", uid)
+    .limit(1)
+    .get();
   return matches.empty
     ? ""
-    : String(matches.docs[0].data()?.role || "").trim().toLowerCase();
+    : String(matches.docs[0].data()?.role || "")
+        .trim()
+        .toLowerCase();
 }
 
 //createAuthUser()
@@ -155,15 +176,18 @@ async function requireAdmin(req, res, next) {
   try {
     const user = await admin.auth().verifyIdToken(token);
     const email = user.email?.trim().toLowerCase();
-    const tokenRole = String(user.role || "").trim().toLowerCase();
+    const tokenRole = String(user.role || "")
+      .trim()
+      .toLowerCase();
     // Legacy owner accounts may have the owner role in Firestore before their
     // Firebase custom claim was created. Resolve that role with Admin SDK only;
     // never trust a role sent by the browser.
     const storedRole = tokenRole ? "" : await getStoredAccountRole(user.uid);
-    const role = (email && ownerEmails.has(email))
-      ? "owner"
-      : tokenRole || storedRole;
-    const hasPanelAccess = ["admin", "manager", "owner"].includes(role) || Boolean(email && adminEmails.has(email));
+    const role =
+      email && ownerEmails.has(email) ? "owner" : tokenRole || storedRole;
+    const hasPanelAccess =
+      ["admin", "manager", "owner"].includes(role) ||
+      Boolean(email && adminEmails.has(email));
 
     if (!hasPanelAccess) {
       return res.status(403).json({
@@ -185,21 +209,28 @@ async function requireAdmin(req, res, next) {
 }
 
 async function writeAudit(actor, action, target) {
-  await admin.firestore().collection("auditLogs").add({
-    actorUid: actor.uid,
-    actorEmail: actor.email || null,
-    action,
-    targetUid: target.uid,
-    targetEmail: target.email || null,
-    timestamp: admin.firestore.FieldValue.serverTimestamp(),
-  });
+  await admin
+    .firestore()
+    .collection("auditLogs")
+    .add({
+      actorUid: actor.uid,
+      actorEmail: actor.email || null,
+      action,
+      targetUid: target.uid,
+      targetEmail: target.email || null,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
 }
 
 //create Auth user
 app.post("/createAuthUser", requireAdmin, async (req, res) => {
   try {
     const { email, password } = req.body;
-    const requestedRole = String(req.body.accountRole || req.body.role || "employee").trim().toLowerCase();
+    const requestedRole = String(
+      req.body.accountRole || req.body.role || "employee",
+    )
+      .trim()
+      .toLowerCase();
     // The frontend's `role` may be a job title such as Cashier. Only the
     // separate accountRole value determines Firebase authorization claims.
     const role = ["admin", "manager", "employee"].includes(requestedRole)
@@ -208,14 +239,34 @@ app.post("/createAuthUser", requireAdmin, async (req, res) => {
         ? requestedRole
         : "employee";
     const allowedRoles = new Set(["admin", "manager", "employee"]);
-    if (!allowedRoles.has(role)) return res.status(400).json({ success: false, error: "Account role must be admin, manager, or employee" });
+    if (!allowedRoles.has(role))
+      return res
+        .status(400)
+        .json({
+          success: false,
+          error: "Account role must be admin, manager, or employee",
+        });
     if (role === "manager" && !["owner", "admin"].includes(req.userRole)) {
-      return res.status(403).json({ success: false, error: "Only owners and administrators can create managers" });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          error: "Only owners and administrators can create managers",
+        });
     }
     if (role === "admin" && req.userRole !== "owner") {
-      return res.status(403).json({ success: false, error: "Only an owner can create administrators" });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          error: "Only an owner can create administrators",
+        });
     }
-    if (typeof email !== "string" || !email.trim() || typeof password !== "string") {
+    if (
+      typeof email !== "string" ||
+      !email.trim() ||
+      typeof password !== "string"
+    ) {
       return res.status(400).json({
         success: false,
         error: "Email and password are required",
@@ -257,7 +308,11 @@ app.post("/createAuthUser", requireAdmin, async (req, res) => {
 app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
   try {
     const { uid, password, fname, lname } = req.body;
-    if (typeof uid !== "string" || !uid.trim() || (password !== undefined && typeof password !== "string")) {
+    if (
+      typeof uid !== "string" ||
+      !uid.trim() ||
+      (password !== undefined && typeof password !== "string")
+    ) {
       return res.status(400).json({
         success: false,
         error: "A user ID and password are required",
@@ -273,8 +328,16 @@ app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
     const targetUser = await admin.auth().getUser(uid);
     const targetClaims = targetUser.customClaims || {};
     const targetRole = String(targetClaims.role || "").toLowerCase();
-    if (!(["employee", "manager"].includes(targetRole)) || (targetRole === "manager" && req.userRole !== "owner")) {
-      return res.status(403).json({ success: false, error: "You are not allowed to manage this account" });
+    if (
+      !["employee", "manager"].includes(targetRole) ||
+      (targetRole === "manager" && req.userRole !== "owner")
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          error: "You are not allowed to manage this account",
+        });
     }
     if (
       uid === req.user.uid ||
@@ -288,24 +351,38 @@ app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
 
     const firstName = typeof fname === "string" ? fname.trim() : undefined;
     const lastName = typeof lname === "string" ? lname.trim() : undefined;
-    if ((firstName !== undefined && !firstName) || (lastName !== undefined && !lastName) ||
-        (firstName !== undefined && firstName.length > 80) || (lastName !== undefined && lastName.length > 80)) {
-      return res.status(400).json({ success: false, error: "Enter a valid first and last name" });
+    if (
+      (firstName !== undefined && !firstName) ||
+      (lastName !== undefined && !lastName) ||
+      (firstName !== undefined && firstName.length > 80) ||
+      (lastName !== undefined && lastName.length > 80)
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Enter a valid first and last name" });
     }
     const update = {};
     if (password) update.password = password;
     if (firstName !== undefined || lastName !== undefined) {
-      update.displayName = `${firstName ?? targetUser.displayName?.split(" ")[0] ?? ""} ${lastName ?? targetUser.displayName?.split(" ").slice(1).join(" ") ?? ""}`.trim();
+      update.displayName =
+        `${firstName ?? targetUser.displayName?.split(" ")[0] ?? ""} ${lastName ?? targetUser.displayName?.split(" ").slice(1).join(" ") ?? ""}`.trim();
     }
     if (Object.keys(update).length) await admin.auth().updateUser(uid, update);
     if (firstName !== undefined || lastName !== undefined) {
       const db = admin.firestore();
       for (const collectionName of ["employees", "users"]) {
-        const matches = await db.collection(collectionName).where("uid", "==", uid).get();
-        await Promise.all(matches.docs.map((doc) => doc.ref.update({
-          ...(firstName !== undefined ? { fname: firstName } : {}),
-          ...(lastName !== undefined ? { lname: lastName } : {}),
-        })));
+        const matches = await db
+          .collection(collectionName)
+          .where("uid", "==", uid)
+          .get();
+        await Promise.all(
+          matches.docs.map((doc) =>
+            doc.ref.update({
+              ...(firstName !== undefined ? { fname: firstName } : {}),
+              ...(lastName !== undefined ? { lname: lastName } : {}),
+            }),
+          ),
+        );
       }
     }
     if (password) await writeAudit(req.user, "password_changed", targetUser);
@@ -334,9 +411,19 @@ app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
     }
 
     const targetUser = await admin.auth().getUser(uid);
-    const targetRole = String((targetUser.customClaims || {}).role || "").toLowerCase();
-    if (!(["employee", "manager"].includes(targetRole)) || (targetRole === "manager" && req.userRole !== "owner")) {
-      return res.status(403).json({ success: false, error: "You are not allowed to manage this account" });
+    const targetRole = String(
+      (targetUser.customClaims || {}).role || "",
+    ).toLowerCase();
+    if (
+      !["employee", "manager"].includes(targetRole) ||
+      (targetRole === "manager" && req.userRole !== "owner")
+    ) {
+      return res
+        .status(403)
+        .json({
+          success: false,
+          error: "You are not allowed to manage this account",
+        });
     }
     if (targetUser.email && adminEmails.has(targetUser.email.toLowerCase())) {
       return res
@@ -375,10 +462,6 @@ app.get("/testFirebase", generalLimiter, requireAdmin, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
-
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
