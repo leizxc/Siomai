@@ -1,4 +1,4 @@
-/* Owner dashboard additions use the manager dashboard design tokens. */
+﻿/* Owner dashboard additions use the manager dashboard design tokens. */
 .owner-dashboard {
   display: grid;
   gap: 22px;
@@ -708,3 +708,42 @@ html.dark .owner-manager-create-form .owner-manager-password-toggle {
     width: 100%;
   }
 }
+
+.owner-manager-actions { display: flex; align-items: center; gap: 8px; }
+.owner-manager-action-btn { width: 46px; height: 42px; padding: 0; border: 0; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; transition: filter 150ms ease, transform 150ms ease; }
+.owner-manager-action-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.owner-manager-action-btn:focus-visible { outline: 3px solid rgba(255, 255, 255, 0.85); outline-offset: 2px; }
+.owner-manager-change-password { background: #2196f3; }
+.owner-manager-delete { background: #f44336; }
+.owner-manager-action-btn .material-icons { font-size: 20px; }
+.owner-manager-action-btn:disabled { opacity: 0.6; cursor: wait; transform: none; }
+.owner-manager-no-actions { color: var(--text-muted, #777); font-size: 0.85rem; }
+.owner-manager-action-modal { max-width: 480px; border-radius: 14px; overflow: hidden; }
+.owner-manager-action-modal .modal-content { padding: 28px 30px 12px; }
+.owner-manager-action-modal .modal-content h4 { margin: 0 0 12px; color: var(--text-primary, #263238); font-size: 1.45rem; font-weight: 700; }
+.owner-manager-action-modal .modal-content p { color: var(--text-muted, #667085); line-height: 1.55; }
+.owner-manager-action-modal .modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 10px 24px; }
+.owner-manager-modal-password-field { margin: 24px 0 10px; }
+.owner-manager-password-details { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 20px 0 8px; }
+.owner-manager-password-details > div { display: grid; gap: 4px; padding: 12px 14px; border: 1px solid #e4e7ec; border-radius: 8px; }
+.owner-manager-password-details span { color: var(--text-muted, #667085); font-size: 0.78rem; }
+.owner-manager-password-details strong { color: var(--text-primary, #263238); font-weight: 600; }
+html.dark .owner-manager-action-modal .modal-content,
+html.dark .owner-manager-action-modal .modal-footer { background: #20242b; }
+html.dark .owner-manager-action-modal .modal-content h4 { color: #f3f4f6; }
+html.dark .owner-manager-action-modal .modal-content p { color: #b7bec8; }
+html.dark .owner-manager-password-details > div { border-color: #3b414b; }
+html.dark .owner-manager-password-details strong { color: #f3f4f6; }
+.owner-manager-edit-modal { max-width: 420px; background: #141414; }
+.owner-manager-edit-modal .modal-content { display: flex; flex-direction: column; padding: 20px 16px 24px; }
+.owner-manager-edit-modal .modal-content h4 { margin-bottom: 8px; color: #f5f5f5; font-size: 1.3rem; }
+.owner-manager-edit-label { display: block; margin: 10px 0 4px; color: #aaa; font-size: .78rem; font-weight: 600; }
+.owner-manager-edit-input { box-sizing: border-box !important; width: 100% !important; height: 44px !important; margin: 0 0 2px !important; padding: 0 14px !important; border: 1px solid #333 !important; border-radius: 8px !important; background: #090909 !important; color: #eee !important; box-shadow: none !important; }
+.owner-manager-edit-input:focus { border-color: #4385f5 !important; box-shadow: 0 0 0 1px #4385f5 !important; }
+.owner-manager-edit-input::placeholder { color: #c6c6c6; }
+.owner-manager-edit-password { position: relative; }
+.owner-manager-edit-password .owner-manager-edit-input { padding-right: 48px !important; }
+.owner-manager-edit-toggle { position: absolute; top: 0; right: 4px; width: 42px; height: 44px; border: 0; background: transparent; color: #aaa; cursor: pointer; }
+.owner-manager-edit-modal .modal-footer { min-height: 62px; border-top: 1px solid #222; background: #141414 !important; }
+.owner-manager-edit-modal .modal-footer .btn-flat { color: #ddd; }
+.owner-manager-edit-modal .modal-footer .btn { border-radius: 8px; background: #397ff1; text-transform: none; font-weight: 700; }

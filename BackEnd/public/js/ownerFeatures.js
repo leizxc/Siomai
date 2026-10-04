@@ -1,11 +1,15 @@
-import { db } from "/js/firebase.js";
+import { db, auth } from "/js/firebase.js";
 import {
   collection,
+  deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const state = {
@@ -497,10 +501,13 @@ function renderManagers() {
     const right = asDate(b.updatedAt || b.createdAt)?.getTime() || 0;
     return right - left;
   });
-  const managerRows = managers.map(
-    (item) =>
-      `<tr><td>${esc(employeeName(item))}</td><td>${esc(item.email)}</td><td>${esc(item.username || "—")}</td><td>${statusBadge(item.status || "Registered")}</td></tr>`,
-  );
+  const managerRows = managers.map((item) => {
+    const uid = item.uid || item.authUid || "";
+    const actions = uid
+      ? `<div class="owner-manager-actions"><button type="button" class="owner-manager-action-btn owner-manager-change-password" aria-label="Change password for ${esc(employeeName(item))}" title="Change password" data-uid="${esc(uid)}" data-name="${esc(employeeName(item))}" data-fname="${esc(item.fname || "")}" data-lname="${esc(item.lname || "")}"><i class="material-icons" aria-hidden="true">edit</i></button><button type="button" class="owner-manager-action-btn owner-manager-delete" aria-label="Delete ${esc(employeeName(item))}" title="Delete manager" data-uid="${esc(uid)}" data-email="${esc(item.email || "")}" data-name="${esc(employeeName(item))}"><i class="material-icons" aria-hidden="true">delete</i></button></div>`
+      : `<span class="owner-manager-no-actions">No linked login</span>`;
+    return `<tr><td>${esc(employeeName(item))}</td><td>${esc(item.email)}</td><td>${esc(item.username || "—")}</td><td>${statusBadge(item.status || "Registered")}</td><td>${actions}</td></tr>`;
+  });
   const alertRows = alerts
     .slice(0, 20)
     .map(
@@ -538,11 +545,11 @@ function renderManagers() {
           <label>Last name<input name="lname" type="text" autocomplete="family-name" placeholder="Enter last name" required maxlength="60"></label>
         </div>
         <label>Email<input name="email" type="email" autocomplete="email" placeholder="Enter email address" required></label>
-        <label>Username<input name="username" type="text" autocomplete="username" placeholder="Choose a username" required minlength="5" maxlength="40"></label>
+        <label>Username<input name="username" type="text" autocomplete="username" placeholder="Create a username" required minlength="5" maxlength="40"></label>
         <label>Password<div class="owner-manager-password-field"><input name="password" type="password" autocomplete="new-password" placeholder="Create a password" required minlength="6"><button class="owner-manager-password-toggle" type="button" aria-label="Show password" aria-pressed="false"><i class="material-icons" aria-hidden="true">visibility</i></button></div></label>
         <div class="owner-manager-form-actions"><button class="btn account-create-button" type="submit" aria-busy="false"><span class="account-submit-label"><i class="material-icons" aria-hidden="true">add</i>CREATE MANAGER</span><span class="account-submit-progress"><span class="account-loading-spinner" aria-hidden="true"></span>Adding...</span></button></div>
       </form>
-    </section>${tableCard("Manager accounts", ["Manager", "Email", "Username", "Status"], managerRows, "No manager accounts were found in employee records.")}${tableCard("Manager activity", ["Updated", "Type", "Details", "Status"], alertRows, "No manager updates found.")}`,
+    </section>${tableCard("Manager accounts", ["Manager", "Email", "Username", "Status", "Actions"], managerRows, "No manager accounts were found in employee records.")}${tableCard("Manager activity", ["Updated", "Type", "Details", "Status"], alertRows, "No manager updates found.")}`,
   );
   if (priorValues) {
     const nextForm = root?.querySelector("#owner-manager-create-form");
@@ -633,6 +640,106 @@ export function initOwnerFeature(feature) {
       toggle.setAttribute("aria-label", visible ? "Hide password" : "Show password");
       toggle.setAttribute("aria-pressed", String(visible));
       toggle.querySelector(".material-icons").textContent = visible ? "visibility_off" : "visibility";
+    });
+    let pendingManagerAction = null;
+    const passwordModalElement = document.getElementById("owner-manager-password-modal");
+    const deleteModalElement = document.getElementById("owner-manager-delete-modal");
+    const passwordModal = passwordModalElement && typeof M !== "undefined" ? M.Modal.init(passwordModalElement) : null;
+    const deleteModal = deleteModalElement && typeof M !== "undefined" ? M.Modal.init(deleteModalElement) : null;
+    const passwordInput = document.getElementById("owner-manager-new-password");
+    const firstNameInput = document.getElementById("owner-manager-edit-fname");
+    const lastNameInput = document.getElementById("owner-manager-edit-lname");
+    document.querySelector(".owner-manager-edit-toggle")?.addEventListener("click", (event) => {
+      const toggle = event.currentTarget;
+      if (!passwordInput) return;
+      const visible = passwordInput.type === "password";
+      passwordInput.type = visible ? "text" : "password";
+      toggle.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+      toggle.querySelector(".material-icons").textContent = visible ? "visibility_off" : "visibility";
+    });
+    const submitManagerAction = async (button, passwordButton, password = "") => {
+      if (!button || button.disabled) return;
+      const uid = button.dataset.uid;
+      if (!uid) return;
+      button.disabled = true;
+      try {
+        await auth.authStateReady?.();
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) throw new Error("Please sign in again and retry.");
+        const response = await fetch(`${window.location.origin}/${passwordButton ? "updateAuthPassword" : "deleteAuthUser"}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify(passwordButton ? { uid, password, fname: firstNameInput?.value.trim(), lname: lastNameInput?.value.trim() } : { uid }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.error || "Unable to update the manager account.");
+        if (!passwordButton) {
+          const [employees, users] = await Promise.all([
+            getDocs(query(collection(db, "employees"), where("uid", "==", uid))),
+            getDocs(query(collection(db, "users"), where("uid", "==", uid))),
+          ]);
+          await Promise.all([...employees.docs, ...users.docs].map((item) => deleteDoc(item.ref)));
+        }
+        if (typeof M !== "undefined") M.toast({ html: passwordButton ? "Manager details saved." : "Manager account deleted.", classes: "green rounded" });
+      } catch (error) {
+        console.error("Unable to manage manager account:", error);
+        if (typeof M !== "undefined") M.toast({ html: error.message || "Unable to manage this manager account.", classes: "red rounded" });
+      } finally {
+        button.disabled = false;
+      }
+    };
+    document.getElementById("owner-manager-password-confirm")?.addEventListener("click", async () => {
+      const password = passwordInput?.value || "";
+      if (!firstNameInput?.value.trim() || !lastNameInput?.value.trim()) {
+        if (typeof M !== "undefined") M.toast({ html: "First and last name are required.", classes: "red rounded" });
+        return;
+      }
+      if (password && password.length < 6) {
+        if (typeof M !== "undefined") M.toast({ html: "Password must be at least 6 characters.", classes: "red rounded" });
+        passwordInput?.focus();
+        return;
+      }
+      const button = pendingManagerAction;
+      if (!button) return;
+      const confirmButton = document.getElementById("owner-manager-password-confirm");
+      confirmButton.disabled = true;
+      await submitManagerAction(button, true, password);
+      confirmButton.disabled = false;
+      passwordModal?.close();
+      if (passwordInput) passwordInput.value = "";
+    });
+    document.getElementById("owner-manager-delete-confirm")?.addEventListener("click", async () => {
+      const button = pendingManagerAction;
+      if (!button) return;
+      const confirmButton = document.getElementById("owner-manager-delete-confirm");
+      confirmButton.disabled = true;
+      await submitManagerAction(button, false);
+      confirmButton.disabled = false;
+      deleteModal?.close();
+    });
+    root.addEventListener("click", (event) => {
+      const passwordButton = event.target.closest(".owner-manager-change-password");
+      const deleteButton = event.target.closest(".owner-manager-delete");
+      const button = passwordButton || deleteButton;
+      if (!button) return;
+      if (!button.dataset.uid || button.disabled) return;
+      pendingManagerAction = button;
+      if (passwordButton) {
+        const message = document.getElementById("owner-manager-password-message");
+        if (message) message.textContent = `Set a new password for ${button.dataset.name || "this manager"}.`;
+        const firstName = document.getElementById("owner-manager-password-fname");
+        const lastName = document.getElementById("owner-manager-password-lname");
+        if (firstName) firstName.textContent = button.dataset.fname || "—";
+        if (lastName) lastName.textContent = button.dataset.lname || "—";
+        if (firstNameInput) firstNameInput.value = button.dataset.fname || "";
+        if (lastNameInput) lastNameInput.value = button.dataset.lname || "";
+        if (passwordInput) passwordInput.value = "";
+        passwordModal?.open();
+      } else {
+        const message = document.getElementById("owner-manager-delete-message");
+        if (message) message.textContent = `Permanently delete the manager account for ${button.dataset.name || button.dataset.email || "this manager"}? This action cannot be undone.`;
+        deleteModal?.open();
+      }
     });
     root.addEventListener("submit", async (event) => {
       const form = event.target.closest("#owner-manager-create-form");

@@ -218,14 +218,14 @@ app.post("/createAuthUser", requireAdmin, async (req, res) => {
 // Update an employee Firebase Auth password from the admin panel.
 app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
   try {
-    const { uid, password } = req.body;
-    if (typeof uid !== "string" || !uid.trim() || typeof password !== "string") {
+    const { uid, password, fname, lname } = req.body;
+    if (typeof uid !== "string" || !uid.trim() || (password !== undefined && typeof password !== "string")) {
       return res.status(400).json({
         success: false,
         error: "A user ID and password are required",
       });
     }
-    if (password.length < 6) {
+    if (password && password.length < 6) {
       return res.status(400).json({
         success: false,
         error: "Password must be at least 6 characters",
@@ -233,6 +233,13 @@ app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
     }
 
     const targetUser = await admin.auth().getUser(uid);
+    if (req.userRole !== "owner") {
+      return res.status(403).json({ success: false, error: "Only owners can manage manager accounts" });
+    }
+    const targetClaims = targetUser.customClaims || {};
+    if (String(targetClaims.role || "").toLowerCase() !== "manager") {
+      return res.status(403).json({ success: false, error: "This action is only available for manager accounts" });
+    }
     if (
       uid === req.user.uid ||
       (targetUser.email && adminEmails.has(targetUser.email.toLowerCase()))
@@ -243,8 +250,29 @@ app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
       });
     }
 
-    await admin.auth().updateUser(uid, { password });
-    await writeAudit(req.user, "password_changed", targetUser);
+    const firstName = typeof fname === "string" ? fname.trim() : undefined;
+    const lastName = typeof lname === "string" ? lname.trim() : undefined;
+    if ((firstName !== undefined && !firstName) || (lastName !== undefined && !lastName) ||
+        (firstName !== undefined && firstName.length > 80) || (lastName !== undefined && lastName.length > 80)) {
+      return res.status(400).json({ success: false, error: "Enter a valid first and last name" });
+    }
+    const update = {};
+    if (password) update.password = password;
+    if (firstName !== undefined || lastName !== undefined) {
+      update.displayName = `${firstName ?? targetUser.displayName?.split(" ")[0] ?? ""} ${lastName ?? targetUser.displayName?.split(" ").slice(1).join(" ") ?? ""}`.trim();
+    }
+    if (Object.keys(update).length) await admin.auth().updateUser(uid, update);
+    if (firstName !== undefined || lastName !== undefined) {
+      const db = admin.firestore();
+      for (const collectionName of ["employees", "users"]) {
+        const matches = await db.collection(collectionName).where("uid", "==", uid).get();
+        await Promise.all(matches.docs.map((doc) => doc.ref.update({
+          ...(firstName !== undefined ? { fname: firstName } : {}),
+          ...(lastName !== undefined ? { lname: lastName } : {}),
+        })));
+      }
+    }
+    if (password) await writeAudit(req.user, "password_changed", targetUser);
     return res.status(200).json({ success: true });
   } catch (error) {
     verboseLog("Update Auth Password Error:", error.code || "unknown error");
@@ -270,6 +298,12 @@ app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
     }
 
     const targetUser = await admin.auth().getUser(uid);
+    if (req.userRole !== "owner") {
+      return res.status(403).json({ success: false, error: "Only owners can manage manager accounts" });
+    }
+    if (String((targetUser.customClaims || {}).role || "").toLowerCase() !== "manager") {
+      return res.status(403).json({ success: false, error: "This action is only available for manager accounts" });
+    }
     if (targetUser.email && adminEmails.has(targetUser.email.toLowerCase())) {
       return res
         .status(403)

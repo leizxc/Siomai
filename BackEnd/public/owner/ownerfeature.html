@@ -3,3 +3,30 @@
     <p class="dashboard-empty">Loading owner view...</p>
   </div>
 </section>
+
+<div id="owner-manager-password-modal" class="modal owner-manager-action-modal owner-manager-edit-modal">
+  <div class="modal-content">
+    <h4>Edit Manager</h4>
+    <label class="owner-manager-edit-label" for="owner-manager-edit-fname">First Name</label>
+    <input class="owner-manager-edit-input" id="owner-manager-edit-fname" maxlength="80" autocomplete="given-name">
+    <label class="owner-manager-edit-label" for="owner-manager-edit-lname">Last Name</label>
+    <input class="owner-manager-edit-input" id="owner-manager-edit-lname" maxlength="80" autocomplete="family-name">
+    <label class="owner-manager-edit-label" for="owner-manager-new-password">Change Password</label>
+    <div class="owner-manager-edit-password"><input class="owner-manager-edit-input" id="owner-manager-new-password" type="password" minlength="6" autocomplete="new-password" placeholder="Leave blank to keep current password"><button class="owner-manager-edit-toggle" type="button" aria-label="Show password"><i class="material-icons" aria-hidden="true">visibility</i></button></div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn-flat modal-close">Cancel</button>
+    <button id="owner-manager-password-confirm" type="button" class="btn blue">Save Changes</button>
+  </div>
+</div>
+
+<div id="owner-manager-delete-modal" class="modal owner-manager-action-modal">
+  <div class="modal-content">
+    <h4>Delete Manager?</h4>
+    <p id="owner-manager-delete-message">This manager account will be permanently deleted.</p>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn-flat modal-close">Cancel</button>
+    <button id="owner-manager-delete-confirm" type="button" class="btn red">Delete Manager</button>
+  </div>
+</div>
