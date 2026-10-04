@@ -5,5 +5,9 @@
     "express-rate-limit": "^8.7.0",
     "firebase-admin": "^14.5.0",
     "helmet": "^8.3.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.2"
   }
 }
+
