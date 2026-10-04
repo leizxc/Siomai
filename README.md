@@ -21,20 +21,22 @@ record has `role: "owner"`. For an additional explicit allowlist, set
 Keep that list limited to trusted owner accounts. `ADMIN_EMAILS` remains the
 separate administrator allowlist.
 
-## Deploy the API on Railway and the frontend on Firebase Hosting
+## Deploy on Vercel and Firebase Hosting
 
-Deploy the repository root as a Railway Node service. Railway detects the root
-`package.json` and starts the API with `npm start`. In the Railway service's
-Variables tab, set `NODE_ENV=production`, `FIREBASE_PROJECT_ID=siomai-b3afe`,
-and `ALLOWED_ORIGINS=https://siomai-b3afe.web.app`. Set
-`FIREBASE_SERVICE_ACCOUNT` to the full service-account JSON as a Railway
-secret variable; never commit that JSON file or paste it into frontend code.
+Import this repository into Vercel and set its Root Directory to `BackEnd`.
+The Vercel function serves both the Express API and the `public` frontend.
+Configure these Vercel environment variables for Production:
 
-Generate a public Railway domain and set it as `API_BASE_URL` in
-`BackEnd/public/js/apiConfig.js` (origin only, without a trailing slash). Then
-deploy the frontend with `firebase deploy --only hosting`. The Express API is
-separate from Firebase Hosting, so the Railway service must stay deployed and
-its domain must be reachable for manager account actions to work.
+- `NODE_ENV=production`
+- `FIREBASE_SERVICE_ACCOUNT`: the full Firebase service-account JSON, stored as
+  a secret environment variable. Never commit the service-account file.
+- `ALLOWED_ORIGINS=https://siomai-b3afe.web.app,https://siomai-b3afe.firebaseapp.com`
+
+`BackEnd/public/js/apiConfig.js` must contain the Vercel deployment's origin
+only (no trailing slash). It currently points to `https://siomai.vercel.app`.
+The Firebase Hosting project is `siomai-b3afe`; deploy its frontend with
+`firebase deploy --only hosting` from the repository root. If using the
+Firebase Hosting domain, add it to Firebase Authentication's Authorized domains.
 
 ## Authors
 
