@@ -1,4 +1,4 @@
-import { db } from "/js/firebase.js";
+import { db, isManagerAccount } from "/js/firebase.js";
 import {
   beginButtonLoading,
   endButtonLoading,
@@ -58,12 +58,19 @@ function toLocalDateValue(date) {
 let usersMap = {};
 let latestEmployeeDocs = [];
 let latestAttendanceDocs = [];
+let managerEmployeeView = false;
 let unsubscribeUsers = null;
 let unsubscribeEmployees = null;
 let unsubscribeEmployeeAttendance = null;
 
+function isManagerEmployeeRecord(data = {}) {
+  return String(data.role || "").toLowerCase() === "manager" ||
+    String(data.accountRole || "").toLowerCase() === "manager";
+}
+
 // Load employees list with username from users collection
 export async function loadEmployees() {
+  managerEmployeeView = await isManagerAccount();
   const tbody = document.querySelector("#employeeTable tbody");
   if (tbody) tbody.innerHTML = "";
 
@@ -134,7 +141,10 @@ function rebuildEmployeeData() {
   let activeCount = 0;
   let todayCount = 0;
 
-  employeeListCache = latestEmployeeDocs.map(({ id, data }) => {
+  employeeListCache = latestEmployeeDocs.filter(({ data }) => {
+    if (!managerEmployeeView) return true;
+    return !isManagerEmployeeRecord(data);
+  }).map(({ id, data }) => {
     const userInfo = usersMap[data.email] || {};
 
     if (onlineUserIds.has(data.uid || id)) activeCount++;
@@ -235,6 +245,8 @@ function bindRowButtons() {
   document.querySelectorAll(".delete-btn").forEach((btn) => {
     btn.onclick = async (e) => {
       const id = e.currentTarget.dataset.id;
+      const target = latestEmployeeDocs.find((item) => item.id === id);
+      if (managerEmployeeView && isManagerEmployeeRecord(target?.data)) return;
 
       const confirmed = await confirmDeletion(
         "Delete Employee?",
@@ -251,6 +263,8 @@ function bindRowButtons() {
   document.querySelectorAll(".edit-btn").forEach((btn) => {
     btn.onclick = (e) => {
       const id = e.currentTarget.dataset.id;
+      const target = latestEmployeeDocs.find((item) => item.id === id);
+      if (managerEmployeeView && isManagerEmployeeRecord(target?.data)) return;
       const row = e.currentTarget.closest("tr");
 
       // Ang mga orihinal na value bago mag-edit — gagamitin sa pag-check
@@ -312,6 +326,11 @@ function bindRowButtons() {
         const newLname = document.getElementById("edit-lname").value.trim();
         const newRole = document.getElementById("edit-role").value;
         const newPassword = passwordInput.value;
+
+        if (managerEmployeeView && isManagerEmployeeRecord(target?.data)) {
+          M.toast({ html: "Managers cannot edit manager accounts.", classes: "red rounded" });
+          return;
+        }
 
         // Walang pwedeng maiwan na blangko.
         if (!newFname || !newLname || !newRole) {

@@ -6187,6 +6187,13 @@ mobile cards so no row appears selected or highlighted. */
 .dashboard-manager-kpis .dashboard-kpi-card {
   cursor: default;
 }
+.dashboard-manager-kpis .dashboard-kpi-card[role="link"] {
+  cursor: pointer;
+}
+.dashboard-manager-kpis .dashboard-kpi-card[role="link"]:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
 .dashboard-manager-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
