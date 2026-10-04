@@ -64,6 +64,8 @@ function refreshEmployeeFilter() {
   const previousValue = select.value;
   const options = new Map();
   employees.forEach((employee) => {
+    const role = String(employee.data.role || employee.data.accountRole || "").toLowerCase();
+    if (role === "manager" || employee.data.isManager === true) return;
     const id = employee.data.uid || employee.id;
     const name = `${employee.data.fname || ""} ${employee.data.lname || ""}`.trim() || "Employee";
     options.set(id, name);

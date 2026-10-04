@@ -233,12 +233,10 @@ app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
     }
 
     const targetUser = await admin.auth().getUser(uid);
-    if (req.userRole !== "owner") {
-      return res.status(403).json({ success: false, error: "Only owners can manage manager accounts" });
-    }
     const targetClaims = targetUser.customClaims || {};
-    if (String(targetClaims.role || "").toLowerCase() !== "manager") {
-      return res.status(403).json({ success: false, error: "This action is only available for manager accounts" });
+    const targetRole = String(targetClaims.role || "").toLowerCase();
+    if (!(["employee", "manager"].includes(targetRole)) || (targetRole === "manager" && req.userRole !== "owner")) {
+      return res.status(403).json({ success: false, error: "You are not allowed to manage this account" });
     }
     if (
       uid === req.user.uid ||
@@ -298,11 +296,9 @@ app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
     }
 
     const targetUser = await admin.auth().getUser(uid);
-    if (req.userRole !== "owner") {
-      return res.status(403).json({ success: false, error: "Only owners can manage manager accounts" });
-    }
-    if (String((targetUser.customClaims || {}).role || "").toLowerCase() !== "manager") {
-      return res.status(403).json({ success: false, error: "This action is only available for manager accounts" });
+    const targetRole = String((targetUser.customClaims || {}).role || "").toLowerCase();
+    if (!(["employee", "manager"].includes(targetRole)) || (targetRole === "manager" && req.userRole !== "owner")) {
+      return res.status(403).json({ success: false, error: "You are not allowed to manage this account" });
     }
     if (targetUser.email && adminEmails.has(targetUser.email.toLowerCase())) {
       return res

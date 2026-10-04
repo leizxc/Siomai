@@ -160,7 +160,7 @@
 
         <div id="content" class="dashboard-content">
           <div class="dashboard-kpi-grid dashboard-manager-kpis">
-            <section class="dashboard-kpi-card sales-kpi">
+            <section class="dashboard-kpi-card sales-kpi" role="link" tabindex="0" aria-label="Open sales" onclick="loadSection('IncomeCart.html', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();loadSection('IncomeCart.html',this)}">
               <div class="kpi-icon"><i class="material-icons">payments</i></div>
               <div class="kpi-info">
                 <p>SALES TODAY</p>
@@ -168,7 +168,7 @@
                 <span>Paid orders</span>
               </div>
             </section>
-            <section class="dashboard-kpi-card expense-kpi">
+            <section class="dashboard-kpi-card expense-kpi" role="link" tabindex="0" aria-label="Open expenses" onclick="loadSection('expenses.html', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();loadSection('expenses.html',this)}">
               <div class="kpi-icon">
                 <i class="material-icons">receipt_long</i>
               </div>
@@ -188,7 +188,7 @@
                 <span>Sales minus expenses</span>
               </div>
             </section>
-            <section class="dashboard-kpi-card income-kpi">
+            <section class="dashboard-kpi-card income-kpi" role="link" tabindex="0" aria-label="Review attendance requests" onclick="loadSection('EmployeeMonitoring.html', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();loadSection('EmployeeMonitoring.html',this)}">
               <div class="kpi-icon">
                 <i class="material-icons">pending_actions</i>
               </div>
