@@ -8,16 +8,21 @@ service cloud.firestore {
     function administrator() {
       return signedIn() && request.auth.token.role in ['admin', 'owner'];
     }
+    function employeeAccount(data) {
+      return data.get('role', 'employee') != 'manager' && data.get('accountRole', 'employee') != 'manager';
+    }
     function owns(data) { return signedIn() && data.uid == request.auth.uid; }
 
     match /users/{id} {
       allow read: if privileged() || owns(resource.data);
       allow create: if privileged() || (signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.role == 'employee');
-      allow update: if (owns(resource.data) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) || (privileged() && !owns(resource.data));
-      allow delete: if privileged();
+      allow update: if (owns(resource.data) && employeeAccount(resource.data) && employeeAccount(request.resource.data) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) || administrator() || (signedIn() && request.auth.token.role == 'manager' && !owns(resource.data) && employeeAccount(resource.data) && employeeAccount(request.resource.data));
+      allow delete: if administrator() || (signedIn() && request.auth.token.role == 'manager' && employeeAccount(resource.data));
     }
     match /employees/{id} {
-      allow read, update, delete: if privileged() || owns(resource.data);
+      allow read: if privileged() || owns(resource.data);
+      allow update: if administrator() || (owns(resource.data) && employeeAccount(resource.data) && employeeAccount(request.resource.data)) || (signedIn() && request.auth.token.role == 'manager' && !owns(resource.data) && employeeAccount(resource.data) && employeeAccount(request.resource.data));
+      allow delete: if administrator() || (owns(resource.data) && employeeAccount(resource.data)) || (signedIn() && request.auth.token.role == 'manager' && employeeAccount(resource.data));
       allow create: if privileged() || owns(request.resource.data);
     }
     match /orders/{id} {
