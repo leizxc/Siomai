@@ -9,15 +9,18 @@ const rateLimit = require("express-rate-limit");
 const isProduction = process.env.NODE_ENV === "production";
 const verboseLog = (...args) => { if (!isProduction) console.log(...args); };
 
-let serviceAccount;
 let firebaseReady = false;
 
 try {
+  let credential;
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     verboseLog("Using FIREBASE_SERVICE_ACCOUNT environment configuration");
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    credential = admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT));
   } else if (isProduction) {
-    throw new Error("FIREBASE_SERVICE_ACCOUNT is required in production");
+    // Google-managed runtimes can supply Application Default Credentials.
+    // Other hosts should provide FIREBASE_SERVICE_ACCOUNT as a secret variable.
+    verboseLog("Using Google Application Default Credentials");
+    credential = admin.credential.applicationDefault();
   } else {
     const localKeyPath = [
       path.join(__dirname, "serviceAccountKey.json"),
@@ -27,11 +30,12 @@ try {
       throw new Error("Local Firebase service account file was not found");
     }
     verboseLog(`Using local Firebase service account file: ${path.basename(localKeyPath)}`);
-    serviceAccount = require(localKeyPath);
+    credential = admin.credential.cert(require(localKeyPath));
   }
 
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    credential,
+    ...(process.env.FIREBASE_PROJECT_ID ? { projectId: process.env.FIREBASE_PROJECT_ID } : {}),
   });
 
   firebaseReady = true;
@@ -371,6 +375,10 @@ app.get("/testFirebase", generalLimiter, requireAdmin, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

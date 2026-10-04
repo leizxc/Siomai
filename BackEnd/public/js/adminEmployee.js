@@ -1,4 +1,5 @@
 import { db, isManagerAccount } from "/js/firebase.js";
+import { API_BASE_URL } from "/js/apiConfig.js";
 import {
   beginButtonLoading,
   endButtonLoading,
@@ -380,7 +381,7 @@ function bindRowButtons() {
               const idToken = await getAuthToken();
               if (!idToken) throw new Error(SESSION_EXPIRED_MESSAGE);
               const response = await fetch(
-                `${window.location.origin}/updateAuthPassword`,
+                `${API_BASE_URL}/updateAuthPassword`,
                 {
                   method: "POST",
                   headers: {
@@ -494,7 +495,7 @@ export async function addEmployee(
   password,
   accountRole = "employee",
 ) {
-  const API_BASE = window.location.origin;
+  const API_BASE = API_BASE_URL;
   let idToken = null;
   let createdUid = null;
   let employeeRef = null;
@@ -794,7 +795,7 @@ export async function deleteEmployee(id) {
       return;
     }
 
-    const API_BASE = window.location.origin;
+    const API_BASE = API_BASE_URL;
 
     // STEP 1: Delete Firebase Auth FIRST
     const res = await fetch(`${API_BASE}/deleteAuthUser`, {

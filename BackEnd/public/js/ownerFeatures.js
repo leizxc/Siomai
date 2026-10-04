@@ -1,4 +1,5 @@
 import { db, auth } from "/js/firebase.js";
+import { API_BASE_URL } from "/js/apiConfig.js";
 import {
   collection,
   deleteDoc,
@@ -666,7 +667,7 @@ export function initOwnerFeature(feature) {
         await auth.authStateReady?.();
         const token = await auth.currentUser?.getIdToken();
         if (!token) throw new Error("Please sign in again and retry.");
-        const response = await fetch(`${window.location.origin}/${passwordButton ? "updateAuthPassword" : "deleteAuthUser"}`, {
+        const response = await fetch(`${API_BASE_URL}/${passwordButton ? "updateAuthPassword" : "deleteAuthUser"}`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify(passwordButton ? { uid, password, fname: firstNameInput?.value.trim(), lname: lastNameInput?.value.trim() } : { uid }),
