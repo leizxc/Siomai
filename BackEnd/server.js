@@ -48,6 +48,12 @@ const adminEmails = new Set(
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean),
 );
+const ownerEmails = new Set(
+  (process.env.OWNER_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
+);
 
 app.use((req, res, next) => {
   const origin = req.get("Origin");
@@ -106,6 +112,19 @@ function getBearerToken(req) {
   return scheme === "Bearer" && token ? token : null;
 }
 
+async function getStoredAccountRole(uid) {
+  const db = admin.firestore();
+  const directMatch = await db.collection("users").doc(uid).get();
+  if (directMatch.exists) {
+    return String(directMatch.data()?.role || "").trim().toLowerCase();
+  }
+
+  const matches = await db.collection("users").where("uid", "==", uid).limit(1).get();
+  return matches.empty
+    ? ""
+    : String(matches.docs[0].data()?.role || "").trim().toLowerCase();
+}
+
 //createAuthUser()
 async function requireAdmin(req, res, next) {
   if (!firebaseReady) {
@@ -124,7 +143,14 @@ async function requireAdmin(req, res, next) {
   try {
     const user = await admin.auth().verifyIdToken(token);
     const email = user.email?.trim().toLowerCase();
-    const role = String(user.role || "").toLowerCase();
+    const tokenRole = String(user.role || "").trim().toLowerCase();
+    // Legacy owner accounts may have the owner role in Firestore before their
+    // Firebase custom claim was created. Resolve that role with Admin SDK only;
+    // never trust a role sent by the browser.
+    const storedRole = tokenRole ? "" : await getStoredAccountRole(user.uid);
+    const role = (email && ownerEmails.has(email))
+      ? "owner"
+      : tokenRole || storedRole;
     const hasPanelAccess = ["admin", "manager", "owner"].includes(role) || Boolean(email && adminEmails.has(email));
 
     if (!hasPanelAccess) {

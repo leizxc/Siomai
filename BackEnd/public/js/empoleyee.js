@@ -53,11 +53,18 @@ function formatQuantity(value) {
 // ========================================
 // Pack products consume piece-based stock. Other units are sold per order.
 function isPackProduct(product) {
-  return String(product.unit || "").trim().toLowerCase() === "pack";
+  return (
+    String(product.unit || "")
+      .trim()
+      .toLowerCase() === "pack"
+  );
 }
 
 function isLechonProduct(product) {
-  return !product.isCombo && /let?chon/i.test(`${product.category || ""} ${product.name || ""}`);
+  return (
+    !product.isCombo &&
+    /let?chon/i.test(`${product.category || ""} ${product.name || ""}`)
+  );
 }
 
 function normalizeComboNames(items) {
@@ -69,7 +76,9 @@ function normalizeComboNames(items) {
   let changed = false;
   items.forEach((item) => {
     if (!item.isCombo) return;
-    const key = Object.keys(comboNames).find((comboKey) => String(item.id || "").endsWith(`-${comboKey}`));
+    const key = Object.keys(comboNames).find((comboKey) =>
+      String(item.id || "").endsWith(`-${comboKey}`),
+    );
     if (key && item.name !== comboNames[key]) {
       item.name = comboNames[key];
       changed = true;
@@ -79,18 +88,26 @@ function normalizeComboNames(items) {
 }
 
 function restoreFixedLechonPrice(item) {
-  if (!isLechonProduct(item) || item.lechonFixedPrice || item.customPriceEntered) return false;
+  if (
+    !isLechonProduct(item) ||
+    item.lechonFixedPrice ||
+    item.customPriceEntered
+  )
+    return false;
 
   const match = String(item.name || "").match(/\((1\/4|1\/2|1)\s*kg\)/i);
   if (!match) return false;
 
-  const source = allProducts.find((product) => product.id === item.productId || product.id === item.id);
+  const source = allProducts.find(
+    (product) => product.id === item.productId || product.id === item.id,
+  );
   const prices = source?.lechonPrices || {};
-  const preset = match[1] === "1/4"
-    ? Number(prices.quarter ?? prices["1/4 kg"] ?? 250)
-    : match[1] === "1/2"
-      ? Number(prices.half ?? prices["1/2 kg"] ?? 500)
-      : Number(prices.one ?? prices["1 kg"] ?? 900);
+  const preset =
+    match[1] === "1/4"
+      ? Number(prices.quarter ?? prices["1/4 kg"] ?? 250)
+      : match[1] === "1/2"
+        ? Number(prices.half ?? prices["1/2 kg"] ?? 500)
+        : Number(prices.one ?? prices["1 kg"] ?? 900);
 
   if (!Number.isFinite(preset) || preset <= 0) return false;
   item.price = preset;
@@ -105,7 +122,9 @@ function hasUnlimitedOrder(product) {
 
 function getProductStockLabel(product) {
   const pieces = Number(product.pieces ?? product.stock) || 0;
-  const unit = String(product.unit || "").trim().toLowerCase();
+  const unit = String(product.unit || "")
+    .trim()
+    .toLowerCase();
   if (unit === "pack") {
     return `${formatQuantity(product.packs)} packs (${formatQuantity(pieces)} pcs)`;
   }
@@ -117,85 +136,159 @@ function getCardStockLabel(product) {
   return isPackProduct(product) ? getProductStockLabel(product) : "Order";
 }
 
-function findComboProduct(keyword, { excludeLechon = false, excludeId = "", excludeRiceMeals = false } = {}) {
-  return allProducts.find((product) => {
-    const searchable = `${product.name || ""} ${product.category || ""}`.toLowerCase();
-    if (
-      product.id === excludeId ||
-      !searchable.includes(keyword) ||
-      (excludeLechon && isLechonProduct(product)) ||
-      (excludeRiceMeals && /rice|combo/i.test(String(product.name || "")))
-    ) return false;
-    return hasUnlimitedOrder(product) || (Number(product.pieces ?? product.stock) || 0) > 0;
-  }) || null;
+function findComboProduct(
+  keyword,
+  { excludeLechon = false, excludeId = "", excludeRiceMeals = false } = {},
+) {
+  return (
+    allProducts.find((product) => {
+      const searchable =
+        `${product.name || ""} ${product.category || ""}`.toLowerCase();
+      if (
+        product.id === excludeId ||
+        !searchable.includes(keyword) ||
+        (excludeLechon && isLechonProduct(product)) ||
+        (excludeRiceMeals && /rice|combo/i.test(String(product.name || "")))
+      )
+        return false;
+      return (
+        hasUnlimitedOrder(product) ||
+        (Number(product.pieces ?? product.stock) || 0) > 0
+      );
+    }) || null
+  );
 }
 
 function getEmployeeCombos() {
   // allProducts is already limited to the signed-in employee's role and
   // employee assignment by loadProducts(); only build combos from that set.
-  const usableProducts = allProducts.filter((product) =>
-    hasUnlimitedOrder(product) || (Number(product.pieces ?? product.stock) || 0) > 0,
+  const usableProducts = allProducts.filter(
+    (product) =>
+      hasUnlimitedOrder(product) ||
+      (Number(product.pieces ?? product.stock) || 0) > 0,
   );
-  const rice = usableProducts.find((product) =>
-    !/(siomai|lechon|pares)/i.test(String(product.name || "")) &&
-      (/^rice$/i.test(String(product.name || "").trim()) || /^rice$/i.test(String(product.category || "").trim())),
-  ) || usableProducts.find((product) => {
-    const name = String(product.name || "").toLowerCase();
-    return name.includes("rice") && !/(siomai|lechon|pares)/i.test(name);
-  });
+  const rice =
+    usableProducts.find(
+      (product) =>
+        !/(siomai|lechon|pares)/i.test(String(product.name || "")) &&
+        (/^rice$/i.test(String(product.name || "").trim()) ||
+          /^rice$/i.test(String(product.category || "").trim())),
+    ) ||
+    usableProducts.find((product) => {
+      const name = String(product.name || "").toLowerCase();
+      return name.includes("rice") && !/(siomai|lechon|pares)/i.test(name);
+    });
   if (!rice) return [];
 
   const combos = [];
-  const addCombo = (key, name, mainProduct, comboPrice, fallbackDescription, mainQty = 1, mainUnit = "") => {
+  const addCombo = (
+    key,
+    name,
+    mainProduct,
+    comboPrice,
+    fallbackDescription,
+    mainQty = 1,
+    mainUnit = "",
+  ) => {
     if (!(comboPrice > 0) || !mainProduct) return;
     const components = [
       { product: rice, qty: 1, unit: rice.unit || "piece" },
-      { product: mainProduct, qty: mainQty, unit: mainUnit || mainProduct.unit || "piece" },
-    ].map(({ product, qty, unit }) => ({
-      productId: product.id,
-      name: product.id !== rice.id && key === "siomai-rice"
-        ? "Siomai"
-        : product.id !== rice.id && key === "pares-rice"
-          ? "Pares"
-          : product.name,
-      unit,
-      qty,
-    })).map((component) => ({ ...component, name: String(component.name || "").toUpperCase() }));
+      {
+        product: mainProduct,
+        qty: mainQty,
+        unit: mainUnit || mainProduct.unit || "piece",
+      },
+    ]
+      .map(({ product, qty, unit }) => ({
+        productId: product.id,
+        name:
+          product.id !== rice.id && key === "siomai-rice"
+            ? "Siomai"
+            : product.id !== rice.id && key === "pares-rice"
+              ? "Pares"
+              : product.name,
+        unit,
+        qty,
+      }))
+      .map((component) => ({
+        ...component,
+        name: String(component.name || "").toUpperCase(),
+      }));
     const riceName = rice.name || "Rice";
-    const mainDescription = key === "siomai-rice"
-      ? "3 pcs Siomai"
-      : key === "lechon-rice"
-        ? `80 g ${mainProduct.name || fallbackDescription}`
-        : key === "pares-rice"
-          ? "1 Pares"
-          : `1 ${mainProduct.name || fallbackDescription}`;
+    const mainDescription =
+      key === "siomai-rice"
+        ? "3 pcs Siomai"
+        : key === "lechon-rice"
+          ? `80 g ${mainProduct.name || fallbackDescription}`
+          : key === "pares-rice"
+            ? "1 Pares"
+            : `1 ${mainProduct.name || fallbackDescription}`;
     combos.push({
       key,
       name,
       price: comboPrice,
       description: `1 ${riceName} + ${mainDescription}`.toUpperCase(),
-      image: rice.image || mainProduct.image || "/assets/upload-placeholder.png",
+      image:
+        rice.image || mainProduct.image || "/assets/upload-placeholder.png",
       components,
     });
   };
 
-  addCombo("siomai-rice", "SIOMAI RICE", findComboProduct("siomai", { excludeLechon: true, excludeId: rice?.id, excludeRiceMeals: true }), 40, "siomai", 3, "pcs");
-  const lechon = usableProducts.find((product) => product.id !== rice?.id && isLechonProduct(product));
+  addCombo(
+    "siomai-rice",
+    "SIOMAI RICE",
+    findComboProduct("siomai", {
+      excludeLechon: true,
+      excludeId: rice?.id,
+      excludeRiceMeals: true,
+    }),
+    40,
+    "siomai",
+    3,
+    "pcs",
+  );
+  const lechon = usableProducts.find(
+    (product) => product.id !== rice?.id && isLechonProduct(product),
+  );
   addCombo("lechon-rice", "LETCHON RICE", lechon, 100, "lechon", 80, "g");
-  addCombo("pares-rice", "PARES WITH RICE", findComboProduct("pares", { excludeLechon: true, excludeId: rice?.id }), 80, "pares");
+  addCombo(
+    "pares-rice",
+    "PARES WITH RICE",
+    findComboProduct("pares", { excludeLechon: true, excludeId: rice?.id }),
+    80,
+    "pares",
+  );
   return combos;
 }
 
-async function openLowStockConfirmation(product) {
-  const existing = document.getElementById("low-stock-confirmation-modal");
-  if (existing) {
-    const existingModal = M.Modal.getInstance(existing);
-    if (existingModal) {
-      if (existingModal.isOpen) existingModal.close();
-      existingModal.destroy();
+// ========================================
+// LOW STOCK MODAL
+// ========================================
+
+// Isinasara at tinatanggal ang low-stock modal. Naka-append ito sa
+// document.body (hindi sa #content), kaya kailangan itong linisin nang
+// hiwalay kapag lumipat ng section.
+function closeLowStockModal() {
+  const element = document.getElementById("low-stock-confirmation-modal");
+  if (element) {
+    const instance = M.Modal.getInstance(element);
+    if (instance) {
+      if (instance.isOpen) instance.close();
+      instance.destroy();
     }
-    existing.remove();
+    element.remove();
   }
+  // Siguraduhing walang naiwang overlay ng Materialize.
+  document
+    .querySelectorAll(".modal-overlay")
+    .forEach((overlay) => overlay.remove());
+}
+
+async function openLowStockConfirmation(product) {
+  closeLowStockModal();
+
+  // Para malaman kung lumipat na ng section habang naka-bukas ang modal.
+  const modalSession = posSession;
 
   const modalElement = document.createElement("div");
   modalElement.id = "low-stock-confirmation-modal";
@@ -218,40 +311,65 @@ async function openLowStockConfirmation(product) {
     onCloseEnd: () => modalElement.remove(),
   });
 
-  modalElement.querySelector('[data-action="cancel"]').addEventListener("click", () => {
-    modal.close();
-  });
-
-  modalElement.querySelector('[data-action="confirm"]').addEventListener("click", async () => {
-    const confirmButton = modalElement.querySelector('[data-action="confirm"]');
-    confirmButton.disabled = true;
-    confirmButton.textContent = "Sending...";
-
-    try {
-      // Isang active alert lang bawat product para hindi mapuno ang manager bell
-      // kapag paulit-ulit itong na-click ng employee.
-      await setDoc(doc(db, "managerNotifications", `low-stock-${product.id}`), {
-        type: "low_stock",
-        productId: product.id,
-        productName: product.name || "Unnamed product",
-        remainingStock: Number(product.pieces ?? product.stock) || 0,
-        unit: product.unit || "pcs",
-        employeeId: currentEmployeeId,
-        employeeUid: auth.currentUser?.uid || null,
-        read: false,
-        updatedAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-      }, { merge: true });
-
-      M.toast({ html: "Low-stock alert sent to the manager.", classes: "green rounded" });
+  modalElement
+    .querySelector('[data-action="cancel"]')
+    .addEventListener("click", () => {
       modal.close();
-    } catch (error) {
-      console.error("Unable to send low-stock alert:", error);
-      confirmButton.disabled = false;
-      confirmButton.textContent = "Send alert";
-      M.toast({ html: "Unable to send the alert. Please try again.", classes: "red rounded" });
-    }
-  });
+    });
+
+  modalElement
+    .querySelector('[data-action="confirm"]')
+    .addEventListener("click", async () => {
+      const confirmButton = modalElement.querySelector(
+        '[data-action="confirm"]',
+      );
+      confirmButton.disabled = true;
+      confirmButton.textContent = "Sending...";
+
+      // Kunin bago ang await dahil nagiging null ang currentEmployeeId
+      // kapag tinawag na ang stopPosPage().
+      const employeeId = currentEmployeeId;
+      const employeeUid = auth.currentUser?.uid || null;
+
+      try {
+        // Isang active alert lang bawat product para hindi mapuno ang manager bell
+        // kapag paulit-ulit itong na-click ng employee.
+        await setDoc(
+          doc(db, "managerNotifications", `low-stock-${product.id}`),
+          {
+            type: "low_stock",
+            productId: product.id,
+            productName: product.name || "Unnamed product",
+            remainingStock: Number(product.pieces ?? product.stock) || 0,
+            unit: product.unit || "pcs",
+            employeeId,
+            employeeUid,
+            read: false,
+            updatedAt: serverTimestamp(),
+            createdAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+
+        // Lumipat na ng section — huwag nang galawin ang DOM.
+        if (modalSession !== posSession) return;
+
+        M.toast({
+          html: "Low-stock alert sent to the manager.",
+          classes: "green rounded",
+        });
+        modal.close();
+      } catch (error) {
+        console.error("Unable to send low-stock alert:", error);
+        if (modalSession !== posSession) return;
+        confirmButton.disabled = false;
+        confirmButton.textContent = "Send alert";
+        M.toast({
+          html: "Unable to send the alert. Please try again.",
+          classes: "red rounded",
+        });
+      }
+    });
 
   modal.open();
 }
@@ -269,7 +387,7 @@ export async function initPOS() {
 
   cart = JSON.parse(localStorage.getItem("cart")) || [];
 
-  // Firebase Auth restores the session asynchronously â€” auth.currentUser
+  // Firebase Auth restores the session asynchronously — auth.currentUser
   // can still be null right after page load even if the person is
   // already logged in, unless we wait for this to resolve first.
   const user = await new Promise((resolve) => {
@@ -321,15 +439,20 @@ export async function initPOS() {
         mutations.forEach((mutation) => {
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType !== Node.ELEMENT_NODE) return;
-            if (node.matches("button")) updateShiftDisabledButtons(node.parentElement || content);
+            if (node.matches("button"))
+              updateShiftDisabledButtons(node.parentElement || content);
             else updateShiftDisabledButtons(node);
           });
         });
       });
-      shiftControlsObserver.observe(content, { childList: true, subtree: true });
+      shiftControlsObserver.observe(content, {
+        childList: true,
+        subtree: true,
+      });
     }
     content?.querySelectorAll(":scope > *").forEach((section) => {
-      section.inert = !shift.active && !section.hasAttribute("data-shift-required");
+      section.inert =
+        !shift.active && !section.hasAttribute("data-shift-required");
     });
   });
 
@@ -344,7 +467,7 @@ export async function initPOS() {
   }
 
   // loadProducts() resolves quickly (it just sets up the realtime
-  // listener) â€” the actual product data arrives via onSnapshot whenever
+  // listener) — the actual product data arrives via onSnapshot whenever
   // Firestore pushes it, and filterProducts()/renderProducts() get
   // called automatically from inside that listener.
   await loadProducts(session);
@@ -362,7 +485,7 @@ function saveCart() {
 // Kunin ang role at employeeId ng naka-login na employee, hanapin sa
 // "employees" collection gamit ang Auth uid (hindi doc ID mismo).
 // IMPORTANTE: ang "employeeId" na nakalagay sa mga product ay tumutukoy
-// sa DOCUMENT ID ng employee record (snap.docs[0].id) â€” hindi sa Auth
+// sa DOCUMENT ID ng employee record (snap.docs[0].id) — hindi sa Auth
 // uid mismo. Kung magkaiba pala sa Firestore mo, dito lang ito baguhin.
 async function getCurrentEmployeeInfo() {
   const user = auth.currentUser;
@@ -409,7 +532,7 @@ async function loadProducts(session) {
 
   // Ipakita lang ang mga product na naka-assign sa role na ito, o yung
   // naka-mark na "ALL" (shared across every role). employeeId ang
-  // pangalawang gate â€” kailangan din itong tumugma (o "ALL") bago
+  // pangalawang gate — kailangan din itong tumugma (o "ALL") bago
   // mapunta sa allProducts.
   const q = query(
     collection(db, "products"),
@@ -417,7 +540,7 @@ async function loadProducts(session) {
   );
 
   // onSnapshot instead of getDocs: mag-a-update na mismo ang list kapag
-  // may nabago sa Firestore (bagong product, na-out of stock, etc.) â€”
+  // may nabago sa Firestore (bagong product, na-out of stock, etc.) —
   // hindi na kailangan pa ng manual refresh ng page.
   unsubscribePOS = onSnapshot(
     q,
@@ -577,18 +700,26 @@ function renderCart() {
   if (restoredPrice) saveCart();
   const allItemsAreLechon = cart.length > 0 && cart.every(isLechonProduct);
 
-  document.querySelectorAll("#cartTable thead th:nth-child(3), #cartTable thead th:nth-child(4)")
-    .forEach((header) => { header.hidden = allItemsAreLechon; });
+  document
+    .querySelectorAll(
+      "#cartTable thead th:nth-child(3), #cartTable thead th:nth-child(4)",
+    )
+    .forEach((header) => {
+      header.hidden = allItemsAreLechon;
+    });
 
   cart.forEach((item, index) => {
     const isLechon = isLechonProduct(item);
-    const hasPrice = Number.isFinite(Number(item.price)) && Number(item.price) > 0;
+    const hasPrice =
+      Number.isFinite(Number(item.price)) && Number(item.price) > 0;
     const total = item.qty * item.price;
     grandTotal += total;
 
     const row = document.createElement("tr");
     row.dataset.lechon = String(isLechon);
-    row.dataset.lechonCustom = String(isLechon && !item.lechonFixedPrice && !hasPrice);
+    row.dataset.lechonCustom = String(
+      isLechon && !item.lechonFixedPrice && !hasPrice,
+    );
 
     row.innerHTML = `
       <td>${item.name}</td>
@@ -723,7 +854,10 @@ function setupCartEvents() {
 
   checkoutBtn.addEventListener("click", () => {
     if (!posShiftActive) {
-      M.toast({ html: "Timed in first before using POS.", classes: "red rounded" });
+      M.toast({
+        html: "Timed in first before using POS.",
+        classes: "red rounded",
+      });
       return;
     }
     if (cart.length === 0) {
@@ -750,18 +884,42 @@ window.addEventListener("pageshow", restoreCartOnPageShow);
 
 // Tinatawag ng navemployee.js bago palitan ang #content.
 export function stopPosPage() {
+  // I-invalidate lahat ng nakabinbing async (auth, load, setDoc, atbp.)
   posSession += 1;
+
+  // Isara ang mga modal na nasa labas ng #content (naka-append sa body)
+  closeLowStockModal();
+
+  // Itigil ang mga listener
   unsubscribeShift?.();
   unsubscribeShift = null;
   shiftControlsObserver?.disconnect();
   shiftControlsObserver = null;
-  posShiftActive = false;
-
   if (unsubscribePOS) {
     unsubscribePOS();
     unsubscribePOS = null;
   }
 
+  // I-reset ang mga ginalaw ng shift watcher sa #content para hindi
+  // madala sa susunod na section.
+  const content = document.getElementById("content");
+  if (content) {
+    content.classList.remove("shift-inactive");
+    showShiftRequired(content, false);
+    content.querySelectorAll(":scope > *").forEach((section) => {
+      section.inert = false;
+    });
+    content
+      .querySelectorAll("button[data-shift-was-disabled]")
+      .forEach((button) => {
+        button.disabled = button.dataset.shiftWasDisabled === "true";
+        button.removeAttribute("data-shift-was-disabled");
+        button.removeAttribute("aria-disabled");
+      });
+  }
+
+  // I-reset ang state
+  posShiftActive = false;
   currentRole = null;
   currentEmployeeId = null;
   allProducts = [];
@@ -813,7 +971,8 @@ function setupCategoryButtons() {
         .filter(Boolean),
     ),
   ];
-  if (getEmployeeCombos().length && !categories.includes("COMBOS")) categories.push("COMBOS");
+  if (getEmployeeCombos().length && !categories.includes("COMBOS"))
+    categories.push("COMBOS");
 
   if (!categories.includes(selectedCategory)) {
     selectedCategory = "All";
@@ -904,9 +1063,11 @@ function filterProducts() {
       .trim()
       .toLowerCase();
 
-    const categoryMatch = selectedCategory === "COMBOS"
-      ? false
-      : selectedCategory === "All" || category === selectedCategory.trim().toLowerCase();
+    const categoryMatch =
+      selectedCategory === "COMBOS"
+        ? false
+        : selectedCategory === "All" ||
+          category === selectedCategory.trim().toLowerCase();
 
     const searchMatch = productName.includes(searchValue);
 
@@ -926,9 +1087,12 @@ function renderProducts(products) {
   if (!productList) return;
 
   productList.innerHTML = "";
-  const searchValue = document.getElementById("searchProduct")?.value.trim().toLowerCase() || "";
+  const searchValue =
+    document.getElementById("searchProduct")?.value.trim().toLowerCase() || "";
   const combos = ["All", "COMBOS"].includes(selectedCategory)
-    ? getEmployeeCombos().filter((combo) => combo.name.toLowerCase().includes(searchValue))
+    ? getEmployeeCombos().filter((combo) =>
+        combo.name.toLowerCase().includes(searchValue),
+      )
     : [];
 
   if (products.length === 0 && combos.length === 0) {
@@ -944,9 +1108,26 @@ function renderProducts(products) {
   products.forEach((product) => {
     const isLechon = isLechonProduct(product);
     const lechonOptions = [
-      { label: "1/4 kg", price: Number(product.lechonPrices?.quarter ?? product.lechonPrices?.["1/4 kg"] ?? 250) },
-      { label: "1/2 kg", price: Number(product.lechonPrices?.half ?? product.lechonPrices?.["1/2 kg"] ?? 500) },
-      { label: "1 kg", price: Number(product.lechonPrices?.one ?? product.lechonPrices?.["1 kg"] ?? 900) },
+      {
+        label: "1/4 kg",
+        price: Number(
+          product.lechonPrices?.quarter ??
+            product.lechonPrices?.["1/4 kg"] ??
+            250,
+        ),
+      },
+      {
+        label: "1/2 kg",
+        price: Number(
+          product.lechonPrices?.half ?? product.lechonPrices?.["1/2 kg"] ?? 500,
+        ),
+      },
+      {
+        label: "1 kg",
+        price: Number(
+          product.lechonPrices?.one ?? product.lechonPrices?.["1 kg"] ?? 900,
+        ),
+      },
     ];
 
     if (isLechon) {
@@ -966,7 +1147,9 @@ function renderProducts(products) {
         `;
         productList.appendChild(lechonCard);
       };
-      lechonOptions.forEach((option) => makeLechonCard(option.label, option.price));
+      lechonOptions.forEach((option) =>
+        makeLechonCard(option.label, option.price),
+      );
       makeLechonCard("Custom price", 0, true);
       return;
     }
@@ -986,7 +1169,9 @@ function renderProducts(products) {
         <h4>${product.name}</h4>
 
         <span class="product-stock">${
-          isPackProduct(product) ? `${formatQuantity(product.packs)} packs (${formatQuantity(product.pieces)} pcs)` : "Order"
+          isPackProduct(product)
+            ? `${formatQuantity(product.packs)} packs (${formatQuantity(product.pieces)} pcs)`
+            : "Order"
         }</span>
 
         <span class="price">&#8369;${Number(product.price).toFixed(2)}</span>
@@ -1040,12 +1225,21 @@ function renderProducts(products) {
       const existing = cart.find((item) => item.id === existingId);
       const nextQty = Number(existing?.qty || 0) + 1;
       const lacksPackStock = combo.components.some((component) => {
-        const source = allProducts.find((item) => item.id === component.productId);
+        const source = allProducts.find(
+          (item) => item.id === component.productId,
+        );
         const requiredPieces = (Number(component.qty) || 1) * nextQty;
-        return source && isPackProduct(source) && (Number(source.pieces ?? source.stock) || 0) < requiredPieces;
+        return (
+          source &&
+          isPackProduct(source) &&
+          (Number(source.pieces ?? source.stock) || 0) < requiredPieces
+        );
       });
       if (lacksPackStock) {
-        M.toast({ html: `Not enough component stock for ${combo.name}.`, classes: "red rounded" });
+        M.toast({
+          html: `Not enough component stock for ${combo.name}.`,
+          classes: "red rounded",
+        });
         return;
       }
 
@@ -1070,7 +1264,10 @@ function renderProducts(products) {
       const custom = addButton.dataset.custom === "true";
       const price = custom ? 0 : Number(addButton.dataset.price);
       if (!custom && (!Number.isFinite(price) || price <= 0)) {
-        M.toast({ html: "The selected lechon price is invalid.", classes: "red rounded" });
+        M.toast({
+          html: "The selected lechon price is invalid.",
+          classes: "red rounded",
+        });
         return;
       }
       addToCart({
@@ -1088,25 +1285,27 @@ function renderProducts(products) {
     });
   });
 
-  document.querySelectorAll(".add-btn:not(.lechon-card-add):not(.combo-add-btn)").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      const name = btn.dataset.name;
-      const price = parseFloat(btn.dataset.price);
-      const stock = parseInt(btn.dataset.stock);
+  document
+    .querySelectorAll(".add-btn:not(.lechon-card-add):not(.combo-add-btn)")
+    .forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const name = btn.dataset.name;
+        const price = parseFloat(btn.dataset.price);
+        const stock = parseInt(btn.dataset.stock);
 
-      addToCart({
-        id,
-        name,
-        price,
-        stock,
-        packs: btn.dataset.packs === "" ? null : Number(btn.dataset.packs),
-        pieces_per_pack: Number(btn.dataset.piecesPerPack) || 1,
-        unit: btn.dataset.unit,
-        category: btn.dataset.category,
+        addToCart({
+          id,
+          name,
+          price,
+          stock,
+          packs: btn.dataset.packs === "" ? null : Number(btn.dataset.packs),
+          pieces_per_pack: Number(btn.dataset.piecesPerPack) || 1,
+          unit: btn.dataset.unit,
+          category: btn.dataset.category,
+        });
       });
     });
-  });
 
   document.querySelectorAll(".lowstock-btn").forEach((btn) => {
     btn.addEventListener("click", () => {

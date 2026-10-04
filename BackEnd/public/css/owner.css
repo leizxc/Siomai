@@ -734,16 +734,24 @@ html.dark .owner-manager-action-modal .modal-content h4 { color: #f3f4f6; }
 html.dark .owner-manager-action-modal .modal-content p { color: #b7bec8; }
 html.dark .owner-manager-password-details > div { border-color: #3b414b; }
 html.dark .owner-manager-password-details strong { color: #f3f4f6; }
-.owner-manager-edit-modal { max-width: 420px; background: #141414; }
+.owner-manager-edit-modal { max-width: 420px; background: #fff; }
 .owner-manager-edit-modal .modal-content { display: flex; flex-direction: column; padding: 20px 16px 24px; }
-.owner-manager-edit-modal .modal-content h4 { margin-bottom: 8px; color: #f5f5f5; font-size: 1.3rem; }
-.owner-manager-edit-label { display: block; margin: 10px 0 4px; color: #aaa; font-size: .78rem; font-weight: 600; }
-.owner-manager-edit-input { box-sizing: border-box !important; width: 100% !important; height: 44px !important; margin: 0 0 2px !important; padding: 0 14px !important; border: 1px solid #333 !important; border-radius: 8px !important; background: #090909 !important; color: #eee !important; box-shadow: none !important; }
+.owner-manager-edit-modal .modal-content h4 { margin-bottom: 8px; color: #263238; font-size: 1.3rem; }
+.owner-manager-edit-label { display: block; margin: 10px 0 4px; color: #667085; font-size: .78rem; font-weight: 600; }
+.owner-manager-edit-input { box-sizing: border-box !important; width: 100% !important; height: 44px !important; margin: 0 0 2px !important; padding: 0 14px !important; border: 1px solid #d0d5dd !important; border-radius: 8px !important; background: #fff !important; color: #1f2937 !important; box-shadow: none !important; }
 .owner-manager-edit-input:focus { border-color: #4385f5 !important; box-shadow: 0 0 0 1px #4385f5 !important; }
-.owner-manager-edit-input::placeholder { color: #c6c6c6; }
+.owner-manager-edit-input::placeholder { color: #667085; }
 .owner-manager-edit-password { position: relative; }
 .owner-manager-edit-password .owner-manager-edit-input { padding-right: 48px !important; }
-.owner-manager-edit-toggle { position: absolute; top: 0; right: 4px; width: 42px; height: 44px; border: 0; background: transparent; color: #aaa; cursor: pointer; }
-.owner-manager-edit-modal .modal-footer { min-height: 62px; border-top: 1px solid #222; background: #141414 !important; }
-.owner-manager-edit-modal .modal-footer .btn-flat { color: #ddd; }
+.owner-manager-edit-toggle { position: absolute; top: 0; right: 4px; width: 42px; height: 44px; border: 0; background: transparent; color: #667085; cursor: pointer; }
+.owner-manager-edit-modal .modal-footer { min-height: 62px; border-top: 1px solid #e4e7ec; background: #f8fafc !important; }
+.owner-manager-edit-modal .modal-footer .btn-flat { color: #344054; }
 .owner-manager-edit-modal .modal-footer .btn { border-radius: 8px; background: #397ff1; text-transform: none; font-weight: 700; }
+html.dark .owner-manager-edit-modal { background: #141414; }
+html.dark .owner-manager-edit-modal .modal-content h4 { color: #f5f5f5; }
+html.dark .owner-manager-edit-label { color: #aaa; }
+html.dark .owner-manager-edit-input { border-color: #333 !important; background: #090909 !important; color: #eee !important; }
+html.dark .owner-manager-edit-input::placeholder { color: #c6c6c6; }
+html.dark .owner-manager-edit-toggle { color: #aaa; }
+html.dark .owner-manager-edit-modal .modal-footer { border-top-color: #222; background: #141414 !important; }
+html.dark .owner-manager-edit-modal .modal-footer .btn-flat { color: #ddd; }

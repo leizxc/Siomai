@@ -33,14 +33,29 @@ let pendingAttendanceAction = null;
 
 // Lifecycle tracking
 // - attendanceRoot: ang DOM element na kasalukuyang naka-bind (para malaman kung napalitan ang page)
+// - attendanceModalEl: reference sa confirmation modal ng page na ito. Kinukuha ito
+//   sa init dahil kapag tinawag na ang stopAttendancePage, natanggal na ang page sa
+//   DOM at hindi na mahahanap ng document.querySelector ang modal para linisin.
 // - rootObserver: awtomatikong nag-stop kapag nawala sa DOM ang page
 // - initToken: pang-cancel ng mga async na gawain na natapos pagkatapos mag-stop
 let attendanceRoot = null;
+let attendanceModalEl = null;
 let rootObserver = null;
 let initToken = 0;
 
 function getAttendanceRoot() {
   return document.querySelector("#time-in-button");
+}
+
+// Scoped na query: kapag stopped na o natanggal na ang attendance page, null
+// (o walang laman) ang ibabalik para hindi makasulat ang mga late na async
+// callback sa DOM ng ibang section na may kaparehong selector.
+function qs(selector) {
+  return attendanceRoot?.isConnected ? document.querySelector(selector) : null;
+}
+
+function qsa(selector) {
+  return attendanceRoot?.isConnected ? document.querySelectorAll(selector) : [];
 }
 
 // Kapag inalis sa DOM ang attendance page (lumipat ng ibang content),
@@ -73,6 +88,7 @@ export async function initAttendance() {
 
   attendanceInitialized = true;
   attendanceRoot = root;
+  attendanceModalEl = document.querySelector("#attendance-confirmation");
   const token = ++initToken;
   watchRootRemoval(root);
 
@@ -119,6 +135,7 @@ export async function initAttendance() {
     const accountRole = String(
       (await user.getIdTokenResult()).claims.role || "employee",
     ).toLowerCase();
+    if (token !== initToken) return;
 
     const fname = employeeData.fname || "";
     const lname = employeeData.lname || "";
@@ -227,7 +244,7 @@ function displayAttendance(attendance) {
     "active",
   );
 
-  const activityList = document.querySelector(".activity-list");
+  const activityList = qs(".activity-list");
   if (!activityList) return;
 
   let clockedInTime = attendance.clockedInAt;
@@ -287,7 +304,7 @@ function showNoAttendance(message) {
     "Submit your request when you are ready to start.",
     "ready",
   );
-  const activityList = document.querySelector(".activity-list");
+  const activityList = qs(".activity-list");
   if (!activityList) return;
 
   activityList.innerHTML = `
@@ -300,7 +317,7 @@ function showNoAttendance(message) {
 }
 
 function lockTimeInButton(label = "Unavailable") {
-  const button = document.querySelector("#time-in-button");
+  const button = qs("#time-in-button");
   if (!button) return;
   button.disabled = true;
   button.onclick = null;
@@ -311,7 +328,7 @@ function lockTimeInButton(label = "Unavailable") {
 function showAttendanceError(message) {
   updateTodayStatus("Can't verify attendance", message, "pending");
   lockTimeInButton();
-  const activityList = document.querySelector(".activity-list");
+  const activityList = qs(".activity-list");
   if (!activityList) return;
   activityList.innerHTML = `
     <div class="activity-item">
@@ -327,12 +344,11 @@ function showAttendanceError(message) {
 // ========================================
 
 export function stopAttendancePage() {
-  // i-cancel ang lahat ng async na init/stats na hindi pa tapos
+  // i-cancel ang lahat ng async na init/stats/submit na hindi pa tapos
   initToken++;
 
   rootObserver?.disconnect();
   rootObserver = null;
-  attendanceRoot = null;
 
   attendanceInitialized = false;
   currentAttendance = null;
@@ -342,11 +358,15 @@ export function stopAttendancePage() {
   clearInterval(statsTimer);
   statsTimer = null;
   attendanceHistory = [];
-  pendingAttendanceAction = null;
 
   // i-destroy ang confirmation modal para walang maiwang overlay
   // at hindi ma-stuck ang overflow ng body kapag napalitan ang section.
+  // Gamit ang naka-save na reference dahil natanggal na ang page sa DOM.
   closeAttendanceConfirmation({ destroy: true });
+
+  attendanceRoot = null;
+  attendanceModalEl = null;
+  pendingAttendanceAction = null;
 
   console.log("Attendance page stopped.");
 }
@@ -358,7 +378,7 @@ function displayPendingAttendance(attendance) {
     `Your time-in request has been sent. Please wait for ${approver} approval.`,
     "pending",
   );
-  const activityList = document.querySelector(".activity-list");
+  const activityList = qs(".activity-list");
   if (!activityList) return;
 
   const employeeName =
@@ -384,7 +404,7 @@ function displayCompletedAttendance(attendance) {
     "Your time out has been recorded for today.",
     "completed",
   );
-  const activityList = document.querySelector(".activity-list");
+  const activityList = qs(".activity-list");
   if (!activityList) return;
 
   const employeeName =
@@ -414,7 +434,7 @@ function displayCompletedAttendance(attendance) {
 
 function displayPendingTimeOut(attendance) {
   const approver = attendance.accountRole === "manager" ? "owner" : "manager";
-  const activityList = document.querySelector(".activity-list");
+  const activityList = qs(".activity-list");
   if (!activityList) return;
 
   const employeeName =
@@ -487,20 +507,16 @@ function renderAttendanceStats() {
     totalMilliseconds += Math.max(0, endOfShift - clockedInAt);
   });
 
-  document
-    .querySelector("#total-hours-value")
-    ?.replaceChildren(
-      document.createTextNode((totalMilliseconds / 3600000).toFixed(1)),
-    );
-  document
-    .querySelector("#shift-streak-value")
-    ?.replaceChildren(
-      document.createTextNode(String(getShiftStreak(activeDates, today))),
-    );
+  qs("#total-hours-value")?.replaceChildren(
+    document.createTextNode((totalMilliseconds / 3600000).toFixed(1)),
+  );
+  qs("#shift-streak-value")?.replaceChildren(
+    document.createTextNode(String(getShiftStreak(activeDates, today))),
+  );
 }
 
 function setAttendanceDate() {
-  const dateElement = document.querySelector("#attendance-current-date");
+  const dateElement = qs("#attendance-current-date");
   if (!dateElement) return;
   dateElement.textContent = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -510,11 +526,11 @@ function setAttendanceDate() {
 }
 
 function setupAttendanceTabs() {
-  document.querySelectorAll(".tab[data-range]").forEach((tab) => {
+  qsa(".tab[data-range]").forEach((tab) => {
     // onclick (hindi addEventListener) para hindi dumoble ang handler kapag na-init ulit
     tab.onclick = () => {
       selectedAttendanceRange = tab.dataset.range;
-      document.querySelectorAll(".tab[data-range]").forEach((item) => {
+      qsa(".tab[data-range]").forEach((item) => {
         const active = item === tab;
         item.classList.toggle("active", active);
         item.setAttribute("aria-pressed", String(active));
@@ -525,10 +541,10 @@ function setupAttendanceTabs() {
 }
 
 function updateTodayStatus(title, note, state) {
-  const titleElement = document.querySelector("#today-status-value");
-  const noteElement = document.querySelector("#today-status-note");
-  const statElement = document.querySelector("#today-status-stat");
-  const statNoteElement = document.querySelector("#today-status-stat-note");
+  const titleElement = qs("#today-status-value");
+  const noteElement = qs("#today-status-note");
+  const statElement = qs("#today-status-stat");
+  const statNoteElement = qs("#today-status-stat-note");
   if (titleElement) titleElement.textContent = title;
   if (noteElement) noteElement.textContent = note;
   if (statElement) {
@@ -542,7 +558,7 @@ function updateTodayStatus(title, note, state) {
 }
 
 function renderAttendanceHistory() {
-  const activityList = document.querySelector(".activity-list");
+  const activityList = qs(".activity-list");
   if (!activityList || !attendanceHistory.length) return;
 
   const today = getTodayDate();
@@ -682,7 +698,7 @@ function watchAttendance(attendanceRef, context) {
 }
 
 function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
-  const timeInButton = document.querySelector("#time-in-button");
+  const timeInButton = qs("#time-in-button");
 
   if (!timeInButton) return;
 
@@ -700,12 +716,25 @@ function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
   };
 }
 
+// ========================================
+// CONFIRMATION MODAL
+// ========================================
+
+function getAttendanceModal() {
+  // Unahin ang naka-save na reference; kung wala (hal. hindi pa nahanap sa init),
+  // hanapin sa DOM pero kung buhay pa ang page lang.
+  if (attendanceModalEl) return attendanceModalEl;
+  attendanceModalEl = qs("#attendance-confirmation");
+  return attendanceModalEl;
+}
+
 function openAttendanceConfirmation(action) {
-  const modal = document.querySelector("#attendance-confirmation");
-  const title = document.querySelector("#attendance-confirmation-title");
-  const message = document.querySelector("#attendance-confirmation-message");
-  const confirmButton = document.querySelector("#attendance-confirm-action");
-  if (!modal || !confirmButton) return;
+  const modal = getAttendanceModal();
+  if (!modal || !modal.isConnected) return;
+  const title = modal.querySelector("#attendance-confirmation-title");
+  const message = modal.querySelector("#attendance-confirmation-message");
+  const confirmButton = modal.querySelector("#attendance-confirm-action");
+  if (!title || !message || !confirmButton) return;
 
   const isTimeOut = action === "time-out";
   pendingAttendanceAction = action;
@@ -714,22 +743,34 @@ function openAttendanceConfirmation(action) {
     ? "Are you sure you want to submit your time-out request?"
     : "Are you sure you want to submit your time-in request?";
   confirmButton.textContent = isTimeOut ? "Yes, Time Out" : "Yes, Time In";
+
   const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
+  // Kapag isinara sa ibang paraan (overlay click, Esc ng Materialize), i-reset
+  // din ang pending action para hindi ma-stuck. May guard kung nabuksan ulit
+  // habang tumatakbo ang closing animation.
+  instance.options.onCloseEnd = () => {
+    if (!M.Modal.getInstance(modal)?.isOpen) pendingAttendanceAction = null;
+  };
   instance.open();
 }
 
 function closeAttendanceConfirmation({ destroy = false } = {}) {
-  const modal = document.querySelector("#attendance-confirmation");
+  // Gamit ang reference, hindi document.querySelector, dahil maaaring
+  // natanggal na ang modal sa DOM kapag tinawag ito ng stopAttendancePage.
+  const modal =
+    attendanceModalEl || document.querySelector("#attendance-confirmation");
   const instance = modal && M.Modal.getInstance(modal);
   if (instance?.isOpen) instance.close();
 
   // kapag aalis na sa page, i-destroy ang instance at linisin ang naiwang overlay/overflow
-  // (pero huwag galawin kung may ibang modal na bukas, hal. ang notification modal).
-  if (destroy && instance) {
-    try {
-      instance.destroy();
-    } catch (error) {
-      console.warn("Unable to destroy attendance modal:", error);
+  // (pero huwag galawin kung may ibang modal na bukas, hal. ang notification o low-stock modal).
+  if (destroy) {
+    if (instance) {
+      try {
+        instance.destroy();
+      } catch (error) {
+        console.warn("Unable to destroy attendance modal:", error);
+      }
     }
     if (!document.querySelector(".modal.open")) {
       document
@@ -744,9 +785,15 @@ function closeAttendanceConfirmation({ destroy = false } = {}) {
 
 async function submitConfirmedAttendanceAction() {
   const action = pendingAttendanceAction;
-  const confirmButton = document.querySelector("#attendance-confirm-action");
-  const timeInButton = document.querySelector("#time-in-button");
+  const confirmButton = getAttendanceModal()?.querySelector(
+    "#attendance-confirm-action",
+  );
+  const timeInButton = qs("#time-in-button");
   if (!action || !confirmButton || !timeInButton) return;
+
+  // Para malaman kung lumipat na ng section habang naghihintay ang mga await.
+  const token = initToken;
+  const isStale = () => token !== initToken;
 
   closeAttendanceConfirmation();
 
@@ -763,12 +810,14 @@ async function submitConfirmedAttendanceAction() {
         where("uid", "==", user.uid),
       );
       const employeeSnapshot = await getDocs(employeeQuery);
+      if (isStale()) return; // umalis na bago pa may naisulat
       if (employeeSnapshot.empty)
         throw new Error("Employee information not found.");
       const employeeData = employeeSnapshot.docs[0].data();
       const accountRole = String(
         (await user.getIdTokenResult()).claims.role || "employee",
       ).toLowerCase();
+      if (isStale()) return;
       const fname = employeeData.fname || "";
       const lname = employeeData.lname || "";
       const attendanceData = {
@@ -787,6 +836,7 @@ async function submitConfirmedAttendanceAction() {
       // Huwag mag-time in kung may bukas na shift (hal. kahapon),
       // at huwag mag-overwrite ng kahit anong existing na record.
       const open = await resolveShiftRef(user);
+      if (isStale()) return;
       if (open.ref.id !== attendanceRef.id)
         throw new Error("SHIFT_ALREADY_OPEN");
       await runTransaction(db, async (tx) => {
@@ -795,6 +845,8 @@ async function submitConfirmedAttendanceAction() {
         tx.set(attendanceRef, attendanceData);
       });
 
+      // Naisulat na ang request, kaya ipadala pa rin ang notification
+      // kahit lumipat na ng section ang employee.
       await setDoc(
         doc(db, "managerNotifications", `time-in-${attendanceRef.id}`),
         {
@@ -809,11 +861,14 @@ async function submitConfirmedAttendanceAction() {
           updatedAt: serverTimestamp(),
         },
       );
+
+      if (isStale()) return; // huwag nang galawin ang DOM/state ng ibang page
       currentAttendance = attendanceData;
       setTimeInButtonPending();
       displayPendingAttendance(attendanceData);
     } catch (error) {
       console.error("Time in error:", error);
+      if (isStale()) return;
       if (
         error.message === "SHIFT_ALREADY_OPEN" ||
         error.message === "SHIFT_ALREADY_EXISTS"
@@ -834,23 +889,30 @@ async function submitConfirmedAttendanceAction() {
   }
 
   if (currentAttendance?.status !== "active" || !currentAttendanceRef) return;
+
+  // Kunin bago ang await — nagiging null ang mga ito kapag tinawag ang
+  // stopAttendancePage habang naghihintay.
+  const attendanceRef = currentAttendanceRef;
+  const attendance = currentAttendance;
+  const userId = auth.currentUser?.uid || "";
+
   timeInButton.disabled = true;
   timeInButton.textContent = "Recording time out...";
   try {
-    await updateDoc(currentAttendanceRef, {
+    await updateDoc(attendanceRef, {
       status: "time_out_pending",
       type: "time_out_request",
       timeOutRequestedAt: serverTimestamp(),
     });
-    const attendanceId = currentAttendanceRef.id;
+    const attendanceId = attendanceRef.id;
     await setDoc(doc(db, "managerNotifications", `time-out-${attendanceId}`), {
       type: "time_out_request",
       attendanceId,
-      userId: auth.currentUser?.uid || "",
-      accountRole: currentAttendance.accountRole || "employee",
-      title: `${currentAttendance.accountRole === "manager" ? "Manager" : "Employee"} time-out request`,
+      userId,
+      accountRole: attendance.accountRole || "employee",
+      title: `${attendance.accountRole === "manager" ? "Manager" : "Employee"} time-out request`,
       message:
-        `${currentAttendance.fname || ""} ${currentAttendance.lname || ""}`.trim() +
+        `${attendance.fname || ""} ${attendance.lname || ""}`.trim() +
         " requested to time out.",
       read: false,
       createdAt: serverTimestamp(),
@@ -858,6 +920,7 @@ async function submitConfirmedAttendanceAction() {
     });
   } catch (error) {
     console.error("Time out error:", error);
+    if (isStale()) return;
     timeInButton.disabled = false;
     timeInButton.innerHTML = `<span class="material-icons">logout</span> Time Out`;
     M.toast({
@@ -868,7 +931,7 @@ async function submitConfirmedAttendanceAction() {
 }
 
 function setTimeInButtonPending() {
-  const timeInButton = document.querySelector("#time-in-button");
+  const timeInButton = qs("#time-in-button");
   if (!timeInButton) return;
 
   timeInButton.disabled = true;
@@ -881,7 +944,7 @@ function setTimeInButtonPending() {
 }
 
 function setTimeOutButtonPending() {
-  const timeInButton = document.querySelector("#time-in-button");
+  const timeInButton = qs("#time-in-button");
   if (!timeInButton) return;
 
   timeInButton.disabled = true;
@@ -894,7 +957,7 @@ function setTimeOutButtonPending() {
 }
 
 function setTimeInButtonCompleted() {
-  const timeInButton = document.querySelector("#time-in-button");
+  const timeInButton = qs("#time-in-button");
   if (!timeInButton) return;
 
   timeInButton.disabled = true;
@@ -907,7 +970,7 @@ function setTimeInButtonCompleted() {
 }
 
 function setTimeInButtonActive() {
-  const timeInButton = document.querySelector("#time-in-button");
+  const timeInButton = qs("#time-in-button");
 
   if (!timeInButton) return;
 
@@ -930,15 +993,31 @@ if (!window.__attendanceDocListenersBound) {
   window.__attendanceDocListenersBound = true;
 
   document.addEventListener("click", (event) => {
-    if (event.target.closest("[data-confirm-cancel]"))
+    // Walang gagawin kung wala sa attendance page. Pinipigilan nito na
+    // masalo ang click ng ibang modal na may kaparehong attribute/ID.
+    if (!attendanceRoot?.isConnected) return;
+
+    // Cancel: sa loob lang ng attendance modal.
+    if (
+      event.target.closest("#attendance-confirmation") &&
+      event.target.closest("[data-confirm-cancel]")
+    ) {
       closeAttendanceConfirmation();
-    if (event.target.closest("#attendance-confirm-action"))
+      return;
+    }
+
+    if (event.target.closest("#attendance-confirm-action")) {
       submitConfirmedAttendanceAction();
+    }
   });
 
   document.addEventListener("keydown", (event) => {
-    // kung may pending action lang
-    if (event.key === "Escape" && pendingAttendanceAction) {
+    // kung may pending action lang, at nasa attendance page pa
+    if (
+      event.key === "Escape" &&
+      pendingAttendanceAction &&
+      attendanceRoot?.isConnected
+    ) {
       closeAttendanceConfirmation();
     }
   });
