@@ -673,7 +673,10 @@ export function initOwnerFeature(feature) {
           body: JSON.stringify(passwordButton ? { uid, password, fname: firstNameInput?.value.trim(), lname: lastNameInput?.value.trim() } : { uid }),
         });
         const result = await response.json();
-        if (!response.ok || !result.success) throw new Error(result.error || "Unable to update the manager account.");
+        if (!response.ok || !result.success) {
+          const diagnostic = result.firebaseStatus ? ` (${result.firebaseStatus})` : "";
+          throw new Error(`${result.error || "Unable to update the manager account."}${diagnostic}`);
+        }
         if (!passwordButton) {
           const [employees, users] = await Promise.all([
             getDocs(query(collection(db, "employees"), where("uid", "==", uid))),

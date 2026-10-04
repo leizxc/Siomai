@@ -22,13 +22,40 @@ const verboseLog = (...args) => {
 
 let serviceAccount;
 let firebaseReady = false;
+let firebaseInitStatus = "not_initialized";
 
 try {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     verboseLog("Using FIREBASE_SERVICE_ACCOUNT environment configuration");
 
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT.trim();
+
+    try {
+      serviceAccount = JSON.parse(rawServiceAccount);
+      // Accept a JSON string containing the JSON document as well as raw JSON.
+      if (typeof serviceAccount === "string") {
+        serviceAccount = JSON.parse(serviceAccount);
+      }
+    } catch {
+      firebaseInitStatus = "invalid_service_account_json";
+      throw new Error("FIREBASE_SERVICE_ACCOUNT must contain valid service-account JSON");
+    }
+
+    if (
+      !serviceAccount ||
+      typeof serviceAccount !== "object" ||
+      !serviceAccount.project_id ||
+      !serviceAccount.client_email ||
+      !serviceAccount.private_key
+    ) {
+      firebaseInitStatus = "invalid_service_account_fields";
+      throw new Error("FIREBASE_SERVICE_ACCOUNT is missing required fields");
+    }
+
+    // Correct private keys pasted with literal backslash-n sequences.
+    serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
   } else if (isProduction) {
+    firebaseInitStatus = "missing_service_account_environment_variable";
     throw new Error("FIREBASE_SERVICE_ACCOUNT is required in production");
   } else {
     const localKeyPath = [
@@ -54,9 +81,13 @@ try {
   });
 
   firebaseReady = true;
+  firebaseInitStatus = "ready";
 
   verboseLog("Firebase Admin Initialized");
 } catch (error) {
+  if (firebaseInitStatus === "not_initialized") {
+    firebaseInitStatus = "firebase_admin_initialization_failed";
+  }
   console.error("Firebase Admin Initialization Failed:", error.message);
 }
 
@@ -260,6 +291,7 @@ app.get("/health", (req, res) => {
   res.status(firebaseReady ? 200 : 503).json({
     success: firebaseReady,
     firebase: firebaseReady ? "ready" : "unavailable",
+    firebaseStatus: firebaseInitStatus,
   });
 });
 
@@ -306,6 +338,7 @@ async function requireAdmin(req, res, next) {
     return res.status(503).json({
       success: false,
       error: "Firebase Admin is unavailable",
+      firebaseStatus: firebaseInitStatus,
     });
   }
 
