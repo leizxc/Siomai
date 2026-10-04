@@ -1,9 +1,10 @@
-require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
 const express = require("express");
 const admin = require("firebase-admin");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const path = require("path");
 
 const isProduction = process.env.NODE_ENV === "production";
 const verboseLog = (...args) => { if (!isProduction) console.log(...args); };
@@ -18,8 +19,15 @@ try {
   } else if (isProduction) {
     throw new Error("FIREBASE_SERVICE_ACCOUNT is required in production");
   } else {
-    verboseLog("Using local serviceAccountKey.json");
-    serviceAccount = require("./serviceAccountKey.json");
+    const localKeyPath = [
+      path.join(__dirname, "serviceAccountKey.json"),
+      path.join(__dirname, "serviceAccountKey.json.json"),
+    ].find((filePath) => fs.existsSync(filePath));
+    if (!localKeyPath) {
+      throw new Error("Local Firebase service account file was not found");
+    }
+    verboseLog(`Using local Firebase service account file: ${path.basename(localKeyPath)}`);
+    serviceAccount = require(localKeyPath);
   }
 
   admin.initializeApp({
