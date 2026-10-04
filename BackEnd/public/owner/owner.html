@@ -320,11 +320,26 @@
     <div id="owner-notifications-modal" class="modal owner-notifications-modal">
       <div class="modal-content">
         <h4>Notifications</h4>
-        <p class="owner-notification-note">View-only notifications</p>
+        <div class="notification-selection-toolbar owner-notification-toolbar">
+          <label><input id="owner-select-all-notifications" type="checkbox" /><span>Select all</span></label>
+          <span id="owner-selected-notification-count">0 selected</span>
+        </div>
         <div id="owner-notification-list"></div>
       </div>
       <div class="modal-footer">
+        <button id="mark-owner-selected-notifications-read" type="button" class="btn-flat" disabled>Mark as read</button>
+        <button id="delete-owner-selected-notifications" type="button" class="btn red" disabled>Delete</button>
         <button type="button" class="modal-close btn-flat">Close</button>
+      </div>
+    </div>
+    <div id="delete-owner-notifications-modal" class="modal">
+      <div class="modal-content">
+        <h4>Delete notifications?</h4>
+        <p id="delete-owner-notifications-message">Selected notifications will be permanently deleted.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="modal-close btn-flat">Cancel</button>
+        <button id="confirm-delete-owner-notifications" type="button" class="btn red">Delete</button>
       </div>
     </div>
     <script src="/js/materialize.min.js"></script>

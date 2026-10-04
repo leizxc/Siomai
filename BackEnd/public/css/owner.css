@@ -463,6 +463,95 @@ html.dark .owner-feature-error {
 .owner-notifications-modal.open .modal-footer {
   display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.owner-feature-selection-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 8px 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.owner-feature-table-card input.owner-feature-select-all,
+.owner-feature-table-card input.owner-feature-record-checkbox {
+  position: static !important;
+  display: inline-block !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  vertical-align: middle;
+}
+
+.owner-feature-table-card .owner-feature-select-all {
+  accent-color: var(--accent);
+}
+
+.owner-feature-table-card .owner-feature-delete-selected:disabled {
+  background: #e5e7eb !important;
+  border-color: #e5e7eb !important;
+  color: #9ca3af !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+html.dark .owner-feature-table-card input[type="checkbox"] {
+  color-scheme: dark;
+  accent-color: var(--accent);
+}
+
+html.dark .owner-feature-table-card .owner-feature-delete-selected:disabled {
+  background: #292929 !important;
+  border-color: #3a3a3a !important;
+  color: #777 !important;
+}
+
+html.dark .owner-notifications-modal .notification-selection-toolbar {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+html.dark .owner-notifications-modal input[type="checkbox"] {
+  color-scheme: dark;
+  accent-color: var(--accent);
+}
+
+#owner-notifications-modal #mark-owner-selected-notifications-read:disabled,
+#owner-notifications-modal #delete-owner-selected-notifications:disabled {
+  background: #e5e7eb !important;
+  border-color: #e5e7eb !important;
+  color: #9ca3af !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+html.dark #owner-notifications-modal #mark-owner-selected-notifications-read:disabled,
+html.dark #owner-notifications-modal #delete-owner-selected-notifications:disabled {
+  background: #292929 !important;
+  border-color: #3a3a3a !important;
+  color: #777 !important;
+}
+
+html.dark #owner-notifications-modal #delete-owner-selected-notifications:not(:disabled) {
+  background: #c62828 !important;
+  border-color: #c62828 !important;
+  color: #fff !important;
+}
+
+html.dark #delete-owner-notifications-modal #confirm-delete-owner-notifications.btn.red {
+  background: #c62828 !important;
+  border-color: #c62828 !important;
+  color: #fff !important;
 }
 
 .owner-notification-note {

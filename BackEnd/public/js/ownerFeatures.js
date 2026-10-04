@@ -26,6 +26,10 @@ const unsubscribers = [];
 let root = null;
 let view = "";
 let filters = { date: "", status: "all" };
+const selectedRecordIds = new Set();
+let pendingDeleteRecordIds = [];
+let pendingDeleteCollection = "";
+let featureDeleteModal = null;
 
 const money = (value) =>
   new Intl.NumberFormat("en-PH", {
@@ -93,6 +97,7 @@ function shell(title, description, filtersMarkup = "", content = "") {
     ${content}
     <p class="owner-feature-error" role="status" hidden></p>
   `;
+  root.querySelectorAll(".owner-feature-table-card[data-delete-collection]").forEach(syncTableSelection);
   root.querySelectorAll("[data-owner-filter]").forEach((control) => {
     control.value = filters[control.dataset.ownerFilter] || "";
     control.addEventListener("change", () => {
@@ -111,11 +116,69 @@ function kpis(items) {
     .join("")}</div>`;
 }
 
-function tableCard(title, headers, rows, emptyMessage) {
+function tableCard(title, headers, rows, emptyMessage, deleteCollection = "") {
+  const canDelete = Boolean(deleteCollection);
+  const columnHeaders = canDelete
+    ? ['<th><input class="owner-feature-select-all" type="checkbox" aria-label="Select all records"></th>', ...headers.map((item) => `<th>${item}</th>`)]
+    : headers.map((item) => `<th>${item}</th>`);
   const body = rows.length
-    ? rows.join("")
-    : `<tr><td colspan="${headers.length}" class="owner-feature-empty">${emptyMessage}</td></tr>`;
-  return `<section class="dashboard-panel owner-feature-table-card"><div class="panel-header"><h3>${title}</h3><span class="owner-live-indicator"><i></i>Live</span></div><div class="table-container"><table class="striped responsive-table data-table"><thead><tr>${headers.map((item) => `<th>${item}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div></section>`;
+    ? rows.map((row) => canDelete
+      ? row.replace(/^<tr data-owner-id="([^"]+)">/, (_match, id) => `<tr data-owner-record-row data-owner-id="${id}"><td><input class="owner-feature-record-checkbox" type="checkbox" value="${id}" aria-label="Select record" ${selectedRecordIds.has(id) ? "checked" : ""}></td>`)
+      : row).join("")
+    : `<tr><td colspan="${headers.length + (canDelete ? 1 : 0)}" class="owner-feature-empty">${emptyMessage}</td></tr>`;
+  const selectionMarkup = canDelete
+    ? `<div class="owner-feature-selection-toolbar"><span class="owner-feature-selected-count">0 selected</span><button type="button" class="btn red owner-feature-delete-selected" disabled>Delete</button></div>`
+    : "";
+  return `<section class="dashboard-panel owner-feature-table-card" ${canDelete ? `data-delete-collection="${deleteCollection}"` : ""}><div class="panel-header"><h3>${title}</h3><span class="owner-live-indicator"><i></i>Live</span></div>${selectionMarkup}<div class="table-container"><table class="striped responsive-table data-table"><thead><tr>${columnHeaders.join("")}</tr></thead><tbody>${body}</tbody></table></div></section>`;
+}
+
+function syncTableSelection(card) {
+  const checkboxes = [...card.querySelectorAll(".owner-feature-record-checkbox")];
+  const selectedCount = checkboxes.filter((checkbox) => selectedRecordIds.has(checkbox.value)).length;
+  const count = card.querySelector(".owner-feature-selected-count");
+  const selectAll = card.querySelector(".owner-feature-select-all");
+  const deleteButton = card.querySelector(".owner-feature-delete-selected");
+  if (count) count.textContent = `${selectedCount} selected`;
+  if (deleteButton) deleteButton.disabled = selectedCount === 0;
+  if (selectAll) {
+    selectAll.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+    selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+  }
+}
+
+function bindFeatureDeleteControls() {
+  if (!root || root.dataset.ownerDeleteBound === "true") return;
+  root.dataset.ownerDeleteBound = "true";
+  root.addEventListener("change", (event) => {
+    const card = event.target.closest(".owner-feature-table-card[data-delete-collection]");
+    if (!card) return;
+    if (event.target.matches(".owner-feature-select-all")) {
+      card.querySelectorAll(".owner-feature-record-checkbox").forEach((checkbox) => {
+        checkbox.checked = event.target.checked;
+        if (checkbox.checked) selectedRecordIds.add(checkbox.value);
+        else selectedRecordIds.delete(checkbox.value);
+      });
+    } else if (event.target.matches(".owner-feature-record-checkbox")) {
+      if (event.target.checked) selectedRecordIds.add(event.target.value);
+      else selectedRecordIds.delete(event.target.value);
+    } else return;
+    syncTableSelection(card);
+  });
+  root.addEventListener("click", (event) => {
+    const button = event.target.closest(".owner-feature-delete-selected");
+    if (!button) return;
+    const card = button.closest(".owner-feature-table-card[data-delete-collection]");
+    if (!card || !featureDeleteModal) return;
+    pendingDeleteCollection = card.dataset.deleteCollection;
+    pendingDeleteRecordIds = [...card.querySelectorAll(".owner-feature-record-checkbox:checked")].map((checkbox) => checkbox.value);
+    if (!pendingDeleteRecordIds.length) return;
+    const message = document.getElementById("owner-feature-delete-message");
+    if (message) {
+      const count = pendingDeleteRecordIds.length;
+      message.textContent = `Permanently delete ${count} selected record${count === 1 ? "" : "s"}? This action cannot be undone.`;
+    }
+    featureDeleteModal.open();
+  });
 }
 
 function filteredOrders({ paidOnly = false } = {}) {
@@ -155,7 +218,7 @@ function renderSales() {
           `${item.name || item.product_name || "Item"} × ${Number(item.qty ?? item.quantity) || 0}`,
       )
       .join(", ");
-    return `<tr><td>${esc(order._date.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }))}</td><td>${esc(employee ? employeeName(employee) : order.employeeName || "Unassigned")}</td><td>${esc(items || "—")}</td><td>${esc(order.payment_method || order.paymentMethod || "Cash")}</td><td>${statusBadge("Paid")}</td><td><strong>${money(orderTotal(order))}</strong></td></tr>`;
+    return `<tr data-owner-id="${esc(order.id)}"><td>${esc(order._date.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }))}</td><td>${esc(employee ? employeeName(employee) : order.employeeName || "Unassigned")}</td><td>${esc(items || "—")}</td><td>${esc(order.payment_method || order.paymentMethod || "Cash")}</td><td>${statusBadge("Paid")}</td><td><strong>${money(orderTotal(order))}</strong></td></tr>`;
   });
   shell(
     "Real Time Sales",
@@ -165,7 +228,7 @@ function renderSales() {
       ["PAID SALES", money(total), `${orders.length} orders`, "payments"],
       ["CASH", money(cash), "Cash payments", "payments"],
       ["CASHLESS", money(cashless), "Digital payments", "phone_android"],
-    ])}${tableCard("Sales activity", ["Date & time", "Employee", "Items", "Payment", "Status", "Total"], rows, "No paid sales for this date.")}`,
+    ])}${tableCard("Sales activity", ["Date & time", "Employee", "Items", "Payment", "Status", "Total"], rows, "No paid sales for this date.", "orders")}`,
   );
   if (!filters.date) filters.date = today();
 }
@@ -183,7 +246,7 @@ function renderCapital() {
   ).size;
   const rows = expenses.map(
     (item) =>
-      `<tr><td>${esc(item.date)}</td><td>${esc(item.category)}</td><td>${esc(item.description)}</td><td>${statusBadge(item.status || "recorded")}</td><td><strong>${money(item.amount)}</strong></td></tr>`,
+      `<tr data-owner-id="${esc(item.id)}"><td>${esc(item.date)}</td><td>${esc(item.category)}</td><td>${esc(item.description)}</td><td>${statusBadge(item.status || "recorded")}</td><td><strong>${money(item.amount)}</strong></td></tr>`,
   );
   shell(
     "Capital Status Record",
@@ -203,7 +266,7 @@ function renderCapital() {
         "Most recent date",
         "event",
       ],
-    ])}${tableCard("Capital records", ["Date", "Category", "Description", "Status", "Amount"], rows, "No capital records found.")}`,
+    ])}${tableCard("Capital records", ["Date", "Category", "Description", "Status", "Amount"], rows, "No capital records found.", "expenses")}`,
   );
 }
 
@@ -221,7 +284,7 @@ function renderOrders() {
           `${item.name || item.product_name || "Item"} × ${Number(item.qty ?? item.quantity) || 0}`,
       )
       .join(", ");
-    return `<tr><td>${esc(order.order_number || order.orderId || order.id)}</td><td>${esc(order._date.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }))}</td><td>${esc(employee ? employeeName(employee) : order.employeeName || "Unassigned")}</td><td>${esc(itemNames || "—")}</td><td>${statusBadge(order.status || "paid")}</td><td>${esc(order.payment_method || order.paymentMethod || "Cash")}</td><td><strong>${money(orderTotal(order))}</strong></td></tr>`;
+    return `<tr data-owner-id="${esc(order.id)}"><td>${esc(order.order_number || order.orderId || order.id)}</td><td>${esc(order._date.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" }))}</td><td>${esc(employee ? employeeName(employee) : order.employeeName || "Unassigned")}</td><td>${esc(itemNames || "—")}</td><td>${statusBadge(order.status || "paid")}</td><td>${esc(order.payment_method || order.paymentMethod || "Cash")}</td><td><strong>${money(orderTotal(order))}</strong></td></tr>`;
   });
   shell(
     "Order Status",
@@ -231,7 +294,7 @@ function renderOrders() {
       ["ORDERS", orders.length, "Orders in view", "receipt_long"],
       ["PENDING", pending, "Awaiting completion", "pending_actions"],
       ["ORDER VALUE", money(total), "Value in view", "payments"],
-    ])}${tableCard("Live order list", ["Order", "Date", "Employee", "Items", "Status", "Payment", "Total"], rows, "No orders match these filters.")}`,
+    ])}${tableCard("Live order list", ["Order", "Date", "Employee", "Items", "Status", "Payment", "Total"], rows, "No orders match these filters.", "orders")}`,
   );
 }
 
@@ -265,7 +328,7 @@ function renderEmployeeStock() {
           product.current_pieces ??
           0,
       );
-      return `<tr><td>${esc(employee ? employeeName(employee) : product.employee_name || "Shared stock")}</td><td>${esc(product.name || product.product_name)}</td><td>${esc(product.category || product.role)}</td><td>${esc(qty)} ${esc(product.unit || "pcs")}</td><td>${statusBadge(qty <= 5 ? "Low stock" : "In stock")}</td></tr>`;
+      return `<tr data-owner-id="${esc(product.id)}"><td>${esc(employee ? employeeName(employee) : product.employee_name || "Shared stock")}</td><td>${esc(product.name || product.product_name)}</td><td>${esc(product.category || product.role)}</td><td>${esc(qty)} ${esc(product.unit || "pcs")}</td><td>${statusBadge(qty <= 5 ? "Low stock" : "In stock")}</td></tr>`;
     });
   shell(
     "Stock Status by Employee",
@@ -302,7 +365,7 @@ function renderEmployeeStock() {
         "Five units or fewer",
         "warning",
       ],
-    ])}${tableCard("Employee stock", ["Employee", "Product", "Category", "Quantity", "Status"], rows, "No assigned stock found.")}`,
+    ])}${tableCard("Employee stock", ["Employee", "Product", "Category", "Quantity", "Status"], rows, "No assigned stock found.", "products")}`,
   );
 }
 
@@ -317,7 +380,7 @@ function renderInventory() {
   const out = items.filter((item) => Number(item.stock_quantity) <= 0);
   const rows = items.map(
     (item) =>
-      `<tr><td>${esc(item.product_id || item.id)}</td><td>${esc(item.product_name || item.name)}</td><td>${esc(item.category)}</td><td>${esc(item.stock_quantity ?? 0)} ${esc(item.unit_type || "units")}</td><td>${statusBadge(Number(item.stock_quantity) <= 0 ? "Out of stock" : Number(item.stock_quantity) <= 25 ? "Low stock" : "Available")}</td><td>${esc(item.last_updated?.toDate?.().toLocaleString("en-PH") || "—")}</td></tr>`,
+      `<tr data-owner-id="${esc(item.id)}"><td>${esc(item.product_id || item.id)}</td><td>${esc(item.product_name || item.name)}</td><td>${esc(item.category)}</td><td>${esc(item.stock_quantity ?? 0)} ${esc(item.unit_type || "units")}</td><td>${statusBadge(Number(item.stock_quantity) <= 0 ? "Out of stock" : Number(item.stock_quantity) <= 25 ? "Low stock" : "Available")}</td><td>${esc(item.last_updated?.toDate?.().toLocaleString("en-PH") || "—")}</td></tr>`,
   );
   shell(
     "Real Time Inventory Status",
@@ -327,7 +390,7 @@ function renderInventory() {
       ["PRODUCTS", items.length, "Tracked inventory items", "inventory_2"],
       ["LOW STOCK", low.length, "25 units or less", "warning"],
       ["OUT OF STOCK", out.length, "Needs restocking", "remove_shopping_cart"],
-    ])}${tableCard("Inventory status", ["Product ID", "Product", "Category", "Stock", "Status", "Last updated"], rows, "No inventory records found.")}`,
+    ])}${tableCard("Inventory status", ["Product ID", "Product", "Category", "Stock", "Status", "Last updated"], rows, "No inventory records found.", "inventory")}`,
   );
 }
 
@@ -403,7 +466,7 @@ function renderAttendance() {
   ).length;
   const rows = records.map(
     (item) =>
-      `<tr><td>${esc(`${item.fname || ""} ${item.lname || ""}`.trim() || item.email)}</td><td>${esc(item.email)}</td><td>${statusBadge(item.status)}</td><td>${esc(asDate(item.clockedInAt)?.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" }) || "—")}</td><td>${esc(asDate(item.clockedOutAt)?.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" }) || "—")}</td><td>${esc(item.notes || item.note || "—")}</td></tr>`,
+      `<tr data-owner-id="${esc(item.id)}"><td>${esc(`${item.fname || ""} ${item.lname || ""}`.trim() || item.email)}</td><td>${esc(item.email)}</td><td>${statusBadge(item.status)}</td><td>${esc(asDate(item.clockedInAt)?.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" }) || "—")}</td><td>${esc(asDate(item.clockedOutAt)?.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" }) || "—")}</td><td>${esc(item.notes || item.note || "—")}</td></tr>`,
   );
   if (isManagerAttendance) {
     records.forEach((item, index) => {
@@ -428,7 +491,7 @@ function renderAttendance() {
       [view === "owner-manager-attendance" ? "MANAGERS" : "EMPLOYEES", records.length, "Attendance records", "groups"],
       ["ACTIVE", active, "Currently clocked in", "login"],
       ["PENDING", pending, isManagerAttendance ? "Awaiting owner confirmation" : "Awaiting manager review", "schedule"],
-    ])}${tableCard(isManagerAttendance ? "Manager attendance requests" : "Attendance overview", ["Employee", "Email", "Status", "Time in", "Time out", "Notes", ...(isManagerAttendance ? ["Owner confirmation"] : [])], rows, "No attendance records for this date.")}`,
+    ])}${tableCard(isManagerAttendance ? "Manager attendance requests" : "Attendance overview", ["Employee", "Email", "Status", "Time in", "Time out", "Notes", ...(isManagerAttendance ? ["Owner confirmation"] : [])], rows, "No attendance records for this date.", "attendance")}`,
   );
   if (isManagerAttendance) {
     root?.querySelectorAll(".owner-approve-manager-time-in").forEach((button) => {
@@ -512,7 +575,7 @@ function renderManagers() {
     .slice(0, 20)
     .map(
       (item) =>
-        `<tr><td>${esc(asDate(item.updatedAt || item.createdAt)?.toLocaleString("en-PH") || "—")}</td><td>${esc(item.title || item.type || "Manager update")}</td><td>${esc(item.message || "—")}</td><td>${statusBadge(item.read ? "Read" : "Unread")}</td></tr>`,
+        `<tr data-owner-id="${esc(item.id)}"><td>${esc(asDate(item.updatedAt || item.createdAt)?.toLocaleString("en-PH") || "—")}</td><td>${esc(item.title || item.type || "Manager update")}</td><td>${esc(item.message || "—")}</td><td>${statusBadge(item.read ? "Read" : "Unread")}</td></tr>`,
     );
   shell(
     "Manager Management",
@@ -549,7 +612,7 @@ function renderManagers() {
         <label>Password<div class="owner-manager-password-field"><input name="password" type="password" autocomplete="new-password" placeholder="Create a password" required minlength="6"><button class="owner-manager-password-toggle" type="button" aria-label="Show password" aria-pressed="false"><i class="material-icons" aria-hidden="true">visibility</i></button></div></label>
         <div class="owner-manager-form-actions"><button class="btn account-create-button" type="submit" aria-busy="false"><span class="account-submit-label"><i class="material-icons" aria-hidden="true">add</i>CREATE MANAGER</span><span class="account-submit-progress"><span class="account-loading-spinner" aria-hidden="true"></span>Adding...</span></button></div>
       </form>
-    </section>${tableCard("Manager accounts", ["Manager", "Email", "Username", "Status", "Actions"], managerRows, "No manager accounts were found in employee records.")}${tableCard("Manager activity", ["Updated", "Type", "Details", "Status"], alertRows, "No manager updates found.")}`,
+    </section>${tableCard("Manager accounts", ["Manager", "Email", "Username", "Status", "Actions"], managerRows, "No manager accounts were found in employee records.")}${tableCard("Manager activity", ["Updated", "Type", "Details", "Status"], alertRows, "No manager updates found.", "managerNotifications")}`,
   );
   if (priorValues) {
     const nextForm = root?.querySelector("#owner-manager-create-form");
@@ -617,6 +680,8 @@ function subscribe(name, key) {
 
 export function cleanupOwnerFeature() {
   unsubscribers.splice(0).forEach((unsubscribe) => unsubscribe());
+  featureDeleteModal?.destroy();
+  featureDeleteModal = null;
   root = null;
 }
 
@@ -626,6 +691,38 @@ export function initOwnerFeature(feature) {
   view = feature;
   filters = { date: feature === "owner-capital" ? "" : today(), status: "all" };
   if (!root) return;
+  selectedRecordIds.clear();
+  bindFeatureDeleteControls();
+
+  const deleteModalElement = document.getElementById("owner-feature-delete-modal");
+  const deleteConfirmButton = document.getElementById("owner-feature-delete-confirm");
+  featureDeleteModal = deleteModalElement && typeof M !== "undefined"
+    ? M.Modal.init(deleteModalElement, { onCloseEnd: () => {
+        pendingDeleteRecordIds = [];
+        pendingDeleteCollection = "";
+      } })
+    : null;
+  if (deleteConfirmButton) {
+    deleteConfirmButton.onclick = async () => {
+      const ids = [...pendingDeleteRecordIds];
+      const collectionName = pendingDeleteCollection;
+      if (!ids.length || !collectionName) return;
+      deleteConfirmButton.disabled = true;
+      try {
+        await Promise.all(ids.map((id) => deleteDoc(doc(db, collectionName, id))));
+        ids.forEach((id) => selectedRecordIds.delete(id));
+        pendingDeleteRecordIds = [];
+        pendingDeleteCollection = "";
+        featureDeleteModal?.close();
+        if (typeof M !== "undefined") M.toast({ html: `${ids.length} record${ids.length === 1 ? "" : "s"} deleted.`, classes: "green rounded" });
+      } catch (error) {
+        console.error("Unable to delete owner records:", error);
+        if (typeof M !== "undefined") M.toast({ html: "Unable to delete the selected records.", classes: "red rounded" });
+      } finally {
+        deleteConfirmButton.disabled = false;
+      }
+    };
+  }
 
   root.innerHTML =
     '<div class="dashboard-panel"><p class="dashboard-empty">Loading live owner data...</p></div>';
