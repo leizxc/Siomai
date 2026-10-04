@@ -1,7 +1,11 @@
 import { db } from "/js/firebase.js";
 import {
   collection,
+  doc,
   onSnapshot,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const state = {
@@ -374,7 +378,11 @@ function attendanceDate(item) {
 }
 
 function renderAttendance() {
+  const isManagerAttendance = view === "owner-manager-attendance";
   const records = state.attendance
+    .filter((item) => view === "owner-manager-attendance"
+      ? String(item.accountRole || item.role || "employee").toLowerCase() === "manager"
+      : String(item.accountRole || item.role || "employee").toLowerCase() !== "manager")
     .filter((item) => !filters.date || attendanceDate(item) === filters.date)
     .sort(
       (a, b) =>
@@ -393,16 +401,71 @@ function renderAttendance() {
     (item) =>
       `<tr><td>${esc(`${item.fname || ""} ${item.lname || ""}`.trim() || item.email)}</td><td>${esc(item.email)}</td><td>${statusBadge(item.status)}</td><td>${esc(asDate(item.clockedInAt)?.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" }) || "—")}</td><td>${esc(asDate(item.clockedOutAt)?.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" }) || "—")}</td><td>${esc(item.notes || item.note || "—")}</td></tr>`,
   );
+  if (isManagerAttendance) {
+    records.forEach((item, index) => {
+      const action = item.status === "pending"
+        ? `<button class="btn green owner-approve-manager-time-in" data-id="${esc(item.id)}">Confirm Time In</button>`
+        : item.status === "time_out_pending"
+          ? `<button class="btn orange owner-approve-manager-time-out" data-id="${esc(item.id)}">Confirm Time Out</button>`
+          : "—";
+      rows[index] = rows[index].replace(
+        "</tr>",
+        `<td>${action}</td></tr>`,
+      );
+    });
+  }
   shell(
-    "Employee Attendance Status",
-    "Live attendance and time-in / time-out status for the team.",
+    view === "owner-manager-attendance" ? "Manager Attendance Status" : "Employee Attendance Status",
+    view === "owner-manager-attendance"
+      ? "Live manager time-in / time-out records and current shift status."
+      : "Live employee time-in / time-out records and current shift status.",
     '<label>Date<input type="date" data-owner-filter="date"></label>',
     `${kpis([
-      ["EMPLOYEES", records.length, "Attendance records", "groups"],
+      [view === "owner-manager-attendance" ? "MANAGERS" : "EMPLOYEES", records.length, "Attendance records", "groups"],
       ["ACTIVE", active, "Currently clocked in", "login"],
-      ["PENDING", pending, "Awaiting manager review", "schedule"],
-    ])}${tableCard("Attendance overview", ["Employee", "Email", "Status", "Time in", "Time out", "Notes"], rows, "No attendance records for this date.")}`,
+      ["PENDING", pending, isManagerAttendance ? "Awaiting owner confirmation" : "Awaiting manager review", "schedule"],
+    ])}${tableCard(isManagerAttendance ? "Manager attendance requests" : "Attendance overview", ["Employee", "Email", "Status", "Time in", "Time out", "Notes", ...(isManagerAttendance ? ["Owner confirmation"] : [])], rows, "No attendance records for this date.")}`,
   );
+  if (isManagerAttendance) {
+    root?.querySelectorAll(".owner-approve-manager-time-in").forEach((button) => {
+      button.onclick = () => confirmManagerAttendance(button.dataset.id, "time-in", button);
+    });
+    root?.querySelectorAll(".owner-approve-manager-time-out").forEach((button) => {
+      button.onclick = () => confirmManagerAttendance(button.dataset.id, "time-out", button);
+    });
+  }
+}
+
+async function confirmManagerAttendance(id, action, button) {
+  const record = state.attendance.find((item) => item.id === id);
+  if (!record || String(record.accountRole || record.role || "").toLowerCase() !== "manager") return;
+  button.disabled = true;
+  button.textContent = "Confirming...";
+  const isTimeIn = action === "time-in";
+  try {
+    await updateDoc(doc(db, "attendance", id), {
+      status: isTimeIn ? "active" : "completed",
+      type: isTimeIn ? "clocked_in" : "clocked_out",
+      ...(isTimeIn
+        ? { clockedInAt: serverTimestamp(), approvedAt: serverTimestamp(), approvedBy: "owner" }
+        : { clockedOutAt: serverTimestamp(), timeOutApprovedAt: serverTimestamp(), timeOutApprovedBy: "owner" }),
+    });
+    await setDoc(doc(db, "employeeNotifications", `owner-${action}-approved-${id}`), {
+      type: isTimeIn ? "time_in_approved" : "time_out_approved",
+      attendanceId: id,
+      userId: record.userId,
+      title: isTimeIn ? "Time-in approved" : "Time-out approved",
+      message: `The owner approved your time-${isTimeIn ? "in" : "out"} request.`,
+      read: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error("Unable to confirm manager attendance:", error);
+    button.disabled = false;
+    button.textContent = isTimeIn ? "Confirm Time In" : "Confirm Time Out";
+    if (typeof M !== "undefined") M.toast({ html: "Unable to confirm this attendance request.", classes: "red rounded" });
+  }
 }
 
 function renderManagers() {
@@ -512,6 +575,7 @@ function render() {
       renderPerformance();
       break;
     case "owner-attendance":
+    case "owner-manager-attendance":
       renderAttendance();
       break;
     case "owner-managers":

@@ -68,16 +68,10 @@
         <label for="selectCategory">Select Role</label>
       </div>
 
-      <!-- Initial Stock -->
-      <div class="input-field col s12 m6">
-        <input type="number" id="stock" readonly />
-        <label for="stock">Initial Stock</label>
-      </div>
-
-      <!-- Unit -->
+      <!-- Quantity available from selected inventory -->
       <div class="input-field col s12 m6">
         <input type="text" id="stockUnit" readonly />
-        <label for="stockUnit">Unit</label>
+        <label for="stockUnit">Inventory Quantity</label>
       </div>
 
       <!-- Price -->
@@ -110,9 +104,10 @@
         id="save-menu"
         type="submit"
         class="btn btn-custom save-menu-btn waves-effect waves-light"
+        aria-busy="false"
       >
-        <i class="material-icons">add</i>
-        <span>Save Product Menu</span>
+        <span class="product-menu-submit-label"><i class="material-icons">add</i>Save Product Menu</span>
+        <span class="product-menu-submit-progress"><span class="account-loading-spinner" aria-hidden="true"></span>Saving...</span>
       </button>
     </div>
   </form>
@@ -159,6 +154,8 @@
           <th id="th-inventory-name">Inventory Name</th>
           <th id="th-product-name">Product Name</th>
           <th id="th-category">Category</th>
+          <th id="th-status">Status</th>
+          <th id="th-available-stock">Available Stock</th>
           <th id="th-packs" style="display: none">Packs</th>
           <th id="th-pieces" style="display: none">Pieces</th>
           <th id="th-container" style="display: none">Container</th>
@@ -218,8 +215,9 @@
 
     <div class="modal-footer">
       <button type="button" class="modal-close btn-flat">Cancel</button>
-      <button id="edit-menu-save" class="waves-effect waves-light btn blue">
-        Update
+      <button id="edit-menu-save" class="waves-effect waves-light btn blue" aria-busy="false">
+        <span class="product-menu-submit-label">Update</span>
+        <span class="product-menu-submit-progress"><span class="account-loading-spinner" aria-hidden="true"></span>Updating...</span>
       </button>
     </div>
   </div>
@@ -242,8 +240,9 @@
       >
         Cancel
       </button>
-      <button id="confirm-delete-category" type="button" class="btn red">
-        Delete
+      <button id="confirm-delete-category" type="button" class="btn red" aria-busy="false">
+        <span class="product-menu-submit-label">Delete</span>
+        <span class="product-menu-submit-progress"><span class="account-loading-spinner" aria-hidden="true"></span>Deleting...</span>
       </button>
     </div>
   </div>
@@ -251,6 +250,6 @@
 
 <script src="/js/photomenu.js"></script>
 <script type="module">
-  import { initProductPage } from "/js/productmenu.js";
+  import { initProductPage } from "/js/productmenu.js?v=20261003d";
   initProductPage();
 </script>

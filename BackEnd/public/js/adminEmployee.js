@@ -1,5 +1,9 @@
 import { db } from "/js/firebase.js";
 import {
+  beginButtonLoading,
+  endButtonLoading,
+} from "/js/buttonLoading.js?v=20261003a";
+import {
   collection,
   addDoc,
   updateDoc,
@@ -16,6 +20,25 @@ import {
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const auth = getAuth();
+
+const SESSION_EXPIRED_MESSAGE =
+  "Your session has expired. Please sign in again.";
+
+// Hintayin muna ang auth na mag-restore ng session bago kunin ang token.
+// Ibinabalik ang null kung talagang walang naka-login.
+async function getAuthToken() {
+  try {
+    await auth.authStateReady?.();
+  } catch (_) {}
+  const user = auth.currentUser;
+  if (!user) return null;
+  try {
+    return await user.getIdToken();
+  } catch (error) {
+    console.error("Unable to get ID token:", error);
+    return null;
+  }
+}
 
 // How many rows show per page in the employee table — the table's
 const PAGE_SIZE = 10;
@@ -93,7 +116,8 @@ function rebuildEmployeeData() {
   const onlineUserIds = new Set(
     latestAttendanceDocs
       .filter(({ data }) => {
-        const attendanceDate = data.attendanceDate ||
+        const attendanceDate =
+          data.attendanceDate ||
           (data.clockedInAt?.toDate
             ? toLocalDateValue(data.clockedInAt.toDate())
             : "");
@@ -322,72 +346,87 @@ function bindRowButtons() {
           return;
         }
 
-        if (newPassword) {
-          if (!targetUid) {
-            M.toast({
-              html: "Unable to find this employee's account.",
-              classes: "red rounded",
-            });
-            return;
+        if (!beginButtonLoading(saveBtn, "Saving changes...")) return;
+        try {
+          if (newPassword) {
+            if (!targetUid) {
+              M.toast({
+                html: "Unable to find this employee's account.",
+                classes: "red rounded",
+              });
+              return;
+            }
+
+            try {
+              const idToken = await getAuthToken();
+              if (!idToken) throw new Error(SESSION_EXPIRED_MESSAGE);
+              const response = await fetch(
+                `${window.location.origin}/updateAuthPassword`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${idToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    uid: targetUid,
+                    password: newPassword,
+                  }),
+                },
+              );
+              const result = await response.json();
+              if (!response.ok || !result.success) {
+                throw new Error(result.error || "Unable to change password.");
+              }
+            } catch (error) {
+              console.error("Password update error:", error);
+              M.toast({
+                html: error.message || "Unable to change password.",
+                classes: "red rounded",
+              });
+              return;
+            }
           }
+
+          await updateDoc(doc(db, "employees", id), {
+            fname: newFname,
+            lname: newLname,
+            role: newRole,
+            last_updated: serverTimestamp(),
+          });
+
+          const q = query(
+            collection(db, "users"),
+            where("email", "==", originalEmail),
+          );
+
+          const snapshot = await getDocs(q);
 
           try {
-            const idToken = await auth.currentUser.getIdToken();
-            const response = await fetch(
-              `${window.location.origin}/updateAuthPassword`,
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${idToken}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ uid: targetUid, password: newPassword }),
-              },
-            );
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-              throw new Error(result.error || "Unable to change password.");
+            const newPasswordHash = newPassword
+              ? await hashPassword(newPassword)
+              : null;
+            for (const docSnap of snapshot.docs) {
+              await updateDoc(docSnap.ref, {
+                role: newRole,
+                ...(newPasswordHash ? { passwordHash: newPasswordHash } : {}),
+                last_updated: serverTimestamp(),
+              });
             }
-          } catch (error) {
-            console.error("Password update error:", error);
-            M.toast({
-              html: error.message || "Unable to change password.",
-              classes: "red rounded",
-            });
-            return;
+            M.toast({ html: "Update Successfully", classes: "green rounded" });
+            modalInstance.close();
+          } catch (err) {
+            console.error("Update error", err);
+            M.toast({ html: "Failed to update", classes: "red rounded" });
           }
-        }
-
-        await updateDoc(doc(db, "employees", id), {
-          fname: newFname,
-          lname: newLname,
-          role: newRole,
-          last_updated: serverTimestamp(),
-        });
-
-        const q = query(
-          collection(db, "users"),
-          where("email", "==", originalEmail),
-        );
-
-        const snapshot = await getDocs(q);
-
-        try {
-          const newPasswordHash = newPassword
-            ? await hashPassword(newPassword)
-            : null;
-          for (const docSnap of snapshot.docs) {
-            await updateDoc(docSnap.ref, {
-              role: newRole,
-              ...(newPasswordHash ? { passwordHash: newPasswordHash } : {}),
-              last_updated: serverTimestamp(),
-            });
-          }
-          M.toast({ html: "Update Successfully", classes: "green rounded" });
-          modalInstance.close();
-        } catch (err) {
-          console.error("Update error", err);
-          M.toast({ html: "Failed to update", classes: "red rounded" });
+        } catch (error) {
+          console.error("Employee update error:", error);
+          M.toast({
+            html: "Failed to update employee.",
+            classes: "red rounded",
+          });
+        } finally {
+          endButtonLoading(saveBtn);
         }
       };
     };
@@ -436,6 +475,11 @@ export async function addEmployee(
   password,
   accountRole = "employee",
 ) {
+  const API_BASE = window.location.origin;
+  let idToken = null;
+  let createdUid = null;
+  let employeeRef = null;
+
   try {
     // Materialize-enhanced <select> elements don't reliably enforce
     if (!role || !role.trim()) {
@@ -455,8 +499,18 @@ export async function addEmployee(
       return false;
     }
 
+    // Siguraduhing may naka-login bago gumawa ng kahit ano.
+    idToken = await getAuthToken();
+    if (!idToken) {
+      M.toast({ html: SESSION_EXPIRED_MESSAGE, classes: "red rounded" });
+      return false;
+    }
+
     const normalizedEmail = email.trim().toLowerCase();
-    const q = query(collection(db, "users"), where("email", "==", normalizedEmail));
+    const q = query(
+      collection(db, "users"),
+      where("email", "==", normalizedEmail),
+    );
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       M.toast({ html: "Email already exists!", classes: "red rounded" });
@@ -472,8 +526,6 @@ export async function addEmployee(
       return false;
     }
 
-    const API_BASE = window.location.origin;
-    const idToken = await auth.currentUser.getIdToken();
     const authRes = await fetch(`${API_BASE}/createAuthUser`, {
       method: "POST",
       headers: {
@@ -489,20 +541,25 @@ export async function addEmployee(
     });
     const contentType = authRes.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
-      const message = authRes.status === 404
-        ? "Account creation API is unavailable. Restart or deploy the BackEnd server, then try again."
-        : "The BackEnd server returned an invalid response. Please try again later.";
+      const message =
+        authRes.status === 404
+          ? "Account creation API is unavailable. Restart or deploy the BackEnd server, then try again."
+          : "The BackEnd server returned an invalid response. Please try again later.";
       M.toast({ html: message, classes: "red rounded" });
       return false;
     }
     const authResult = await authRes.json();
     if (!authRes.ok || !authResult.success) {
-      M.toast({ html: authResult.error || "Unable to create the account.", classes: "red rounded" });
+      M.toast({
+        html: authResult.error || "Unable to create the account.",
+        classes: "red rounded",
+      });
       return false;
     }
     const uid = authResult.uid;
+    createdUid = uid;
 
-    await addDoc(collection(db, "employees"), {
+    employeeRef = await addDoc(collection(db, "employees"), {
       uid,
       fname,
       lname,
@@ -523,15 +580,44 @@ export async function addEmployee(
       passwordHash: hashvalue,
       created_at: serverTimestamp(),
     });
+    createdUid = null; // matagumpay na, wala nang ibabalik
     M.toast({
-      html: String(role).toLowerCase() === "manager"
-        ? "Manager account created successfully!"
-        : "Employee added successfully!",
+      html:
+        String(role).toLowerCase() === "manager"
+          ? "Manager account created successfully!"
+          : "Employee added successfully!",
       classes: "green rounded",
     });
     return true;
   } catch (error) {
     console.error("Error adding employee:", error);
+
+    // Rollback: kung nagawa na ang Auth account pero pumalya ang Firestore,
+    // alisin ang naiwang dokumento at Auth user para hindi maging "email exists"
+    // ang susunod na subok.
+    if (createdUid) {
+      if (employeeRef) {
+        try {
+          await deleteDoc(employeeRef);
+        } catch (cleanupError) {
+          console.error("Rollback (employee doc) failed:", cleanupError);
+        }
+      }
+      try {
+        const cleanupToken = (await getAuthToken()) || idToken;
+        await fetch(`${API_BASE}/deleteAuthUser`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${cleanupToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ uid: createdUid }),
+        });
+      } catch (cleanupError) {
+        console.error("Rollback (auth user) failed:", cleanupError);
+      }
+    }
+
     M.toast({ html: "Failed to add employee.", classes: "red rounded" });
     return false;
   }
@@ -679,11 +765,11 @@ export async function deleteEmployee(id) {
       return;
     }
 
-    const idToken = await auth.currentUser?.getIdToken();
+    const idToken = await getAuthToken();
 
     if (!idToken) {
       M.toast({
-        html: "Your session has expired. Please sign in again.",
+        html: SESSION_EXPIRED_MESSAGE,
         classes: "red rounded",
       });
       return;

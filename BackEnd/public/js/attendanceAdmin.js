@@ -41,6 +41,7 @@ function renderAttendanceRows() {
   if (!tbody || !dateInput || !statusFilter) return;
 
   const rows = attendanceRows
+    .filter((item) => String(item.accountRole || item.role || "employee").toLowerCase() !== "manager")
     .filter((item) => !dateInput.value || getAttendanceDate(item) === dateInput.value)
     .filter((item) => statusFilter.value === "all" || item.status === statusFilter.value)
     .sort((a, b) => getTimestamp(b.requestedAt || b.clockedInAt) - getTimestamp(a.requestedAt || a.clockedInAt));

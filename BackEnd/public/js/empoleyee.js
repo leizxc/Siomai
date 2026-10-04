@@ -449,6 +449,7 @@ async function loadProducts(session) {
         allProducts.push({
           id: docSnap.id,
           ...product,
+          image: product.image || product.image_url || "",
           pieces,
           piecesPerPack,
           packs,

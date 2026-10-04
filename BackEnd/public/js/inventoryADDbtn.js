@@ -1,5 +1,6 @@
 // inventoryADDbtn.js
 import { addProduct } from "/js/adminBE.js";
+import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
 
 function reinitSelect(selectEl) {
   if (!selectEl) return;
@@ -58,8 +59,7 @@ export function initInventoryModal() {
 
     saveBtn.addEventListener("click", async () => {
       if (saveBtn.textContent === "Update Product") return;
-      if (saveBtn.disabled) return;
-      saveBtn.disabled = true;
+      if (saveBtn.disabled || saveBtn.dataset.actionBusy === "true") return;
 
       const name = document.getElementById("product-name").value.trim();
       const category = document.getElementById("product-category").value;
@@ -76,9 +76,10 @@ export function initInventoryModal() {
 
       if (!name || !category || !packsStr || !priceStr) {
         M.toast({ html: "Please fill all required fields!", classes: "red rounded" });
-        saveBtn.disabled = false;
         return;
       }
+
+      if (!beginButtonLoading(saveBtn, "Saving product...")) return;
 
       const packs = parseInt(packsStr);
       const unitPrice = parseFloat(priceStr);
@@ -119,7 +120,7 @@ export function initInventoryModal() {
         console.error("SAVE ERROR:", err);
         M.toast({ html: "Failed to save product: " + err.message, classes: "red rounded" });
       } finally {
-        saveBtn.disabled = false;
+        endButtonLoading(saveBtn);
       }
     });
   }

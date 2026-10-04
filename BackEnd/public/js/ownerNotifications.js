@@ -4,6 +4,9 @@ import {
   onSnapshot,
   orderBy,
   query,
+  updateDoc,
+  doc,
+  serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 let unsubscribeNotifications = null;
@@ -21,6 +24,17 @@ function formatDate(timestamp) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function notificationPage(item) {
+  if (["time_in_request", "time_out_request"].includes(item.type)) {
+    return item.accountRole === "manager"
+      ? "owner-manager-attendance"
+      : "owner-attendance";
+  }
+  if (item.type === "expense_report") return "owner-capital";
+  if (item.type === "low_stock") return "owner-inventory";
+  return "";
 }
 
 function renderNotifications(notifications) {
@@ -48,7 +62,8 @@ function renderNotifications(notifications) {
                 : "warning";
           const title = item.title || `Low stock: ${item.productName || "Product"}`;
           const message = item.message || `${item.remainingStock ?? ""} ${item.unit || ""} remaining`;
-          return `<article class="manager-notification ${item.read ? "" : "unread"}">
+          const page = notificationPage(item);
+          return `<article class="manager-notification ${item.read ? "" : "unread"} ${page ? "clickable" : ""}" ${page ? `data-id="${escapeHtml(item.id)}" data-page="${page}" tabindex="0" role="button"` : ""}>
             <i class="material-icons">${icon}</i>
             <div>
               <strong>${escapeHtml(title)}</strong>
@@ -60,6 +75,28 @@ function renderNotifications(notifications) {
         })
         .join("")
     : '<p class="manager-notification-empty">No notifications.</p>';
+
+  list.querySelectorAll(".manager-notification.clickable").forEach((element) => {
+    const open = async () => {
+      const id = element.dataset.id;
+      if (modalInstance?.isOpen) modalInstance.close();
+      window.loadSection?.(element.dataset.page);
+      try {
+        await updateDoc(doc(db, "managerNotifications", id), {
+          read: true,
+          readAt: serverTimestamp(),
+        });
+      } catch (error) {
+        console.error("Unable to mark owner notification as read:", error);
+      }
+    };
+    element.addEventListener("click", open);
+    element.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      open();
+    });
+  });
 }
 
 export function initOwnerNotifications() {

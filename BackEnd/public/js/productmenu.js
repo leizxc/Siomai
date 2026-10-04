@@ -1,9 +1,7 @@
-import { db } from "/js/firebase.js";
+import { db, isManagerAccount } from "/js/firebase.js";
 import {
   collection,
-  addDoc,
   updateDoc,
-  deleteDoc,
   doc,
   serverTimestamp,
   onSnapshot,
@@ -17,6 +15,17 @@ import {
 let unsubscribeInventoryOptions = null;
 let unsubscribeProductIdPreview = null;
 let unsubscribeMenu = null;
+
+function setProductMenuButtonBusy(button, busy, busyText) {
+  if (!button) return;
+  button.disabled = busy || button.classList.contains("manager-write-locked");
+  button.setAttribute("aria-busy", String(busy));
+  const progressText = button.querySelector(".product-menu-submit-progress");
+  if (progressText && busyText) {
+    const spinner = progressText.querySelector(".account-loading-spinner");
+    progressText.replaceChildren(spinner || document.createElement("span"), document.createTextNode(busyText));
+  }
+}
 
 export async function refresh() {
   const form = document.getElementById("addProductMenu");
@@ -163,108 +172,81 @@ export function loadInventoryOptions(role = "") {
 
 function bindInventoryAllocationChange() {
   const select = document.getElementById("employeeINV");
-  const stockInput = document.getElementById("stock");
   const stockUnit = document.getElementById("stockUnit");
-  const priceInput = document.getElementById("price");
-  if (!select || !stockInput) return;
+  if (!select || !stockUnit) return;
+  let selectedInventory = null;
+
+  const updateInventoryQuantity = () => {
+    if (!selectedInventory) return;
+    const { data, unit } = selectedInventory;
+    const quantity = Number(data.quantity ?? data.stock_quantity ?? 0);
+    let label = `${formatQuantity(quantity)} ${(unit || "units").toUpperCase()}`;
+    if (unit === "pack") label = `${formatQuantity(quantity)} PACKS = ${formatQuantity(data.stock_quantity)} PCS`;
+    else if (unit === "kaban") label = `${formatQuantity(quantity)} KABAN = ${formatQuantity(data.stock_quantity)} KG`;
+    else if (unit === "kg" || unit === "kilogram") label = `${formatQuantity(quantity)} KG`;
+    else if (unit === "liter") label = `${formatQuantity(quantity)} LITER`;
+    stockUnit.value = label;
+    M.updateTextFields();
+  };
 
   select.onchange = async (e) => {
     const inventoryId = e.target.value;
     if (!inventoryId) return;
-
     const inventorySnap = await getDoc(doc(db, "inventory", inventoryId));
     if (!inventorySnap.exists()) return;
 
     const data = inventorySnap.data();
     const unit = (data.unit_type || "").toLowerCase();
-
+    selectedInventory = { data, unit };
     hideAllDynamicFields();
     resetAllDynamicValues();
 
-    let stock = data.stock_quantity;
-    let unitLabel = "";
-
-    if (unit === "pack") {
-      unitLabel = `${data.quantity} PACKS = ${data.stock_quantity} PCS`;
-    } else if (unit === "packs") {
-      // Palamig ingredients (Gulaman Powder, Powdered Juice) — walang
-      // conversion, hindi ito bottles o pieces.
-      stock = data.stock_quantity;
-      unitLabel = "PACKS";
-    } else if (unit === "kaban") {
-      // Rice — kaban converted to kg (stock_quantity) sa adminBE.js.
-      stock = data.stock_quantity;
-      unitLabel = `${data.quantity} KABAN = ${data.stock_quantity} KG`;
-    } else if (unit === "kg" || unit === "kilogram") {
-      stock = data.quantity;
-      unitLabel = "KG";
-    } else if (unit === "liter") {
-      stock = data.quantity;
-      unitLabel = "LITER";
-    } else {
-      unitLabel = (unit || "").toUpperCase();
-    }
-
-    stockInput.value = stock;
     const packsUsedInput = document.getElementById("packsUsed");
     const kgUsedInput = document.getElementById("KgUsed");
-    if (packsUsedInput && (unit === "pack" || unit === "packs")) {
-      packsUsedInput.max = Number(data.quantity || 0);
-    }
-    if (kgUsedInput && ["kaban", "kilogram", "kg"].includes(unit)) {
-      kgUsedInput.max = Number(stock || 0);
-    }
-    if (stockUnit) stockUnit.value = unitLabel;
+    if (packsUsedInput && (unit === "pack" || unit === "packs")) packsUsedInput.max = Number(data.quantity || 0);
+    if (kgUsedInput && ["kaban", "kilogram", "kg"].includes(unit)) kgUsedInput.max = Number(data.stock_quantity ?? data.quantity ?? 0);
 
-    const piecesUsedField = document.getElementById("pieces-used-field");
     const packsUsedField = document.getElementById("packs-used-field");
     const kgUsedField = document.getElementById("kg-used-field");
     const kalderoCountField = document.getElementById("kaldero-count-field");
     const kgLabel = document.getElementById("kg-used-label");
     const kalderoLabel = document.getElementById("kaldero-label");
-
     if (unit === "pack") {
       if (packsUsedField) packsUsedField.style.display = "block";
-      const packsUsedLabel = document.querySelector('label[for="packsUsed"]');
-      if (packsUsedLabel) packsUsedLabel.textContent = "Siomai Packs Used";
+      const label = document.querySelector('label[for="packsUsed"]');
+      if (label) label.textContent = "Siomai Packs Used";
     } else if (unit === "packs") {
-      // Gulaman Powder / Powdered Juice: "Packs Used" + "Number of
-      // Container Reached".
       if (packsUsedField) packsUsedField.style.display = "block";
-      const packsUsedLabel = document.querySelector('label[for="packsUsed"]');
-      if (packsUsedLabel) packsUsedLabel.textContent = "Palamig Packs Used";
+      const label = document.querySelector('label[for="packsUsed"]');
+      if (label) label.textContent = "Palamig Packs Used";
       if (kalderoCountField) kalderoCountField.style.display = "block";
-      if (kalderoLabel)
-        kalderoLabel.textContent = "Number of Container Reached";
+      if (kalderoLabel) kalderoLabel.textContent = "Number of Container Reached";
     } else if (unit === "kaban" || unit === "kilogram") {
-      // Rice and ingredient kilograms track both consumed kg and output containers.
       if (kgUsedField) kgUsedField.style.display = "block";
       if (kalderoCountField) kalderoCountField.style.display = "block";
-      if (kgLabel) kgLabel.textContent = "Kilograms Used"; // reset (di na "(Rice)")
-      if (kalderoLabel)
-        kalderoLabel.textContent = "Number of Container Reached";
+      if (kgLabel) kgLabel.textContent = "Kilograms Used";
+      if (kalderoLabel) kalderoLabel.textContent = "Number of Container Reached";
     } else if (unit === "kg") {
       if (kgUsedField) kgUsedField.style.display = "block";
       if (kgLabel) kgLabel.textContent = "Kilograms per Product";
     }
-    // NOTE: LITER — ibinalik sa simpleng behavior (walang extra fields),
-    // dahil wala ito sa spec mo. Kung gusto mo palang gawing kagaya ng
-    // KG ang liter, idagdag lang ulit ang branch nito dito.
-
-    M.updateTextFields();
+    updateInventoryQuantity();
   };
 }
-
 export async function loadroles() {
   const roleSelect = document.getElementById("selectCategory");
   if (!roleSelect) return;
 
+  const managerAccount = await isManagerAccount();
   const snap = await getDocs(collection(db, "employees"));
   const roles = new Set();
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
-    if (data.role) roles.add(data.role.trim());
+    if (
+      data.role &&
+      !(managerAccount && data.role.trim().toLowerCase() === "manager")
+    ) roles.add(data.role.trim());
   });
 
   roleSelect.innerHTML = `<option value="" disabled selected>Select Role</option>`;
@@ -330,6 +312,8 @@ export function addproductmenu() {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (form.dataset.submitting === "true") return;
+    form.dataset.submitting = "true";
 
     const saveBtn = document.getElementById("save-menu");
 
@@ -340,10 +324,9 @@ export function addproductmenu() {
         .value.trim()
         .toUpperCase();
       const role = document.getElementById("selectCategory").value;
-      const stock = Number(document.getElementById("stock").value);
       const price = Number(document.getElementById("price").value);
 
-      if (!inventoryId || !productName || !role || stock <= 0) {
+      if (!inventoryId || !productName || !role) {
         M.toast({
           html: "Please complete all fields.",
           classes: "red rounded",
@@ -359,7 +342,7 @@ export function addproductmenu() {
         return;
       }
 
-      if (saveBtn) saveBtn.disabled = true;
+      setProductMenuButtonBusy(saveBtn, true, "Saving...");
 
       const inventorySnap = await getDoc(doc(db, "inventory", inventoryId));
       if (!inventorySnap.exists()) {
@@ -369,6 +352,24 @@ export function addproductmenu() {
 
       const inventory = inventorySnap.data();
       const unit = (inventory.unit_type || "").toLowerCase();
+      let stock = Number(inventory.stock_quantity ?? inventory.quantity ?? 0);
+      if (unit === "pack") {
+        const packs = Number(document.getElementById("packsUsed").value);
+        const piecesPerPack = Number(inventory.quantity) > 0
+          ? Number(inventory.stock_quantity) / Number(inventory.quantity)
+          : 1;
+        stock = packs * piecesPerPack;
+      } else if (unit === "packs") {
+        stock = Number(document.getElementById("packsUsed").value);
+      } else if (["kaban", "kilogram", "kg"].includes(unit)) {
+        stock = Number(document.getElementById("KgUsed").value);
+      } else if (unit === "liter") {
+        stock = Number(inventory.quantity ?? inventory.stock_quantity ?? 0);
+      }
+      if (!(stock > 0)) {
+        M.toast({ html: "Please enter a valid quantity.", classes: "red rounded" });
+        return;
+      }
 
       let piecesUsed = null;
       let packsUsed = null;
@@ -430,29 +431,91 @@ export function addproductmenu() {
 
       const productCode = await generateProductCode();
       const imageURL = await uploadProductImage();
-      const quantityFields = buildPackQuantityFields(inventory, stock);
+      const productRef = doc(collection(db, "productMenu"));
+      await runTransaction(db, async (transaction) => {
+        const currentInventorySnap = await transaction.get(
+          doc(db, "inventory", inventoryId),
+        );
+        if (!currentInventorySnap.exists()) throw new Error("Inventory not found.");
 
-      await addDoc(collection(db, "productMenu"), {
-        product_code: productCode,
-        product_name: productName,
-        pieces_used: piecesUsed,
-        packs_used: packsUsed,
-        kg_used: kgUsed,
-        kaldero_count: kalderoCount,
-        category: role,
-        inv_category:
-          inventory.inv_category || inventory.category || "Uncategorized",
-        inventory_id: inventoryId,
-        inventory_name: inventory.product_name,
-        initial_stock: stock,
-        current_stock: stock,
-        ...quantityFields,
-        unit: inventory.unit_type,
-        weight_per_kaban: Number(inventory.weight_per_kaban || 0),
-        price: price,
-        image_url: imageURL,
-        status: "Available",
-        created_at: serverTimestamp(),
+        const currentInventory = currentInventorySnap.data();
+        const availableQuantity = Number(currentInventory.quantity ?? 0);
+        const availableStock = Number(
+          currentInventory.stock_quantity ?? currentInventory.quantity ?? 0,
+        );
+        let quantityUsed = availableQuantity;
+        let inventoryStockUsed = availableStock;
+        let menuStock = stock;
+
+        if (unit === "pack") {
+          const piecesPerPack = availableQuantity > 0
+            ? availableStock / availableQuantity
+            : 1;
+          quantityUsed = packsUsed;
+          inventoryStockUsed = packsUsed * piecesPerPack;
+          menuStock = inventoryStockUsed;
+        } else if (unit === "packs") {
+          quantityUsed = packsUsed;
+          inventoryStockUsed = packsUsed;
+          menuStock = packsUsed;
+        } else if (unit === "kaban") {
+          const weightPerKaban = Number(currentInventory.weight_per_kaban || 0);
+          inventoryStockUsed = kgUsed;
+          quantityUsed = weightPerKaban > 0 ? kgUsed / weightPerKaban : 0;
+          menuStock = kgUsed;
+        } else if (unit === "kilogram" || unit === "kg") {
+          quantityUsed = kgUsed;
+          inventoryStockUsed = kgUsed;
+          menuStock = kgUsed;
+        }
+
+        if (
+          !(quantityUsed > 0) ||
+          quantityUsed > availableQuantity ||
+          inventoryStockUsed > availableStock ||
+          !(menuStock > 0)
+        ) {
+          throw new Error("Inventory quantity changed or is insufficient. Refresh and try again.");
+        }
+
+        const remainingQuantity = Math.max(0, availableQuantity - quantityUsed);
+        const remainingStock = Math.max(0, availableStock - inventoryStockUsed);
+        const unitPrice = Number(currentInventory.unit_price || 0);
+        const remainingValue = unit === "kaban"
+          ? remainingQuantity * unitPrice
+          : remainingStock * unitPrice;
+        transaction.update(doc(db, "inventory", inventoryId), {
+          quantity: remainingQuantity,
+          stock_quantity: remainingStock,
+          total_value: remainingValue,
+          status: remainingQuantity > 0 ? "Available" : "Out of Stock",
+          last_updated: serverTimestamp(),
+        });
+
+        const quantityFields = buildPackQuantityFields(currentInventory, menuStock);
+        transaction.set(productRef, {
+          product_code: productCode,
+          product_name: productName,
+          pieces_used: piecesUsed,
+          packs_used: packsUsed,
+          kg_used: kgUsed,
+          kaldero_count: kalderoCount,
+          category: role,
+          inv_category:
+            currentInventory.inv_category || currentInventory.category || "Uncategorized",
+          inventory_id: inventoryId,
+          inventory_name: currentInventory.product_name,
+          initial_stock: menuStock,
+          product_stock_limit: menuStock,
+          current_stock: menuStock,
+          ...quantityFields,
+          unit: currentInventory.unit_type,
+          weight_per_kaban: Number(currentInventory.weight_per_kaban || 0),
+          price,
+          image_url: imageURL,
+          status: "Available",
+          created_at: serverTimestamp(),
+        });
       });
 
       M.toast({ html: "Product Menu Saved!", classes: "green rounded" });
@@ -460,9 +523,13 @@ export function addproductmenu() {
       refresh();
     } catch (error) {
       console.error(error);
-      M.toast({ html: "Error saving product.", classes: "red rounded" });
+      M.toast({
+        html: error.message || "Error saving product.",
+        classes: "red rounded",
+      });
     } finally {
-      if (saveBtn) saveBtn.disabled = false;
+      setProductMenuButtonBusy(saveBtn, false);
+      delete form.dataset.submitting;
     }
   });
 }
@@ -516,28 +583,28 @@ function confirmDeletion(title, message) {
 
   const confirmButton = document.getElementById("confirm-delete-category");
   const cancelButton = document.getElementById("cancel-delete-category");
+  const modalInstance = M.Modal.getInstance(modalElement);
   const titleElement = document.getElementById("delete-confirmation-title");
   const messageElement = document.getElementById("delete-confirmation-message");
 
-  const existingModal = M.Modal.getInstance(modalElement);
-  if (existingModal) {
-    if (existingModal.isOpen) existingModal.close();
-    existingModal.destroy();
+  if (modalInstance) {
+    if (modalInstance.isOpen) modalInstance.close();
+    modalInstance.destroy();
   }
-  const modalInstance = M.Modal.init(modalElement, { dismissible: false });
+  const activeModal = M.Modal.init(modalElement, { dismissible: false });
   titleElement.textContent = title;
   messageElement.textContent = message;
 
   return new Promise((resolve) => {
     cancelButton.onclick = () => {
-      modalInstance.close();
+      activeModal.close();
       resolve(false);
     };
     confirmButton.onclick = () => {
-      modalInstance.close();
+      setProductMenuButtonBusy(confirmButton, true, "Deleting...");
       resolve(true);
     };
-    modalInstance.open();
+    activeModal.open();
   });
 }
 
@@ -557,29 +624,94 @@ export async function loadmenu() {
   function bindRowButtons() {
     tbody.querySelectorAll(".delete-btn").forEach((btn) => {
       btn.onclick = async () => {
+        if (btn.dataset.submitting === "true") return;
+        btn.dataset.submitting = "true";
         const id = btn.dataset.id;
-
-        const assignedQuery = query(
-          collection(db, "products"),
-          where("inventoryId", "==", id),
-        );
-        const assignedSnap = await getDocs(assignedQuery);
-        if (!assignedSnap.empty) {
-          M.toast({
-            html: "Cannot delete: this product is still assigned to employee(s). Unassign it first.",
-            classes: "red rounded",
-          });
-          return;
-        }
-
-        const confirmed = await confirmDeletion(
-          "Delete Product?",
-          "This product menu entry will be permanently deleted.",
-        );
-        if (!confirmed) return;
-
+        setProductMenuButtonBusy(btn, true, "Checking...");
         try {
-          await deleteDoc(doc(db, "productMenu", id));
+          const assignedQuery = query(
+            collection(db, "products"),
+            where("inventoryId", "==", id),
+          );
+          const assignedSnap = await getDocs(assignedQuery);
+          if (!assignedSnap.empty) {
+            M.toast({
+              html: "Cannot delete: this product is still assigned to employee(s). Unassign it first.",
+              classes: "red rounded",
+            });
+            return;
+          }
+
+          const confirmed = await confirmDeletion(
+            "Delete Product?",
+            "This product menu entry will be permanently deleted.",
+          );
+          if (!confirmed) return;
+
+          setProductMenuButtonBusy(document.getElementById("confirm-delete-category"), true, "Deleting...");
+          await runTransaction(db, async (transaction) => {
+            const menuRef = doc(db, "productMenu", id);
+            const menuSnap = await transaction.get(menuRef);
+            if (!menuSnap.exists()) throw new Error("Product menu item not found.");
+
+            const menu = menuSnap.data();
+            const inventoryId = menu.inventory_id;
+            let inventoryRef = null;
+            let inventory = null;
+            if (inventoryId) {
+              inventoryRef = doc(db, "inventory", inventoryId);
+              const inventorySnap = await transaction.get(inventoryRef);
+              if (!inventorySnap.exists()) {
+                throw new Error("Linked inventory was not found. Product menu was not deleted.");
+              }
+              inventory = inventorySnap.data();
+            }
+
+            if (inventory) {
+              const unit = String(menu.unit || inventory.unit_type || "").toLowerCase();
+              const remainingMenuStock = Math.max(
+                0,
+                Number(menu.current_stock ?? menu.current_pieces ?? menu.initial_stock ?? 0),
+              );
+              let quantityToRestore = remainingMenuStock;
+              let stockToRestore = remainingMenuStock;
+
+              if (unit === "pack") {
+                const piecesPerPack =
+                  Number(menu.pieces_per_pack) ||
+                  (Number(inventory.quantity) > 0
+                    ? Number(inventory.stock_quantity) / Number(inventory.quantity)
+                    : 1);
+                quantityToRestore = remainingMenuStock / piecesPerPack;
+              } else if (unit === "kaban") {
+                const weightPerKaban = Number(
+                  menu.weight_per_kaban || inventory.weight_per_kaban || 0,
+                );
+                if (!(weightPerKaban > 0)) {
+                  throw new Error("Missing weight per kaban. Product menu was not deleted.");
+                }
+                quantityToRestore = remainingMenuStock / weightPerKaban;
+              }
+
+              const restoredQuantity = Number(inventory.quantity || 0) + quantityToRestore;
+              const restoredStock = Number(
+                inventory.stock_quantity ?? inventory.quantity ?? 0,
+              ) + stockToRestore;
+              const unitPrice = Number(inventory.unit_price || 0);
+              const unitValue = unit === "kaban"
+                ? restoredQuantity * unitPrice
+                : restoredStock * unitPrice;
+              transaction.update(inventoryRef, {
+                quantity: restoredQuantity,
+                stock_quantity: restoredStock,
+                total_value: unitValue,
+                status: "Available",
+                last_updated: serverTimestamp(),
+              });
+            }
+
+            transaction.delete(menuRef);
+          });
           M.toast({
             html: "Product menu entry deleted.",
             classes: "green rounded",
@@ -590,6 +722,15 @@ export async function loadmenu() {
             html: "Failed to delete product.",
             classes: "red rounded",
           });
+        } finally {
+          setProductMenuButtonBusy(document.getElementById("confirm-delete-category"), false);
+          const deleteModal = M.Modal.getInstance(document.getElementById("modal-delete-category"));
+          if (deleteModal?.isOpen) deleteModal.close();
+          deleteModal?.destroy();
+          if (btn.isConnected) {
+            delete btn.dataset.submitting;
+            setProductMenuButtonBusy(btn, false);
+          }
         }
       };
     });
@@ -625,6 +766,7 @@ export async function loadmenu() {
 
         const saveBtn = document.getElementById("edit-menu-save");
         saveBtn.onclick = async () => {
+          if (saveBtn.dataset.submitting === "true") return;
           const newName = document
             .getElementById("edit-menu-name")
             .value.trim()
@@ -654,6 +796,8 @@ export async function loadmenu() {
             }
           }
 
+          saveBtn.dataset.submitting = "true";
+          setProductMenuButtonBusy(saveBtn, true, "Updating...");
           try {
             const menuUpdate = {
               product_name: newName,
@@ -687,6 +831,9 @@ export async function loadmenu() {
               html: "Failed to update product.",
               classes: "red rounded",
             });
+          } finally {
+            delete saveBtn.dataset.submitting;
+            setProductMenuButtonBusy(saveBtn, false);
           }
         };
       };
@@ -735,6 +882,7 @@ export async function loadmenu() {
   }
 
   function updateMenuTableHeaders(filteredData) {
+    const thAvailableStock = document.getElementById("th-available-stock");
     const thPacks = document.getElementById("th-packs");
     const thPieces = document.getElementById("th-pieces");
     const thContainer = document.getElementById("th-container");
@@ -744,13 +892,15 @@ export async function loadmenu() {
     const sampleUnit = (filteredData[0]?.data.unit || "").toLowerCase();
 
     if (sampleUnit === "pack") {
-      thPacks.style.display = "";
+      if (thAvailableStock) thAvailableStock.style.display = "none";
+      thPacks.style.display = "none";
       thPieces.style.display = "";
       thContainer.style.display = "none";
       if (thKgUsed) thKgUsed.style.display = "none";
       thPacks.textContent = "Packs";
       thPieces.textContent = "Packs Used";
     } else if (sampleUnit === "packs") {
+      if (thAvailableStock) thAvailableStock.style.display = "";
       thPacks.style.display = "";
       thPieces.style.display = "none";
       thContainer.style.display = "";
@@ -761,6 +911,7 @@ export async function loadmenu() {
       sampleUnit === "kaban" ||
       sampleUnit === "kilogram"
     ) {
+      if (thAvailableStock) thAvailableStock.style.display = "";
       thPacks.style.display = "none";
       thPieces.style.display = "none";
       thContainer.style.display = "";
@@ -770,6 +921,7 @@ export async function loadmenu() {
         thKgUsed.textContent = "KG Used";
       }
     } else if (sampleUnit === "kg") {
+      if (thAvailableStock) thAvailableStock.style.display = "";
       thPacks.style.display = "none";
       thPieces.style.display = "none";
       thContainer.style.display = "none";
@@ -778,6 +930,7 @@ export async function loadmenu() {
         thKgUsed.textContent = "KG per Product";
       }
     } else if (sampleUnit === "liter") {
+      if (thAvailableStock) thAvailableStock.style.display = "";
       thPacks.style.display = "none";
       thPieces.style.display = "none";
       thContainer.style.display = "none";
@@ -871,12 +1024,8 @@ export async function loadmenu() {
     let quantityColumns = "";
 
     if (data.unit === "pack") {
-      const packs = Math.ceil(
-        (data.current_pieces ?? data.current_stock) /
-          (data.pieces_per_pack || 1),
-      );
       quantityColumns = `
-        <td data-label="Packs">${formatQuantity(packs)}</td>
+        <td data-label="Packs" style="display: none"></td>
         <td data-label="Packs Used">${formatQuantity(data.packs_used)}</td>
       `;
     } else if (data.unit === "packs") {
@@ -894,6 +1043,28 @@ export async function loadmenu() {
     } else if (data.unit === "liter") {
       quantityColumns = "";
     }
+    const currentStock = Number(data.current_stock ?? data.current_pieces ?? 0) || 0;
+    const hasAssignedStock =
+      data.assigned === true ||
+      String(data.status || "").toLowerCase() === "on selling";
+    const menuStatus = hasAssignedStock || currentStock <= 0
+      ? "On Selling"
+      : "Available";
+    const statusClass = menuStatus.toLowerCase() === "available" ? "available" : "on-selling";
+    const unit = String(data.unit || "").toLowerCase();
+    let availableQuantity;
+    if (unit === "pack") {
+      const piecesPerPack = Number(data.pieces_per_pack) || 1;
+      availableQuantity = `${formatQuantity(Math.floor(currentStock / piecesPerPack))} packs`;
+    } else if (["packs", "kaban", "kilogram"].includes(unit)) {
+      const containers = Number(data.kaldero_count ?? data.container_count ?? 0) || 0;
+      availableQuantity = `${formatQuantity(containers)} containers`;
+    } else if (unit === "kg") {
+      availableQuantity = `${formatQuantity(currentStock)} kg`;
+    } else {
+      if (thAvailableStock) thAvailableStock.style.display = "";
+      availableQuantity = `${formatQuantity(currentStock)} ${data.unit || "units"}`;
+    }
     return `
       <tr>
         <td data-label="Product Code"><strong>${data.product_code || "-"}</strong></td>
@@ -901,14 +1072,17 @@ export async function loadmenu() {
         <td data-label="Inventory Name">${data.inventory_name || "-"}</td>
         <td data-label="Product Name">${data.product_name || "-"}</td>
         <td data-label="Category">${data.inv_category || data.category || "-"}</td>
+        <td data-label="Status"><span class="status ${statusClass}">${menuStatus}</span></td>
+        <td data-label="Available Stock"${unit === "pack" ? ' style="display: none"' : ""}>${availableQuantity}</td>
         ${quantityColumns}
         <td data-label="Price">₱${Number(data.price || 0).toFixed(2)}</td>
         <td data-label="Action">
           <button class="edit-btn btn blue waves-effect waves-light" data-id="${id}">
             <i class="material-icons">edit</i>
           </button>
-          <button class="delete-btn btn red waves-effect waves-light" data-id="${id}">
-            <i class="material-icons">delete</i>
+          <button class="delete-btn btn red waves-effect waves-light" data-id="${id}" aria-busy="false">
+            <span class="product-menu-submit-label"><i class="material-icons">delete</i></span>
+            <span class="product-menu-submit-progress"><span class="account-loading-spinner" aria-hidden="true"></span>Checking...</span>
           </button>
         </td>
       </tr>

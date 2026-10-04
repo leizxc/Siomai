@@ -11,8 +11,10 @@ import {
   where,
   getDocs,
   doc,
+  getDoc,
   setDoc,
   updateDoc,
+  runTransaction,
   serverTimestamp,
   onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -29,7 +31,7 @@ let attendanceHistory = [];
 let selectedAttendanceRange = "today";
 let pendingAttendanceAction = null;
 
-// FIX: lifecycle tracking
+// Lifecycle tracking
 // - attendanceRoot: ang DOM element na kasalukuyang naka-bind (para malaman kung napalitan ang page)
 // - rootObserver: awtomatikong nag-stop kapag nawala sa DOM ang page
 // - initToken: pang-cancel ng mga async na gawain na natapos pagkatapos mag-stop
@@ -41,7 +43,7 @@ function getAttendanceRoot() {
   return document.querySelector("#time-in-button");
 }
 
-// FIX: kapag inalis sa DOM ang attendance page (lumipat ng ibang content),
+// Kapag inalis sa DOM ang attendance page (lumipat ng ibang content),
 // awtomatikong tatawagin ang stopAttendancePage kahit hindi ito tawagin ng navigation.
 function watchRootRemoval(root) {
   rootObserver?.disconnect();
@@ -62,8 +64,8 @@ export async function initAttendance() {
   const root = getAttendanceRoot();
   if (!root) return;
 
-  // FIX: dati, early return agad kapag initialized na. Ngayon, kung ibang DOM na
-  // ang nasa page, i-stop muna ang luma at mag-init ulit.
+  // Kung initialized na at pareho pa ang DOM, huwag nang ulitin.
+  // Kung ibang DOM na ang nasa page, i-stop muna ang luma at mag-init ulit.
   if (attendanceInitialized) {
     if (attendanceRoot === root) return;
     stopAttendancePage();
@@ -89,7 +91,7 @@ export async function initAttendance() {
     // Walang naka-login
     if (!user) {
       console.warn("No logged-in user found.");
-      showNoAttendance("No logged-in user.");
+      showAttendanceError("No logged-in user.");
       return;
     }
 
@@ -105,15 +107,18 @@ export async function initAttendance() {
     );
 
     const employeeSnapshot = await getDocs(employeeQuery);
-    if (token !== initToken) return; // FIX: na-stop habang naghihintay
+    if (token !== initToken) return; // na-stop habang naghihintay
 
     if (employeeSnapshot.empty) {
-      console.warn("Employee record not found.");
-      showNoAttendance("Employee information not found.");
+      console.warn("Employee record not found.", user.uid, user.email);
+      showAttendanceError("Employee information not found.");
       return;
     }
 
     const employeeData = employeeSnapshot.docs[0].data();
+    const accountRole = String(
+      (await user.getIdTokenResult()).claims.role || "employee",
+    ).toLowerCase();
 
     const fname = employeeData.fname || "";
     const lname = employeeData.lname || "";
@@ -121,38 +126,58 @@ export async function initAttendance() {
     console.log("Employee:", fname, lname);
 
     // ========================================
-    // TODAY'S DOCUMENT ID
+    // SHIFT DOCUMENT (ngayon, o kahapon kung bukas pa ang shift)
     // ========================================
 
-    const today = getTodayDate();
-    const attendanceId = `${user.uid}_${today}`;
-    const attendanceRef = doc(db, "attendance", attendanceId);
+    const { ref: attendanceRef, date: today } = await resolveShiftRef(user);
+    if (token !== initToken) return;
 
     watchAttendance(attendanceRef, {
       attendanceRef,
       user,
       fname,
       lname,
+      accountRole,
       today,
     });
     await loadAttendanceStats(user.uid, token);
   } catch (error) {
     console.error("Attendance initialization error:", error);
     if (token !== initToken) return;
-    showNoAttendance("Unable to load attendance.");
+    showAttendanceError("Unable to load attendance.");
   }
 }
 
 // ========================================
-// GET TODAY'S DATE
+// DATE HELPERS
 // ========================================
 
 function getTodayDate() {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return toDateKey(new Date());
+}
+
+function getYesterdayDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return toDateKey(d);
+}
+
+// Hanapin muna kung may bukas na shift kahapon (tumawid ng hatinggabi).
+// Kung wala, gamitin ang dokumento ng ngayon.
+async function resolveShiftRef(user) {
+  const today = getTodayDate();
+  const yesterday = getYesterdayDate();
+  const yRef = doc(db, "attendance", `${user.uid}_${yesterday}`);
+  const ySnap = await getDoc(yRef);
+  const y = ySnap.exists() ? ySnap.data() : null;
+  if (
+    y &&
+    !y.clockedOutAt &&
+    ["active", "pending", "time_out_pending"].includes(y.status)
+  ) {
+    return { ref: yRef, date: yesterday };
+  }
+  return { ref: doc(db, "attendance", `${user.uid}_${today}`), date: today };
 }
 
 // ========================================
@@ -161,10 +186,11 @@ function getTodayDate() {
 
 function displayAttendance(attendance) {
   currentAttendance = attendance;
+  const approver = attendance.accountRole === "manager" ? "owner" : "manager";
   if (attendance.status === "pending") {
     updateTodayStatus(
       "Waiting for Approval",
-      "Your time-in request has been sent. Please wait for manager approval.",
+      `Your time-in request has been sent. Please wait for ${approver} approval.`,
       "pending",
     );
     setTimeInButtonPending();
@@ -175,7 +201,7 @@ function displayAttendance(attendance) {
   if (attendance.status === "time_out_pending") {
     updateTodayStatus(
       "Time out awaiting approval",
-      "Your time-out request has been sent to the manager.",
+      `Your time-out request has been sent to the ${approver}.`,
       "pending",
     );
     setTimeOutButtonPending();
@@ -254,6 +280,7 @@ function displayAttendance(attendance) {
 // EMPTY / ERROR STATE
 // ========================================
 
+// Gamitin lang kapag NAPATUNAYAN na walang record (ready na mag-time in).
 function showNoAttendance(message) {
   updateTodayStatus(
     "Ready to time in",
@@ -272,12 +299,35 @@ function showNoAttendance(message) {
   `;
 }
 
+function lockTimeInButton(label = "Unavailable") {
+  const button = document.querySelector("#time-in-button");
+  if (!button) return;
+  button.disabled = true;
+  button.onclick = null;
+  button.innerHTML = `<span class="material-icons">lock</span> ${label}`;
+}
+
+// Fail closed: kapag hindi mapatunayan ang state, huwag payagan ang time-in.
+function showAttendanceError(message) {
+  updateTodayStatus("Can't verify attendance", message, "pending");
+  lockTimeInButton();
+  const activityList = document.querySelector(".activity-list");
+  if (!activityList) return;
+  activityList.innerHTML = `
+    <div class="activity-item">
+      <div class="activity-info">
+        <div class="activity-title">${message}</div>
+      </div>
+    </div>
+  `;
+}
+
 // ========================================
 // CLEANUP
 // ========================================
 
 export function stopAttendancePage() {
-  // FIX: i-cancel ang lahat ng async na init/stats na hindi pa tapos
+  // i-cancel ang lahat ng async na init/stats na hindi pa tapos
   initToken++;
 
   rootObserver?.disconnect();
@@ -294,7 +344,7 @@ export function stopAttendancePage() {
   attendanceHistory = [];
   pendingAttendanceAction = null;
 
-  // FIX: i-destroy ang confirmation modal para walang maiwang overlay
+  // i-destroy ang confirmation modal para walang maiwang overlay
   // at hindi ma-stuck ang overflow ng body kapag napalitan ang section.
   closeAttendanceConfirmation({ destroy: true });
 
@@ -302,9 +352,10 @@ export function stopAttendancePage() {
 }
 
 function displayPendingAttendance(attendance) {
+  const approver = attendance.accountRole === "manager" ? "owner" : "manager";
   updateTodayStatus(
     "Waiting for Approval",
-    "Your time-in request has been sent. Please wait for manager approval.",
+    `Your time-in request has been sent. Please wait for ${approver} approval.`,
     "pending",
   );
   const activityList = document.querySelector(".activity-list");
@@ -318,7 +369,7 @@ function displayPendingAttendance(attendance) {
       <div class="activity-info">
         <div class="activity-title">Time In Request Sent</div>
         <div class="activity-time">${employeeName}</div>
-        <div class="activity-time">Waiting for manager approval</div>
+        <div class="activity-time">Waiting for ${approver} approval</div>
       </div>
       <div class="activity-right">
         <div class="activity-status pending">Pending</div>
@@ -362,6 +413,7 @@ function displayCompletedAttendance(attendance) {
 }
 
 function displayPendingTimeOut(attendance) {
+  const approver = attendance.accountRole === "manager" ? "owner" : "manager";
   const activityList = document.querySelector(".activity-list");
   if (!activityList) return;
 
@@ -373,7 +425,7 @@ function displayPendingTimeOut(attendance) {
       <div class="activity-info">
         <div class="activity-title">Time Out Request Sent</div>
         <div class="activity-time">${employeeName}</div>
-        <div class="activity-time">Waiting for manager approval</div>
+        <div class="activity-time">Waiting for ${approver} approval</div>
       </div>
       <div class="activity-right">
         <div class="activity-status pending">Pending</div>
@@ -387,7 +439,7 @@ async function loadAttendanceStats(userId, token = initToken) {
     const snapshot = await getDocs(
       query(collection(db, "attendance"), where("userId", "==", userId)),
     );
-    // FIX: kung na-stop o napalitan na ang page habang naghihintay, huwag nang mag-render
+    // kung na-stop o napalitan na ang page habang naghihintay, huwag nang mag-render
     // at huwag nang magsimula ng bagong timer.
     if (token !== initToken) return;
     attendanceHistory = snapshot.docs.map((item) => item.data());
@@ -459,7 +511,7 @@ function setAttendanceDate() {
 
 function setupAttendanceTabs() {
   document.querySelectorAll(".tab[data-range]").forEach((tab) => {
-    // FIX: onclick (hindi addEventListener) para hindi dumoble ang handler kapag na-init ulit
+    // onclick (hindi addEventListener) para hindi dumoble ang handler kapag na-init ulit
     tab.onclick = () => {
       selectedAttendanceRange = tab.dataset.range;
       document.querySelectorAll(".tab[data-range]").forEach((item) => {
@@ -590,20 +642,43 @@ function watchAttendance(attendanceRef, context) {
   currentAttendanceRef = attendanceRef;
   const token = initToken;
 
-  unsubscribeAttendance = onSnapshot(attendanceRef, (snapshot) => {
-    // FIX: huwag mag-render kung na-stop na ang page
-    if (token !== initToken) return;
+  unsubscribeAttendance = onSnapshot(
+    attendanceRef,
+    { includeMetadataChanges: true },
+    (snapshot) => {
+      // huwag mag-render kung na-stop na ang page
+      if (token !== initToken) return;
 
-    if (snapshot.exists()) {
-      displayAttendance(snapshot.data());
-      loadAttendanceStats(context.user.uid, token);
-      return;
-    }
+      if (snapshot.exists()) {
+        displayAttendance(snapshot.data());
+        if (!snapshot.metadata.hasPendingWrites) {
+          loadAttendanceStats(context.user.uid, token);
+        }
+        return;
+      }
 
-    currentAttendance = null;
-    showTimeInButton(context);
-    showNoAttendance("No time-in request submitted today.");
-  });
+      // "Walang dokumento" na galing lang sa cache ay hindi pa kumpirmado.
+      // Huwag buksan ang time-in hangga't hindi sigurado.
+      if (snapshot.metadata.fromCache) {
+        updateTodayStatus(
+          "Checking attendance",
+          "Verifying your shift status...",
+          "pending",
+        );
+        lockTimeInButton("Checking...");
+        return;
+      }
+
+      currentAttendance = null;
+      showTimeInButton(context);
+      showNoAttendance("No time-in request submitted today.");
+    },
+    (error) => {
+      console.error("Attendance listener error:", error);
+      if (token !== initToken) return;
+      showAttendanceError("Unable to verify your attendance. Please refresh.");
+    },
+  );
 }
 
 function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
@@ -648,7 +723,7 @@ function closeAttendanceConfirmation({ destroy = false } = {}) {
   const instance = modal && M.Modal.getInstance(modal);
   if (instance?.isOpen) instance.close();
 
-  // FIX: kapag aalis na sa page, i-destroy ang instance at linisin ang naiwang overlay/overflow
+  // kapag aalis na sa page, i-destroy ang instance at linisin ang naiwang overlay/overflow
   // (pero huwag galawin kung may ibang modal na bukas, hal. ang notification modal).
   if (destroy && instance) {
     try {
@@ -691,12 +766,16 @@ async function submitConfirmedAttendanceAction() {
       if (employeeSnapshot.empty)
         throw new Error("Employee information not found.");
       const employeeData = employeeSnapshot.docs[0].data();
+      const accountRole = String(
+        (await user.getIdTokenResult()).claims.role || "employee",
+      ).toLowerCase();
       const fname = employeeData.fname || "";
       const lname = employeeData.lname || "";
       const attendanceData = {
         userId: user.uid,
         fname,
         lname,
+        accountRole,
         email: user.email || "",
         status: "pending",
         type: "time_in_request",
@@ -705,13 +784,25 @@ async function submitConfirmedAttendanceAction() {
         createdAt: serverTimestamp(),
       };
 
-      await setDoc(attendanceRef, attendanceData);
+      // Huwag mag-time in kung may bukas na shift (hal. kahapon),
+      // at huwag mag-overwrite ng kahit anong existing na record.
+      const open = await resolveShiftRef(user);
+      if (open.ref.id !== attendanceRef.id)
+        throw new Error("SHIFT_ALREADY_OPEN");
+      await runTransaction(db, async (tx) => {
+        const existing = await tx.get(attendanceRef);
+        if (existing.exists()) throw new Error("SHIFT_ALREADY_EXISTS");
+        tx.set(attendanceRef, attendanceData);
+      });
+
       await setDoc(
         doc(db, "managerNotifications", `time-in-${attendanceRef.id}`),
         {
           type: "time_in_request",
           attendanceId: attendanceRef.id,
-          title: "Employee time-in request",
+          userId: user.uid,
+          accountRole,
+          title: `${accountRole === "manager" ? "Manager" : "Employee"} time-in request`,
           message: `${fname} ${lname}`.trim() + " submitted a time-in request.",
           read: false,
           createdAt: serverTimestamp(),
@@ -723,6 +814,15 @@ async function submitConfirmedAttendanceAction() {
       displayPendingAttendance(attendanceData);
     } catch (error) {
       console.error("Time in error:", error);
+      if (
+        error.message === "SHIFT_ALREADY_OPEN" ||
+        error.message === "SHIFT_ALREADY_EXISTS"
+      ) {
+        showAttendanceError(
+          "You already have an attendance record for this shift.",
+        );
+        return;
+      }
       timeInButton.disabled = false;
       timeInButton.innerHTML = `
         <span class="material-icons">login</span>
@@ -746,7 +846,9 @@ async function submitConfirmedAttendanceAction() {
     await setDoc(doc(db, "managerNotifications", `time-out-${attendanceId}`), {
       type: "time_out_request",
       attendanceId,
-      title: "Employee time-out request",
+      userId: auth.currentUser?.uid || "",
+      accountRole: currentAttendance.accountRole || "employee",
+      title: `${currentAttendance.accountRole === "manager" ? "Manager" : "Employee"} time-out request`,
       message:
         `${currentAttendance.fname || ""} ${currentAttendance.lname || ""}`.trim() +
         " requested to time out.",
@@ -823,7 +925,7 @@ function setTimeInButtonActive() {
   };
 }
 
-// FIX: siguraduhing isang beses lang ma-register ang document-level listeners
+// siguraduhing isang beses lang ma-register ang document-level listeners
 if (!window.__attendanceDocListenersBound) {
   window.__attendanceDocListenersBound = true;
 
@@ -835,7 +937,7 @@ if (!window.__attendanceDocListenersBound) {
   });
 
   document.addEventListener("keydown", (event) => {
-    // FIX: dati, tumatakbo ito kahit walang modal. Ngayon, kung may pending action lang.
+    // kung may pending action lang
     if (event.key === "Escape" && pendingAttendanceAction) {
       closeAttendanceConfirmation();
     }

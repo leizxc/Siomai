@@ -1,5 +1,6 @@
 // adminExpenses.js
 import { db } from "/js/firebase.js";
+import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
 import {
   collection,
   addDoc,
@@ -366,7 +367,7 @@ function bindExpenseButtons() {
 
         const newStatus = document.getElementById("edit-expenses-status").value;
 
-        if (
+      if (
           !newDate ||
           !newCategory ||
           !newDescription ||
@@ -378,24 +379,32 @@ function bindExpenseButtons() {
             classes: "red rounded",
           });
 
-          return;
+        return;
+      }
+
+        if (!beginButtonLoading(saveBtn, "Updating expense...")) return;
+        try {
+          await updateDoc(doc(db, "expenses", id), {
+            date: newDate,
+            category: newCategory,
+            description: newDescription,
+            amount: newAmount,
+            status: newStatus,
+            last_updated: serverTimestamp(),
+          });
+
+          modalInstance.close();
+
+          M.toast({
+            html: "Expense updated successfully!",
+            classes: "green rounded",
+          });
+        } catch (error) {
+          console.error("Unable to update expense:", error);
+          M.toast({ html: "Failed to update expense.", classes: "red rounded" });
+        } finally {
+          endButtonLoading(saveBtn);
         }
-
-        await updateDoc(doc(db, "expenses", id), {
-          date: newDate,
-          category: newCategory,
-          description: newDescription,
-          amount: newAmount,
-          status: newStatus,
-          last_updated: serverTimestamp(),
-        });
-
-        modalInstance.close();
-
-        M.toast({
-          html: "Expense updated successfully!",
-          classes: "green rounded",
-        });
       };
     };
   });

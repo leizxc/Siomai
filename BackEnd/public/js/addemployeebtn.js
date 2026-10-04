@@ -1,5 +1,6 @@
 import { addEmployee, loadEmployees, deleteRole } from "/js/adminEmployee.js";
-import { db } from "/js/firebase.js";
+import { db, isManagerAccount } from "/js/firebase.js";
+import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
 import {
   collection,
   addDoc,
@@ -13,7 +14,7 @@ import {
 let unsubscribeRoles = null;
 
 // Populates the Add/Edit role selects, live from Firestore
-function loadRoleOptions() {
+async function loadRoleOptions() {
   const addRoleSelect = document.getElementById("role");
   const editRoleSelect = document.getElementById("edit-role");
   const totalRolesEl = document.getElementById("totalRoles");
@@ -21,6 +22,10 @@ function loadRoleOptions() {
   if (!addRoleSelect && !editRoleSelect) return;
 
   if (unsubscribeRoles) unsubscribeRoles();
+
+  const managerAccount = await isManagerAccount();
+  const shouldShowRole = (name) =>
+    !managerAccount || String(name || "").trim().toLowerCase() !== "manager";
 
   unsubscribeRoles = onSnapshot(collection(db, "roles"), (snapshot) => {
     if (totalRolesEl) totalRolesEl.textContent = snapshot.size;
@@ -30,9 +35,11 @@ function loadRoleOptions() {
       addRoleSelect.innerHTML = `<option value="" disabled selected>Select Role</option>`;
 
       snapshot.forEach((docSnap) => {
+        const roleName = docSnap.data().name;
+        if (!shouldShowRole(roleName)) return;
         const option = document.createElement("option");
-        option.value = docSnap.data().name;
-        option.textContent = docSnap.data().name;
+        option.value = roleName;
+        option.textContent = roleName;
         addRoleSelect.appendChild(option);
       });
 
@@ -51,9 +58,11 @@ function loadRoleOptions() {
       editRoleSelect.innerHTML = `<option value="" disabled selected>Select Role</option>`;
 
       snapshot.forEach((docSnap) => {
+        const roleName = docSnap.data().name;
+        if (!shouldShowRole(roleName)) return;
         const option = document.createElement("option");
-        option.value = docSnap.data().name;
-        option.textContent = docSnap.data().name;
+        option.value = roleName;
+        option.textContent = roleName;
         editRoleSelect.appendChild(option);
       });
 
@@ -99,7 +108,7 @@ function bindAddRoleButton() {
       return;
     }
 
-    saveRoleBtn.disabled = true;
+    if (!beginButtonLoading(saveRoleBtn, "Saving role...")) return;
     try {
       const existing = await getDocs(
         query(collection(db, "roles"), where("name", "==", roleName)),
@@ -121,7 +130,7 @@ function bindAddRoleButton() {
       console.error("Unable to add role:", error);
       M.toast({ html: "Failed to save the role.", classes: "red rounded" });
     } finally {
-      saveRoleBtn.disabled = false;
+      endButtonLoading(saveRoleBtn);
     }
   };
 }

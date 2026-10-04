@@ -1,4 +1,4 @@
-import { db } from "/js/firebase.js";
+import { db, isManagerAccount } from "/js/firebase.js";
 import {
   collection,
   doc,
@@ -17,6 +17,7 @@ let attendance = [];
 let orders = [];
 let payrollRecords = new Map();
 let unsubscribers = [];
+let managerAccount = false;
 
 function asDate(value) {
   if (value?.toDate) return value.toDate();
@@ -87,9 +88,12 @@ function renderRoleOptions() {
   select.replaceChildren(
     new Option("Choose Role", "", true, true),
   );
-  [...roles.values()].sort((a, b) => a.localeCompare(b)).forEach((role) => {
-    select.add(new Option(role, role.toLowerCase()));
-  });
+  [...roles.values()]
+    .filter((role) => !(managerAccount && role.toLowerCase() === "manager"))
+    .sort((a, b) => a.localeCompare(b))
+    .forEach((role) => {
+      select.add(new Option(role, role.toLowerCase()));
+    });
   if ([...select.options].some((option) => option.value === previous)) {
     select.value = previous;
   }
@@ -289,12 +293,15 @@ async function payShift(shiftId, button) {
   }
 }
 
-export function initPayroll() {
+export async function initPayroll() {
   cleanupPayroll();
   const dateFilter = document.getElementById("payroll-date");
   const roleFilter = document.getElementById("payroll-role");
   const employeeFilter = document.getElementById("payroll-employee");
   if (!dateFilter || !roleFilter || !employeeFilter) return;
+
+  managerAccount = await isManagerAccount();
+  if (!roleFilter.isConnected) return;
 
   dateFilter.value = dateKey(new Date());
   dateFilter.onchange = renderPayroll;

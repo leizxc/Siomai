@@ -527,10 +527,10 @@ html.dark .owner-notification-note {
 
 .owner-manager-create-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 30px;
   width: 100%;
-  max-width: 640px;
+  max-width: none;
 }
 
 .owner-manager-create-form label {
@@ -546,6 +546,13 @@ html.dark .owner-notification-note {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+  grid-column: 1 / -1;
+}
+
+.owner-manager-create-form > label:nth-of-type(1),
+.owner-manager-create-form > label:nth-of-type(2),
+.owner-manager-create-form > label:nth-of-type(3) {
+  grid-column: 1 / -1;
 }
 
 .owner-manager-create-form input:not(.browser-default) {
@@ -606,6 +613,7 @@ html.dark .owner-notification-note {
   display: flex;
   justify-content: flex-end;
   margin-top: 4px;
+  grid-column: 1 / -1;
 }
 
 .owner-manager-create-form .owner-manager-form-actions button {
@@ -668,14 +676,23 @@ html.dark .owner-manager-create-form .owner-manager-password-toggle {
   color: var(--text-muted);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 760px) {
   .owner-manager-create-card {
     padding: 20px;
   }
 
   .owner-manager-create-form {
+    grid-template-columns: minmax(0, 1fr);
     max-width: none;
     gap: 18px;
+  }
+
+  .owner-manager-name-row,
+  .owner-manager-create-form > label:nth-of-type(1),
+  .owner-manager-create-form > label:nth-of-type(2),
+  .owner-manager-create-form > label:nth-of-type(3),
+  .owner-manager-form-actions {
+    grid-column: 1;
   }
 
   .owner-manager-name-row {

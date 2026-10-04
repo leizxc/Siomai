@@ -1,4 +1,5 @@
-import { db } from "/js/firebase.js";
+import { db, isManagerAccount } from "/js/firebase.js";
+import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
 import {
   collection,
   addDoc,
@@ -51,6 +52,46 @@ function buildCurrentQuantityFields(menuData, pieces) {
     current_pieces: pieces,
     current_packs: isPack ? Math.ceil(pieces / piecesPerPack) : null,
   };
+}
+
+function getConfiguredMenuStockLimit(menuData) {
+  const unit = String(menuData.unit || "").toLowerCase();
+  if (unit === "pack") {
+    const packCount = Number(menuData.packs_used) || 0;
+    const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
+    return packCount * piecesPerPack;
+  }
+  if (unit === "packs") return Number(menuData.packs_used) || 0;
+  if (["kaban", "kilogram", "kg"].includes(unit)) {
+    return Number(menuData.kg_used) || 0;
+  }
+  return null;
+}
+
+function getMenuStockLimit(menuData) {
+  if (menuData.product_stock_limit != null) {
+    const savedLimit = Number(menuData.product_stock_limit);
+    if (Number.isFinite(savedLimit) && savedLimit >= 0) return savedLimit;
+  }
+  return getConfiguredMenuStockLimit(menuData);
+}
+
+function getMenuAvailableStock(menuData) {
+  const currentStock = Math.max(0, Number(menuData.current_stock ?? 0) || 0);
+  if (menuData.product_stock_limit != null) {
+    const limit = Number(menuData.product_stock_limit);
+    return Number.isFinite(limit) ? Math.min(currentStock, Math.max(0, limit)) : currentStock;
+  }
+
+  const configuredLimit = getConfiguredMenuStockLimit(menuData);
+  if (configuredLimit == null) return currentStock;
+
+  // Legacy menu entries started with inventory quantity in initial_stock.
+  // Preserve stock already assigned under the old behavior when applying the
+  // Product Menu limit for the first time.
+  const originalStock = Math.max(0, Number(menuData.initial_stock ?? currentStock) || 0);
+  const previouslyConsumed = Math.max(0, originalStock - currentStock);
+  return Math.max(0, Math.min(currentStock, configuredLimit - previouslyConsumed));
 }
 
 function buildAssignedQuantityFields(menuData, pieces, assignedContainers = null) {
@@ -419,81 +460,6 @@ export function stopLoadingHistoryAssign() {
   }
 }
 
-async function adjustLinkedInventoryStock(inventoryId, deltaPieces) {
-  if (!inventoryId) return;
-
-  // Assigned products store the Product Menu document ID. Resolve that menu
-  // entry to its actual Inventory document before changing its quantity.
-  const menuSnap = await getDoc(doc(db, "productMenu", inventoryId));
-  const linkedInventoryId = menuSnap.exists()
-    ? menuSnap.data().inventory_id || menuSnap.data().inventoryId
-    : inventoryId;
-  if (!linkedInventoryId) return;
-
-  const inventoryRef = doc(db, "inventory", linkedInventoryId);
-  const inventorySnap = await getDoc(inventoryRef);
-  if (!inventorySnap.exists()) return;
-
-  const invData = inventorySnap.data();
-  const invUnit = (invData.unit_type || "").toLowerCase();
-  let piecesPerPack = 1;
-  let deltaInInventoryUnit = deltaPieces;
-
-  if (invUnit === "pack") {
-    const categorySnap = await getDoc(
-      doc(db, "categoriesINV", invData.category_id),
-    );
-    piecesPerPack = categorySnap.exists()
-      ? categorySnap.data().pieces_per_pack || 1
-      : 1;
-    deltaInInventoryUnit = deltaPieces / piecesPerPack;
-  } else if (invUnit === "kaban") {
-    const weightPerKaban = Number(invData.weight_per_kaban) || 0;
-    if (weightPerKaban > 0) {
-      deltaInInventoryUnit = deltaPieces / weightPerKaban;
-    }
-  }
-
-  const newQuantity = Math.max(
-    0,
-    (Number(invData.quantity) || 0) + deltaInInventoryUnit,
-  );
-  const newStockQuantity =
-    invUnit === "pack" ? newQuantity * piecesPerPack : newQuantity;
-
-  const unitPrice = Number(invData.unit_price || 0);
-  const newTotalValue = newQuantity * unitPrice;
-  const activeAssignments = await getDocs(
-    query(
-      collection(db, "products"),
-      where("inventoryId", "==", inventoryId),
-    ),
-  );
-  const hasActiveAssignments = activeAssignments.docs.some((assignment) => {
-    const assigned = assignment.data();
-    return Number(assigned.pieces ?? assigned.stock ?? 0) > 0;
-  });
-
-  await updateDoc(inventoryRef, {
-    quantity: newQuantity,
-    stock_quantity: newStockQuantity,
-    total_value: newTotalValue,
-    status:
-      hasActiveAssignments || newQuantity <= 0 ? "On Selling" : "Available",
-    last_updated: serverTimestamp(),
-  });
-
-  if (menuSnap.exists()) {
-    const menuData = menuSnap.data();
-    const menuStock = Number(menuData.current_stock ?? 0);
-    await updateDoc(doc(db, "productMenu", inventoryId), {
-      status:
-        hasActiveAssignments || menuStock <= 0 ? "On Selling" : "Available",
-      last_updated: serverTimestamp(),
-    });
-  }
-}
-
 async function archiveDepletedMenuIfReady(menuId) {
   const menuRef = doc(db, "productMenu", menuId);
   const menuSnap = await getDoc(menuRef);
@@ -507,54 +473,44 @@ async function archiveDepletedMenuIfReady(menuId) {
     const data = assignment.data();
     return Number(data.pieces ?? data.stock ?? 0) > 0;
   });
-  if (hasRemainingStock) return;
-
-  const linkedInventoryId = menuData.inventory_id || menuData.inventoryId;
-  if (Number(menuData.current_stock ?? 0) > 0) {
+  if (hasRemainingStock) {
     await updateDoc(menuRef, {
+      assigned: true,
+      status: "On Selling",
+      last_updated: serverTimestamp(),
+    });
+    return;
+  }
+
+  const unassignedStock = Number(menuData.current_stock ?? 0);
+  if (unassignedStock > 0) {
+    await updateDoc(menuRef, {
+      assigned: false,
       status: "Available",
       last_updated: serverTimestamp(),
     });
-    if (linkedInventoryId) {
-      const inventoryRef = doc(db, "inventory", linkedInventoryId);
-      const inventorySnap = await getDoc(inventoryRef);
-      if (inventorySnap.exists()) {
-        const inventoryData = inventorySnap.data();
-        await updateDoc(inventoryRef, {
-          status:
-            Number(inventoryData.quantity ?? 0) > 0
-              ? "Available"
-              : "On Selling",
-          last_updated: serverTimestamp(),
-        });
-      }
-    }
+    return;
+  }
+
+  // Keep the menu record while any employee still has stock, including
+  // legacy assignment records that use `stock` instead of `pieces`.
+  const latestAssignments = await getDocs(
+    query(collection(db, "products"), where("inventoryId", "==", menuId)),
+  );
+  const latestHasAssignedStock = latestAssignments.docs.some((assignment) => {
+    const data = assignment.data();
+    return Number(data.pieces ?? data.stock ?? data.assigned_stock ?? 0) > 0;
+  });
+  if (latestHasAssignedStock) {
+    await updateDoc(menuRef, {
+      assigned: true,
+      status: "On Selling",
+      last_updated: serverTimestamp(),
+    });
     return;
   }
 
   await deleteDoc(menuRef);
-
-  if (!linkedInventoryId) return;
-
-  const otherMenus = await getDocs(
-    query(
-      collection(db, "productMenu"),
-      where("inventory_id", "==", linkedInventoryId),
-    ),
-  );
-  if (!otherMenus.empty) return;
-
-  const inventoryRef = doc(db, "inventory", linkedInventoryId);
-  const inventorySnap = await getDoc(inventoryRef);
-  if (!inventorySnap.exists()) return;
-
-  await addDoc(collection(db, "archivedInventory"), {
-    ...inventorySnap.data(),
-    original_id: linkedInventoryId,
-    archived_at: serverTimestamp(),
-    archived_by: "System",
-  });
-  await deleteDoc(inventoryRef);
 }
 
 function loadInventoryOptions(role = "") {
@@ -695,8 +651,12 @@ function bindProductFormListeners() {
 
       const data = snap.data();
       const unit = (data.unit || "piece").toLowerCase();
-      const pieces = Number(data.current_pieces ?? data.current_stock) || 0;
-      const currentStock = Number(data.current_stock ?? 0) || 0;
+      const configuredLimit = getMenuStockLimit(data);
+      const currentStock = getMenuAvailableStock(data);
+      const pieces = Math.min(
+        Number(data.current_pieces ?? data.current_stock) || 0,
+        currentStock,
+      );
       const piecesPerPack = Number(data.pieces_per_pack) || 1;
       const price = Number(data.price || 0);
 
@@ -724,14 +684,18 @@ function bindProductFormListeners() {
       if (equivalentInput) equivalentInput.value = "";
 
       if (unit === "pack") {
-        const availablePacks = Math.floor(pieces / piecesPerPack);
+        // The form should show assignable packs from the live remaining stock,
+        // not the original recipe quantity saved when the menu was created.
+        const availableStockPacks = Math.floor(pieces / piecesPerPack);
+        const menuPacksUsed = Math.max(0, Number(data.packs_used || 0));
+        const maxAssignablePacks = Math.min(availableStockPacks, menuPacksUsed);
         const packsEl = document.getElementById("availablePacks");
-        if (packsEl) packsEl.value = availablePacks;
+        if (packsEl) packsEl.value = maxAssignablePacks;
 
         const packsLabelEl = document.querySelector(
           'label[for="availablePacks"]',
         );
-        if (packsLabelEl) packsLabelEl.textContent = "Available Packs";
+        if (packsLabelEl) packsLabelEl.textContent = "Available Packs to Assign";
 
         const packsBox = document.getElementById("available-packs-box");
         if (packsBox) packsBox.style.display = "flex";
@@ -742,7 +706,7 @@ function bindProductFormListeners() {
         if (packsInput) {
           packsInput.dataset.unit = "pack";
           packsInput.dataset.piecesPerPack = piecesPerPack;
-          packsInput.max = availablePacks;
+          packsInput.max = maxAssignablePacks;
           packsInput.step = "1";
           packsInput.required = true;
           packsInput.disabled = false;
@@ -865,7 +829,7 @@ function bindProductFormListeners() {
   document
     .querySelectorAll("#assignPacks, #assignContainer, #assignPieces")
     .forEach((input) => {
-      input.addEventListener("input", (e) => {
+      const clampQuantity = (e) => {
         const inputEl = e.target;
         const unit = inputEl.dataset.unit || "";
         const equivalentInput = document.getElementById("assignEquivalent");
@@ -891,7 +855,9 @@ function bindProductFormListeners() {
         if (equivalentInput) equivalentInput.value = equivalent;
 
         M.updateTextFields();
-      });
+      };
+      input.addEventListener("input", clampQuantity);
+      input.addEventListener("change", clampQuantity);
     });
 
   function getSelectedUnit() {
@@ -941,7 +907,7 @@ function bindProductFormListeners() {
     const submitBtn = addProductForm.querySelector(
       "button[type='submit'], input[type='submit']",
     );
-    if (submitBtn) submitBtn.disabled = true;
+    if (submitBtn && !beginButtonLoading(submitBtn, "Saving assignment...")) return;
 
     try {
       const menuRef = doc(db, "productMenu", menuId);
@@ -984,6 +950,9 @@ function bindProductFormListeners() {
 
           const menuData = menuSnap.data();
           const menuUnit = (menuData.unit || "piece").toLowerCase();
+          if (menuUnit === "pack" && enteredQty > Number(menuData.packs_used || 0)) {
+            throw new Error(`You can assign up to ${Number(menuData.packs_used || 0)} pack(s), based on Product Menu.`);
+          }
           const isContainer = isContainerUnit(menuUnit);
           const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
           const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
@@ -1002,7 +971,8 @@ function bindProductFormListeners() {
             piecesPerEmployee = enteredQty * stockPerContainer;
           }
 
-          const currentStock = Number(menuData.current_stock || 0);
+          const configuredLimit = getMenuStockLimit(menuData);
+          const currentStock = getMenuAvailableStock(menuData);
           const maxContainers = isContainer
             ? getMaxAvailableContainers(menuData)
             : null;
@@ -1039,6 +1009,9 @@ function bindProductFormListeners() {
           }
 
           transaction.update(menuRef, {
+            ...(menuData.product_stock_limit == null && Number.isFinite(configuredLimit)
+              ? { product_stock_limit: configuredLimit }
+              : {}),
             ...buildCurrentQuantityFields(menuData, updatedStock),
             ...(isContainer
               ? {
@@ -1060,6 +1033,7 @@ function bindProductFormListeners() {
 
               transaction.update(existing.ref, {
                 capital_price: capitalPrice,
+                image: menuData.image_url || menuData.image || "",
                 ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
                 ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
                 last_updated: serverTimestamp(),
@@ -1069,6 +1043,7 @@ function bindProductFormListeners() {
               transaction.set(newRef, {
                 name: menuData.product_name || "Unknown",
                 price: Number(menuData.price || 0),
+                image: menuData.image_url || menuData.image || "",
                 ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
                 capital_price: capitalPrice,
                 role: role || menuData.category || "Unknown",
@@ -1090,7 +1065,6 @@ function bindProductFormListeners() {
           };
         });
 
-        await adjustLinkedInventoryStock(menuId, -result.piecesToAssign);
         await SyncProductFromFirebase();
 
         if (result.servedCount < result.totalEmployees) {
@@ -1134,6 +1108,9 @@ function bindProductFormListeners() {
 
         const menuData = menuSnap.data();
         const menuUnit = (menuData.unit || "piece").toLowerCase();
+        if (menuUnit === "pack" && enteredQty > Number(menuData.packs_used || 0)) {
+          throw new Error(`You can assign up to ${Number(menuData.packs_used || 0)} pack(s), based on Product Menu.`);
+        }
         const isContainer = isContainerUnit(menuUnit);
         const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
         const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
@@ -1161,14 +1138,18 @@ function bindProductFormListeners() {
           }
         }
 
-        const currentStock = Number(menuData.current_stock || 0);
+        const configuredLimit = getMenuStockLimit(menuData);
+        const currentStock = getMenuAvailableStock(menuData);
         if (piecesToAssign > currentStock) {
-          throw new Error("Not enough inventory stock!");
+          throw new Error("Not enough Product Menu stock!");
         }
 
         const updatedStock = currentStock - piecesToAssign;
 
         transaction.update(menuRef, {
+          ...(menuData.product_stock_limit == null && Number.isFinite(configuredLimit)
+            ? { product_stock_limit: configuredLimit }
+            : {}),
           ...buildCurrentQuantityFields(menuData, updatedStock),
           ...(isContainer
             ? {
@@ -1195,6 +1176,7 @@ function bindProductFormListeners() {
 
           transaction.update(existingProductRef, {
             capital_price: newCapitalPrice,
+            image: menuData.image_url || menuData.image || "",
             ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
             ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
             last_updated: serverTimestamp(),
@@ -1207,6 +1189,7 @@ function bindProductFormListeners() {
         transaction.set(newProductRef, {
           name: menuData.product_name || "Unknown",
           price: Number(menuData.price || 0),
+          image: menuData.image_url || menuData.image || "",
           ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
           capital_price: newCapitalPrice,
           role: role || menuData.category || "Unknown",
@@ -1221,7 +1204,6 @@ function bindProductFormListeners() {
         return { menuData, piecesToAssign, merged: false };
       });
 
-      await adjustLinkedInventoryStock(menuId, -result.piecesToAssign);
       await SyncProductFromFirebase();
 
       M.toast({
@@ -1237,13 +1219,15 @@ function bindProductFormListeners() {
         classes: "red rounded",
       });
     } finally {
-      if (submitBtn) submitBtn.disabled = false;
+      endButtonLoading(submitBtn);
     }
   });
 }
 
 async function loadRoles() {
   const roleSelect = document.getElementById("productRole");
+  if (!roleSelect) return;
+  const managerAccount = await isManagerAccount();
   const snap = await getDocs(collection(db, "employees"));
   const roles = new Set();
 
@@ -1251,7 +1235,10 @@ async function loadRoles() {
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
-    if (data.role) roles.add(data.role.trim());
+    if (
+      data.role &&
+      !(managerAccount && data.role.trim().toLowerCase() === "manager")
+    ) roles.add(data.role.trim());
   });
 
   roles.forEach((role) => {
@@ -1393,11 +1380,6 @@ export async function loadProducts() {
 
             transaction.delete(productRef);
           });
-
-          await adjustLinkedInventoryStock(
-            productData.inventoryId,
-            restoredPieces,
-          );
 
           const remainingQuery = query(
             collection(db, "products"),

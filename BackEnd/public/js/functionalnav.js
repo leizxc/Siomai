@@ -1,6 +1,7 @@
 let currentLoadToken = 0;
 let isNavigating = false;
 let currentCleanup = null;
+let attendanceStylesheet = null;
 
 // Materialize keeps modal instances and their overlays outside of application
 function disposeSectionModals(root) {
@@ -67,6 +68,7 @@ function loadSection(page) {
     "owner-inventory",
     "owner-performance",
     "owner-attendance",
+    "owner-manager-attendance",
     "owner-managers",
   ]);
   const sectionUrl = isOwnerPage
@@ -80,6 +82,8 @@ function loadSection(page) {
     currentCleanup();
     currentCleanup = null;
   }
+  attendanceStylesheet?.remove();
+  attendanceStylesheet = null;
   if (isOwnerPage) window.ownerDashboardCleanup?.();
 
   const myToken = ++currentLoadToken;
@@ -104,6 +108,7 @@ function loadSection(page) {
         "expenses.html": "Capital Management",
         "EmployeeManagement.html": "Employees Management",
         "EmployeeMonitoring.html": "Employee Monitoring",
+        "attendance.html": "My Attendance",
         "IncomeCart.html": "Income Per Cart",
         "sales.html": "Sales Orders",
         "payroll.html": "Employee Payroll",
@@ -114,6 +119,7 @@ function loadSection(page) {
         "owner-inventory": "Real Time Inventory",
         "owner-performance": "Employee Performance",
         "owner-attendance": "Employee Attendance",
+        "owner-manager-attendance": "Manager Attendance",
         "owner-managers": "Manager Management",
       };
 
@@ -137,11 +143,11 @@ function loadSection(page) {
       switch (page) {
         case "inventory.html":
           try {
-            const addbtnModule = await import("/js/inventoryADDbtn.js");
+            const addbtnModule = await import("/js/inventoryADDbtn.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             addbtnModule.initInventoryModal?.();
 
-            const inventoryModule = await import("/js/adminBE.js");
+            const inventoryModule = await import("/js/adminBE.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             await inventoryModule.initInventoryPage?.();
 
@@ -157,7 +163,7 @@ function loadSection(page) {
             if (myToken !== currentLoadToken) return;
             addproducts.initProductModal?.();
 
-            const productModule = await import("/js/adminaddproduct.js");
+            const productModule = await import("/js/adminaddproduct.js?v=20261003c");
             if (myToken !== currentLoadToken) return;
             await productModule.initProductPage?.();
             if (myToken !== currentLoadToken) return;
@@ -175,7 +181,7 @@ function loadSection(page) {
             if (myToken !== currentLoadToken) return;
             photoModule.initPhotoMenu?.();
 
-            const productmenu = await import("/js/productmenu.js");
+            const productmenu = await import("/js/productmenu.js?v=20261003c");
             if (myToken !== currentLoadToken) return;
             await productmenu.initProductPage?.();
           } catch (err) {
@@ -185,11 +191,11 @@ function loadSection(page) {
 
         case "expenses.html":
           try {
-            const addbtnModule = await import("/js/addExpensesbtn.js");
+            const addbtnModule = await import("/js/addExpensesbtn.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             addbtnModule.initExpensesModal?.();
 
-            const expensesModule = await import("/js/adminExpenses.js");
+            const expensesModule = await import("/js/adminExpenses.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             expensesModule.loadExpenses?.();
           } catch (err) {
@@ -199,11 +205,11 @@ function loadSection(page) {
 
         case "EmployeeManagement.html":
           try {
-            const employeeModule = await import("/js/addemployeebtn.js");
+            const employeeModule = await import("/js/addemployeebtn.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             employeeModule.initEmployee?.();
 
-            const addemployeeModule = await import("/js/adminEmployee.js");
+            const addemployeeModule = await import("/js/adminEmployee.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             addemployeeModule.loadEmployees?.();
           } catch (err) {
@@ -219,6 +225,21 @@ function loadSection(page) {
             currentCleanup = attendanceModule.stopAttendanceMonitoring || null;
           } catch (err) {
             console.error("Attendance monitoring init error:", err);
+          }
+          break;
+
+        case "attendance.html":
+          try {
+            attendanceStylesheet = document.createElement("link");
+            attendanceStylesheet.rel = "stylesheet";
+            attendanceStylesheet.href = "/css/employee.css";
+            document.head.append(attendanceStylesheet);
+            const attendanceModule = await import("/js/attendance.js");
+            if (myToken !== currentLoadToken) return;
+            await attendanceModule.initAttendance?.();
+            currentCleanup = attendanceModule.stopAttendancePage || null;
+          } catch (err) {
+            console.error("Attendance init error:", err);
           }
           break;
 

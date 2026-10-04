@@ -1,5 +1,5 @@
-const staticCacheName = "site-static-v44";
-const dynamicCache = "site-dynamic-v44";
+const staticCacheName = "site-static-v46";
+const dynamicCache = "site-dynamic-v46";
 
 //firebase cloud messaging
 importScripts(
@@ -78,9 +78,12 @@ messaging.onBackgroundMessage((payload) => {
 //install service worker
 self.addEventListener("install", (evt) => {
   evt.waitUntil(
-    caches.open(staticCacheName).then((cache) => {
+    caches.open(staticCacheName).then(async (cache) => {
       console.log("Caching shell assets");
-      return cache.addAll(assets).then(() => self.skipWaiting());
+      await Promise.all(assets.map((asset) => cache.add(asset).catch((error) => {
+        console.warn("Unable to cache optional shell asset:", asset, error);
+      })));
+      await self.skipWaiting();
     }),
   );
 });
@@ -117,6 +120,35 @@ self.addEventListener("fetch", (evt) => {
     evt.request.method !== "GET" ||
     !["http:", "https:"].includes(requestUrl.protocol)
   ) {
+    return;
+  }
+
+  // Keep application code current after deployments. Use the cache only when
+  // the network is unavailable so older shift-lock scripts cannot linger.
+  const isAppCode = requestUrl.origin === self.location.origin &&
+    /\.(html|css|js)$/.test(requestUrl.pathname);
+  if (isAppCode) {
+    evt.respondWith(
+      fetch(evt.request)
+        .then((fetchRes) => {
+          if (!fetchRes.ok) return fetchRes;
+          return caches.open(dynamicCache)
+            .then((cache) => cache.put(evt.request, fetchRes.clone()))
+            .then(() => fetchRes)
+            .catch(() => fetchRes);
+        })
+        .catch(async () => {
+          const cached = await caches.match(evt.request);
+          if (cached) return cached;
+          if (evt.request.mode === "navigate" || requestUrl.pathname.endsWith(".html")) {
+            return caches.match("./index.html");
+          }
+          return new Response("Application code unavailable offline", {
+            status: 503,
+            headers: { "Content-Type": "text/plain" },
+          });
+        }),
+    );
     return;
   }
 

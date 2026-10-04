@@ -31,7 +31,7 @@ function renderDashboard() {
   const todayExpenses = state.expenses
     .filter((expense) => expense.date === today && String(expense.status || "").toLowerCase() !== "rejected")
     .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
-  const pendingAttendance = state.attendance.filter((item) => ["pending", "time_out_pending"].includes(item.status));
+  const pendingAttendance = state.attendance.filter((item) => String(item.accountRole || item.role || "employee").toLowerCase() !== "manager" && ["pending", "time_out_pending"].includes(item.status));
   const newExpenseReports = state.alerts.filter((item) => item.type === "expense_report" && !item.read);
   const lowStock = state.inventory.filter((item) => {
     const unit = String(item.unit_type || "").trim().toLowerCase();

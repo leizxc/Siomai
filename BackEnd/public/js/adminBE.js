@@ -1,5 +1,6 @@
 // adminBE.js
-import { db } from "/js/firebase.js";
+import { db, isManagerAccount } from "/js/firebase.js";
+import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
 import {
   collection,
   addDoc,
@@ -617,6 +618,8 @@ function bindInventoryRowButtons() {
       const saveBtn = document.getElementById("edit-save");
       if (!saveBtn) return;
       saveBtn.onclick = async () => {
+        if (!beginButtonLoading(saveBtn, "Updating product...")) return;
+        try {
         const newName = toUpper(editNameInput.value);
         const newCategoryId = editCategoryInput.value;
         const newQuantity = parseFloat(editPacksInput.value);
@@ -698,6 +701,12 @@ function bindInventoryRowButtons() {
           classes: "green rounded",
         });
         modalInstance.close();
+        } catch (error) {
+          console.error("Unable to update inventory product:", error);
+          M.toast({ html: "Failed to update product.", classes: "red rounded" });
+        } finally {
+          endButtonLoading(saveBtn);
+        }
       };
     };
   });
@@ -1108,6 +1117,7 @@ function bindSaveCategoryButton() {
   if (!saveCategoryBtn) return;
 
   saveCategoryBtn.onclick = async () => {
+    if (saveCategoryBtn.dataset.actionBusy === "true") return;
     const nameInput = document.getElementById("new-category-name");
     const roleInput = document.getElementById("category-role");
     const unitInput = document.getElementById("new-category-unit");
@@ -1126,6 +1136,9 @@ function bindSaveCategoryButton() {
       });
       return;
     }
+
+    if (!beginButtonLoading(saveCategoryBtn, "Saving category...")) return;
+    try {
 
     const dupQuery = query(
       collection(db, "categoriesINV"),
@@ -1162,6 +1175,12 @@ function bindSaveCategoryButton() {
 
     const selects = document.querySelectorAll("select");
     if (selects.length) M.FormSelect.init(selects);
+    } catch (error) {
+      console.error("Unable to save inventory category:", error);
+      M.toast({ html: "Failed to save category.", classes: "red rounded" });
+    } finally {
+      endButtonLoading(saveCategoryBtn);
+    }
   };
 }
 
@@ -1253,7 +1272,7 @@ function applyCategoryDependentFields(categoryData, els) {
       qtyInput.placeholder = "Enter number of kaban";
     } else if (unitType === "kilogram") {
       qtyLabel.textContent = "Ingredient Weight (kg)";
-      qtyInput.placeholder = "Enter ingredient weight in kg";
+      qtyInput.placeholder = "Enter weight in kg";
     } else if (unitType === "kg") {
       qtyLabel.textContent = "Product Input (kg)";
       qtyInput.placeholder = "Enter weight in kg";
@@ -1329,6 +1348,7 @@ export async function loadRoles() {
 
   if (!roleSelect) return;
 
+  const managerAccount = await isManagerAccount();
   const snap = await getDocs(collection(db, "employees"));
 
   const roles = new Set();
@@ -1336,7 +1356,10 @@ export async function loadRoles() {
   snap.forEach((docSnap) => {
     const data = docSnap.data();
 
-    if (data.role) {
+    if (
+      data.role &&
+      !(managerAccount && data.role.trim().toLowerCase() === "manager")
+    ) {
       roles.add(data.role.trim());
     }
   });

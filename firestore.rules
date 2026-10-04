@@ -31,8 +31,9 @@ service cloud.firestore {
       allow delete: if privileged();
     }
     match /attendance/{id} {
-      allow read, update: if privileged() || owns(resource.data);
-      allow create: if privileged() || owns(request.resource.data);
+      allow read: if privileged() || owns(resource.data) || (signedIn() && resource.data.get('userId', '') == request.auth.uid);
+      allow create: if administrator() || owns(request.resource.data) || (signedIn() && request.resource.data.get('userId', '') == request.auth.uid && request.resource.data.get('accountRole', 'employee') == 'employee' && request.resource.data.status == 'pending' && request.resource.data.type == 'time_in_request') || (signedIn() && request.auth.token.role == 'manager' && request.resource.data.get('userId', '') == request.auth.uid && request.resource.data.get('accountRole', '') == 'manager' && request.resource.data.status == 'pending' && request.resource.data.type == 'time_in_request');
+      allow update: if administrator() || (signedIn() && request.auth.token.role == 'manager' && resource.data.get('accountRole', 'employee') != 'manager') || (signedIn() && request.auth.token.role == 'manager' && resource.data.get('userId', '') == request.auth.uid && resource.data.get('accountRole', '') == 'manager' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'type', 'timeOutRequestedAt']) && request.resource.data.status == 'time_out_pending' && request.resource.data.type == 'time_out_request') || (signedIn() && resource.data.get('userId', '') == request.auth.uid && resource.data.get('accountRole', 'employee') == 'employee');
       allow delete: if privileged();
     }
     match /expenseReports/{id} {

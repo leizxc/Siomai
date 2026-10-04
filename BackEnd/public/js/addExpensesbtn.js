@@ -1,5 +1,6 @@
 // expensesADDbtn.js
 import { db } from "/js/firebase.js";
+import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
 import {
   addExpense,
   setExpenseCategoryFilter,
@@ -176,7 +177,7 @@ export function initExpensesModal() {
 
   if (saveBtn) saveBtn.onclick = async () => {
     if (saveBtn.textContent === "Update Expense") return;
-    if (saveBtn.disabled) return;
+    if (saveBtn.disabled || saveBtn.dataset.actionBusy === "true") return;
 
     const date = document.getElementById("expenses-date").value;
 
@@ -199,7 +200,7 @@ export function initExpensesModal() {
       return;
     }
 
-    saveBtn.disabled = true;
+    if (!beginButtonLoading(saveBtn, "Saving expense...")) return;
     try {
       await addExpense(date, category, description, amount, status);
 
@@ -231,7 +232,7 @@ export function initExpensesModal() {
         classes: "red rounded",
       });
     } finally {
-      saveBtn.disabled = false;
+      endButtonLoading(saveBtn);
     }
   };
 
@@ -275,7 +276,7 @@ function bindAddCategoryButton() {
   /* ================= SAVE CATEGORY ================= */
 
   saveCategoryBtn.onclick = async () => {
-    if (saveCategoryBtn.disabled) return;
+    if (saveCategoryBtn.disabled || saveCategoryBtn.dataset.actionBusy === "true") return;
     const categoryName = categoryInput.value.trim().toUpperCase();
 
     if (!categoryName) {
@@ -286,7 +287,7 @@ function bindAddCategoryButton() {
       return;
     }
 
-    saveCategoryBtn.disabled = true;
+    if (!beginButtonLoading(saveCategoryBtn, "Saving category...")) return;
     try {
       // Check duplicate
       const existing = await getDocs(
@@ -332,7 +333,7 @@ function bindAddCategoryButton() {
         classes: "red rounded",
       });
     } finally {
-      saveCategoryBtn.disabled = false;
+      endButtonLoading(saveCategoryBtn);
     }
   };
 }

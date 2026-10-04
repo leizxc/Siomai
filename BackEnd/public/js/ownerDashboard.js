@@ -168,14 +168,22 @@ function renderActivity(pending, unread) {
         "Employee",
       detail:
         item.status === "time_out_pending"
-          ? "Time-out request awaiting manager approval"
-          : "Time-in request awaiting manager approval",
+          ? `Time-out request awaiting ${item.accountRole === "manager" ? "owner" : "manager"} confirmation`
+          : `Time-in request awaiting ${item.accountRole === "manager" ? "owner" : "manager"} confirmation`,
       icon: "schedule",
+      page: item.accountRole === "manager" ? "owner-manager-attendance" : "owner-attendance",
     })),
     ...unread.map((item) => ({
       title: item.title || "Manager notification",
       detail: item.message || item.type || "Unread manager alert",
       icon: "notifications",
+      page: ["time_in_request", "time_out_request"].includes(item.type)
+        ? (item.accountRole === "manager" ? "owner-manager-attendance" : "owner-attendance")
+        : item.type === "expense_report"
+          ? "owner-capital"
+          : item.type === "low_stock"
+            ? "owner-inventory"
+            : "owner-managers",
     })),
     ...state.attendance
       .filter((item) => {
@@ -198,13 +206,14 @@ function renderActivity(pending, unread) {
             ? "Timed in · time-out pending approval"
             : "Currently timed in",
         icon: "check_circle",
+        page: item.accountRole === "manager" ? "owner-manager-attendance" : "owner-attendance",
       })),
   ].slice(0, 8);
   body.innerHTML = items.length
     ? items
         .map(
           (item) =>
-            `<div class="dashboard-queue-item owner-activity-item"><i class="material-icons">${item.icon}</i><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span></div>`,
+            `<a class="dashboard-queue-item owner-activity-item" href="#" onclick="loadSection('${item.page}', this); return false"><i class="material-icons">${item.icon}</i><span><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.detail)}</small></span></a>`,
         )
         .join("")
     : '<p class="dashboard-empty">No pending requests or manager alerts.</p>';

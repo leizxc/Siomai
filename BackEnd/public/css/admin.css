@@ -259,6 +259,81 @@ HEADER
 .manager-notification.clickable:focus-visible {
   box-shadow: 0 0 0 2px var(--accent);
 }
+.manager-write-locked {
+  background-color: #9ca3af !important;
+  border-color: #9ca3af !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  filter: grayscale(1);
+  opacity: 0.58;
+  cursor: not-allowed !important;
+}
+.manager-form-field-locked {
+  background-color: #e5e7eb !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
+  opacity: 0.72;
+}
+.manager-form-select-locked {
+  pointer-events: none;
+  opacity: 0.58;
+}
+html.dark .manager-form-field-locked {
+  background-color: #374151 !important;
+  color: #9ca3af !important;
+}
+.manager-shift-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 20px;
+  padding: 16px 22px;
+  border: 1px solid #f2c14e;
+  border-radius: 16px;
+  background: #fff5d6;
+  color: #704b00;
+}
+.manager-shift-status[hidden],
+.manager-shift-status button[hidden] {
+  display: none;
+}
+
+.manager-shift-status[hidden],
+.shift-required-notice[hidden] {
+  display: none !important;
+}
+
+
+.manager-shift-status > i {
+  flex: 0 0 auto;
+  font-size: 26px;
+}
+.manager-shift-status > div {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+}
+.manager-shift-status > div strong {
+  font-size: 17px;
+}
+.manager-shift-status > div span {
+  font-size: 14px;
+}
+.manager-shift-status button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 9px;
+  background: #8a5a00;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+html.dark .manager-shift-status {
+  border-color: #765b20;
+  background: #332a18;
+  color: #ffe3a0;
+}
 .manager-notification.unread {
   background: #fff8e1;
 }
@@ -1224,7 +1299,8 @@ INVENTORY TABLE
 }
 
 /* Status Badge */
-.inventory-card .status {
+.inventory-card .status,
+.product-list-card .status {
   display: inline-block;
   padding: 6px 14px;
   border-radius: 30px;
@@ -1233,15 +1309,18 @@ INVENTORY TABLE
   white-space: nowrap;
 }
 
-.inventory-card .status.available {
+.inventory-card .status.available,
+.product-list-card .status.available {
   background: #d4edda;
   color: #155724;
 }
-.inventory-card .status.low-stock {
+.inventory-card .status.low-stock,
+.product-list-card .status.low-stock {
   background: #fff3cd;
   color: #856404;
 }
-.inventory-card .status.on-selling {
+.inventory-card .status.on-selling,
+.product-list-card .status.on-selling {
   background: #d1ecf1;
   color: #0c5460;
 }
@@ -2232,6 +2311,35 @@ EMPLOYEE
   display: inline-flex;
 }
 
+.product-menu-submit-label,
+.product-menu-submit-progress {
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.product-menu-submit-label {
+  display: inline-flex;
+}
+.product-menu-submit-progress {
+  display: none;
+}
+#save-menu[aria-busy="true"] .product-menu-submit-label,
+#edit-menu-save[aria-busy="true"] .product-menu-submit-label,
+#confirm-delete-category[aria-busy="true"] .product-menu-submit-label {
+  display: none;
+}
+#menutable .delete-btn[aria-busy="true"] .product-menu-submit-label {
+  display: none;
+}
+#save-menu[aria-busy="true"] .product-menu-submit-progress,
+#edit-menu-save[aria-busy="true"] .product-menu-submit-progress,
+#confirm-delete-category[aria-busy="true"] .product-menu-submit-progress {
+  display: inline-flex;
+}
+#menutable .delete-btn[aria-busy="true"] .product-menu-submit-progress {
+  display: inline-flex;
+}
+
 .account-loading-spinner {
   width: 17px;
   height: 17px;
@@ -2239,6 +2347,12 @@ EMPLOYEE
   border-top-color: #fff;
   border-radius: 50%;
   animation: account-submit-spin 0.7s linear infinite;
+}
+.button-action-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 @keyframes account-submit-spin {
@@ -4607,12 +4721,22 @@ html.dark .inventory-card .status.available {
   color: #86efac !important;
 }
 
+html.dark .product-list-card .status.available {
+  background: #14532d !important;
+  color: #86efac !important;
+}
+
 html.dark .inventory-card .status.low-stock {
   background: #713f12 !important;
   color: #fde68a !important;
 }
 
 html.dark .inventory-card .status.on-selling {
+  background: #164e63 !important;
+  color: #a5f3fc !important;
+}
+
+html.dark .product-list-card .status.on-selling {
   background: #164e63 !important;
   color: #a5f3fc !important;
 }
