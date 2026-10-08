@@ -1,6 +1,6 @@
 import { addEmployee, loadEmployees, deleteRole } from "/js/adminEmployee.js";
 import { db, isManagerAccount } from "/js/firebase.js";
-import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
+import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261008c";
 import {
   collection,
   addDoc,
@@ -12,9 +12,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 let unsubscribeRoles = null;
+let employeeFormSession = 0;
 
 // Populates the Add/Edit role selects, live from Firestore
-async function loadRoleOptions() {
+async function loadRoleOptions(token) {
   const addRoleSelect = document.getElementById("role");
   const editRoleSelect = document.getElementById("edit-role");
   const totalRolesEl = document.getElementById("totalRoles");
@@ -24,6 +25,11 @@ async function loadRoleOptions() {
   if (unsubscribeRoles) unsubscribeRoles();
 
   const managerAccount = await isManagerAccount();
+  if (
+    token !== employeeFormSession ||
+    (addRoleSelect && !addRoleSelect.isConnected) ||
+    (editRoleSelect && !editRoleSelect.isConnected)
+  ) return;
   const shouldShowRole = (name) =>
     !managerAccount || String(name || "").trim().toLowerCase() !== "manager";
 
@@ -219,9 +225,17 @@ function bindPasswordToggle() {
 }
 
 export function initEmployee() {
-  loadRoleOptions();
+  stopEmployee();
+  const token = ++employeeFormSession;
+  loadRoleOptions(token);
   bindPasswordToggle();
   bindAddRoleButton();
   bindDeleteRoleButton();
   bindAddEmployeeForm();
+}
+
+export function stopEmployee() {
+  employeeFormSession += 1;
+  unsubscribeRoles?.();
+  unsubscribeRoles = null;
 }

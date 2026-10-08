@@ -383,17 +383,18 @@
 
   <!-- JS -->
   <script src="/js/refresh.js"></script>
-    <script src="/js/functionalnav.js?v=20261003b"></script>
+    <script src="/js/functionalnav.js?v=20261008c"></script>
   <script type="module" src="/js/IndexDB.js"></script>
   <script src="/js/theme.js"></script>
   <script type="module">
     import "/js/adminIdleLogout.js";
-    import "/js/adminDashboard.js?v=20261003";
+    import { stopManagerDashboard } from "/js/adminDashboard.js?v=20261003";
     import { initAdminProfileMenu } from "/js/adminProfileMenu.js";
     import { initManagerNotifications } from "/js/adminnotifications.js";
     import { initManagerShiftAccess } from "/js/managerShiftAccess.js?v=20261003f";
     navigator.serviceWorker?.getRegistration().then((registration) => registration?.update()).catch((error) => console.warn("Unable to refresh the application service worker:", error));
     initAdminProfileMenu();
+    window.managerDashboardCleanup = stopManagerDashboard;
     initManagerNotifications();
     initManagerShiftAccess();
   </script>

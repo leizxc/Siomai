@@ -15,6 +15,13 @@ const orderTotal = (order) => (Array.isArray(order.items) ? order.items : []).re
 
 const state = { orders: [], expenses: [], attendance: [], inventory: [], alerts: [] };
 const unsubscribers = [];
+let dashboardActive = true;
+function handleManagerNotifications(event) {
+  if (!dashboardActive || !document.getElementById("dashboard-sales-today")) return;
+  state.alerts = event.detail || [];
+  renderDashboard();
+}
+window.addEventListener("manager:notifications-updated", handleManagerNotifications);
 
 function setText(id, value) {
   const element = document.getElementById(id);
@@ -153,6 +160,7 @@ function drawIncomeChart() {
 
 function subscribe(collectionName, key, map) {
   unsubscribers.push(onSnapshot(collection(db, collectionName), (snapshot) => {
+    if (!dashboardActive || !document.getElementById("dashboard-sales-today")) return;
     state[key] = snapshot.docs.map((item) => map ? map(item.data()) : item.data());
     renderDashboard();
   }, (error) => console.error(`Unable to load dashboard ${collectionName}:`, error)));
@@ -162,8 +170,20 @@ subscribe("orders", "orders");
 subscribe("expenses", "expenses");
 subscribe("attendance", "attendance");
 subscribe("inventory", "inventory");
-subscribe("managerNotifications", "alerts");
 window.addEventListener("resize", drawIncomeChart);
 document.getElementById("theme-toggle")?.addEventListener("click", () => requestAnimationFrame(drawIncomeChart));
 
-window.addEventListener("pagehide", () => unsubscribers.forEach((unsubscribe) => unsubscribe()), { once: true });
+export function stopManagerDashboard() {
+  if (!dashboardActive) return;
+  dashboardActive = false;
+  unsubscribers.splice(0).forEach((unsubscribe) => unsubscribe());
+  window.removeEventListener("resize", drawIncomeChart);
+  window.removeEventListener("manager:notifications-updated", handleManagerNotifications);
+  state.orders = [];
+  state.expenses = [];
+  state.attendance = [];
+  state.inventory = [];
+  state.alerts = [];
+}
+
+window.addEventListener("pagehide", stopManagerDashboard, { once: true });

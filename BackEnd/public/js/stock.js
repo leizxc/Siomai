@@ -6,15 +6,21 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 let unsubscribeStock = null;
 let assignedProducts = [];
+let stockSession = 0;
 
 export async function loadstock() {
-  const employee = await getCurrentEmployee();
+  const token = ++stockSession;
+  unsubscribeStock?.();
+  unsubscribeStock = null;
+  const employee = await getCurrentEmployee(token);
+  if (token !== stockSession || !document.querySelector("#stockTableBody")?.isConnected) return;
   if (!employee) return renderMessage("Your employee account could not be found.");
 
   unsubscribeStock?.();
   unsubscribeStock = onSnapshot(
     query(collection(db, "products"), where("employeeId", "==", employee.id)),
     (snapshot) => {
+      if (token !== stockSession || !document.querySelector("#stockTableBody")?.isConnected) return;
       assignedProducts = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
       renderStockPage();
     },
@@ -27,15 +33,17 @@ export async function loadstock() {
   document.querySelector("#searchProduct").oninput = renderStockPage;
 }
 
-async function getCurrentEmployee() {
+async function getCurrentEmployee(token) {
   const user = await new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       unsubscribe();
       resolve(currentUser);
     });
   });
+  if (token !== stockSession) return null;
   if (!user) return null;
   const snapshot = await getDocs(query(collection(db, "employees"), where("uid", "==", user.uid)));
+  if (token !== stockSession) return null;
   if (snapshot.empty) return null;
   return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
 }
@@ -125,6 +133,7 @@ function renderMessage(message) { const tbody = document.querySelector("#stockTa
 function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]); }
 
 export function stopStockPage() {
+  stockSession += 1;
   unsubscribeStock?.();
   unsubscribeStock = null;
   assignedProducts = [];

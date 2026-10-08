@@ -1,6 +1,11 @@
 // inventoryADDbtn.js
 import { addProduct } from "/js/adminBE.js";
-import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
+import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261008c";
+
+let inventoryModalElement = null;
+let inventoryModalInstance = null;
+let selectRefreshTimer = null;
+let inventoryModalSession = 0;
 
 function reinitSelect(selectEl) {
   if (!selectEl) return;
@@ -16,6 +21,8 @@ function reinitAllSelects(selects) {
 }
 
 export function initInventoryModal() {
+  stopInventoryModal();
+  const token = ++inventoryModalSession;
   const modalElem = document.getElementById("modal-add");
   if (!modalElem) return;
 
@@ -23,8 +30,11 @@ export function initInventoryModal() {
   if (!modalInstance) {
     modalInstance = M.Modal.init(modalElem, { dismissible: true });
   }
+  inventoryModalElement = modalElem;
+  inventoryModalInstance = modalInstance;
 
-  setTimeout(() => {
+  selectRefreshTimer = setTimeout(() => {
+    if (token !== inventoryModalSession || !modalElem.isConnected) return;
     const selects = document.querySelectorAll("select");
     if (selects.length > 0) reinitAllSelects(selects);
   }, 100);
@@ -124,4 +134,16 @@ export function initInventoryModal() {
       }
     });
   }
+}
+
+export function stopInventoryModal() {
+  inventoryModalSession += 1;
+  clearTimeout(selectRefreshTimer);
+  selectRefreshTimer = null;
+  if (inventoryModalInstance) {
+    if (inventoryModalInstance.isOpen) inventoryModalInstance.close();
+    inventoryModalInstance.destroy();
+  }
+  inventoryModalInstance = null;
+  inventoryModalElement = null;
 }

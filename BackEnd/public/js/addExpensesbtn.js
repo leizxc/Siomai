@@ -1,25 +1,45 @@
 // expensesADDbtn.js
-import { db } from "/js/firebase.js";
-import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
+import {
+  beginButtonLoading,
+  endButtonLoading,
+} from "/js/buttonLoading.js?v=20261008c";
 import {
   addExpense,
   setExpenseCategoryFilter,
-} from "/js/adminExpenses.js";
-
-import {
-  collection,
-  addDoc,
-  deleteDoc,
-  doc,
-  serverTimestamp,
-  getDocs,
-  query,
-  where,
-  onSnapshot,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-let unsubscribeCategory = null;
+} from "/js/adminExpenses.js?v=20261008c";
+import { EXPENSE_CATEGORIES } from "/js/expenseCategories.js?v=20261008c";
 let selectedExpenseCategory = "all";
+let expenseModalSession = 0;
+let expenseSelectTimer = null;
+
+function bindExpenseModalClose(modalElem, modalInstance) {
+  if (!modalElem || !modalInstance) return;
+
+  modalElem.querySelectorAll(".modal-close").forEach((button) => {
+    button.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      modalInstance.close();
+    };
+  });
+}
+
+// Destroy muna bago i-init para hindi madoble ang select wrapper.
+function refreshSelects(root) {
+  root?.querySelectorAll("select").forEach((select) => {
+    M.FormSelect.getInstance(select)?.destroy();
+    M.FormSelect.init(select);
+  });
+}
+
+// Para sa ibang select ng page na hindi pa na-init (hindi ginagalaw ang
+// mga naka-init na).
+function initPendingSelects(root) {
+  root?.querySelectorAll("select").forEach((select) => {
+    if (select.classList.contains("browser-default")) return;
+    if (!M.FormSelect.getInstance(select)) M.FormSelect.init(select);
+  });
+}
 
 //LOAD EXPENSE CATEGORIES
 
@@ -29,34 +49,15 @@ function loadExpenseCategories() {
   const editSelect = document.getElementById("edit-expenses-category");
 
   if (!filterPills && !addSelect && !editSelect) return;
-
-  if (unsubscribeCategory) unsubscribeCategory();
-
-  unsubscribeCategory = onSnapshot(
-    collection(db, "expenses_category"),
-    (snapshot) => {
-      renderExpenseCategoryPills(filterPills, snapshot);
-
-      updateSelect(addSelect, snapshot, "Choose Category", "");
-
-      updateSelect(editSelect, snapshot, "Choose Category", "");
-    },
-  );
+  renderExpenseCategoryPills(filterPills);
+  updateSelect(addSelect, "Choose Category", "", false);
+  updateSelect(editSelect, "Choose Category", "", true);
 }
 
-function renderExpenseCategoryPills(container, snapshot) {
+function renderExpenseCategoryPills(container) {
   if (!container || !container.isConnected) return;
 
-  const categories = [];
-  snapshot.forEach((docSnap) => categories.push(docSnap.data().name));
-
-  if (
-    selectedExpenseCategory !== "all" &&
-    !categories.includes(selectedExpenseCategory)
-  ) {
-    selectedExpenseCategory = "all";
-    setExpenseCategoryFilter("all");
-  }
+  const categories = EXPENSE_CATEGORIES;
 
   container.innerHTML = "";
 
@@ -64,38 +65,34 @@ function renderExpenseCategoryPills(container, snapshot) {
     const pill = document.createElement("button");
     pill.type = "button";
     pill.className =
-      "category-pill" +
-      (selectedExpenseCategory === category ? " active" : "");
+      "category-pill" + (selectedExpenseCategory === category ? " active" : "");
     pill.textContent = category === "all" ? "All Categories" : category;
     pill.dataset.category = category;
-    pill.setAttribute("aria-pressed", String(selectedExpenseCategory === category));
+    pill.setAttribute(
+      "aria-pressed",
+      String(selectedExpenseCategory === category),
+    );
     pill.onclick = () => selectExpenseCategory(category);
     container.appendChild(pill);
   });
-
-  syncDeleteCategoryButtonState();
 }
 
 function selectExpenseCategory(category) {
   if (selectedExpenseCategory === category) return;
 
   selectedExpenseCategory = category;
-  document.querySelectorAll("#expense-category-pills .category-pill").forEach((pill) => {
-    const isActive = pill.dataset.category === category;
-    pill.classList.toggle("active", isActive);
-    pill.setAttribute("aria-pressed", String(isActive));
-  });
+  document
+    .querySelectorAll("#expense-category-pills .category-pill")
+    .forEach((pill) => {
+      const isActive = pill.dataset.category === category;
+      pill.classList.toggle("active", isActive);
+      pill.setAttribute("aria-pressed", String(isActive));
+    });
 
-  syncDeleteCategoryButtonState();
   setExpenseCategoryFilter(category);
 }
 
-function syncDeleteCategoryButtonState() {
-  const deleteBtn = document.getElementById("btn-delete-category");
-  if (deleteBtn) deleteBtn.disabled = selectedExpenseCategory === "all";
-}
-
-function updateSelect(select, snapshot, placeholder, value) {
+function updateSelect(select, placeholder, value, preserveCurrent) {
   if (!select || !select.isConnected) return;
 
   const previous = select.value;
@@ -112,19 +109,25 @@ function updateSelect(select, snapshot, placeholder, value) {
 
   select.appendChild(firstOption);
 
-  snapshot.forEach((docSnap) => {
+  EXPENSE_CATEGORIES.forEach((category) => {
     const option = document.createElement("option");
-
-    option.value = docSnap.data().name;
-    option.textContent = docSnap.data().name;
-
+    option.value = category;
+    option.textContent = category;
     select.appendChild(option);
   });
+
+  if (preserveCurrent && previous && !EXPENSE_CATEGORIES.includes(previous)) {
+    const legacyOption = document.createElement("option");
+    legacyOption.value = previous;
+    legacyOption.textContent = previous;
+    select.appendChild(legacyOption);
+  }
 
   if ([...select.options].some((o) => o.value === previous)) {
     select.value = previous;
   }
 
+  M.FormSelect.getInstance(select)?.destroy();
   M.FormSelect.init(select);
 }
 
@@ -133,6 +136,8 @@ function updateSelect(select, snapshot, placeholder, value) {
 ============================================================ */
 
 export function initExpensesModal() {
+  stopExpensesModal();
+  const token = ++expenseModalSession;
   const modalElem = document.getElementById("modal-expenses");
 
   if (!modalElem) {
@@ -145,64 +150,38 @@ export function initExpensesModal() {
   // is loaded.
   const modalInstance =
     M.Modal.getInstance(modalElem) || M.Modal.init(modalElem);
+  bindExpenseModalClose(modalElem, modalInstance);
 
   loadExpenseCategories();
 
-  setTimeout(() => {
-    M.FormSelect.init(document.querySelectorAll("select"));
+  const categorySelect = document.getElementById("expenses-category");
+  const otherCategoryField = document.getElementById(
+    "expenses-other-category-field",
+  );
+  const otherCategoryInput = document.getElementById("expenses-category-other");
+  const syncOtherCategory = () => {
+    const isOthers = categorySelect?.value === "Others";
+    if (otherCategoryField) otherCategoryField.hidden = !isOthers;
+    if (!isOthers && otherCategoryInput) otherCategoryInput.value = "";
+  };
+  // onchange (hindi addEventListener) para hindi dumoble ang handler kapag na-init ulit
+  if (categorySelect) categorySelect.onchange = syncOtherCategory;
+  syncOtherCategory();
+
+  // Ang mga select sa loob ng modal ay hinahawakan ng refreshSelects; dito,
+  // ang ibang select lang ng page na hindi pa na-init ang sinisigurado.
+  expenseSelectTimer = setTimeout(() => {
+    if (token !== expenseModalSession || !modalElem.isConnected) return;
+    initPendingSelects(document.getElementById("content") || document);
   }, 100);
 
   const btnAdd = document.querySelector(".expense-btn");
   const saveBtn = document.getElementById("save-expense");
 
-  if (btnAdd) btnAdd.onclick = () => {
-    document.getElementById("expenses-date").value = "";
-
-    document.getElementById("expenses-description").value = "";
-
-    document.getElementById("expenses-amount").value = "";
-
-    document.getElementById("expenses-category").selectedIndex = 0;
-
-    document.getElementById("expenses-status").selectedIndex = 0;
-
-    saveBtn.textContent = "Save Expense";
-
-    M.updateTextFields();
-
-    M.FormSelect.init(document.querySelectorAll("select"));
-
-    modalInstance.open();
-  };
-
-  if (saveBtn) saveBtn.onclick = async () => {
-    if (saveBtn.textContent === "Update Expense") return;
-    if (saveBtn.disabled || saveBtn.dataset.actionBusy === "true") return;
-
-    const date = document.getElementById("expenses-date").value;
-
-    const category = document.getElementById("expenses-category").value;
-
-    const description = document
-      .getElementById("expenses-description")
-      .value.trim();
-
-    const amount = parseFloat(document.getElementById("expenses-amount").value);
-
-    const status = document.getElementById("expenses-status").value;
-
-    if (!date || !category || !description || isNaN(amount) || !status) {
-      M.toast({
-        html: "Please fill all required fields.",
-        classes: "red rounded",
-      });
-
-      return;
-    }
-
-    if (!beginButtonLoading(saveBtn, "Saving expense...")) return;
-    try {
-      await addExpense(date, category, description, amount, status);
+  if (btnAdd)
+    btnAdd.onclick = () => {
+      // Huwag nang magbukas ulit kung bukas na (double-tap sa mobile).
+      if (modalInstance.isOpen) return;
 
       document.getElementById("expenses-date").value = "";
 
@@ -211,239 +190,113 @@ export function initExpensesModal() {
       document.getElementById("expenses-amount").value = "";
 
       document.getElementById("expenses-category").selectedIndex = 0;
+      if (otherCategoryInput) otherCategoryInput.value = "";
+      if (otherCategoryField) otherCategoryField.hidden = true;
 
       document.getElementById("expenses-status").selectedIndex = 0;
 
+      if (saveBtn) saveBtn.textContent = "Save Expense";
+
       M.updateTextFields();
 
-      M.FormSelect.init(document.querySelectorAll("select"));
+      // Mga select lang sa loob ng modal ang ire-refresh, hindi ang buong page.
+      refreshSelects(modalElem);
 
-      modalInstance.close();
+      modalInstance.open();
+    };
 
-      M.toast({
-        html: "Expense added successfully!",
-        classes: "green rounded",
-      });
-    } catch (err) {
-      console.error(err);
+  if (saveBtn)
+    saveBtn.onclick = async () => {
+      if (saveBtn.textContent === "Update Expense") return;
+      if (saveBtn.disabled || saveBtn.dataset.actionBusy === "true") return;
 
-      M.toast({
-        html: "Failed to save expense.",
-        classes: "red rounded",
-      });
-    } finally {
-      endButtonLoading(saveBtn);
-    }
-  };
+      const date = document.getElementById("expenses-date").value;
 
-  bindAddCategoryButton();
-  bindDeleteCategoryButton();
+      const selectedCategory =
+        document.getElementById("expenses-category").value;
+      const customCategory = otherCategoryInput?.value.trim() || "";
+      const category =
+        selectedCategory === "Others" ? customCategory : selectedCategory;
+
+      const description = document
+        .getElementById("expenses-description")
+        .value.trim();
+
+      const amount = parseFloat(
+        document.getElementById("expenses-amount").value,
+      );
+
+      const status = document.getElementById("expenses-status").value;
+
+      if (
+        !date ||
+        !selectedCategory ||
+        !category ||
+        !description ||
+        isNaN(amount) ||
+        !status
+      ) {
+        M.toast({
+          html: "Please fill all required fields.",
+          classes: "red rounded",
+        });
+
+        return;
+      }
+
+      if (!beginButtonLoading(saveBtn, "Saving expense...")) return;
+      try {
+        await addExpense(date, category, description, amount, status);
+
+        // Lumipat na ng section habang nagsa-save: naisulat na ang expense,
+        // pero huwag nang galawin ang DOM ng ibang page.
+        if (token !== expenseModalSession || !modalElem.isConnected) return;
+
+        document.getElementById("expenses-date").value = "";
+
+        document.getElementById("expenses-description").value = "";
+
+        document.getElementById("expenses-amount").value = "";
+
+        document.getElementById("expenses-category").selectedIndex = 0;
+        if (otherCategoryInput) otherCategoryInput.value = "";
+        if (otherCategoryField) otherCategoryField.hidden = true;
+
+        document.getElementById("expenses-status").selectedIndex = 0;
+
+        M.updateTextFields();
+
+        refreshSelects(modalElem);
+
+        modalInstance.close();
+
+        M.toast({
+          html: "Expense added successfully!",
+          classes: "green rounded",
+        });
+      } catch (err) {
+        console.error(err);
+
+        if (token !== expenseModalSession) return;
+
+        M.toast({
+          html: "Failed to save expense.",
+          classes: "red rounded",
+        });
+      } finally {
+        endButtonLoading(saveBtn);
+      }
+    };
 
   console.log("Expenses Module Loaded");
 }
 
-/* ============================================================
-   ADD NEW EXPENSE CATEGORY
-============================================================ */
+export function stopExpensesModal() {
+  expenseModalSession += 1;
+  clearTimeout(expenseSelectTimer);
+  expenseSelectTimer = null;
+  selectedExpenseCategory = "all";
 
-function bindAddCategoryButton() {
-  const btnAddCategory = document.querySelector(".add-expenses-category");
-  const modalElem = document.getElementById("modal-add-category");
-  const saveCategoryBtn = document.getElementById("save-new-category");
-  const categoryInput = document.getElementById("add-new-category");
-
-  if (!btnAddCategory || !modalElem || !saveCategoryBtn || !categoryInput) {
-    console.warn("Expense Category Modal elements not found.");
-    return;
-  }
-
-  let modalInstance = M.Modal.getInstance(modalElem);
-
-  if (!modalInstance) {
-    modalInstance = M.Modal.init(modalElem);
-  }
-
-  /* OPEN MODAL */
-
-  btnAddCategory.onclick = () => {
-    categoryInput.value = "";
-
-    M.updateTextFields();
-
-    modalInstance.open();
-  };
-
-  /* ================= SAVE CATEGORY ================= */
-
-  saveCategoryBtn.onclick = async () => {
-    if (saveCategoryBtn.disabled || saveCategoryBtn.dataset.actionBusy === "true") return;
-    const categoryName = categoryInput.value.trim().toUpperCase();
-
-    if (!categoryName) {
-      M.toast({
-        html: "Please enter a category name.",
-        classes: "red rounded",
-      });
-      return;
-    }
-
-    if (!beginButtonLoading(saveCategoryBtn, "Saving category...")) return;
-    try {
-      // Check duplicate
-      const existing = await getDocs(
-        query(
-          collection(db, "expenses_category"),
-          where("name", "==", categoryName),
-        ),
-      );
-
-      if (!existing.empty) {
-        M.toast({
-          html: "Category already exists.",
-          classes: "red rounded",
-        });
-        return;
-      }
-
-      // Save to Firestore
-      await addDoc(collection(db, "expenses_category"), {
-        name: categoryName,
-        created_at: serverTimestamp(),
-      });
-
-      categoryInput.value = "";
-
-      modalInstance.close();
-
-      M.toast({
-        html: "Expense category added successfully!",
-        classes: "green rounded",
-      });
-
-      // Refresh labels
-      M.updateTextFields();
-
-      // Optional refresh ng selects
-      M.FormSelect.init(document.querySelectorAll("select"));
-    } catch (error) {
-      console.error(error);
-
-      M.toast({
-        html: "Failed to save category.",
-        classes: "red rounded",
-      });
-    } finally {
-      endButtonLoading(saveCategoryBtn);
-    }
-  };
-}
-
-/* ============================================================
-   DELETE EXPENSE CATEGORY
-   Gumagamit ng parehong "modal-delete-category" na modal na
-   ginagamit din sa inventory side (adminBE.js) — magkaiba lang
-   ang JS na naka-bind depende kung aling page ang bukas.
-============================================================ */
-
-function bindDeleteCategoryButton() {
-  const deleteBtn = document.getElementById("btn-delete-category");
-  const modalElem = document.getElementById("modal-delete-category");
-
-  if (!deleteBtn || !modalElem) {
-    console.warn("Delete Category elements not found.");
-    return;
-  }
-
-  const titleElement = document.getElementById("delete-confirmation-title");
-  const messageElement = document.getElementById("delete-confirmation-message");
-  const confirmBtn = document.getElementById("confirm-delete-category");
-
-  if (!titleElement || !messageElement || !confirmBtn) {
-    console.warn("Delete Category modal buttons not found.");
-    return;
-  }
-
-  let modalInstance = M.Modal.getInstance(modalElem);
-  if (!modalInstance) {
-    modalInstance = M.Modal.init(modalElem, { dismissible: false });
-  }
-
-  syncDeleteCategoryButtonState();
-
-  deleteBtn.onclick = () => {
-    const categoryName = selectedExpenseCategory;
-
-    if (!categoryName || categoryName === "all") {
-      M.toast({
-        html: "Please select a category first.",
-        classes: "red rounded",
-      });
-      return;
-    }
-
-    titleElement.textContent = "Delete category?";
-    messageElement.textContent = `"${categoryName}" will be permanently deleted. You cannot delete a category that still has expenses.`;
-
-    modalInstance.open();
-  };
-
-  confirmBtn.onclick = async () => {
-    const categoryName = selectedExpenseCategory;
-
-    if (!categoryName || categoryName === "all") {
-      modalInstance.close();
-      return;
-    }
-
-    try {
-      // Bawal tanggalin kung may existing pang expense na gumagamit dito.
-      const usedQuery = query(
-        collection(db, "expenses"),
-        where("category", "==", categoryName),
-      );
-      const usedSnap = await getDocs(usedQuery);
-
-      if (!usedSnap.empty) {
-        M.toast({
-          html: "Cannot delete: this category still has expenses.",
-          classes: "red rounded",
-        });
-        modalInstance.close();
-        return;
-      }
-
-      const catQuery = query(
-        collection(db, "expenses_category"),
-        where("name", "==", categoryName),
-      );
-      const catSnap = await getDocs(catQuery);
-
-      if (catSnap.empty) {
-        M.toast({ html: "Category not found.", classes: "red rounded" });
-        modalInstance.close();
-        return;
-      }
-
-      await Promise.all(
-        catSnap.docs.map((docSnap) =>
-          deleteDoc(doc(db, "expenses_category", docSnap.id)),
-        ),
-      );
-
-      selectedExpenseCategory = "all";
-      setExpenseCategoryFilter("all");
-      syncDeleteCategoryButtonState();
-
-      modalInstance.close();
-
-      M.toast({
-        html: "Category deleted successfully!",
-        classes: "green rounded",
-      });
-    } catch (err) {
-      console.error(err);
-      M.toast({ html: "Failed to delete category.", classes: "red rounded" });
-      modalInstance.close();
-    }
-  };
+  // functionalnav disposes page-owned Materialize modal instances and overlays
+  // immediately after this page cleanup runs.
 }

@@ -32,8 +32,8 @@ service cloud.firestore {
     }
     match /expenses/{id} {
       allow read, update: if privileged() || owns(resource.data);
-      allow create: if privileged() || owns(request.resource.data);
-      allow delete: if privileged();
+      allow create: if privileged() || (signedIn() && owns(request.resource.data) && request.resource.data.get('source', '') == 'employee_report' && request.resource.data.get('employeeUid', '') == request.auth.uid);
+      allow delete: if privileged() || (signedIn() && resource.data.get('source', '') == 'employee_report' && resource.data.get('employeeUid', '') == request.auth.uid);
     }
     match /attendance/{id} {
       allow read: if privileged() || owns(resource.data) || (signedIn() && resource.data.get('userId', '') == request.auth.uid);
@@ -42,9 +42,10 @@ service cloud.firestore {
       allow delete: if privileged();
     }
     match /expenseReports/{id} {
-      allow read, update: if privileged() || owns(resource.data);
-      allow create: if privileged() || owns(request.resource.data);
-      allow delete: if privileged();
+      allow read: if privileged() || owns(resource.data) || (signedIn() && resource.data.get('employeeUid', '') == request.auth.uid);
+      allow update: if privileged();
+      allow create: if privileged() || owns(request.resource.data) || (signedIn() && request.resource.data.get('employeeUid', '') == request.auth.uid);
+      allow delete: if privileged() || (signedIn() && resource.data.get('employeeUid', '') == request.auth.uid);
     }
     match /employeeNotifications/{id} {
       allow read, update: if privileged() || owns(resource.data);
@@ -52,7 +53,15 @@ service cloud.firestore {
       allow delete: if privileged();
     }
     match /managerNotifications/{id} {
-      allow read, write: if privileged();
+      allow read, update: if privileged();
+      allow delete: if privileged() || (signedIn() && resource.data.get('type', '') == 'expense_report' && resource.data.get('employeeUid', '') == request.auth.uid);
+      allow create: if privileged() || (
+        signedIn() &&
+        request.resource.data.get('type', '') == 'expense_report' &&
+        request.resource.data.get('reportId', '') != '' &&
+        existsAfter(/databases/$(database)/documents/expenseReports/$(request.resource.data.reportId)) &&
+        getAfter(/databases/$(database)/documents/expenseReports/$(request.resource.data.reportId)).data.get('employeeUid', '') == request.auth.uid
+      );
     }
     match /auditLogs/{id} {
       allow read: if privileged();

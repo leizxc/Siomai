@@ -101,11 +101,13 @@ function renderSales() {
   const selectedEmployee = employeeFilter.value;
   const selectedPayment = paymentFilter.value;
   const isCashFilter = selectedPayment === "cash";
-  const visibleColumnCount = isCashFilter ? 8 : 7;
+  const visibleColumnCount = 8;
   const referenceHeader = document.getElementById("sales-reference-header");
+  const providerHeader = document.getElementById("sales-provider-header");
   const cashHeader = document.getElementById("sales-cash-header");
   const changeHeader = document.getElementById("sales-change-header");
   if (referenceHeader) referenceHeader.hidden = isCashFilter;
+  if (providerHeader) providerHeader.hidden = isCashFilter;
   if (cashHeader) cashHeader.hidden = !isCashFilter;
   if (changeHeader) changeHeader.hidden = !isCashFilter;
   const filtered = orders
@@ -184,6 +186,12 @@ function renderSales() {
     const paymentMethod = String(order.payment_method || order.paymentMethod || "Cash");
     const isCashless = paymentMethod.toLowerCase() === "cashless";
     const paymentInfo = order.payment_info || order.paymentInfo || {};
+    const rawProvider = order.payment_provider || order.paymentProvider ||
+      (typeof paymentInfo === "object" ? paymentInfo.provider || paymentInfo.payment_provider : "");
+    const providerValue = String(rawProvider || "").trim();
+    const cashlessProvider = /^pay\s*m[a]?ya$/i.test(providerValue) || /^maya$/i.test(providerValue)
+      ? "Maya"
+      : providerValue || "—";
     const referenceNo = isCashless
       ? (typeof paymentInfo === "string" ? paymentInfo : "") || order.reference_no || order.referenceNo || order.reference_number || "—"
       : "—";
@@ -208,7 +216,7 @@ function renderSales() {
       ${isCashFilter ? `
         <td data-label="Cash Received">${cashReceived === "—" ? "—" : currency.format(Number(cashReceived) || 0)}</td>
         <td data-label="Change">${cashChange === "—" ? "—" : currency.format(Number(cashChange) || 0)}</td>
-      ` : `<td data-label="Reference No.">${escapeHtml(referenceNo)}</td>`}
+      ` : `<td data-label="Cashless Provider">${escapeHtml(cashlessProvider)}</td><td data-label="Reference No.">${escapeHtml(referenceNo)}</td>`}
       <td data-label="Status">${escapeHtml(status)}</td>
       <td data-label="Order Total"><strong>${currency.format(order.total)}</strong></td>
     </tr>`;

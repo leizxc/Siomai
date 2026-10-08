@@ -44,23 +44,6 @@
 
   <!-- ACTION BUTTONS -->
   <div class="employee-actions expense-actions">
-    <button
-      type="button"
-      id="btn-delete-category"
-      class="btn-flat delete-outline waves-effect"
-    >
-      <i class="material-icons">clear</i>
-      Delete Category
-    </button>
-
-    <button
-      type="button"
-      class="btn-flat outline-btn add-expenses-category waves-effect waves-light"
-    >
-      <i class="material-icons left">add_circle_outline</i>
-      Add Expense Category
-    </button>
-
     <button type="button" class="btn blue expense-btn waves-effect waves-light">
       <i class="material-icons left">add</i>
       Add Expense
@@ -117,41 +100,9 @@
     </div>
   </section>
 
-  <!-- ==================== ADD CATEGORY MODAL ==================== -->
-
-  <div class="modal" id="modal-add-category">
-    <div class="modal-content">
-      <h4 id="category-modal-title">Add Expense Category</h4>
-
-      <div class="row">
-        <div class="input-field col s12">
-          <input
-            type="text"
-            id="add-new-category"
-            autocomplete="off"
-            maxlength="50"
-          />
-
-          <label for="add-new-category"> Expense Category Name </label>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="modal-close btn-flat">Cancel</button>
-
-        <button
-          id="save-new-category"
-          class="btn blue waves-effect waves-light"
-        >
-          Save Category
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- ==================== ADD EXPENSE MODAL ==================== -->
 
-  <div class="modal" id="modal-expenses">
+  <div class="modal modal-fixed-footer" id="modal-expenses">
     <div class="modal-content">
       <h4 id="expense-modal-title">Add Expense</h4>
 
@@ -168,6 +119,13 @@
           </select>
 
           <label>Category</label>
+        </div>
+      </div>
+
+      <div class="row" id="expenses-other-category-field" hidden>
+        <div class="input-field col s12">
+          <input type="text" id="expenses-category-other" maxlength="50" autocomplete="off" />
+          <label for="expenses-category-other">Specify category</label>
         </div>
       </div>
 
@@ -204,19 +162,19 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="modal-close btn-flat">Cancel</button>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="modal-close btn-flat">Cancel</button>
 
-        <button id="save-expense" class="btn waves-effect waves-light">
-          Save Expense
-        </button>
-      </div>
+      <button id="save-expense" class="btn waves-effect waves-light">
+        Save Expense
+      </button>
     </div>
   </div>
 
   <!-- EDIT EXPENSE MODAL -->
 
-  <div class="modal" id="modal-edit">
+  <div class="modal modal-fixed-footer" id="modal-edit">
     <div class="modal-content">
       <h4>Edit Expense</h4>
 
@@ -264,37 +222,13 @@
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="modal-close btn-flat">Cancel</button>
-
-        <button id="edit-save" class="btn blue waves-effect waves-light">
-          Update Expense
-        </button>
-      </div>
     </div>
-  </div>
+    <div class="modal-footer">
+      <button type="button" class="modal-close btn-flat">Cancel</button>
 
-  <!-- DELETE CATEGORY CONFIRMATION -->
-  <div id="modal-delete-category" class="modal">
-    <div class="modal-content">
-      <h4 id="delete-confirmation-title">Delete category?</h4>
-      <p id="delete-confirmation-message">
-        This category will be permanently deleted. You cannot delete a category
-        that still has products.
-      </p>
-
-      <div class="modal-footer">
-        <button
-          id="cancel-delete-category"
-          type="button"
-          class="modal-close btn-flat"
-        >
-          Cancel
-        </button>
-        <button id="confirm-delete-category" type="button" class="btn red">
-          Delete
-        </button>
-      </div>
+      <button id="edit-save" class="btn blue waves-effect waves-light">
+        Update Expense
+      </button>
     </div>
   </div>
 
@@ -332,11 +266,11 @@
 <!-- JAVASCRIPT -->
 
 <script src="/js/refresh.js"></script>
-<script src="/js/functionalnav.js"></script>
+<script src="/js/functionalnav.js?v=20261008c"></script>
 
 <script type="module" src="/js/firebase.js"></script>
 
 <script type="module">
-  import { initExpensesModal } from "/js/addExpensesbtn.js";
-  import { loadExpenses } from "/js/adminExpenses.js";
+  import { initExpensesModal } from "/js/addExpensesbtn.js?v=20261008c";
+  import { loadExpenses } from "/js/adminExpenses.js?v=20261008c";
 </script>

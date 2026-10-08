@@ -147,7 +147,7 @@
           loginButton.setAttribute("aria-busy", String(isLoading));
         };
 
-        const username = document
+        const loginIdentifier = document
           .getElementById("username")
           .value.toLowerCase()
           .trim();
@@ -159,16 +159,24 @@
           //offline fallback
           if (!navigator.onLine) {
             console.log("Offline mode detected");
-            await offlineLogin(username, password);
+            await offlineLogin(loginIdentifier, password);
             return;
           }
 
           //online login(firebase)
-          const q = query(
-            collection(db, "users"),
-            where("username", "==", username),
+          const userCollection = collection(db, "users");
+          const lookupField = loginIdentifier.includes("@") ? "email" : "username";
+          let snapshot = await getDocs(
+            query(userCollection, where(lookupField, "==", loginIdentifier)),
           );
-          const snapshot = await getDocs(q);
+
+          // Keep username as the primary identifier, but accept the account's
+          // saved email as an alternative when the user has forgotten it.
+          if (snapshot.empty && lookupField === "username") {
+            snapshot = await getDocs(
+              query(userCollection, where("email", "==", loginIdentifier)),
+            );
+          }
 
           if (!snapshot.empty) {
             const userDocSnap = snapshot.docs[0];
@@ -201,18 +209,21 @@
               // mismo ang nagpapaiba sa nakikita, hindi ang URL/folder.
               sessionStorage.setItem("employeeRole", role);
               sessionStorage.setItem("employeeUid", userCredential.user.uid);
-              sessionStorage.setItem("employeeUsername", username);
+              sessionStorage.setItem(
+                "employeeUsername",
+                String(userDoc.username || loginIdentifier).toLowerCase(),
+              );
               sessionStorage.setItem("employeeUserDocId", userDocSnap.id);
 
               window.location.href = "/employee/siomai/userpanel.html";
             }
           } else {
             M.toast({
-              html: "Username not found",
+              html: "Username or email not found",
               classes: "red-toast",
               displayLength: 4000,
             });
-            console.log("No match for:", username);
+            console.log("No match for:", loginIdentifier);
           }
         } catch (error) {
           M.toast({

@@ -56,10 +56,12 @@ if (contentArea) {
 }
 
 function loadSection(page) {
-  if (isNavigating) return;
   isNavigating = true;
 
   const isOwnerPage = window.location.pathname.startsWith("/owner/");
+  const sidebar = document.querySelector(".sidebar");
+  if (sidebar) sidebar.scrollTop = 0;
+  document.body.classList.toggle("manager-attendance-view", !isOwnerPage && page === "attendance.html");
   const ownerFeaturePages = new Set([
     "owner-sales",
     "owner-capital",
@@ -72,10 +74,25 @@ function loadSection(page) {
     "owner-managers",
   ]);
   const sectionUrl = isOwnerPage
-    ? ownerFeaturePages.has(page)
+    ? page === "owner-capital"
+      ? "/admin/expenses.html"
+      : page === "owner-sales"
+      ? "/admin/sales.html"
+      : page === "owner-orders"
+      ? "/admin/sales.html"
+      : ownerFeaturePages.has(page)
       ? "/owner/ownerfeature.html"
       : `/owner/${page}`
     : page;
+
+  // Every section gets a synchronous chance to invalidate in-flight work
+  // before its root is replaced. Shell-owned listeners must not subscribe to
+  // this event; they live for the authenticated session instead.
+  window.dispatchEvent(
+    new CustomEvent(isOwnerPage ? "owner:before-section-change" : "manager:before-section-change", {
+      detail: { page },
+    }),
+  );
 
   // Stop the previous page's listeners before loading the new one
   if (currentCleanup) {
@@ -85,6 +102,7 @@ function loadSection(page) {
   attendanceStylesheet?.remove();
   attendanceStylesheet = null;
   if (isOwnerPage) window.ownerDashboardCleanup?.();
+  else window.managerDashboardCleanup?.();
 
   const myToken = ++currentLoadToken;
 
@@ -95,6 +113,9 @@ function loadSection(page) {
 
       const main = document.getElementById("content");
       disposeSectionModals(main);
+      main.classList.toggle("owner-capital-content", isOwnerPage && page === "owner-capital");
+      main.classList.toggle("owner-sales-content", isOwnerPage && page === "owner-sales");
+      main.classList.toggle("owner-order-status-content", isOwnerPage && page === "owner-orders");
       main.innerHTML = data;
       applyTableDataLabels(main);
 
@@ -114,7 +135,7 @@ function loadSection(page) {
         "payroll.html": "Employee Payroll",
         "owner-sales": "Real Time Sales",
         "owner-capital": "Capital Status Record",
-        "owner-orders": "Order Status",
+        "owner-orders": "Order Product Status",
         "owner-employee-stock": "Stock by Employee",
         "owner-inventory": "Real Time Inventory",
         "owner-performance": "Employee Performance",
@@ -125,7 +146,7 @@ function loadSection(page) {
 
       if (title) title.textContent = pageTitles[page] || "Administrator";
 
-      if (isOwnerPage && ownerFeaturePages.has(page)) {
+      if (isOwnerPage && ownerFeaturePages.has(page) && page !== "owner-capital" && page !== "owner-sales" && page !== "owner-orders") {
         try {
           const ownerModule = await import("/js/ownerFeatures.js");
           if (myToken !== currentLoadToken) return;
@@ -150,8 +171,15 @@ function loadSection(page) {
             const inventoryModule = await import("/js/adminBE.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             await inventoryModule.initInventoryPage?.();
+            if (myToken !== currentLoadToken) {
+              inventoryModule.stopInventoryPage?.();
+              return;
+            }
 
-            currentCleanup = inventoryModule.stopInventoryPage || null;
+            currentCleanup = () => {
+              inventoryModule.stopInventoryPage?.();
+              addbtnModule.stopInventoryModal?.();
+            };
           } catch (err) {
             console.error("Inventory Init Error:", err);
           }
@@ -163,13 +191,20 @@ function loadSection(page) {
             if (myToken !== currentLoadToken) return;
             addproducts.initProductModal?.();
 
-            const productModule = await import("/js/adminaddproduct.js?v=20261003c");
+            const productModule = await import("/js/adminaddproduct.js?v=20261008a");
             if (myToken !== currentLoadToken) return;
             await productModule.initProductPage?.();
+            if (myToken !== currentLoadToken) {
+              productModule.cleanupProductPage?.();
+              return;
+            }
             if (myToken !== currentLoadToken) return;
             productModule.loadProducts?.();
 
-            currentCleanup = productModule.cleanupProductPage || null;
+            currentCleanup = () => {
+              productModule.cleanupProductPage?.();
+              addproducts.stopProductModal?.();
+            };
           } catch (err) {
             console.error("Product Init Error:", err);
           }
@@ -181,23 +216,33 @@ function loadSection(page) {
             if (myToken !== currentLoadToken) return;
             photoModule.initPhotoMenu?.();
 
-            const productmenu = await import("/js/productmenu.js?v=20261003c");
+            const productmenu = await import("/js/productmenu.js?v=20261008b");
             if (myToken !== currentLoadToken) return;
             await productmenu.initProductPage?.();
+            if (myToken !== currentLoadToken) {
+              productmenu.cleanupProductMenuPage?.();
+              return;
+            }
+            currentCleanup = productmenu.cleanupProductMenuPage || null;
           } catch (err) {
             console.error("Product Menu Init Error:", err);
           }
           break;
 
         case "expenses.html":
+        case "owner-capital":
           try {
-            const addbtnModule = await import("/js/addExpensesbtn.js?v=20261003b");
+            const addbtnModule = await import("/js/addExpensesbtn.js?v=20261008c");
             if (myToken !== currentLoadToken) return;
             addbtnModule.initExpensesModal?.();
 
-            const expensesModule = await import("/js/adminExpenses.js?v=20261003b");
+            const expensesModule = await import("/js/adminExpenses.js?v=20261008c");
             if (myToken !== currentLoadToken) return;
             expensesModule.loadExpenses?.();
+            currentCleanup = () => {
+              expensesModule.stopLoadingExpenses?.();
+              addbtnModule.stopExpensesModal?.();
+            };
           } catch (err) {
             console.error("Expenses Init Error:", err);
           }
@@ -212,6 +257,10 @@ function loadSection(page) {
             const addemployeeModule = await import("/js/adminEmployee.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             addemployeeModule.loadEmployees?.();
+            currentCleanup = () => {
+              addemployeeModule.stopEmployeesPage?.();
+              employeeModule.stopEmployee?.();
+            };
           } catch (err) {
             console.error("Employee Init Error:", err);
           }
@@ -237,6 +286,10 @@ function loadSection(page) {
             const attendanceModule = await import("/js/attendance.js");
             if (myToken !== currentLoadToken) return;
             await attendanceModule.initAttendance?.();
+            if (myToken !== currentLoadToken) {
+              attendanceModule.stopAttendancePage?.();
+              return;
+            }
             currentCleanup = attendanceModule.stopAttendancePage || null;
           } catch (err) {
             console.error("Attendance init error:", err);
@@ -255,6 +308,8 @@ function loadSection(page) {
           break;
 
         case "sales.html":
+        case "owner-sales":
+        case "owner-orders":
           try {
             const salesModule = await import("/js/sales.js");
             if (myToken !== currentLoadToken) return;

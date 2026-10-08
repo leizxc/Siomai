@@ -17,6 +17,7 @@ let attendance = [];
 let orders = [];
 let payrollRecords = new Map();
 let unsubscribers = [];
+let payrollSession = 0;
 let managerAccount = false;
 
 function asDate(value) {
@@ -295,13 +296,14 @@ async function payShift(shiftId, button) {
 
 export async function initPayroll() {
   cleanupPayroll();
+  const token = payrollSession;
   const dateFilter = document.getElementById("payroll-date");
   const roleFilter = document.getElementById("payroll-role");
   const employeeFilter = document.getElementById("payroll-employee");
   if (!dateFilter || !roleFilter || !employeeFilter) return;
 
   managerAccount = await isManagerAccount();
-  if (!roleFilter.isConnected) return;
+  if (token !== payrollSession || !roleFilter.isConnected) return;
 
   dateFilter.value = dateKey(new Date());
   dateFilter.onchange = renderPayroll;
@@ -313,21 +315,25 @@ export async function initPayroll() {
 
   unsubscribers = [
     onSnapshot(collection(db, "employees"), (snapshot) => {
+      if (token !== payrollSession || !roleFilter.isConnected) return;
       employees = snapshot.docs.map((item) => ({ id: item.id, data: item.data() }));
       renderEmployeeOptions();
       renderRoleOptions();
       renderPayroll();
     }, (error) => console.error("Unable to load payroll employees:", error)),
     onSnapshot(collection(db, "attendance"), (snapshot) => {
+      if (token !== payrollSession || !roleFilter.isConnected) return;
       attendance = snapshot.docs.map((item) => ({ id: item.id, data: item.data() }));
       renderRoleOptions();
       renderPayroll();
     }, (error) => console.error("Unable to load payroll shifts:", error)),
     onSnapshot(collection(db, "orders"), (snapshot) => {
+      if (token !== payrollSession || !roleFilter.isConnected) return;
       orders = snapshot.docs.map((item) => item.data());
       renderPayroll();
     }, (error) => console.error("Unable to load payroll orders:", error)),
     onSnapshot(collection(db, "payroll"), (snapshot) => {
+      if (token !== payrollSession || !roleFilter.isConnected) return;
       payrollRecords = new Map(snapshot.docs.map((item) => [item.id, item.data()]));
       renderPayroll();
     }, (error) => console.error("Unable to load payroll payments:", error)),
@@ -335,6 +341,7 @@ export async function initPayroll() {
 }
 
 export function cleanupPayroll() {
+  payrollSession += 1;
   unsubscribers.forEach((unsubscribe) => unsubscribe());
   unsubscribers = [];
   employees = [];

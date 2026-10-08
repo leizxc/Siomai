@@ -3,7 +3,7 @@ import { API_BASE_URL } from "/js/apiConfig.js";
 import {
   beginButtonLoading,
   endButtonLoading,
-} from "/js/buttonLoading.js?v=20261003a";
+} from "/js/buttonLoading.js?v=20261008c";
 import {
   collection,
   addDoc,
@@ -63,6 +63,7 @@ let managerEmployeeView = false;
 let unsubscribeUsers = null;
 let unsubscribeEmployees = null;
 let unsubscribeEmployeeAttendance = null;
+let employeePageSession = 0;
 
 function isManagerEmployeeRecord(data = {}) {
   return String(data.role || "").toLowerCase() === "manager" ||
@@ -71,8 +72,11 @@ function isManagerEmployeeRecord(data = {}) {
 
 // Load employees list with username from users collection
 export async function loadEmployees() {
+  stopEmployeesPage();
+  const token = ++employeePageSession;
   managerEmployeeView = await isManagerAccount();
   const tbody = document.querySelector("#employeeTable tbody");
+  if (token !== employeePageSession || !tbody?.isConnected) return;
   if (tbody) tbody.innerHTML = "";
 
   if (unsubscribeUsers) unsubscribeUsers();
@@ -80,6 +84,7 @@ export async function loadEmployees() {
   if (unsubscribeEmployeeAttendance) unsubscribeEmployeeAttendance();
 
   unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+    if (token !== employeePageSession || !tbody.isConnected) return;
     usersMap = {};
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
@@ -95,6 +100,7 @@ export async function loadEmployees() {
   unsubscribeEmployees = onSnapshot(
     collection(db, "employees"),
     (querySnapshot) => {
+      if (token !== employeePageSession || !tbody.isConnected) return;
       latestEmployeeDocs = [];
       querySnapshot.forEach((docSnap) => {
         latestEmployeeDocs.push({ id: docSnap.id, data: docSnap.data() });
@@ -106,6 +112,7 @@ export async function loadEmployees() {
   unsubscribeEmployeeAttendance = onSnapshot(
     collection(db, "attendance"),
     (querySnapshot) => {
+      if (token !== employeePageSession || !tbody.isConnected) return;
       latestAttendanceDocs = querySnapshot.docs.map((docSnap) => ({
         id: docSnap.id,
         data: docSnap.data(),
@@ -113,6 +120,21 @@ export async function loadEmployees() {
       rebuildEmployeeData();
     },
   );
+}
+
+export function stopEmployeesPage() {
+  employeePageSession += 1;
+  unsubscribeUsers?.();
+  unsubscribeUsers = null;
+  unsubscribeEmployees?.();
+  unsubscribeEmployees = null;
+  unsubscribeEmployeeAttendance?.();
+  unsubscribeEmployeeAttendance = null;
+  usersMap = {};
+  latestEmployeeDocs = [];
+  latestAttendanceDocs = [];
+  employeeListCache = [];
+  managerEmployeeView = false;
 }
 
 // Recomputes the summary cards + employeeListCache from whichever

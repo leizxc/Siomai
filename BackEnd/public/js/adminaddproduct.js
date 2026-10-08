@@ -1,5 +1,5 @@
 import { db, isManagerAccount } from "/js/firebase.js";
-import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
+import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261008c";
 import {
   collection,
   addDoc,
@@ -22,6 +22,7 @@ let unsubscribeInventoryOptions = null;
 let unsubscribeProducts = null;
 let unsubscribeProduct = null;
 let unsubscribeRoleFilter = null;
+const capitalCostMigrationInFlight = new Set();
 
 const PRODUCT_PAGE_SIZE = 10;
 let productCurrentPage = 1;
@@ -165,6 +166,91 @@ function getStockUsedPerContainer(menuData, legacyKabanWeight = 0) {
   return 0;
 }
 
+function getInventoryCostPerBaseUnit(inventoryData) {
+  if (!inventoryData) return null;
+
+  const stock = Number(inventoryData.stock_quantity ?? inventoryData.quantity ?? 0);
+  const totalValue = Number(inventoryData.total_value);
+  if (stock > 0 && Number.isFinite(totalValue) && totalValue > 0) {
+    return totalValue / stock;
+  }
+
+  const unitPrice = Number(inventoryData.unit_price);
+  if (!Number.isFinite(unitPrice) || unitPrice < 0) return null;
+  const unit = String(inventoryData.unit_type || "").toLowerCase();
+  const weightPerKaban = Number(inventoryData.weight_per_kaban || 0);
+  if (unit === "kaban" && weightPerKaban > 0) {
+    return unitPrice / weightPerKaban;
+  }
+  return unitPrice;
+}
+
+async function getMenuCapitalUnitCost(transaction, menuData) {
+  const savedCost = Number(menuData.capital_unit_cost);
+  if (Number.isFinite(savedCost) && savedCost >= 0) return savedCost;
+
+  const inventoryId = menuData.inventory_id || menuData.inventoryId;
+  if (inventoryId) {
+    const inventorySnap = await transaction.get(doc(db, "inventory", inventoryId));
+    if (inventorySnap.exists()) {
+      const cost = getInventoryCostPerBaseUnit(inventorySnap.data());
+      if (cost != null) return cost;
+    }
+  }
+
+  const legacyCost = Number(menuData.capital_price);
+  return Number.isFinite(legacyCost) && legacyCost >= 0 ? legacyCost : 0;
+}
+
+async function resolveProductCapitalUnitCost(productData) {
+  const savedCost = Number(productData.capital_unit_cost);
+  if (productData.capital_unit_cost != null && Number.isFinite(savedCost) && savedCost >= 0) {
+    return savedCost;
+  }
+
+  const menuId = productData.inventoryId || productData.inventory_id;
+  if (!menuId) return null;
+  const menuSnap = await getDoc(doc(db, "productMenu", menuId));
+  if (!menuSnap.exists()) return null;
+
+  const menuData = menuSnap.data();
+  const menuCost = Number(menuData.capital_unit_cost);
+  if (menuData.capital_unit_cost != null && Number.isFinite(menuCost) && menuCost >= 0) {
+    return menuCost;
+  }
+
+  const inventoryId = menuData.inventory_id || menuData.inventoryId;
+  if (!inventoryId) return null;
+  const inventorySnap = await getDoc(doc(db, "inventory", inventoryId));
+  return inventorySnap.exists()
+    ? getInventoryCostPerBaseUnit(inventorySnap.data())
+    : null;
+}
+
+function migrateAssignedProductCapitalCost(productId, productData) {
+  if (
+    productData.capital_unit_cost != null ||
+    !(productData.inventoryId || productData.inventory_id) ||
+    capitalCostMigrationInFlight.has(productId)
+  ) {
+    return;
+  }
+
+  capitalCostMigrationInFlight.add(productId);
+  resolveProductCapitalUnitCost(productData)
+    .then(async (cost) => {
+      if (cost == null || !Number.isFinite(cost) || cost < 0) return;
+      await updateDoc(doc(db, "products", productId), {
+        capital_price: cost,
+        capital_unit_cost: cost,
+      });
+    })
+    .catch((error) => {
+      console.error("Unable to update assigned product capital cost:", error);
+    })
+    .finally(() => capitalCostMigrationInFlight.delete(productId));
+}
+
 function updateUnitDisplay(unit) {
   const unitField = document.getElementById("productUnit");
   if (unitField) {
@@ -242,17 +328,11 @@ async function saveToProductHistory(productData, productId) {
     const price = Number(productData.price || 0);
     const totalIncome = stockValue * price;
 
-    const capitalPrice = Number(productData.capital_price || 0);
-    const unit = (productData.unit || "").toLowerCase();
-    const kgUsed = Number(productData.kg_used || 0);
-
-    let totalCapital;
-    if (unit === "kaban") {
-      const baseQty = kgUsed > 0 ? kgUsed : stockValue;
-      totalCapital = baseQty * capitalPrice;
-    } else {
-      totalCapital = stockValue * capitalPrice;
-    }
+    const resolvedCapitalCost = await resolveProductCapitalUnitCost(productData);
+    const capitalPrice = Number(
+      resolvedCapitalCost ?? productData.capital_unit_cost ?? productData.capital_price ?? 0,
+    );
+    const totalCapital = stockValue * capitalPrice;
 
     const productName =
       productData.name || productData.product_name || "Unknown";
@@ -265,6 +345,7 @@ async function saveToProductHistory(productData, productId) {
         price: price,
         total_income: totalIncome,
         capital_price: capitalPrice,
+        capital_unit_cost: capitalPrice,
         total_capital: totalCapital,
         original_stock: stockValue,
         employee_name: employeeName,
@@ -287,6 +368,7 @@ async function saveToProductHistory(productData, productId) {
       pieces_per_pack: Number(productData.pieces_per_pack || 60),
       total_income: totalIncome,
       capital_price: capitalPrice,
+      capital_unit_cost: capitalPrice,
       total_capital: totalCapital,
       status: "Completed",
       completed_at: serverTimestamp(),
@@ -957,7 +1039,7 @@ function bindProductFormListeners() {
           const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
           const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
 
-          const capitalPrice = Number(menuData.price || 0);
+          const capitalPrice = await getMenuCapitalUnitCost(transaction, menuData);
 
           let piecesPerEmployee = enteredQty;
 
@@ -1009,6 +1091,7 @@ function bindProductFormListeners() {
           }
 
           transaction.update(menuRef, {
+            capital_unit_cost: capitalPrice,
             ...(menuData.product_stock_limit == null && Number.isFinite(configuredLimit)
               ? { product_stock_limit: configuredLimit }
               : {}),
@@ -1033,6 +1116,7 @@ function bindProductFormListeners() {
 
               transaction.update(existing.ref, {
                 capital_price: capitalPrice,
+                capital_unit_cost: capitalPrice,
                 image: menuData.image_url || menuData.image || "",
                 ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
                 ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
@@ -1046,6 +1130,7 @@ function bindProductFormListeners() {
                 image: menuData.image_url || menuData.image || "",
                 ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
                 capital_price: capitalPrice,
+                capital_unit_cost: capitalPrice,
                 role: role || menuData.category || "Unknown",
                 category:
                   menuData.inv_category || menuData.category || "Unknown",
@@ -1115,7 +1200,7 @@ function bindProductFormListeners() {
         const piecesPerPack = Number(menuData.pieces_per_pack) || 1;
         const weightPerKaban = Number(menuData.weight_per_kaban) || 0;
 
-        const newCapitalPrice = Number(menuData.price || 0);
+        const newCapitalPrice = await getMenuCapitalUnitCost(transaction, menuData);
 
         let piecesToAssign = enteredQty;
 
@@ -1147,6 +1232,7 @@ function bindProductFormListeners() {
         const updatedStock = currentStock - piecesToAssign;
 
         transaction.update(menuRef, {
+          capital_unit_cost: newCapitalPrice,
           ...(menuData.product_stock_limit == null && Number.isFinite(configuredLimit)
             ? { product_stock_limit: configuredLimit }
             : {}),
@@ -1176,6 +1262,7 @@ function bindProductFormListeners() {
 
           transaction.update(existingProductRef, {
             capital_price: newCapitalPrice,
+            capital_unit_cost: newCapitalPrice,
             image: menuData.image_url || menuData.image || "",
             ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
             ...buildAssignedQuantityFields(menuData, mergedPieces, Number(oldData.kaldero_count || 0) + enteredQty),
@@ -1192,6 +1279,7 @@ function bindProductFormListeners() {
           image: menuData.image_url || menuData.image || "",
           ...(menuData.lechonPrices ? { lechonPrices: menuData.lechonPrices } : {}),
           capital_price: newCapitalPrice,
+          capital_unit_cost: newCapitalPrice,
           role: role || menuData.category || "Unknown",
           category: menuData.inv_category || menuData.category || "Unknown",
           employeeId: employeeId,
@@ -1501,18 +1589,11 @@ export async function loadProducts() {
         data.current_pieces ??
         0;
       const priceValue = Number(data.price || 0);
-      const capitalPriceValue = Number(data.capital_price || 0);
-      const kgUsedValue = Number(data.kg_used || 0);
-      const unit = (data.unit || "").toLowerCase();
-
-      // FIX: Para sa KABAN, gamitin ang kg_used sa capital computation
-      let totalCapital;
-      if (unit === "kaban") {
-        const baseQty = kgUsedValue > 0 ? kgUsedValue : piecesValue;
-        totalCapital = baseQty * capitalPriceValue;
-      } else {
-        totalCapital = piecesValue * capitalPriceValue;
-      }
+      const capitalPriceValue = Number(
+        data.capital_unit_cost ?? data.capital_price ?? 0,
+      );
+      const totalCapital = piecesValue * capitalPriceValue;
+      const unit = String(data.unit || "").toLowerCase();
 
       let packsDisplay = "-";
       let piecesDisplay = piecesValue;
@@ -1610,6 +1691,7 @@ export async function loadProducts() {
         const data = docSnap.data();
         const currentStock = Number(data.pieces ?? data.stock ?? 0);
         const productId = docSnap.id;
+        migrateAssignedProductCapitalCost(productId, data);
 
         if (currentStock === 0 && data.employeeId) {
           try {

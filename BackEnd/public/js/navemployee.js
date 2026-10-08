@@ -81,8 +81,6 @@ async function loadEmployeeProfile() {
 }
 
 async function loadSection(page) {
-  if (isNavigating) return;
-
   isNavigating = true;
 
   // Ang unang POS load ay ini-init mula sa userpanel.html, kaya wala pa itong
@@ -179,6 +177,11 @@ async function loadSection(page) {
             await posModule.initPOS();
           }
 
+          if (myToken !== currentLoadToken) {
+            posModule.stopPosPage?.();
+            return;
+          }
+
           currentCleanup =
             posModule.stopPosPage || null;
         } catch (err) {
@@ -205,6 +208,11 @@ async function loadSection(page) {
             "function"
           ) {
             await stockModule.loadstock();
+          }
+
+          if (myToken !== currentLoadToken) {
+            stockModule.stopStockPage?.();
+            return;
           }
 
           currentCleanup =
@@ -235,6 +243,11 @@ async function loadSection(page) {
             await attendanceModule.initAttendance();
           }
 
+          if (myToken !== currentLoadToken) {
+            attendanceModule.stopAttendancePage?.();
+            return;
+          }
+
           currentCleanup =
             attendanceModule.stopAttendancePage ||
             null;
@@ -251,6 +264,10 @@ async function loadSection(page) {
           const reportModule = await import("/js/report.js");
           if (myToken !== currentLoadToken) return;
           await reportModule.initReportPage?.();
+          if (myToken !== currentLoadToken) {
+            reportModule.stopReportPage?.();
+            return;
+          }
           currentCleanup = reportModule.stopReportPage || null;
         } catch (err) {
           console.error("Expense report init error:", err);

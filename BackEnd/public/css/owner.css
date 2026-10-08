@@ -718,6 +718,137 @@ html.dark .owner-manager-create-form .owner-manager-password-toggle {
 .owner-manager-action-btn .material-icons { font-size: 20px; }
 .owner-manager-action-btn:disabled { opacity: 0.6; cursor: wait; transform: none; }
 .owner-manager-no-actions { color: var(--text-muted, #777); font-size: 0.85rem; }
+
+/* The owner capital route reuses the manager expense workflow. Keep the
+   borrowed page inside the owner shell's available width at every breakpoint. */
+.owner-capital-content {
+  display: block !important;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.owner-capital-content .expenses-page {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.owner-capital-content .expense-category-row {
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+}
+
+.owner-capital-content #expense-category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  scrollbar-width: none;
+}
+
+.owner-capital-content #expense-category-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.owner-capital-content #expense-category-pills .category-pill {
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.owner-capital-content .expense-summary {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.owner-capital-content .expense-summary .summary-card {
+  min-width: 0;
+}
+
+.owner-capital-content .expenses-card,
+.owner-capital-content .expenses-card .table-container {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.owner-capital-content .expenses-card .table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.owner-sales-content,
+.owner-order-status-content {
+  display: block !important;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.owner-sales-content .sales-page,
+.owner-sales-content .sales-page-table,
+.owner-sales-content .sales-page-table .table-container,
+.owner-order-status-content .sales-page,
+.owner-order-status-content .sales-page-table,
+.owner-order-status-content .sales-page-table .table-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.owner-sales-content .sales-page-table .table-container,
+.owner-order-status-content .sales-page-table .table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.owner-sales-content .sales-page-table table,
+.owner-order-status-content .sales-page-table table {
+  min-width: 850px;
+}
+
+@media (max-width: 1100px) {
+  .owner-capital-content .expense-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .owner-capital-content .expense-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .owner-capital-content .expense-category-row {
+    margin-right: 8px;
+    margin-left: 8px;
+    max-width: calc(100% - 16px);
+  }
+
+  .owner-capital-content #expense-category-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    gap: 7px;
+  }
+
+  .owner-capital-content #expense-category-pills .category-pill {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+}
+
 .owner-manager-action-modal { max-width: 480px; border-radius: 14px; overflow: hidden; }
 .owner-manager-action-modal .modal-content { padding: 28px 30px 12px; }
 .owner-manager-action-modal .modal-content h4 { margin: 0 0 12px; color: var(--text-primary, #263238); font-size: 1.45rem; font-weight: 700; }

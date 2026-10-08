@@ -30,6 +30,8 @@ let statsTimer = null;
 let attendanceHistory = [];
 let selectedAttendanceRange = "today";
 let pendingAttendanceAction = null;
+let currentAttendanceProfile = null;
+let currentAttendanceRole = "employee";
 
 // Lifecycle tracking
 // - attendanceRoot: ang DOM element na kasalukuyang naka-bind (para malaman kung napalitan ang page)
@@ -117,25 +119,36 @@ export async function initAttendance() {
     // GET EMPLOYEE INFORMATION
     // ========================================
 
-    const employeeQuery = query(
-      collection(db, "employees"),
-      where("uid", "==", user.uid),
+    const accountRole = String(
+      (await user.getIdTokenResult()).claims.role || "employee",
+    ).toLowerCase();
+    if (token !== initToken) return;
+
+    const employeeSnapshot = await getDocs(
+      query(collection(db, "employees"), where("uid", "==", user.uid)),
     );
+    if (token !== initToken) return;
 
-    const employeeSnapshot = await getDocs(employeeQuery);
-    if (token !== initToken) return; // na-stop habang naghihintay
+    let employeeData = employeeSnapshot.docs[0]?.data() || null;
+    // Older manager accounts may have their profile only in `users`. The
+    // attendance document is keyed by Auth UID, so the employee row is not
+    // required to keep the approval listener in sync for managers.
+    if (!employeeData && accountRole === "manager") {
+      const managerSnapshot = await getDocs(
+        query(collection(db, "users"), where("uid", "==", user.uid)),
+      );
+      if (token !== initToken) return;
+      employeeData = managerSnapshot.docs[0]?.data() || null;
+    }
 
-    if (employeeSnapshot.empty) {
+    if (!employeeData) {
       console.warn("Employee record not found.", user.uid, user.email);
       showAttendanceError("Employee information not found.");
       return;
     }
 
-    const employeeData = employeeSnapshot.docs[0].data();
-    const accountRole = String(
-      (await user.getIdTokenResult()).claims.role || "employee",
-    ).toLowerCase();
-    if (token !== initToken) return;
+    currentAttendanceProfile = employeeData;
+    currentAttendanceRole = accountRole;
 
     const fname = employeeData.fname || "";
     const lname = employeeData.lname || "";
@@ -353,6 +366,8 @@ export function stopAttendancePage() {
   attendanceInitialized = false;
   currentAttendance = null;
   currentAttendanceRef = null;
+  currentAttendanceProfile = null;
+  currentAttendanceRole = "employee";
   unsubscribeAttendance?.();
   unsubscribeAttendance = null;
   clearInterval(statsTimer);
@@ -805,19 +820,9 @@ async function submitConfirmedAttendanceAction() {
     timeInButton.textContent = "Sending request...";
 
     try {
-      const employeeQuery = query(
-        collection(db, "employees"),
-        where("uid", "==", user.uid),
-      );
-      const employeeSnapshot = await getDocs(employeeQuery);
-      if (isStale()) return; // umalis na bago pa may naisulat
-      if (employeeSnapshot.empty)
-        throw new Error("Employee information not found.");
-      const employeeData = employeeSnapshot.docs[0].data();
-      const accountRole = String(
-        (await user.getIdTokenResult()).claims.role || "employee",
-      ).toLowerCase();
-      if (isStale()) return;
+      const employeeData = currentAttendanceProfile;
+      const accountRole = currentAttendanceRole;
+      if (!employeeData) throw new Error("Employee information not found.");
       const fname = employeeData.fname || "";
       const lname = employeeData.lname || "";
       const attendanceData = {

@@ -66,12 +66,13 @@ SIDEBAR
   border-right: 1px solid var(--border);
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0 auto 0 0;
   width: 260px;
   padding: 24px 20px;
   height: 100vh;
-  overflow-y: auto;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
   z-index: 100;
 }
 
@@ -90,6 +91,7 @@ SIDEBAR
 
 .sidebar .nav {
   list-style: none;
+  overflow: hidden;
 }
 
 .sidebar .nav li {
@@ -121,6 +123,52 @@ SIDEBAR
 .sidebar .nav li.active,
 .sidebar .nav li:hover {
   background: var(--sidebar-hover);
+}
+
+/* Keep every navigation link visible while the fixed sidebar itself stays still. */
+@media (max-height: 800px) {
+  .sidebar {
+    padding: 18px 16px;
+  }
+
+  .sidebar .logo {
+    font-size: 1.75rem;
+  }
+
+  .sidebar .role {
+    margin-bottom: 12px;
+    font-size: 1.2rem;
+  }
+
+  .sidebar .nav li {
+    padding: 7px 9px;
+    margin-bottom: 2px;
+  }
+}
+
+@media (max-height: 650px) {
+  .sidebar {
+    padding: 12px 12px;
+  }
+
+  .sidebar .logo {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+  }
+
+  .sidebar .role {
+    margin-bottom: 8px;
+    font-size: 1rem;
+  }
+
+  .sidebar .nav li {
+    padding: 5px 8px;
+    margin-bottom: 1px;
+  }
+
+  .sidebar .nav li i {
+    font-size: 20px;
+  }
 }
 
 #menu-toggle {
@@ -302,7 +350,6 @@ html.dark .manager-form-field-locked {
 .shift-required-notice[hidden] {
   display: none !important;
 }
-
 
 .manager-shift-status > i {
   flex: 0 0 auto;
@@ -494,13 +541,17 @@ MAIN CONTENT
   background: var(--bg-body);
   margin-left: 260px;
   width: calc(100% - 260px);
+  min-width: 0;
+  max-width: 100%;
   min-height: 100vh;
   padding: 103px 45px 40px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 #content {
   width: 100%;
+  min-width: 0;
   max-width: none;
   margin: 0;
 }
@@ -1249,24 +1300,92 @@ INVENTORY TABLE
 
 .inventory-card table {
   width: 100%;
+  min-width: 0;
+  table-layout: auto;
   border-collapse: collapse;
 }
 
+.inventory-card .table-container {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fluid column proportions — no forced pixel widths so the table fits the card */
+.inventory-card th:nth-child(1),
+.inventory-card td:nth-child(1) {
+  width: 14%;
+  min-width: 110px;
+} /* Product ID */
+.inventory-card th:nth-child(2),
+.inventory-card td:nth-child(2) {
+  width: 14%;
+  min-width: 100px;
+} /* Product Name */
+.inventory-card th:nth-child(3),
+.inventory-card td:nth-child(3) {
+  width: 9%;
+  min-width: 80px;
+} /* Category */
+.inventory-card th:nth-child(4),
+.inventory-card td:nth-child(4) {
+  width: 9%;
+  min-width: 75px;
+} /* Quantity */
+.inventory-card th:nth-child(5),
+.inventory-card td:nth-child(5) {
+  width: 9%;
+  min-width: 75px;
+} /* Total Stock */
+.inventory-card th:nth-child(6),
+.inventory-card td:nth-child(6) {
+  width: 10%;
+  min-width: 90px;
+} /* Unit Price */
+.inventory-card th:nth-child(7),
+.inventory-card td:nth-child(7) {
+  width: 10%;
+  min-width: 90px;
+} /* Total Value */
+.inventory-card th:nth-child(8),
+.inventory-card td:nth-child(8) {
+  width: 10%;
+  min-width: 95px;
+} /* Date Added */
+.inventory-card th:nth-child(9),
+.inventory-card td:nth-child(9) {
+  width: 8%;
+  min-width: 80px;
+} /* Status / extra */
+.inventory-card th:nth-child(10),
+.inventory-card td:nth-child(10) {
+  width: 7%;
+  min-width: 90px;
+} /* Actions */
+
 .inventory-card th {
-  padding: 18px;
+  padding: 12px 10px;
   text-align: left;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 0.78rem;
+  letter-spacing: 0.4px;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .inventory-card td {
-  padding: 18px;
+  padding: 12px 10px;
   border-bottom: 1px solid var(--border-soft);
   color: var(--text-primary);
+  font-size: 0.9rem;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .inventory-card tbody tr:hover {
@@ -1274,28 +1393,37 @@ INVENTORY TABLE
 }
 
 .inventory-card td:last-child {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
 .inventory-card td:last-child .btn {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
   padding: 0 !important;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  margin: 0 !important;
+  margin: 0 3px !important;
   border-radius: 8px;
 }
 
 .inventory-card td:last-child .btn i {
   margin: 0 !important;
-  font-size: 18px;
+  font-size: 17px;
+}
+
+/* Soft horizontal scroll only when the viewport is truly too narrow */
+@media (min-width: 769px) and (max-width: 1200px) {
+  .inventory-card .table-container {
+    overflow-x: auto;
+  }
+  .inventory-card table {
+    min-width: 900px;
+  }
 }
 
 /* Status Badge */
@@ -1488,16 +1616,30 @@ SEARCH CATALOG
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
   padding: 10px 0;
   border-bottom: 2px solid var(--accent);
-  margin-bottom: 5px;
+  margin-bottom: 15px;
 }
 
-.product-list-header .header-title {
+.product-list-header .header-title,
+.product-list-header h4 {
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+}
+
+.product-list-header .btn,
+.product-list-header .btn-flat {
+  font-size: 13px;
+  padding: 0 20px;
+  height: 40px;
+  line-height: 40px;
+  text-transform: none;
+  font-weight: 500;
+  border-radius: 8px;
 }
 
 /* ============================================
@@ -1588,17 +1730,24 @@ PRODUCT MENU TABLE
 ============================================ */
 #menutable {
   width: 100%;
+  min-width: 0;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 14px;
 }
 
 #menutable thead th {
-  background: var(--border-soft);
+  background: transparent !important;
+  background-color: transparent !important;
   padding: 12px 8px;
   text-align: left;
-  font-weight: 600;
-  border-bottom: 2px solid var(--border);
-  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  white-space: normal;
+  overflow-wrap: anywhere;
   color: var(--text-secondary);
 }
 
@@ -1607,6 +1756,7 @@ PRODUCT MENU TABLE
   border-bottom: 1px solid var(--border-soft);
   vertical-align: middle;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 #menutable tbody tr:hover {
@@ -1614,81 +1764,232 @@ PRODUCT MENU TABLE
 }
 
 #menutable .btn {
-  padding: 0 10px;
-  height: 30px;
-  line-height: 30px;
-  margin: 0 2px;
-  border-radius: 4px;
+  display: inline-flex !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  max-width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  margin: 0 3px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle;
+  line-height: 1 !important;
+  border-radius: 8px;
 }
 
 #menutable .btn i {
   font-size: 18px;
-  line-height: 30px;
+  line-height: 1 !important;
+  margin: 0 !important;
+  float: none !important;
+}
+
+#menutable td:last-child {
+  width: 112px;
+  min-width: 112px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#menutable td:last-child .product-menu-submit-label {
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+#menutable .delete-btn[aria-busy="true"] {
+  width: 92px !important;
+  min-width: 92px !important;
+  max-width: 92px !important;
+  gap: 5px;
 }
 
 /* ============================================
-PRODUCT TABLE (Assign Product)
+PRODUCT TABLE (Assign Product) — match Inventory
 ============================================ */
 #productTable {
   width: 100%;
+  min-width: 0;
+  table-layout: auto;
   border-collapse: collapse;
 }
 
+.product-list-card .table-container {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fluid columns like Inventory */
+#productTable th:nth-child(1),
+#productTable td:nth-child(1) {
+  width: 16%;
+  min-width: 110px;
+} /* Product Name */
+#productTable th:nth-child(2),
+#productTable td:nth-child(2) {
+  width: 10%;
+  min-width: 80px;
+} /* Price */
+#productTable th:nth-child(3),
+#productTable td:nth-child(3) {
+  width: 10%;
+  min-width: 80px;
+} /* Container */
+#productTable th:nth-child(4),
+#productTable td:nth-child(4) {
+  width: 10%;
+  min-width: 75px;
+} /* KG Used */
+#productTable th:nth-child(5),
+#productTable td:nth-child(5) {
+  width: 10%;
+  min-width: 75px;
+} /* Role */
+#productTable th:nth-child(6),
+#productTable td:nth-child(6) {
+  width: 14%;
+  min-width: 100px;
+} /* Employee */
+#productTable th:nth-child(7),
+#productTable td:nth-child(7) {
+  width: 12%;
+  min-width: 90px;
+} /* Capital */
+#productTable th:nth-child(8),
+#productTable td:nth-child(8) {
+  width: 8%;
+  min-width: 90px;
+} /* Actions */
+
 #productTable th {
-  padding: 16px 14px;
+  padding: 12px 10px;
   text-align: left;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 0.75rem;
+  letter-spacing: 0.4px;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #productTable td {
-  padding: 16px 14px;
+  padding: 12px 10px;
   border-bottom: 1px solid var(--border-soft);
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 #productTable tbody tr:hover {
   background: var(--table-hover);
 }
 
+/* Actions column — same square icon buttons as Inventory */
 #productTable td:last-child {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  align-items: center;
+  display: table-cell;
+  text-align: center;
+  vertical-align: middle;
   white-space: nowrap;
 }
 
-#productTable td:last-child .btn {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+#productTable td:last-child .btn,
+#productTable td:last-child .btn-flat,
+#productTable td:last-child button {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  max-width: 36px !important;
   padding: 0 !important;
-  margin: 0 !important;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 8px;
+  margin: 0 3px !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border-radius: 8px !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  float: none !important;
 }
 
-#productTable td:last-child .btn i {
+#productTable td:last-child .btn i,
+#productTable td:last-child .btn-flat i,
+#productTable td:last-child button i {
   margin: 0 !important;
-  font-size: 18px;
+  font-size: 17px !important;
+  line-height: 1 !important;
+}
+
+/* Delete button — clean red icon style (not big Materialize red block) */
+#productTable td:last-child .btn.red,
+#productTable td:last-child .btn-delete,
+#productTable td:last-child .delete-btn,
+#productTable td:last-child button.red {
+  background: #fff !important;
+  color: #ef4444 !important;
+  border: 1.5px solid #ef4444 !important;
+  box-shadow: none !important;
+}
+
+#productTable td:last-child .btn.red:hover,
+#productTable td:last-child .btn-delete:hover,
+#productTable td:last-child .delete-btn:hover,
+#productTable td:last-child button.red:hover {
+  background: #ef4444 !important;
+  color: #fff !important;
+  border-color: #ef4444 !important;
+}
+
+#productTable td:last-child .btn.red i,
+#productTable td:last-child .btn-delete i,
+#productTable td:last-child .delete-btn i,
+#productTable td:last-child button.red i {
+  color: inherit !important;
+}
+
+/* Edit / other action buttons */
+#productTable td:last-child .btn.blue,
+#productTable td:last-child .btn-edit,
+#productTable td:last-child .edit-btn {
+  background: #fff !important;
+  color: #2563eb !important;
+  border: 1.5px solid #2563eb !important;
+  box-shadow: none !important;
+}
+
+#productTable td:last-child .btn.blue:hover,
+#productTable td:last-child .btn-edit:hover,
+#productTable td:last-child .edit-btn:hover {
+  background: #2563eb !important;
+  color: #fff !important;
 }
 
 #productTable td:nth-child(7),
 #productTable th:nth-child(7) {
-  text-align: right;
-  padding-right: 20px;
+  text-align: left;
+  padding-right: 10px;
 }
 
 #productTable td:nth-child(7) strong {
   color: var(--accent);
+  font-weight: 700;
+}
+
+@media (min-width: 769px) and (max-width: 1100px) {
+  .product-list-card .table-container {
+    overflow-x: auto;
+  }
+  #productTable {
+    min-width: 780px;
+  }
 }
 
 /* ============================================
@@ -2600,12 +2901,17 @@ MODALS
   overflow-y: auto !important;
   border-radius: 12px !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
-  z-index: 10000 !important;
+}
+
+/* Materialize controls modal visibility and inline stacking while opening. */
+.modal:not(.open) {
+  display: none !important;
 }
 
 .modal .modal-content {
   padding: 20px 18px !important;
-  overflow-y: visible !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
 }
 
 .modal .modal-content h4 {
@@ -2624,14 +2930,15 @@ MODALS
 
 .modal .modal-footer {
   display: flex !important;
-  justify-content: flex-end !important;
+  justify-content: center !important;
   align-items: center !important;
   gap: 12px !important;
-  margin-top: 16px !important;
-  padding: 16px 0 0 !important;
+  margin-top: 0 !important;
+  padding: 12px 18px !important;
   border-top: 1px solid var(--border) !important;
   background: transparent !important;
   box-shadow: none !important;
+  margin-bottom: 0 !important;
 }
 
 .modal .modal-footer .btn,
@@ -2645,11 +2952,13 @@ MODALS
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  text-align: center !important;
   font-size: 14px !important;
   font-weight: 600 !important;
   text-transform: none !important;
   box-shadow: none !important;
   line-height: 1 !important;
+  float: none !important;
 }
 
 .modal .modal-footer .btn-flat,
@@ -3304,6 +3613,8 @@ SIDEBAR
     left: -240px;
     width: 220px;
     height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
     z-index: 2000;
     transition: left 0.3s ease;
     background: var(--bg-sidebar);
@@ -5701,20 +6012,29 @@ html.dark #modal-product-history-assign td:nth-child(6) strong {
 .modal .modal-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center !important;
   flex-wrap: wrap;
   gap: 8px;
   min-height: 64px;
   padding: 12px 18px;
 }
+
+.modal .modal-footer .btn,
+.modal .modal-footer .btn-flat,
+.modal .modal-footer .modal-close {
+  justify-content: center !important;
+  text-align: center !important;
+}
 @media screen and (max-width: 600px) {
   .modal {
     width: 94vw !important;
-    max-height: 88vh !important;
+    max-height: 90vh !important;
+    max-height: 90dvh !important;
     border-radius: 12px !important;
   }
   .modal.modal-fixed-footer {
-    height: 88vh !important;
+    height: 90vh !important;
+    height: 90dvh !important;
   }
   .modal .modal-content {
     max-height: calc(88vh - 70px);
@@ -6639,9 +6959,9 @@ html.dark .dashboard-action-counts a {
 }
 
 /* =========================================================
-   MOBILE TABLES — Card layout with data-label
-   (replaces the old force-table + horizontal-scroll rules)
-   ========================================================= */
+MOBILE TABLES — Card layout with data-label
+(replaces the old force-table + horizontal-scroll rules)
+========================================================= */
 @media (max-width: 768px) {
   /* Containers stay fluid, no sideways page scroll */
   #content .table-container,
@@ -6900,6 +7220,7 @@ html.dark .dashboard-action-counts a {
   .modal {
     width: calc(100vw - 24px) !important;
     max-width: 480px !important;
+    max-height: calc(100vh - 24px) !important;
     max-height: calc(100dvh - 24px) !important;
     top: 50% !important;
     left: 50% !important;
@@ -6912,7 +7233,9 @@ html.dark .dashboard-action-counts a {
   }
 
   .modal.modal-fixed-footer {
-    height: min(88dvh, 760px) !important;
+    height: min(90vh, 760px) !important;
+    height: min(90dvh, 760px) !important;
+    max-height: calc(100vh - 24px) !important;
     max-height: calc(100dvh - 24px) !important;
     overflow: hidden !important;
   }
@@ -6934,6 +7257,60 @@ html.dark .dashboard-action-counts a {
     flex-wrap: wrap !important;
     gap: 8px !important;
     padding: 12px 16px 16px !important;
+  }
+
+  /* Keep add/edit expense actions pinned below the scrollable modal form. */
+  .modal.modal-fixed-footer .modal-content {
+    position: absolute !important;
+    inset: 0 0 68px !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal.modal-fixed-footer .modal-footer {
+    position: absolute !important;
+    inset: auto 0 0 !important;
+    z-index: 2;
+    width: 100% !important;
+    min-height: 68px !important;
+    box-sizing: border-box !important;
+    border-top: 1px solid var(--border) !important;
+    background: var(--bg-card) !important;
+  }
+
+  /* Expense modals should wrap their fields on phones, without a tall blank area. */
+  #modal-expenses.modal.modal-fixed-footer,
+  #modal-edit.modal.modal-fixed-footer {
+    height: auto !important;
+    max-height: calc(100vh - 32px) !important;
+    max-height: calc(100dvh - 32px) !important;
+  }
+
+  #modal-expenses.modal.modal-fixed-footer .modal-content,
+  #modal-edit.modal.modal-fixed-footer .modal-content {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: calc(100vh - 150px) !important;
+    max-height: calc(100dvh - 150px) !important;
+    flex: 0 1 auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  #modal-expenses.modal.modal-fixed-footer .modal-footer,
+  #modal-edit.modal.modal-fixed-footer .modal-footer {
+    position: relative !important;
+    inset: auto !important;
+    flex: 0 0 auto !important;
+    justify-content: center !important;
+    padding: 10px 16px 14px !important;
   }
 
   .modal .modal-footer .btn,
@@ -7671,5 +8048,70 @@ html.dark #modal-add-category select.browser-default {
 
   .expenses-page #expenseTable td::before {
     flex: 0 0 34%;
+  }
+}
+
+/* Keep expense filters and summary cards inside their page width. */
+.expenses-page,
+.expenses-page .expenses-card,
+.expenses-page .expense-summary {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.expenses-page .expense-category-row {
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.expenses-page #expense-category-pills {
+  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  scrollbar-width: none;
+}
+
+.expenses-page #expense-category-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.expenses-page #expense-category-pills .category-pill {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.expenses-page .expense-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.expenses-page .expense-summary .summary-card {
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .expenses-page .expense-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .expenses-page .expense-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .expenses-page #expense-category-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+
+  .expenses-page #expense-category-pills .category-pill {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 }

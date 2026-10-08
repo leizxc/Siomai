@@ -64,9 +64,24 @@ async function getUserOffline(username) {
   const dbLocal = await openOfflineDB();
   return new Promise((resolve, reject) => {
     const tx = dbLocal.transaction("users", "readonly");
-    const req = tx.objectStore("users").get(username.toLowerCase().trim());
+    const store = tx.objectStore("users");
+    const normalizedIdentifier = username.toLowerCase().trim();
+    const req = store.get(normalizedIdentifier);
 
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      if (req.result || !normalizedIdentifier.includes("@")) {
+        resolve(req.result);
+        return;
+      }
+
+      const allUsersRequest = store.getAll();
+      allUsersRequest.onsuccess = () => resolve(
+        allUsersRequest.result.find(
+          (user) => String(user.email || "").toLowerCase() === normalizedIdentifier,
+        ),
+      );
+      allUsersRequest.onerror = () => reject("User lookup failed");
+    };
     req.onerror = () => reject("User lookup failed");
   });
 }
@@ -116,6 +131,7 @@ async function syncUsersFromFirebase() {
       if (userData.username && userData.passwordHash && userData.role && ["admin", "owner", "siomai", "pares"].includes(String(userData.role).toLowerCase())) {
         store.put({
           username: userData.username.toLowerCase().trim(),
+          email: String(userData.email || "").toLowerCase().trim(),
           passwordHash: userData.passwordHash,
           role: userData.role.toLowerCase()
         });

@@ -1,6 +1,10 @@
 // adminExpenses.js
 import { db } from "/js/firebase.js";
-import { beginButtonLoading, endButtonLoading } from "/js/buttonLoading.js?v=20261003a";
+import {
+  beginButtonLoading,
+  endButtonLoading,
+} from "/js/buttonLoading.js?v=20261008c";
+import { EXPENSE_CATEGORIES } from "/js/expenseCategories.js?v=20261008c";
 import {
   collection,
   addDoc,
@@ -13,8 +17,21 @@ import {
 
 let expenseToDelete = null;
 
+function bindExpenseModalClose(modalElem, modalInstance) {
+  if (!modalElem || !modalInstance) return;
+
+  modalElem.querySelectorAll(".modal-close").forEach((button) => {
+    button.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      modalInstance.close();
+    };
+  });
+}
+
 // PAGINATION
 const PAGE_SIZE = 10;
+const STANDARD_EXPENSE_CATEGORIES = EXPENSE_CATEGORIES;
 let currentPage = 1;
 
 // Cache ng filtered expenses
@@ -90,13 +107,30 @@ export function loadExpenses() {
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
 
+        // Employee-submitted reports represent costs already paid. Normalize
+        // existing report records as well as new submissions.
+        if (data.source === "employee_report" && data.status !== "Paid") {
+          data.status = "Paid";
+          updateDoc(doc(db, "expenses", docSnap.id), { status: "Paid" }).catch(
+            (error) => {
+              console.error(
+                "Unable to mark employee-reported expense as paid:",
+                error,
+              );
+            },
+          );
+        }
+
         const expenseDate = data.date;
 
         const amount = Number(data.amount) || 0;
 
         const matchesCategory =
           currentFilterCategory === "all" ||
-          data.category === currentFilterCategory;
+          (currentFilterCategory === "Others"
+            ? Boolean(data.category) &&
+              !STANDARD_EXPENSE_CATEGORIES.slice(0, -1).includes(data.category)
+            : data.category === currentFilterCategory);
 
         if (!matchesCategory) return;
 
@@ -169,13 +203,14 @@ function renderExpensePage() {
     const parsedExpenseDate = /^\d{4}-\d{2}-\d{2}$/.test(expenseDateValue)
       ? new Date(`${expenseDateValue}T00:00:00`)
       : null;
-    const expenseDateLabel = parsedExpenseDate && !Number.isNaN(parsedExpenseDate.getTime())
-      ? parsedExpenseDate.toLocaleDateString("en-PH", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-      : expenseDateValue;
+    const expenseDateLabel =
+      parsedExpenseDate && !Number.isNaN(parsedExpenseDate.getTime())
+        ? parsedExpenseDate.toLocaleDateString("en-PH", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })
+        : expenseDateValue;
 
     tbody.innerHTML += `
       <tr data-id="${id}">
@@ -243,6 +278,8 @@ export function stopLoadingExpenses() {
     unsubscribeExpenses();
     unsubscribeExpenses = null;
   }
+  expenseListCache = [];
+  currentPage = 1;
 }
 
 // ADD NEW EXPENSE
@@ -300,6 +337,7 @@ function bindExpenseButtons() {
         modal = M.Modal.init(modalElem);
       }
 
+      bindExpenseModalClose(modalElem, modal);
       modal.open();
     };
   });
@@ -314,10 +352,23 @@ function bindExpenseButtons() {
 
       // Fill inputs
       document.getElementById("edit-expenses-date").value =
+        row.querySelector("time.expense-date")?.getAttribute("datetime") ||
         row.children[1].textContent.trim();
 
-      document.getElementById("edit-expenses-category").value =
-        row.children[2].textContent.trim();
+      const editCategoryValue = row.children[2].textContent.trim();
+      const editCategorySelect = document.getElementById(
+        "edit-expenses-category",
+      );
+      if (
+        ![...editCategorySelect.options].some(
+          (option) => option.value === editCategoryValue,
+        )
+      ) {
+        editCategorySelect.add(
+          new Option(editCategoryValue, editCategoryValue),
+        );
+      }
+      editCategorySelect.value = editCategoryValue;
 
       document.getElementById("edit-expenses-description").value =
         row.children[3].textContent.trim();
@@ -346,6 +397,7 @@ function bindExpenseButtons() {
         modalInstance = M.Modal.init(modalElem);
       }
 
+      bindExpenseModalClose(modalElem, modalInstance);
       modalInstance.open();
 
       const saveBtn = document.getElementById("edit-save");
@@ -367,7 +419,7 @@ function bindExpenseButtons() {
 
         const newStatus = document.getElementById("edit-expenses-status").value;
 
-      if (
+        if (
           !newDate ||
           !newCategory ||
           !newDescription ||
@@ -379,8 +431,8 @@ function bindExpenseButtons() {
             classes: "red rounded",
           });
 
-        return;
-      }
+          return;
+        }
 
         if (!beginButtonLoading(saveBtn, "Updating expense...")) return;
         try {
@@ -401,7 +453,10 @@ function bindExpenseButtons() {
           });
         } catch (error) {
           console.error("Unable to update expense:", error);
-          M.toast({ html: "Failed to update expense.", classes: "red rounded" });
+          M.toast({
+            html: "Failed to update expense.",
+            classes: "red rounded",
+          });
         } finally {
           endButtonLoading(saveBtn);
         }
@@ -425,6 +480,8 @@ function initDeleteExpenseModal() {
       },
     });
   }
+
+  bindExpenseModalClose(modalElem, modal);
 
   const confirmBtn = document.getElementById("confirm-delete-expense");
 

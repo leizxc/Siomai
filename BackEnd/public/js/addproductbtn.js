@@ -7,7 +7,12 @@ import {
   where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+let productModalSession = 0;
+let productModalSelects = [];
+
 export async function initProductModal() {
+  stopProductModal();
+  const token = ++productModalSession;
   const roleSelect = document.getElementById("productRole");
   const employeeSelect = document.getElementById("productEmployee");
   const productNameSelect = document.getElementById("productName");
@@ -25,6 +30,7 @@ export async function initProductModal() {
     document.getElementById("assignPieces"),
     document.getElementById("addProductBtn"),
   ].filter(Boolean);
+  productModalSelects = [roleSelect, employeeSelect, productNameSelect];
 
   // Materialize caches a select's disabled state inside its ".select-wrapper"
   function resyncSelectWrapper(selectEl) {
@@ -49,11 +55,9 @@ export async function initProductModal() {
   }
 
   // Tumataas ito kada bagong loadEmployeesByRole() call
-  let currentRoleRequestToken = 0;
-
   //  Populate employee dropdown based on selected role
   async function loadEmployeesByRole(selectedRole) {
-    const myRoleToken = ++currentRoleRequestToken;
+    const myRoleToken = token;
 
     employeeSelect.innerHTML = `
     <option value="" selected>All ${selectedRole} Employees (Shared)</option>
@@ -65,7 +69,7 @@ export async function initProductModal() {
     const snap = await getDocs(q);
 
     // May mas bagong role request na nauna — huwag na ituloy ito.
-    if (myRoleToken !== currentRoleRequestToken) return;
+    if (myRoleToken !== productModalSession) return;
     if (!employeeSelect.isConnected) return;
 
     snap.forEach((docSnap) => {
@@ -93,4 +97,13 @@ export async function initProductModal() {
     employeeSelect.dataset.employeeChangeBound = "true";
     employeeSelect.addEventListener("change", toggleInputs);
   }
+}
+
+export function stopProductModal() {
+  productModalSession += 1;
+  productModalSelects.forEach((select) => {
+    const instance = M?.FormSelect?.getInstance(select);
+    instance?.destroy();
+  });
+  productModalSelects = [];
 }

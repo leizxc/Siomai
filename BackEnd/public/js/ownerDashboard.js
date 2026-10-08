@@ -13,6 +13,7 @@ const state = {
   employees: [],
 };
 const unsubscribers = [];
+let dashboardActive = true;
 const money = (value) =>
   `₱${Number(value || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const dateKey = (date) => {
@@ -378,6 +379,7 @@ function subscribe(name, key) {
     onSnapshot(
       collection(db, name),
       (snapshot) => {
+        if (!dashboardActive || !document.querySelector("#content.owner-dashboard")) return;
         state[key] = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -411,9 +413,12 @@ window.addEventListener("resize", drawChart);
 document.getElementById("theme-toggle")?.addEventListener("click", redrawForTheme);
 
 export function stopOwnerDashboard() {
+  if (!dashboardActive) return;
+  dashboardActive = false;
   unsubscribers.splice(0).forEach((unsubscribe) => unsubscribe());
   window.removeEventListener("resize", drawChart);
   document.getElementById("theme-toggle")?.removeEventListener("click", redrawForTheme);
+  Object.keys(state).forEach((key) => { state[key] = []; });
 }
 
 window.addEventListener("pagehide", stopOwnerDashboard, { once: true });

@@ -413,6 +413,7 @@ export function initManagerNotifications() {
       }
       hasLoadedInitialNotifications = true;
       renderNotifications(notifications);
+      window.dispatchEvent(new CustomEvent("manager:notifications-updated", { detail: notifications }));
     },
     (error) => console.error("Unable to load manager notifications:", error),
   );

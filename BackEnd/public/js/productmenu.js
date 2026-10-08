@@ -140,6 +140,24 @@ function formatQuantity(value) {
   return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2);
 }
 
+function getInventoryCostPerBaseUnit(inventory) {
+  const stock = Number(inventory.stock_quantity ?? inventory.quantity ?? 0);
+  const totalValue = Number(inventory.total_value);
+  if (stock > 0 && Number.isFinite(totalValue) && totalValue > 0) {
+    return totalValue / stock;
+  }
+
+  const unitPrice = Number(inventory.unit_price);
+  const weightPerKaban = Number(inventory.weight_per_kaban || 0);
+  if (
+    String(inventory.unit_type || "").toLowerCase() === "kaban" &&
+    weightPerKaban > 0
+  ) {
+    return unitPrice / weightPerKaban;
+  }
+  return Number.isFinite(unitPrice) && unitPrice >= 0 ? unitPrice : 0;
+}
+
 export function loadInventoryOptions(role = "") {
   const select = document.getElementById("employeeINV");
   if (!select) return;
@@ -511,6 +529,7 @@ export function addproductmenu() {
           ...quantityFields,
           unit: currentInventory.unit_type,
           weight_per_kaban: Number(currentInventory.weight_per_kaban || 0),
+          capital_unit_cost: getInventoryCostPerBaseUnit(currentInventory),
           price,
           image_url: imageURL,
           status: "Available",
@@ -813,7 +832,6 @@ export async function loadmenu() {
             ));
             const assignedUpdate = {
               price: newPrice,
-              capital_price: newPrice,
               ...(lechonPrices ? { lechonPrices } : {}),
               last_updated: serverTimestamp(),
             };
@@ -889,63 +907,42 @@ export async function loadmenu() {
     const thKgUsed = document.getElementById("th-kg-used");
     if (!thPacks || !thPieces || !thContainer) return;
 
-    const sampleUnit = (filteredData[0]?.data.unit || "").toLowerCase();
+    const units = filteredData.map(({ data }) =>
+      String(data.unit || "").toLowerCase(),
+    );
+    const visibility = {
+      stock: !units.length || units.some((unit) => unit !== "pack"),
+      packs: filteredData.some(({ data }) =>
+        ["pack", "packs"].includes(String(data.unit || "").toLowerCase()) &&
+        Number(data.packs_used) > 0,
+      ),
+      pieces: filteredData.some(({ data }) => Number(data.pieces_used) > 0),
+      containers: filteredData.some(({ data }) =>
+        ["packs", "kaban", "kilogram"].includes(String(data.unit || "").toLowerCase()) &&
+        data.kaldero_count != null,
+      ),
+      kg: filteredData.some(({ data }) =>
+        ["kaban", "kilogram", "kg"].includes(String(data.unit || "").toLowerCase()) &&
+        data.kg_used != null,
+      ),
+    };
 
-    if (sampleUnit === "pack") {
-      if (thAvailableStock) thAvailableStock.style.display = "none";
-      thPacks.style.display = "none";
-      thPieces.style.display = "";
-      thContainer.style.display = "none";
-      if (thKgUsed) thKgUsed.style.display = "none";
-      thPacks.textContent = "Packs";
-      thPieces.textContent = "Packs Used";
-    } else if (sampleUnit === "packs") {
-      if (thAvailableStock) thAvailableStock.style.display = "";
-      thPacks.style.display = "";
-      thPieces.style.display = "none";
-      thContainer.style.display = "";
-      if (thKgUsed) thKgUsed.style.display = "none";
-      thPacks.textContent = "Packs Used";
-      thContainer.textContent = "Container";
-    } else if (
-      sampleUnit === "kaban" ||
-      sampleUnit === "kilogram"
-    ) {
-      if (thAvailableStock) thAvailableStock.style.display = "";
-      thPacks.style.display = "none";
-      thPieces.style.display = "none";
-      thContainer.style.display = "";
-      thContainer.textContent = "Container";
-      if (thKgUsed) {
-        thKgUsed.style.display = "";
-        thKgUsed.textContent = "KG Used";
-      }
-    } else if (sampleUnit === "kg") {
-      if (thAvailableStock) thAvailableStock.style.display = "";
-      thPacks.style.display = "none";
-      thPieces.style.display = "none";
-      thContainer.style.display = "none";
-      if (thKgUsed) {
-        thKgUsed.style.display = "";
-        thKgUsed.textContent = "KG per Product";
-      }
-    } else if (sampleUnit === "liter") {
-      if (thAvailableStock) thAvailableStock.style.display = "";
-      thPacks.style.display = "none";
-      thPieces.style.display = "none";
-      thContainer.style.display = "none";
-      if (thKgUsed) thKgUsed.style.display = "none";
-    } else {
-      thPacks.style.display = "none";
-      thPieces.style.display = "none";
-      thContainer.style.display = "none";
-      if (thKgUsed) thKgUsed.style.display = "none";
-    }
+    if (thAvailableStock) thAvailableStock.style.display = visibility.stock ? "" : "none";
+    thPacks.style.display = visibility.packs ? "" : "none";
+    thPieces.style.display = visibility.pieces ? "" : "none";
+    thContainer.style.display = visibility.containers ? "" : "none";
+    if (thKgUsed) thKgUsed.style.display = visibility.kg ? "" : "none";
+    thPacks.textContent = "Packs Used";
+    thPieces.textContent = "Pieces Used";
+    thContainer.textContent = "Container";
+    if (thKgUsed) thKgUsed.textContent = "KG Used";
+
+    return visibility;
   }
 
   function renderMenuPage() {
     const filteredData = getFilteredData();
-    updateMenuTableHeaders(filteredData);
+    const visibleColumns = updateMenuTableHeaders(filteredData) || {};
 
     const totalRecords = filteredData.length;
     const totalPages = Math.max(1, Math.ceil(totalRecords / PAGE_SIZE));
@@ -965,7 +962,7 @@ export async function loadmenu() {
       const searchTerm = searchInput ? searchInput.value : "";
       rowsHtml = `
         <tr>
-          <td colspan="10" class="center-align grey-text" style="padding: 30px 0;">
+          <td colspan="13" class="center-align grey-text" style="padding: 30px 0;">
             <i class="material-icons" style="font-size: 48px; display: block; margin-bottom: 10px;">search</i>
             ${searchTerm ? `No products found matching "<strong>${searchTerm}</strong>"` : "No products found in this category."}
           </td>
@@ -974,6 +971,22 @@ export async function loadmenu() {
     }
 
     tbody.innerHTML = rowsHtml;
+    const columnVisibility = [
+      visibleColumns.stock,
+      visibleColumns.packs,
+      visibleColumns.pieces,
+      visibleColumns.containers,
+      visibleColumns.kg,
+    ];
+    tbody.querySelectorAll("tr").forEach((row) => {
+      if (row.cells.length === 1 && row.cells[0].colSpan > 1) return;
+      columnVisibility.forEach((isVisible, index) => {
+        const cell = row.cells[index + 6];
+        if (!cell) return;
+        if (isVisible) cell.style.removeProperty("display");
+        else cell.style.setProperty("display", "none", "important");
+      });
+    });
     bindRowButtons();
     updatePaginationControls(totalPages, totalRecords);
   }
@@ -1021,28 +1034,6 @@ export async function loadmenu() {
   }
 
   function generateRowHtml(id, data, inventoryProductId) {
-    let quantityColumns = "";
-
-    if (data.unit === "pack") {
-      quantityColumns = `
-        <td data-label="Packs" style="display: none"></td>
-        <td data-label="Packs Used">${formatQuantity(data.packs_used)}</td>
-      `;
-    } else if (data.unit === "packs") {
-      quantityColumns = `
-        <td data-label="Packs Used">${formatQuantity(data.packs_used)}</td>
-        <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
-      `;
-    } else if (data.unit === "kaban" || data.unit === "kilogram") {
-      quantityColumns = `
-        <td data-label="Container">${formatQuantity(data.kaldero_count)}</td>
-        <td data-label="KG Used">${formatQuantity(data.kg_used)}</td>
-      `;
-    } else if (data.unit === "kg") {
-      quantityColumns = `<td data-label="KG per Product">${formatQuantity(data.kg_used)}</td>`;
-    } else if (data.unit === "liter") {
-      quantityColumns = "";
-    }
     const currentStock = Number(data.current_stock ?? data.current_pieces ?? 0) || 0;
     const hasAssignedStock =
       data.assigned === true ||
@@ -1052,6 +1043,18 @@ export async function loadmenu() {
       : "Available";
     const statusClass = menuStatus.toLowerCase() === "available" ? "available" : "on-selling";
     const unit = String(data.unit || "").toLowerCase();
+    const packsUsed = ["pack", "packs"].includes(unit) && Number(data.packs_used) > 0
+      ? formatQuantity(data.packs_used)
+      : "—";
+    const piecesUsed = Number(data.pieces_used) > 0
+      ? formatQuantity(data.pieces_used)
+      : "—";
+    const containers = ["packs", "kaban", "kilogram"].includes(unit) && data.kaldero_count != null
+      ? formatQuantity(data.kaldero_count)
+      : "—";
+    const kgUsed = ["kaban", "kilogram", "kg"].includes(unit) && data.kg_used != null
+      ? formatQuantity(data.kg_used)
+      : "—";
     let availableQuantity;
     if (unit === "pack") {
       const piecesPerPack = Number(data.pieces_per_pack) || 1;
@@ -1062,7 +1065,6 @@ export async function loadmenu() {
     } else if (unit === "kg") {
       availableQuantity = `${formatQuantity(currentStock)} kg`;
     } else {
-      if (thAvailableStock) thAvailableStock.style.display = "";
       availableQuantity = `${formatQuantity(currentStock)} ${data.unit || "units"}`;
     }
     return `
@@ -1073,8 +1075,11 @@ export async function loadmenu() {
         <td data-label="Product Name">${data.product_name || "-"}</td>
         <td data-label="Category">${data.inv_category || data.category || "-"}</td>
         <td data-label="Status"><span class="status ${statusClass}">${menuStatus}</span></td>
-        <td data-label="Available Stock"${unit === "pack" ? ' style="display: none"' : ""}>${availableQuantity}</td>
-        ${quantityColumns}
+        <td data-label="Available Stock">${availableQuantity}</td>
+        <td data-label="Packs Used">${packsUsed}</td>
+        <td data-label="Pieces Used">${piecesUsed}</td>
+        <td data-label="Container">${containers}</td>
+        <td data-label="KG Used">${kgUsed}</td>
         <td data-label="Price">₱${Number(data.price || 0).toFixed(2)}</td>
         <td data-label="Action">
           <button class="edit-btn btn blue waves-effect waves-light" data-id="${id}">

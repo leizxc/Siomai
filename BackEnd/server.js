@@ -117,6 +117,7 @@ const allowedOrigins = new Set(
   [
     "https://siomai-b3afe.web.app",
     "https://siomai-b3afe.firebaseapp.com",
+    "https://revise-handsaw-only.ngrok-free.dev",
     ...(process.env.ALLOWED_ORIGINS || "").split(","),
   ]
     .map((origin) => origin.trim().replace(/\/$/, ""))

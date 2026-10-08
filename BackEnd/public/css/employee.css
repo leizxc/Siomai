@@ -4109,6 +4109,10 @@ html.dark body:has(.product-list) .main::before {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
+#reportOtherCategoryField {
+  margin-top: 12px;
+}
+
 .expense-description-label {
   display: block;
   margin-top: 16px;
@@ -6704,5 +6708,82 @@ body:has(.product-list) .categories .category {
   .cart-card th,
   .cart-card td {
     white-space: nowrap;
+  }
+}
+/* Manager attendance is loaded into the admin shell. Keep its shared sidebar
+   fixed and non-scrollable like the rest of the manager pages. */
+body.manager-attendance-view .sidebar {
+  top: 0 !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  padding: 24px 20px !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+body.manager-attendance-view .sidebar .nav {
+  overflow: hidden !important;
+}
+
+body.manager-attendance-view .sidebar .nav li a {
+  gap: 5px;
+}
+
+body.manager-attendance-view .main {
+  width: calc(100% - 260px) !important;
+  min-height: 100vh;
+  margin-left: 260px !important;
+  padding: 103px 45px 40px !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--bg-body);
+}
+
+body.manager-attendance-view .mobile-header {
+  display: flex !important;
+  position: fixed !important;
+  top: 0;
+  left: 260px;
+  right: 0;
+  width: auto;
+  height: 78px;
+  padding: 0 45px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-header);
+  z-index: 1000;
+}
+
+@media (max-height: 800px) {
+  body.manager-attendance-view .sidebar {
+    padding: 18px 16px !important;
+  }
+
+  body.manager-attendance-view .sidebar .logo {
+    font-size: 1.75rem;
+  }
+
+  body.manager-attendance-view .sidebar .role {
+    margin-bottom: 12px;
+    font-size: 1.2rem;
+  }
+
+  body.manager-attendance-view .sidebar .nav li {
+    padding: 7px 9px;
+    margin-bottom: 2px;
+  }
+}
+
+@media (max-width: 768px) {
+  body.manager-attendance-view .main {
+    width: 100% !important;
+    margin-left: 0 !important;
+    padding: 64px 0 30px !important;
+  }
+
+  body.manager-attendance-view .mobile-header {
+    left: 0;
+    width: 100%;
+    height: 56px;
+    padding: 0 12px;
   }
 }
