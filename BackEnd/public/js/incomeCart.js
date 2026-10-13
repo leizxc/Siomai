@@ -36,19 +36,25 @@ function asDate(value) {
 }
 
 function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  })[character]);
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character],
+  );
 }
 
 function getEmployeeLookup() {
   const lookup = new Map();
   employees.forEach((employee) => {
-    const displayName = `${employee.data.fname || ""} ${employee.data.lname || ""}`.trim() || "Employee";
+    const displayName =
+      `${employee.data.fname || ""} ${employee.data.lname || ""}`.trim() ||
+      "Employee";
     const canonicalId = employee.data.uid || employee.id;
     const value = { id: canonicalId, displayName };
     lookup.set(canonicalId, value);
@@ -64,10 +70,14 @@ function refreshEmployeeFilter() {
   const previousValue = select.value;
   const options = new Map();
   employees.forEach((employee) => {
-    const role = String(employee.data.role || employee.data.accountRole || "").toLowerCase();
+    const role = String(
+      employee.data.role || employee.data.accountRole || "",
+    ).toLowerCase();
     if (role === "manager" || employee.data.isManager === true) return;
     const id = employee.data.uid || employee.id;
-    const name = `${employee.data.fname || ""} ${employee.data.lname || ""}`.trim() || "Employee";
+    const name =
+      `${employee.data.fname || ""} ${employee.data.lname || ""}`.trim() ||
+      "Employee";
     options.set(id, name);
   });
 
@@ -79,8 +89,10 @@ function refreshEmployeeFilter() {
 }
 
 function getOrderEmployeeKey(order) {
-  const explicitKey = order.employeeUid || order.employee || order.employeeId || order.userId;
-  if (explicitKey && explicitKey !== "guest") return explicitKey;//   Older checkout records did not save the employee UID. Infer the seller only when all specifically assigned products in that cart belong to one employee; shared products are intentionally ignored here.
+  const explicitKey =
+    order.employeeUid || order.employee || order.employeeId || order.userId;
+  if (explicitKey && explicitKey !== "guest") return explicitKey;
+  //   Older checkout records did not save the employee UID. Infer the seller only when all specifically assigned products in that cart belong to one employee; shared products are intentionally ignored here.
   const assignedOwners = new Set();
   (Array.isArray(order.items) ? order.items : []).forEach((item) => {
     const productId = item.id || item.productId;
@@ -91,7 +103,8 @@ function getOrderEmployeeKey(order) {
 }
 
 function getOrderTotal(order) {
-  if (!Array.isArray(order.items)) return Number(order.total || order.total_amount || 0);
+  if (!Array.isArray(order.items))
+    return Number(order.total || order.total_amount || 0);
   return order.items.reduce((sum, item) => {
     const quantity = Number(item.qty ?? item.quantity) || 0;
     const price = Number(item.price ?? item.unit_price) || 0;
@@ -123,7 +136,11 @@ function renderIncome() {
       employeeKey: getOrderEmployeeKey(order),
       total: getOrderTotal(order),
     }))
-    .filter((order) => String(order.status || "paid").toLowerCase() === "paid" && order.createdAt);
+    .filter(
+      (order) =>
+        String(order.status || "paid").toLowerCase() === "paid" &&
+        order.createdAt,
+    );
 
   // An employee's income is reportable only after their shift has been timed out.
   const completedShifts = attendanceRecords
@@ -131,18 +148,22 @@ function renderIncome() {
       const data = record.data;
       const start = asDate(data.clockedInAt);
       const end = asDate(data.clockedOutAt);
-      const attendanceDate = data.attendanceDate || (start ? localDateKey(start) : "");
+      const attendanceDate =
+        data.attendanceDate || (start ? localDateKey(start) : "");
       const employee = employeeLookup.get(data.userId) || {
         id: data.userId || "",
-        displayName: `${data.fname || ""} ${data.lname || ""}`.trim() || "Unknown Employee",
+        displayName:
+          `${data.fname || ""} ${data.lname || ""}`.trim() ||
+          "Unknown Employee",
       };
       return { ...record, data, start, end, attendanceDate, employee };
     })
-    .filter((shift) =>
-      shift.data.status === "completed" &&
-      shift.end &&
-      shift.attendanceDate === selectedDate &&
-      (!selectedEmployee || shift.employee.id === selectedEmployee),
+    .filter(
+      (shift) =>
+        shift.data.status === "completed" &&
+        shift.end &&
+        shift.attendanceDate === selectedDate &&
+        (!selectedEmployee || shift.employee.id === selectedEmployee),
     );
 
   const employeeTotals = new Map();
@@ -167,11 +188,10 @@ function renderIncome() {
       const orderDate = localDateKey(order.createdAt);
       const insideShift =
         orderDate === shift.attendanceDate ||
-        (shift.start && order.createdAt >= shift.start && order.createdAt <= shift.end);
-      if (
-        orderEmployeeId === employeeId &&
-        insideShift
-      ) {
+        (shift.start &&
+          order.createdAt >= shift.start &&
+          order.createdAt <= shift.end);
+      if (orderEmployeeId === employeeId && insideShift) {
         total.carts++;
         total.income += order.total;
       }
@@ -192,22 +212,25 @@ function renderIncome() {
   if (cartCountEl) cartCountEl.textContent = String(totalCarts);
 
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="center-align">No completed time-outs found for these filters.</td></tr>';
+    tbody.innerHTML =
+      '<tr><td colspan="4" class="center-align">No completed time-outs found for these filters.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = rows.map((row) => {
-    const shiftSummary = row.shifts
-      .sort((a, b) => (a.start?.getTime() || 0) - (b.start?.getTime() || 0))
-      .map((shift) => `${formatTime(shift.start)}–${formatTime(shift.end)}`)
-      .join(", ");
-    return `<tr>
+  tbody.innerHTML = rows
+    .map((row) => {
+      const shiftSummary = row.shifts
+        .sort((a, b) => (a.start?.getTime() || 0) - (b.start?.getTime() || 0))
+        .map((shift) => `${formatTime(shift.start)}–${formatTime(shift.end)}`)
+        .join(", ");
+      return `<tr>
       <td data-label="Employee">${escapeHtml(row.employeeName)}</td>
       <td data-label="Completed Shifts">${escapeHtml(shiftSummary)}</td>
       <td data-label="Paid Carts">${row.carts}</td>
       <td data-label="Total Income"><strong>${currency.format(row.income)}</strong></td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 }
 
 export function initIncomeCart() {
@@ -220,28 +243,50 @@ export function initIncomeCart() {
   dateFilter.onchange = renderIncome;
   employeeFilter.onchange = renderIncome;
 
-  unsubscribeEmployees = onSnapshot(collection(db, "employees"), (snapshot) => {
-    employees = snapshot.docs.map((item) => ({ id: item.id, data: item.data() }));
-    refreshEmployeeFilter();
-    renderIncome();
-  }, (error) => console.error("Unable to load income employees:", error));
+  unsubscribeEmployees = onSnapshot(
+    collection(db, "employees"),
+    (snapshot) => {
+      employees = snapshot.docs.map((item) => ({
+        id: item.id,
+        data: item.data(),
+      }));
+      refreshEmployeeFilter();
+      renderIncome();
+    },
+    (error) => console.error("Unable to load income employees:", error),
+  );
 
-  unsubscribeOrders = onSnapshot(collection(db, "orders"), (snapshot) => {
-    orders = snapshot.docs.map((item) => ({ ...item.data(), id: item.id }));
-    renderIncome();
-  }, (error) => console.error("Unable to load income orders:", error));
+  unsubscribeOrders = onSnapshot(
+    collection(db, "orders"),
+    (snapshot) => {
+      orders = snapshot.docs.map((item) => ({ ...item.data(), id: item.id }));
+      renderIncome();
+    },
+    (error) => console.error("Unable to load income orders:", error),
+  );
 
-  unsubscribeAttendance = onSnapshot(collection(db, "attendance"), (snapshot) => {
-    attendanceRecords = snapshot.docs.map((item) => ({ id: item.id, data: item.data() }));
-    renderIncome();
-  }, (error) => console.error("Unable to load income attendance:", error));
+  unsubscribeAttendance = onSnapshot(
+    collection(db, "attendance"),
+    (snapshot) => {
+      attendanceRecords = snapshot.docs.map((item) => ({
+        id: item.id,
+        data: item.data(),
+      }));
+      renderIncome();
+    },
+    (error) => console.error("Unable to load income attendance:", error),
+  );
 
-  unsubscribeProducts = onSnapshot(collection(db, "products"), (snapshot) => {
-    productOwners = new Map(
-      snapshot.docs.map((item) => [item.id, item.data().employeeId || ""]),
-    );
-    renderIncome();
-  }, (error) => console.error("Unable to load income product ownership:", error));
+  unsubscribeProducts = onSnapshot(
+    collection(db, "products"),
+    (snapshot) => {
+      productOwners = new Map(
+        snapshot.docs.map((item) => [item.id, item.data().employeeId || ""]),
+      );
+      renderIncome();
+    },
+    (error) => console.error("Unable to load income product ownership:", error),
+  );
 }
 
 export function cleanupIncomeCart() {

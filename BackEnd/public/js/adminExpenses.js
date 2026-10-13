@@ -38,16 +38,9 @@ let currentPage = 1;
 let expenseListCache = [];
 
 // FILTERS
-const filterDateInput = document.getElementById("filter-date");
-
+let filterDateInput = null;
 let currentFilterDate = "";
 let currentFilterCategory = "all";
-
-filterDateInput?.addEventListener("change", () => {
-  currentFilterDate = filterDateInput.value;
-  currentPage = 1;
-  loadExpenses();
-});
 
 export function setExpenseCategoryFilter(category) {
   currentFilterCategory = category || "all";
@@ -67,6 +60,18 @@ function reinitSelect(selectEl) {
 let unsubscribeExpenses = null;
 
 export function loadExpenses() {
+  // These pages are injected into the SPA shell. Rebind the current date
+  // input each time the section is opened; the old node is detached on nav.
+  filterDateInput = document.getElementById("filter-date");
+  if (filterDateInput) {
+    filterDateInput.value = currentFilterDate;
+    filterDateInput.onchange = () => {
+      currentFilterDate = filterDateInput?.value || "";
+      currentPage = 1;
+      loadExpenses();
+    };
+  }
+
   if (unsubscribeExpenses) {
     unsubscribeExpenses();
     unsubscribeExpenses = null;
@@ -94,8 +99,7 @@ export function loadExpenses() {
       let totalMonth = 0;
 
       const daysWithExpenses = new Set();//   Kung may napiling date sa filter, iyon ang gagamitin. Kung wala, current date ang default.
-      const selectedDate =
-        currentFilterDate || new Date().toISOString().split("T")[0];
+      const selectedDate = currentFilterDate || getLocalDateKey();
 
       const currentMonth = selectedDate.slice(0, 7);
 
@@ -160,9 +164,24 @@ export function loadExpenses() {
       // Render current page
       renderExpensePage();
     },
+    (error) => {
+      console.error("Unable to load expenses:", error);
+      const tbody = document.getElementById("expenses-table-body");
+      if (tbody) {
+        tbody.innerHTML =
+          '<tr><td colspan="7">Unable to load expenses. Check your connection and account access, then reload.</td></tr>';
+      }
+    },
   );
 
   return unsubscribeExpenses;
+}
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 // RENDER CURRENT PAGE

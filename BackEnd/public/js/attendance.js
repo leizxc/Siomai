@@ -31,7 +31,8 @@ let attendanceHistory = [];
 let selectedAttendanceRange = "today";
 let pendingAttendanceAction = null;
 let currentAttendanceProfile = null;
-let currentAttendanceRole = "employee";//   Lifecycle tracking - attendanceRoot: ang DOM element na kasalukuyang naka-bind (para malaman kung napalitan ang page) - attendanceModalEl: reference sa confirmation modal ng page na ito. Kinukuha ito sa init dahil kapag tinawag na ang stopAttendancePage, natanggal na ang page sa DOM at hindi na mahahanap ng document.querySelector ang modal para linisin. - rootObserver: awtomatikong nag-stop kapag nawala sa DOM ang page - initToken: pang-cancel ng mga async na gawain na natapos pagkatapos mag-stop
+let currentAttendanceRole = "employee";
+//   Lifecycle tracking - attendanceRoot: ang DOM element na kasalukuyang naka-bind (para malaman kung napalitan ang page) - attendanceModalEl: reference sa confirmation modal ng page na ito. Kinukuha ito sa init dahil kapag tinawag na ang stopAttendancePage, natanggal na ang page sa DOM at hindi na mahahanap ng document.querySelector ang modal para linisin. - rootObserver: awtomatikong nag-stop kapag nawala sa DOM ang page - initToken: pang-cancel ng mga async na gawain na natapos pagkatapos mag-stop
 let attendanceRoot = null;
 let attendanceModalEl = null;
 let rootObserver = null;
@@ -39,14 +40,16 @@ let initToken = 0;
 
 function getAttendanceRoot() {
   return document.querySelector("#time-in-button");
-}//   Scoped na query: kapag stopped na o natanggal na ang attendance page, null (o walang laman) ang ibabalik para hindi makasulat ang mga late na async callback sa DOM ng ibang section na may kaparehong selector.
+}
+//   Scoped na query: kapag stopped na o natanggal na ang attendance page, null (o walang laman) ang ibabalik para hindi makasulat ang mga late na async callback sa DOM ng ibang section na may kaparehong selector.
 function qs(selector) {
   return attendanceRoot?.isConnected ? document.querySelector(selector) : null;
 }
 
 function qsa(selector) {
   return attendanceRoot?.isConnected ? document.querySelectorAll(selector) : [];
-}//   Kapag inalis sa DOM ang attendance page (lumipat ng ibang content), awtomatikong tatawagin ang stopAttendancePage kahit hindi ito tawagin ng navigation.
+}
+//   Kapag inalis sa DOM ang attendance page (lumipat ng ibang content), awtomatikong tatawagin ang stopAttendancePage kahit hindi ito tawagin ng navigation.
 function watchRootRemoval(root) {
   rootObserver?.disconnect();
   const container = document.querySelector("#content") || document.body;
@@ -61,7 +64,8 @@ function watchRootRemoval(root) {
 // INITIALIZE ATTENDANCE
 export async function initAttendance() {
   const root = getAttendanceRoot();
-  if (!root) return;//   Kung initialized na at pareho pa ang DOM, huwag nang ulitin. Kung ibang DOM na ang nasa page, i-stop muna ang luma at mag-init ulit.
+  if (!root) return;
+  //   Kung initialized na at pareho pa ang DOM, huwag nang ulitin. Kung ibang DOM na ang nasa page, i-stop muna ang luma at mag-init ulit.
   if (attendanceInitialized) {
     if (attendanceRoot === root) return;
     stopAttendancePage();
@@ -105,7 +109,8 @@ export async function initAttendance() {
     );
     if (token !== initToken) return;
 
-    let employeeData = employeeSnapshot.docs[0]?.data() || null;//  Older manager accounts may have their profile only in `users`. The attendance document is keyed by Auth UID, so the employee row is not required to keep the approval listener in sync for managers.
+    let employeeData = employeeSnapshot.docs[0]?.data() || null;
+    //  Older manager accounts may have their profile only in `users`. The attendance document is keyed by Auth UID, so the employee row is not required to keep the approval listener in sync for managers.
     if (!employeeData && accountRole === "manager") {
       const managerSnapshot = await getDocs(
         query(collection(db, "users"), where("uid", "==", user.uid)),
@@ -157,7 +162,8 @@ function getYesterdayDate() {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   return toDateKey(d);
-}//   Hanapin muna kung may bukas na shift kahapon (tumawid ng hatinggabi). Kung wala, gamitin ang dokumento ng ngayon.
+}
+//   Hanapin muna kung may bukas na shift kahapon (tumawid ng hatinggabi). Kung wala, gamitin ang dokumento ng ngayon.
 async function resolveShiftRef(user) {
   const today = getTodayDate();
   const yesterday = getYesterdayDate();
@@ -265,7 +271,8 @@ function displayAttendance(attendance) {
       </div>
     </div>
   `;
-}//   EMPTY / ERROR STATE Gamitin lang kapag NAPATUNAYAN na walang record (ready na mag-time in).
+}
+//   EMPTY / ERROR STATE Gamitin lang kapag NAPATUNAYAN na walang record (ready na mag-time in).
 function showNoAttendance(message) {
   updateTodayStatus(
     "Ready to time in",
@@ -324,7 +331,8 @@ export function stopAttendancePage() {
   unsubscribeAttendance = null;
   clearInterval(statsTimer);
   statsTimer = null;
-  attendanceHistory = [];//   i-destroy ang confirmation modal para walang maiwang overlay at hindi ma-stuck ang overflow ng body kapag napalitan ang section. Gamit ang naka-save na reference dahil natanggal na ang page sa DOM.
+  attendanceHistory = [];
+  //   i-destroy ang confirmation modal para walang maiwang overlay at hindi ma-stuck ang overflow ng body kapag napalitan ang section. Gamit ang naka-save na reference dahil natanggal na ang page sa DOM.
   closeAttendanceConfirmation({ destroy: true });
 
   attendanceRoot = null;
@@ -421,7 +429,8 @@ async function loadAttendanceStats(userId, token = initToken) {
   try {
     const snapshot = await getDocs(
       query(collection(db, "attendance"), where("userId", "==", userId)),
-    );//  kung na-stop o napalitan na ang page habang naghihintay, huwag nang mag-render at huwag nang magsimula ng bagong timer.
+    );
+    //  kung na-stop o napalitan na ang page habang naghihintay, huwag nang mag-render at huwag nang magsimula ng bagong timer.
     if (token !== initToken) return;
     attendanceHistory = snapshot.docs.map((item) => item.data());
     renderAttendanceStats();
@@ -632,7 +641,8 @@ function watchAttendance(attendanceRef, context) {
           loadAttendanceStats(context.user.uid, token);
         }
         return;
-      }//   "Walang dokumento" na galing lang sa cache ay hindi pa kumpirmado. Huwag buksan ang time-in hangga't hindi sigurado.
+      }
+      //   "Walang dokumento" na galing lang sa cache ay hindi pa kumpirmado. Huwag buksan ang time-in hangga't hindi sigurado.
       if (snapshot.metadata.fromCache) {
         updateTodayStatus(
           "Checking attendance",
@@ -675,7 +685,8 @@ function showTimeInButton({ attendanceRef, user, fname, lname, today }) {
 }
 
 // CONFIRMATION MODAL
-function getAttendanceModal() {//  Unahin ang naka-save na reference; kung wala (hal. hindi pa nahanap sa init), hanapin sa DOM pero kung buhay pa ang page lang.
+function getAttendanceModal() {
+  //  Unahin ang naka-save na reference; kung wala (hal. hindi pa nahanap sa init), hanapin sa DOM pero kung buhay pa ang page lang.
   if (attendanceModalEl) return attendanceModalEl;
   attendanceModalEl = qs("#attendance-confirmation");
   return attendanceModalEl;
@@ -697,18 +708,21 @@ function openAttendanceConfirmation(action) {
     : "Are you sure you want to submit your time-in request?";
   confirmButton.textContent = isTimeOut ? "Yes, Time Out" : "Yes, Time In";
 
-  const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);//  Kapag isinara sa ibang paraan (overlay click, Esc ng Materialize), i-reset din ang pending action para hindi ma-stuck. May guard kung nabuksan ulit habang tumatakbo ang closing animation.
+  const instance = M.Modal.getInstance(modal) || M.Modal.init(modal);
+  //  Kapag isinara sa ibang paraan (overlay click, Esc ng Materialize), i-reset din ang pending action para hindi ma-stuck. May guard kung nabuksan ulit habang tumatakbo ang closing animation.
   instance.options.onCloseEnd = () => {
     if (!M.Modal.getInstance(modal)?.isOpen) pendingAttendanceAction = null;
   };
   instance.open();
 }
 
-function closeAttendanceConfirmation({ destroy = false } = {}) {//  Gamit ang reference, hindi document.querySelector, dahil maaaring natanggal na ang modal sa DOM kapag tinawag ito ng stopAttendancePage.
+function closeAttendanceConfirmation({ destroy = false } = {}) {
+  //  Gamit ang reference, hindi document.querySelector, dahil maaaring natanggal na ang modal sa DOM kapag tinawag ito ng stopAttendancePage.
   const modal =
     attendanceModalEl || document.querySelector("#attendance-confirmation");
   const instance = modal && M.Modal.getInstance(modal);
-  if (instance?.isOpen) instance.close();//   kapag aalis na sa page, i-destroy ang instance at linisin ang naiwang overlay/overflow (pero huwag galawin kung may ibang modal na bukas, hal. ang notification o low-stock modal).
+  if (instance?.isOpen) instance.close();
+  //   kapag aalis na sa page, i-destroy ang instance at linisin ang naiwang overlay/overflow (pero huwag galawin kung may ibang modal na bukas, hal. ang notification o low-stock modal).
   if (destroy) {
     if (instance) {
       try {
@@ -766,7 +780,8 @@ async function submitConfirmedAttendanceAction() {
         attendanceDate: getTodayDate(),
         requestedAt: serverTimestamp(),
         createdAt: serverTimestamp(),
-      };//   Huwag mag-time in kung may bukas na shift (hal. kahapon), at huwag mag-overwrite ng kahit anong existing na record.
+      };
+      //   Huwag mag-time in kung may bukas na shift (hal. kahapon), at huwag mag-overwrite ng kahit anong existing na record.
       const open = await resolveShiftRef(user);
       if (isStale()) return;
       if (open.ref.id !== attendanceRef.id)
@@ -775,7 +790,8 @@ async function submitConfirmedAttendanceAction() {
         const existing = await tx.get(attendanceRef);
         if (existing.exists()) throw new Error("SHIFT_ALREADY_EXISTS");
         tx.set(attendanceRef, attendanceData);
-      });//   Naisulat na ang request, kaya ipadala pa rin ang notification kahit lumipat na ng section ang employee.
+      });
+      //   Naisulat na ang request, kaya ipadala pa rin ang notification kahit lumipat na ng section ang employee.
       await setDoc(
         doc(db, "managerNotifications", `time-in-${attendanceRef.id}`),
         {
@@ -817,7 +833,8 @@ async function submitConfirmedAttendanceAction() {
     return;
   }
 
-  if (currentAttendance?.status !== "active" || !currentAttendanceRef) return;//   Kunin bago ang await — nagiging null ang mga ito kapag tinawag ang stopAttendancePage habang naghihintay.
+  if (currentAttendance?.status !== "active" || !currentAttendanceRef) return;
+  //   Kunin bago ang await — nagiging null ang mga ito kapag tinawag ang stopAttendancePage habang naghihintay.
   const attendanceRef = currentAttendanceRef;
   const attendance = currentAttendance;
   const userId = auth.currentUser?.uid || "";
@@ -918,7 +935,8 @@ function setTimeInButtonActive() {
 if (!window.__attendanceDocListenersBound) {
   window.__attendanceDocListenersBound = true;
 
-  document.addEventListener("click", (event) => {//  Walang gagawin kung wala sa attendance page. Pinipigilan nito na masalo ang click ng ibang modal na may kaparehong attribute/ID.
+  document.addEventListener("click", (event) => {
+    //  Walang gagawin kung wala sa attendance page. Pinipigilan nito na masalo ang click ng ibang modal na may kaparehong attribute/ID.
     if (!attendanceRoot?.isConnected) return;
 
     // Cancel: sa loob lang ng attendance modal.

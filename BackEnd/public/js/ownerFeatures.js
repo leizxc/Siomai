@@ -385,9 +385,13 @@ function attendanceDate(item) {
 function renderAttendance() {
   const isManagerAttendance = view === "owner-manager-attendance";
   const records = state.attendance
-    .filter((item) => view === "owner-manager-attendance"
-      ? String(item.accountRole || item.role || "employee").toLowerCase() === "manager"
-      : String(item.accountRole || item.role || "employee").toLowerCase() !== "manager")
+    .filter((item) =>
+      view === "owner-manager-attendance"
+        ? String(item.accountRole || item.role || "employee").toLowerCase() ===
+          "manager"
+        : String(item.accountRole || item.role || "employee").toLowerCase() !==
+          "manager",
+    )
     .filter((item) => !filters.date || attendanceDate(item) === filters.date)
     .sort(
       (a, b) =>
@@ -408,42 +412,64 @@ function renderAttendance() {
   );
   if (isManagerAttendance) {
     records.forEach((item, index) => {
-      const action = item.status === "pending"
-        ? `<button class="btn green owner-approve-manager-time-in" data-id="${esc(item.id)}">Confirm Time In</button>`
-        : item.status === "time_out_pending"
-          ? `<button class="btn orange owner-approve-manager-time-out" data-id="${esc(item.id)}">Confirm Time Out</button>`
-          : "—";
-      rows[index] = rows[index].replace(
-        "</tr>",
-        `<td>${action}</td></tr>`,
-      );
+      const action =
+        item.status === "pending"
+          ? `<button class="btn green owner-approve-manager-time-in" data-id="${esc(item.id)}">Confirm Time In</button>`
+          : item.status === "time_out_pending"
+            ? `<button class="btn orange owner-approve-manager-time-out" data-id="${esc(item.id)}">Confirm Time Out</button>`
+            : "—";
+      rows[index] = rows[index].replace("</tr>", `<td>${action}</td></tr>`);
     });
   }
   shell(
-    view === "owner-manager-attendance" ? "Manager Attendance Status" : "Employee Attendance Status",
+    view === "owner-manager-attendance"
+      ? "Manager Attendance Status"
+      : "Employee Attendance Status",
     view === "owner-manager-attendance"
       ? "Live manager time-in / time-out records and current shift status."
       : "Live employee time-in / time-out records and current shift status.",
     '<label>Date<input type="date" data-owner-filter="date"></label>',
     `${kpis([
-      [view === "owner-manager-attendance" ? "MANAGERS" : "EMPLOYEES", records.length, "Attendance records", "groups"],
+      [
+        view === "owner-manager-attendance" ? "MANAGERS" : "EMPLOYEES",
+        records.length,
+        "Attendance records",
+        "groups",
+      ],
       ["ACTIVE", active, "Currently clocked in", "login"],
-      ["PENDING", pending, isManagerAttendance ? "Awaiting owner confirmation" : "Awaiting manager review", "schedule"],
+      [
+        "PENDING",
+        pending,
+        isManagerAttendance
+          ? "Awaiting owner confirmation"
+          : "Awaiting manager review",
+        "schedule",
+      ],
     ])}${tableCard(isManagerAttendance ? "Manager attendance requests" : "Attendance overview", ["Employee", "Email", "Status", "Time in", "Time out", "Notes", ...(isManagerAttendance ? ["Owner confirmation"] : [])], rows, "No attendance records for this date.")}`,
   );
   if (isManagerAttendance) {
-    root?.querySelectorAll(".owner-approve-manager-time-in").forEach((button) => {
-      button.onclick = () => confirmManagerAttendance(button.dataset.id, "time-in", button);
-    });
-    root?.querySelectorAll(".owner-approve-manager-time-out").forEach((button) => {
-      button.onclick = () => confirmManagerAttendance(button.dataset.id, "time-out", button);
-    });
+    root
+      ?.querySelectorAll(".owner-approve-manager-time-in")
+      .forEach((button) => {
+        button.onclick = () =>
+          confirmManagerAttendance(button.dataset.id, "time-in", button);
+      });
+    root
+      ?.querySelectorAll(".owner-approve-manager-time-out")
+      .forEach((button) => {
+        button.onclick = () =>
+          confirmManagerAttendance(button.dataset.id, "time-out", button);
+      });
   }
 }
 
 async function confirmManagerAttendance(id, action, button) {
   const record = state.attendance.find((item) => item.id === id);
-  if (!record || String(record.accountRole || record.role || "").toLowerCase() !== "manager") return;
+  if (
+    !record ||
+    String(record.accountRole || record.role || "").toLowerCase() !== "manager"
+  )
+    return;
   button.disabled = true;
   button.textContent = "Confirming...";
   const isTimeIn = action === "time-in";
@@ -452,24 +478,39 @@ async function confirmManagerAttendance(id, action, button) {
       status: isTimeIn ? "active" : "completed",
       type: isTimeIn ? "clocked_in" : "clocked_out",
       ...(isTimeIn
-        ? { clockedInAt: serverTimestamp(), approvedAt: serverTimestamp(), approvedBy: "owner" }
-        : { clockedOutAt: serverTimestamp(), timeOutApprovedAt: serverTimestamp(), timeOutApprovedBy: "owner" }),
+        ? {
+            clockedInAt: serverTimestamp(),
+            approvedAt: serverTimestamp(),
+            approvedBy: "owner",
+          }
+        : {
+            clockedOutAt: serverTimestamp(),
+            timeOutApprovedAt: serverTimestamp(),
+            timeOutApprovedBy: "owner",
+          }),
     });
-    await setDoc(doc(db, "employeeNotifications", `owner-${action}-approved-${id}`), {
-      type: isTimeIn ? "time_in_approved" : "time_out_approved",
-      attendanceId: id,
-      userId: record.userId,
-      title: isTimeIn ? "Time-in approved" : "Time-out approved",
-      message: `The owner approved your time-${isTimeIn ? "in" : "out"} request.`,
-      read: false,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    await setDoc(
+      doc(db, "employeeNotifications", `owner-${action}-approved-${id}`),
+      {
+        type: isTimeIn ? "time_in_approved" : "time_out_approved",
+        attendanceId: id,
+        userId: record.userId,
+        title: isTimeIn ? "Time-in approved" : "Time-out approved",
+        message: `The owner approved your time-${isTimeIn ? "in" : "out"} request.`,
+        read: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+    );
   } catch (error) {
     console.error("Unable to confirm manager attendance:", error);
     button.disabled = false;
     button.textContent = isTimeIn ? "Confirm Time In" : "Confirm Time Out";
-    if (typeof M !== "undefined") M.toast({ html: "Unable to confirm this attendance request.", classes: "red rounded" });
+    if (typeof M !== "undefined")
+      M.toast({
+        html: "Unable to confirm this attendance request.",
+        classes: "red rounded",
+      });
   }
 }
 
@@ -478,17 +519,27 @@ function renderManagers() {
   const priorValues = priorForm
     ? Object.fromEntries(new FormData(priorForm).entries())
     : null;
-  const employeeManagers = state.employees.filter((employee) =>
-    String(employee.role || "").toLowerCase() === "manager" || employee.isManager === true,
+  const employeeManagers = state.employees.filter(
+    (employee) =>
+      String(employee.role || "").toLowerCase() === "manager" ||
+      employee.isManager === true,
   );
   const managerAccounts = state.users.filter(
     (account) => String(account.role || "").toLowerCase() === "manager",
   );
-  const byEmail = new Map(employeeManagers.map((employee) => [String(employee.email || "").toLowerCase(), employee]));
+  const byEmail = new Map(
+    employeeManagers.map((employee) => [
+      String(employee.email || "").toLowerCase(),
+      employee,
+    ]),
+  );
   const managersByEmail = new Map();
   managerAccounts.forEach((account) => {
     const email = String(account.email || "").toLowerCase();
-    managersByEmail.set(email || account.id, { ...byEmail.get(email), ...account });
+    managersByEmail.set(email || account.id, {
+      ...byEmail.get(email),
+      ...account,
+    });
   });
   employeeManagers.forEach((employee) => {
     const email = String(employee.email || "").toLowerCase();
@@ -634,31 +685,59 @@ export function initOwnerFeature(feature) {
     root.addEventListener("click", (event) => {
       const toggle = event.target.closest(".owner-manager-password-toggle");
       if (!toggle) return;
-      const input = toggle.closest(".owner-manager-password-field")?.querySelector("input");
+      const input = toggle
+        .closest(".owner-manager-password-field")
+        ?.querySelector("input");
       if (!input) return;
       const visible = input.type === "password";
       input.type = visible ? "text" : "password";
-      toggle.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+      toggle.setAttribute(
+        "aria-label",
+        visible ? "Hide password" : "Show password",
+      );
       toggle.setAttribute("aria-pressed", String(visible));
-      toggle.querySelector(".material-icons").textContent = visible ? "visibility_off" : "visibility";
+      toggle.querySelector(".material-icons").textContent = visible
+        ? "visibility_off"
+        : "visibility";
     });
     let pendingManagerAction = null;
-    const passwordModalElement = document.getElementById("owner-manager-password-modal");
-    const deleteModalElement = document.getElementById("owner-manager-delete-modal");
-    const passwordModal = passwordModalElement && typeof M !== "undefined" ? M.Modal.init(passwordModalElement) : null;
-    const deleteModal = deleteModalElement && typeof M !== "undefined" ? M.Modal.init(deleteModalElement) : null;
+    const passwordModalElement = document.getElementById(
+      "owner-manager-password-modal",
+    );
+    const deleteModalElement = document.getElementById(
+      "owner-manager-delete-modal",
+    );
+    const passwordModal =
+      passwordModalElement && typeof M !== "undefined"
+        ? M.Modal.init(passwordModalElement)
+        : null;
+    const deleteModal =
+      deleteModalElement && typeof M !== "undefined"
+        ? M.Modal.init(deleteModalElement)
+        : null;
     const passwordInput = document.getElementById("owner-manager-new-password");
     const firstNameInput = document.getElementById("owner-manager-edit-fname");
     const lastNameInput = document.getElementById("owner-manager-edit-lname");
-    document.querySelector(".owner-manager-edit-toggle")?.addEventListener("click", (event) => {
-      const toggle = event.currentTarget;
-      if (!passwordInput) return;
-      const visible = passwordInput.type === "password";
-      passwordInput.type = visible ? "text" : "password";
-      toggle.setAttribute("aria-label", visible ? "Hide password" : "Show password");
-      toggle.querySelector(".material-icons").textContent = visible ? "visibility_off" : "visibility";
-    });
-    const submitManagerAction = async (button, passwordButton, password = "") => {
+    document
+      .querySelector(".owner-manager-edit-toggle")
+      ?.addEventListener("click", (event) => {
+        const toggle = event.currentTarget;
+        if (!passwordInput) return;
+        const visible = passwordInput.type === "password";
+        passwordInput.type = visible ? "text" : "password";
+        toggle.setAttribute(
+          "aria-label",
+          visible ? "Hide password" : "Show password",
+        );
+        toggle.querySelector(".material-icons").textContent = visible
+          ? "visibility_off"
+          : "visibility";
+      });
+    const submitManagerAction = async (
+      button,
+      passwordButton,
+      password = "",
+    ) => {
       if (!button || button.disabled) return;
       const uid = button.dataset.uid;
       if (!uid) return;
@@ -667,72 +746,132 @@ export function initOwnerFeature(feature) {
         await auth.authStateReady?.();
         const token = await auth.currentUser?.getIdToken();
         if (!token) throw new Error("Please sign in again and retry.");
-        const response = await fetch(`${API_BASE_URL}/${passwordButton ? "updateAuthPassword" : "deleteAuthUser"}`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify(passwordButton ? { uid, password, fname: firstNameInput?.value.trim(), lname: lastNameInput?.value.trim() } : { uid }),
-        });
+        const response = await fetch(
+          `${API_BASE_URL}/${passwordButton ? "updateAuthPassword" : "deleteAuthUser"}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(
+              passwordButton
+                ? {
+                    uid,
+                    password,
+                    fname: firstNameInput?.value.trim(),
+                    lname: lastNameInput?.value.trim(),
+                  }
+                : { uid },
+            ),
+          },
+        );
         const result = await response.json();
         if (!response.ok || !result.success) {
-          const diagnostic = result.firebaseStatus ? ` (${result.firebaseStatus})` : "";
-          throw new Error(`${result.error || "Unable to update the manager account."}${diagnostic}`);
+          const diagnostic = result.firebaseStatus
+            ? ` (${result.firebaseStatus})`
+            : "";
+          throw new Error(
+            `${result.error || "Unable to update the manager account."}${diagnostic}`,
+          );
         }
         if (!passwordButton) {
           const [employees, users] = await Promise.all([
-            getDocs(query(collection(db, "employees"), where("uid", "==", uid))),
+            getDocs(
+              query(collection(db, "employees"), where("uid", "==", uid)),
+            ),
             getDocs(query(collection(db, "users"), where("uid", "==", uid))),
           ]);
-          await Promise.all([...employees.docs, ...users.docs].map((item) => deleteDoc(item.ref)));
+          await Promise.all(
+            [...employees.docs, ...users.docs].map((item) =>
+              deleteDoc(item.ref),
+            ),
+          );
         }
-        if (typeof M !== "undefined") M.toast({ html: passwordButton ? "Manager details saved." : "Manager account deleted.", classes: "green rounded" });
+        if (typeof M !== "undefined")
+          M.toast({
+            html: passwordButton
+              ? "Manager details saved."
+              : "Manager account deleted.",
+            classes: "green rounded",
+          });
       } catch (error) {
         console.error("Unable to manage manager account:", error);
-        if (typeof M !== "undefined") M.toast({ html: error.message || "Unable to manage this manager account.", classes: "red rounded" });
+        if (typeof M !== "undefined")
+          M.toast({
+            html: error.message || "Unable to manage this manager account.",
+            classes: "red rounded",
+          });
       } finally {
         button.disabled = false;
       }
     };
-    document.getElementById("owner-manager-password-confirm")?.addEventListener("click", async () => {
-      const password = passwordInput?.value || "";
-      if (!firstNameInput?.value.trim() || !lastNameInput?.value.trim()) {
-        if (typeof M !== "undefined") M.toast({ html: "First and last name are required.", classes: "red rounded" });
-        return;
-      }
-      if (password && password.length < 6) {
-        if (typeof M !== "undefined") M.toast({ html: "Password must be at least 6 characters.", classes: "red rounded" });
-        passwordInput?.focus();
-        return;
-      }
-      const button = pendingManagerAction;
-      if (!button) return;
-      const confirmButton = document.getElementById("owner-manager-password-confirm");
-      confirmButton.disabled = true;
-      await submitManagerAction(button, true, password);
-      confirmButton.disabled = false;
-      passwordModal?.close();
-      if (passwordInput) passwordInput.value = "";
-    });
-    document.getElementById("owner-manager-delete-confirm")?.addEventListener("click", async () => {
-      const button = pendingManagerAction;
-      if (!button) return;
-      const confirmButton = document.getElementById("owner-manager-delete-confirm");
-      confirmButton.disabled = true;
-      await submitManagerAction(button, false);
-      confirmButton.disabled = false;
-      deleteModal?.close();
-    });
+    document
+      .getElementById("owner-manager-password-confirm")
+      ?.addEventListener("click", async () => {
+        const password = passwordInput?.value || "";
+        if (!firstNameInput?.value.trim() || !lastNameInput?.value.trim()) {
+          if (typeof M !== "undefined")
+            M.toast({
+              html: "First and last name are required.",
+              classes: "red rounded",
+            });
+          return;
+        }
+        if (password && password.length < 6) {
+          if (typeof M !== "undefined")
+            M.toast({
+              html: "Password must be at least 6 characters.",
+              classes: "red rounded",
+            });
+          passwordInput?.focus();
+          return;
+        }
+        const button = pendingManagerAction;
+        if (!button) return;
+        const confirmButton = document.getElementById(
+          "owner-manager-password-confirm",
+        );
+        confirmButton.disabled = true;
+        await submitManagerAction(button, true, password);
+        confirmButton.disabled = false;
+        passwordModal?.close();
+        if (passwordInput) passwordInput.value = "";
+      });
+    document
+      .getElementById("owner-manager-delete-confirm")
+      ?.addEventListener("click", async () => {
+        const button = pendingManagerAction;
+        if (!button) return;
+        const confirmButton = document.getElementById(
+          "owner-manager-delete-confirm",
+        );
+        confirmButton.disabled = true;
+        await submitManagerAction(button, false);
+        confirmButton.disabled = false;
+        deleteModal?.close();
+      });
     root.addEventListener("click", (event) => {
-      const passwordButton = event.target.closest(".owner-manager-change-password");
+      const passwordButton = event.target.closest(
+        ".owner-manager-change-password",
+      );
       const deleteButton = event.target.closest(".owner-manager-delete");
       const button = passwordButton || deleteButton;
       if (!button) return;
       if (!button.dataset.uid || button.disabled) return;
       pendingManagerAction = button;
       if (passwordButton) {
-        const message = document.getElementById("owner-manager-password-message");
-        if (message) message.textContent = `Set a new password for ${button.dataset.name || "this manager"}.`;
-        const firstName = document.getElementById("owner-manager-password-fname");
-        const lastName = document.getElementById("owner-manager-password-lname");
+        const message = document.getElementById(
+          "owner-manager-password-message",
+        );
+        if (message)
+          message.textContent = `Set a new password for ${button.dataset.name || "this manager"}.`;
+        const firstName = document.getElementById(
+          "owner-manager-password-fname",
+        );
+        const lastName = document.getElementById(
+          "owner-manager-password-lname",
+        );
         if (firstName) firstName.textContent = button.dataset.fname || "—";
         if (lastName) lastName.textContent = button.dataset.lname || "—";
         if (firstNameInput) firstNameInput.value = button.dataset.fname || "";
@@ -741,7 +880,8 @@ export function initOwnerFeature(feature) {
         passwordModal?.open();
       } else {
         const message = document.getElementById("owner-manager-delete-message");
-        if (message) message.textContent = `Permanently delete the manager account for ${button.dataset.name || button.dataset.email || "this manager"}? This action cannot be undone.`;
+        if (message)
+          message.textContent = `Permanently delete the manager account for ${button.dataset.name || button.dataset.email || "this manager"}? This action cannot be undone.`;
         deleteModal?.open();
       }
     });
@@ -774,7 +914,10 @@ export function initOwnerFeature(feature) {
       } catch (error) {
         console.error("Unable to create manager account:", error);
         if (typeof M !== "undefined") {
-          M.toast({ html: "Unable to create the manager account.", classes: "red rounded" });
+          M.toast({
+            html: "Unable to create the manager account.",
+            classes: "red rounded",
+          });
         }
       } finally {
         if (submit) {

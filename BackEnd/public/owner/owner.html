@@ -69,33 +69,66 @@
             >
           </li>
           <li>
-            <a href="#" onclick="loadSection('owner-employee-stock', this); return false"
-              ><i class="material-icons">inventory</i>Stock status of Employees</a
+            <a
+              href="#"
+              onclick="
+                loadSection('owner-employee-stock', this);
+                return false;
+              "
+              ><i class="material-icons">inventory</i>Stock status of
+              Employees</a
             >
           </li>
           <li>
-            <a href="#" onclick="loadSection('owner-inventory', this); return false"
+            <a
+              href="#"
+              onclick="
+                loadSection('owner-inventory', this);
+                return false;
+              "
               ><i class="material-icons">inventory_2</i>Inventory Status</a
             >
           </li>
           <li>
-            <a href="#" onclick="loadSection('owner-performance', this); return false"
+            <a
+              href="#"
+              onclick="
+                loadSection('owner-performance', this);
+                return false;
+              "
               ><i class="material-icons">trending_up</i>Employee Performance</a
             >
           </li>
           <li>
-            <a href="#" onclick="loadSection('owner-attendance', this); return false"
-              ><i class="material-icons">event_available</i>Employee Attendance</a
+            <a
+              href="#"
+              onclick="
+                loadSection('owner-attendance', this);
+                return false;
+              "
+              ><i class="material-icons">event_available</i>Employee
+              Attendance</a
             >
           </li>
           <li>
-            <a href="#" onclick="loadSection('owner-manager-attendance', this); return false"
+            <a
+              href="#"
+              onclick="
+                loadSection('owner-manager-attendance', this);
+                return false;
+              "
               ><i class="material-icons">schedule</i>Manager Attendance</a
             >
           </li>
           <li>
-            <a href="#" onclick="loadSection('owner-managers', this); return false"
-              ><i class="material-icons">manage_accounts</i>Manager Management</a
+            <a
+              href="#"
+              onclick="
+                loadSection('owner-managers', this);
+                return false;
+              "
+              ><i class="material-icons">manage_accounts</i>Manager
+              Management</a
             >
           </li>
           <li>
@@ -136,13 +169,37 @@
               </button>
             </div>
             <div class="admin-profile-menu">
-              <button id="admin-profile-menu-button" type="button" class="admin-profile admin-profile-trigger" aria-label="Open account menu" aria-expanded="false" aria-controls="admin-profile-menu-panel">
-              <i class="material-icons">account_circle</i>
-                <div><strong id="admin-profile-name">Owner</strong><small id="admin-profile-role">Owner</small></div>
+              <button
+                id="admin-profile-menu-button"
+                type="button"
+                class="admin-profile admin-profile-trigger"
+                aria-label="Open account menu"
+                aria-expanded="false"
+                aria-controls="admin-profile-menu-panel"
+              >
+                <i class="material-icons">account_circle</i>
+                <div>
+                  <strong id="admin-profile-name">Owner</strong
+                  ><small id="admin-profile-role">Owner</small>
+                </div>
               </button>
-              <div id="admin-profile-menu-panel" class="admin-profile-menu-panel" hidden>
-                <div class="admin-profile-menu-user"><strong id="admin-profile-menu-name">Owner</strong><small id="admin-profile-menu-role">Owner</small></div>
-                <button type="button" class="admin-profile-menu-action" data-theme-toggle><i class="material-icons" data-theme-icon>dark_mode</i><span>Dark mode</span></button>
+              <div
+                id="admin-profile-menu-panel"
+                class="admin-profile-menu-panel"
+                hidden
+              >
+                <div class="admin-profile-menu-user">
+                  <strong id="admin-profile-menu-name">Owner</strong
+                  ><small id="admin-profile-menu-role">Owner</small>
+                </div>
+                <button
+                  type="button"
+                  class="admin-profile-menu-action"
+                  data-theme-toggle
+                >
+                  <i class="material-icons" data-theme-icon>dark_mode</i
+                  ><span>Dark mode</span>
+                </button>
               </div>
             </div>
           </div>
@@ -320,11 +377,44 @@
     <div id="owner-notifications-modal" class="modal owner-notifications-modal">
       <div class="modal-content">
         <h4>Notifications</h4>
-        <p class="owner-notification-note">View-only notifications</p>
+        <p class="owner-notification-note">Select notifications to delete them.</p>
+        <div class="notification-selection-toolbar">
+          <label>
+            <input id="owner-select-all-notifications" type="checkbox" />
+            <span>Select all</span>
+          </label>
+          <span id="owner-selected-notification-count">0 selected</span>
+        </div>
         <div id="owner-notification-list"></div>
       </div>
       <div class="modal-footer">
+        <button
+          id="owner-delete-selected-notifications"
+          type="button"
+          class="btn red"
+          disabled
+        >
+          Delete
+        </button>
         <button type="button" class="modal-close btn-flat">Close</button>
+      </div>
+    </div>
+    <div id="owner-delete-notifications-modal" class="modal">
+      <div class="modal-content">
+        <h4>Delete notifications?</h4>
+        <p id="owner-delete-notifications-message">
+          Selected notifications will be permanently deleted.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="modal-close btn-flat">Cancel</button>
+        <button
+          id="owner-confirm-delete-notifications"
+          type="button"
+          class="btn red"
+        >
+          Delete
+        </button>
       </div>
     </div>
     <script src="/js/materialize.min.js"></script>

@@ -4,6 +4,7 @@ let currentCleanup = null;
 let attendanceStylesheet = null;
 
 // Materialize keeps modal instances and their overlays outside of application
+// content, so modals inside a section must be disposed before it is replaced.
 function disposeSectionModals(root) {
   if (typeof M === "undefined" || !root) return;
 
@@ -12,10 +13,15 @@ function disposeSectionModals(root) {
     if (!instance) return;
 
     // close() updates Materialize's internal open-modal counter before
+    // destroy() removes the instance.
     if (instance.isOpen) instance.close();
     instance.destroy();
-  });//   A previous interrupted navigation may already have detached a modal but left an overlay in this section. Remove only overlays owned by #content.
-  root.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
+  });
+  // A previous interrupted navigation may already have detached a modal but
+  // left an overlay in this section. Remove only overlays owned by #content.
+  root
+    .querySelectorAll(".modal-overlay")
+    .forEach((overlay) => overlay.remove());
 
   if (!document.querySelector(".modal.open")) {
     document.body.style.overflow = "";
@@ -46,10 +52,13 @@ function applyTableDataLabels(root = document) {
 const contentArea = document.getElementById("content");
 if (contentArea) {
   applyTableDataLabels(contentArea);
-  new MutationObserver(() => applyTableDataLabels(contentArea)).observe(contentArea, {
-    childList: true,
-    subtree: true,
-  });
+  new MutationObserver(() => applyTableDataLabels(contentArea)).observe(
+    contentArea,
+    {
+      childList: true,
+      subtree: true,
+    },
+  );
 }
 
 function loadSection(page) {
@@ -58,7 +67,10 @@ function loadSection(page) {
   const isOwnerPage = window.location.pathname.startsWith("/owner/");
   const sidebar = document.querySelector(".sidebar");
   if (sidebar) sidebar.scrollTop = 0;
-  document.body.classList.toggle("manager-attendance-view", !isOwnerPage && page === "attendance.html");
+  document.body.classList.toggle(
+    "manager-attendance-view",
+    !isOwnerPage && page === "attendance.html",
+  );
   const ownerFeaturePages = new Set([
     "owner-sales",
     "owner-capital",
@@ -74,18 +86,25 @@ function loadSection(page) {
     ? page === "owner-capital"
       ? "/admin/expenses.html"
       : page === "owner-sales"
-      ? "/admin/sales.html"
-      : page === "owner-orders"
-      ? "/admin/sales.html"
-      : ownerFeaturePages.has(page)
-      ? "/owner/ownerfeature.html"
-      : `/owner/${page}`
+        ? "/admin/sales.html"
+        : page === "owner-orders"
+          ? "/admin/sales.html"
+          : ownerFeaturePages.has(page)
+            ? "/owner/ownerfeature.html"
+            : `/owner/${page}`
     : page;
-//  Every section gets a synchronous chance to invalidate in-flight work before its root is replaced. Shell-owned listeners must not subscribe to this event; they live for the authenticated session instead.
+  // Every section gets a synchronous chance to invalidate in-flight work before
+  // its root is replaced. Shell-owned listeners must not subscribe to this
+  // event; they live for the authenticated session instead.
   window.dispatchEvent(
-    new CustomEvent(isOwnerPage ? "owner:before-section-change" : "manager:before-section-change", {
-      detail: { page },
-    }),
+    new CustomEvent(
+      isOwnerPage
+        ? "owner:before-section-change"
+        : "manager:before-section-change",
+      {
+        detail: { page },
+      },
+    ),
   );
 
   // Stop the previous page's listeners before loading the new one
@@ -107,9 +126,18 @@ function loadSection(page) {
 
       const main = document.getElementById("content");
       disposeSectionModals(main);
-      main.classList.toggle("owner-capital-content", isOwnerPage && page === "owner-capital");
-      main.classList.toggle("owner-sales-content", isOwnerPage && page === "owner-sales");
-      main.classList.toggle("owner-order-status-content", isOwnerPage && page === "owner-orders");
+      main.classList.toggle(
+        "owner-capital-content",
+        isOwnerPage && page === "owner-capital",
+      );
+      main.classList.toggle(
+        "owner-sales-content",
+        isOwnerPage && page === "owner-sales",
+      );
+      main.classList.toggle(
+        "owner-order-status-content",
+        isOwnerPage && page === "owner-orders",
+      );
       main.innerHTML = data;
       applyTableDataLabels(main);
 
@@ -140,7 +168,13 @@ function loadSection(page) {
 
       if (title) title.textContent = pageTitles[page] || "Administrator";
 
-      if (isOwnerPage && ownerFeaturePages.has(page) && page !== "owner-capital" && page !== "owner-sales" && page !== "owner-orders") {
+      if (
+        isOwnerPage &&
+        ownerFeaturePages.has(page) &&
+        page !== "owner-capital" &&
+        page !== "owner-sales" &&
+        page !== "owner-orders"
+      ) {
         try {
           const ownerModule = await import("/js/ownerFeatures.js");
           if (myToken !== currentLoadToken) return;
@@ -152,13 +186,16 @@ function loadSection(page) {
         return;
       }
 
-      M.FormSelect.init(document.querySelectorAll("select"));
-      M.Modal.init(document.querySelectorAll(".modal"));
+      // Scope sa loob lang ng #content. Hindi dapat ma-init ulit ang mga modal
+      // ng shell (hal. owner/manager notifications) na nasa labas ng #content.
+      M.FormSelect.init(main.querySelectorAll("select"));
+      M.Modal.init(main.querySelectorAll(".modal"));
 
       switch (page) {
         case "inventory.html":
           try {
-            const addbtnModule = await import("/js/inventoryADDbtn.js?v=20261003b");
+            const addbtnModule =
+              await import("/js/inventoryADDbtn.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             addbtnModule.initInventoryModal?.();
 
@@ -185,7 +222,8 @@ function loadSection(page) {
             if (myToken !== currentLoadToken) return;
             addproducts.initProductModal?.();
 
-            const productModule = await import("/js/adminaddproduct.js?v=20261008a");
+            const productModule =
+              await import("/js/adminaddproduct.js?v=20261008a");
             if (myToken !== currentLoadToken) return;
             await productModule.initProductPage?.();
             if (myToken !== currentLoadToken) {
@@ -226,11 +264,13 @@ function loadSection(page) {
         case "expenses.html":
         case "owner-capital":
           try {
-            const addbtnModule = await import("/js/addExpensesbtn.js?v=20261008c");
+            const addbtnModule =
+              await import("/js/addExpensesbtn.js?v=20261008c");
             if (myToken !== currentLoadToken) return;
             addbtnModule.initExpensesModal?.();
 
-            const expensesModule = await import("/js/adminExpenses.js?v=20261008c");
+            const expensesModule =
+              await import("/js/adminExpenses.js?v=20261008c");
             if (myToken !== currentLoadToken) return;
             expensesModule.loadExpenses?.();
             currentCleanup = () => {
@@ -244,11 +284,13 @@ function loadSection(page) {
 
         case "EmployeeManagement.html":
           try {
-            const employeeModule = await import("/js/addemployeebtn.js?v=20261003b");
+            const employeeModule =
+              await import("/js/addemployeebtn.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             employeeModule.initEmployee?.();
 
-            const addemployeeModule = await import("/js/adminEmployee.js?v=20261003b");
+            const addemployeeModule =
+              await import("/js/adminEmployee.js?v=20261003b");
             if (myToken !== currentLoadToken) return;
             addemployeeModule.loadEmployees?.();
             currentCleanup = () => {

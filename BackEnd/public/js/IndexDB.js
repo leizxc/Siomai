@@ -1,6 +1,9 @@
 // Import Firestore helpers at db mula sa firebase.js
-import { getDocs, collection, addDoc }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getDocs,
+  collection,
+  addDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./frontfirebase.js"; // adjust path depende sa folder structure
 
 //  Hash function
@@ -9,7 +12,7 @@ async function hashPassword(password) {
   const data = encoder.encode(password);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 //  Open or create IndexedDB
@@ -22,25 +25,33 @@ function openOfflineDB() {
 
       // Users store
       if (!dbLocal.objectStoreNames.contains("users")) {
-        const usersStore = dbLocal.createObjectStore("users", { keyPath: "username" });
+        const usersStore = dbLocal.createObjectStore("users", {
+          keyPath: "username",
+        });
         usersStore.createIndex("role", "role", { unique: false });
       }
 
       // Orders store
       if (!dbLocal.objectStoreNames.contains("orders")) {
-        const ordersStore = dbLocal.createObjectStore("orders", { keyPath: "id", autoIncrement: true });
+        const ordersStore = dbLocal.createObjectStore("orders", {
+          keyPath: "id",
+          autoIncrement: true,
+        });
         ordersStore.createIndex("status", "status", { unique: false });
       }
 
       //product store
       if (!dbLocal.objectStoreNames.contains("products")) {
-        const productStore = dbLocal.createObjectStore("products", { keyPath: "id" });
+        const productStore = dbLocal.createObjectStore("products", {
+          keyPath: "id",
+        });
         productStore.createIndex("employeeId", "employeeId", { unique: false });
       }
     };
 
     request.onsuccess = (event) => resolve(event.target.result);
-    request.onerror = (event) => reject("IndexedDB error: " + event.target.errorCode);
+    request.onerror = (event) =>
+      reject("IndexedDB error: " + event.target.errorCode);
   });
 }
 
@@ -52,7 +63,7 @@ async function saveUserOffline(user) {
     tx.objectStore("users").put(user);
 
     tx.oncomplete = () => {
-      M.toast({ html: 'User saved offline', classes: 'green-toast' });
+      M.toast({ html: "User saved offline", classes: "green-toast" });
       resolve(true);
     };
     tx.onerror = () => reject("Failed to save user offline");
@@ -75,11 +86,13 @@ async function getUserOffline(username) {
       }
 
       const allUsersRequest = store.getAll();
-      allUsersRequest.onsuccess = () => resolve(
-        allUsersRequest.result.find(
-          (user) => String(user.email || "").toLowerCase() === normalizedIdentifier,
-        ),
-      );
+      allUsersRequest.onsuccess = () =>
+        resolve(
+          allUsersRequest.result.find(
+            (user) =>
+              String(user.email || "").toLowerCase() === normalizedIdentifier,
+          ),
+        );
       allUsersRequest.onerror = () => reject("User lookup failed");
     };
     req.onerror = () => reject("User lookup failed");
@@ -90,16 +103,16 @@ async function getUserOffline(username) {
 async function offlineLogin(username, password) {
   const user = await getUserOffline(username);
   if (!user) {
-    M.toast({ html: 'User not found offline', classes: 'red-toast' });
+    M.toast({ html: "User not found offline", classes: "red-toast" });
     return;
   }
 
   const inputHash = await hashPassword(password);
   if (user.passwordHash === inputHash) {
     redirectByRole(user.role);
-    M.toast({ html: 'Offline login success', classes: 'blue-toast' });
+    M.toast({ html: "Offline login success", classes: "blue-toast" });
   } else {
-    M.toast({ html: 'Invalid offline credentials', classes: 'red-toast' });
+    M.toast({ html: "Invalid offline credentials", classes: "red-toast" });
   }
 }
 
@@ -128,22 +141,39 @@ async function syncUsersFromFirebase() {
 
     snapshot.forEach((docSnap) => {
       const userData = docSnap.data();
-      if (userData.username && userData.passwordHash && userData.role && ["admin", "owner", "siomai", "pares"].includes(String(userData.role).toLowerCase())) {
+      if (
+        userData.username &&
+        userData.passwordHash &&
+        userData.role &&
+        ["admin", "owner", "siomai", "pares"].includes(
+          String(userData.role).toLowerCase(),
+        )
+      ) {
         store.put({
           username: userData.username.toLowerCase().trim(),
-          email: String(userData.email || "").toLowerCase().trim(),
+          email: String(userData.email || "")
+            .toLowerCase()
+            .trim(),
           passwordHash: userData.passwordHash,
-          role: userData.role.toLowerCase()
+          role: userData.role.toLowerCase(),
         });
       }
     });
 
     await new Promise((resolve) => (tx.oncomplete = resolve));
     console.log("✅ Users synced to offline DB");
-    M.toast({ html: 'Users synced offline', classes: 'green rounded', displayLength: 4000 });
+    M.toast({
+      html: "Users synced offline",
+      classes: "green rounded",
+      displayLength: 4000,
+    });
   } catch (err) {
     console.error("❌ Sync failed:", err);
-    M.toast({ html: 'Failed to sync users', classes: 'red rounded', displayLength: 4000 });
+    M.toast({
+      html: "Failed to sync users",
+      classes: "red rounded",
+      displayLength: 4000,
+    });
   }
 }
 
@@ -164,18 +194,22 @@ async function SyncProductFromFirebase() {
         price: productData.price,
         stock: productData.stock,
         role: productData.role,
-        employeeId: productData.employeeId
+        employeeId: productData.employeeId,
       });
     });
 
     await new Promise((resolve) => (tx.oncomplete = resolve));
     console.log("✅ Products synced to offline DB");
     setTimeout(() => {
-      M.toast({ html: 'Products synced offline', classes: 'green rounded', displayLength: 4000 });
+      M.toast({
+        html: "Products synced offline",
+        classes: "green rounded",
+        displayLength: 4000,
+      });
     }, 3200); // lalabas pagkatapos ng una
   } catch (err) {
     console.error("❌ Product sync failed:", err);
-    M.toast({ html: 'Failed to sync products', classes: 'red rounded' });
+    M.toast({ html: "Failed to sync products", classes: "red rounded" });
   }
 }
 
@@ -194,10 +228,13 @@ async function saveOrderOffline(orderData) {
 // Auto-sync orders when online
 window.addEventListener("online", async () => {
   const dbLocal = await openOfflineDB();
-  const req = dbLocal.transaction("orders", "readonly").objectStore("orders").getAll();
+  const req = dbLocal
+    .transaction("orders", "readonly")
+    .objectStore("orders")
+    .getAll();
 
   req.onsuccess = async () => {
-    const orders = req.result.filter(o => o.status === "pending");
+    const orders = req.result.filter((o) => o.status === "pending");
 
     for (const order of orders) {
       await addDoc(collection(db, "orders"), order);
@@ -206,11 +243,11 @@ window.addEventListener("online", async () => {
       txUpdate.objectStore("orders").put({ ...order, status: "synced" });
     }
 
-    M.toast({ html: 'Offline orders synced', classes: 'blue-toast' });
+    M.toast({ html: "Offline orders synced", classes: "blue-toast" });
   };
 });
 
-//render table of products 
+//render table of products
 async function loadProductsOffline(employeeId = "") {
   const dbLocal = await openOfflineDB();
   const tx = dbLocal.transaction("products", "readonly");
@@ -220,7 +257,7 @@ async function loadProductsOffline(employeeId = "") {
   req.onsuccess = () => {
     let products = req.result;
     if (employeeId) {
-      products = products.filter(p => p.employeeId === employeeId);
+      products = products.filter((p) => p.employeeId === employeeId);
     }
     renderProductsForEmployee(products); // use the correct renderer
   };
@@ -230,7 +267,7 @@ async function renderProductsForEmployee(products) {
   const productGrid = document.querySelector(".product-grid");
   productGrid.innerHTML = "";
 
-  products.forEach(data => {
+  products.forEach((data) => {
     const card = document.createElement("div");
     card.classList.add("product-card");
     card.innerHTML = `
@@ -255,7 +292,7 @@ export {
   saveOrderOffline,
   SyncProductFromFirebase,
   loadProductsOffline,
-  renderProductsForEmployee
+  renderProductsForEmployee,
 };
 
 // Gawin available sa console ng devtool sa Chrome

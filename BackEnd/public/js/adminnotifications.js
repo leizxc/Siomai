@@ -21,6 +21,7 @@ let selectedNotificationIds = new Set();
 let notificationsById = new Map();
 let pendingDeleteNotificationIds = [];
 let hasLoadedInitialNotifications = false;
+let reopenNotificationModalAfterDelete = false;
 // FIX: module-level reference para maabot ng renderNotifications() ang modal
 let managerNotificationsModal = null;
 
@@ -41,6 +42,11 @@ function formatDate(timestamp) {
 function getNotificationPage(notification) {
   if (["time_in_request", "time_out_request"].includes(notification.type)) {
     return "EmployeeMonitoring.html";
+  }
+  if (notification.type === "expense_report") {
+    return window.location.pathname.startsWith("/owner/")
+      ? "owner-capital"
+      : "expenses.html";
   }
   if (notification.type === "low_stock") return "product.html";
   return null;
@@ -157,10 +163,15 @@ function syncSelectionControls(notifications = []) {
   ).length;
   if (count) count.textContent = `${selectedCount} selected`;
   if (selectAll) {
+    const selectedVisibleCount = notifications.filter((item) =>
+      selectedNotificationIds.has(item.id),
+    ).length;
     selectAll.checked =
-      notifications.length > 0 && selectedCount === notifications.length;
+      notifications.length > 0 &&
+      selectedVisibleCount === notifications.length;
     selectAll.indeterminate =
-      selectedCount > 0 && selectedCount < notifications.length;
+      selectedVisibleCount > 0 &&
+      selectedVisibleCount < notifications.length;
   }
   if (markRead) markRead.disabled = unreadSelectedCount === 0;
   if (deleteSelected) deleteSelected.disabled = selectedCount === 0;
@@ -183,14 +194,46 @@ async function markNotificationRead(id) {
 
   if (notification.type === "expense_report" && notification.reportId) {
     const reportRef = doc(db, "expenseReports", notification.reportId);
-    updates.push(
-      updateDoc(reportRef, {
-        status: "read",
-        reviewedAt: serverTimestamp(),
-      }),
-    );
     const reportSnapshot = await getDoc(reportRef);
-    const report = reportSnapshot.data();
+    const report = reportSnapshot.exists() ? reportSnapshot.data() : null;
+    if (report) {
+      const expenseQuery = await getDocs(
+        query(
+          collection(db, "expenses"),
+          where("reportId", "==", notification.reportId),
+        ),
+      );
+      let expenseRef = expenseQuery.docs[0]?.ref;
+      if (!expenseRef) {
+        const expenseId =
+          report.expenseId || `employee-report-${notification.reportId}`;
+        expenseRef = doc(db, "expenses", expenseId);
+        await setDoc(expenseRef, {
+          date: report.date || "",
+          category: report.category || "Uncategorized",
+          description: report.description || "Employee expense report",
+          amount: Number(report.amount) || 0,
+          status: "Paid",
+          source: "employee_report",
+          reportId: notification.reportId,
+          uid: report.employeeUid || report.uid || "",
+          employeeId: report.employeeId || "",
+          employeeUid: report.employeeUid || "",
+          employeeName: report.employeeName || "Employee",
+          reference: report.reference || "",
+          submittedAt: report.submittedAt || serverTimestamp(),
+        });
+      }
+      if (report.expenseId !== expenseRef.id) {
+        updates.push(updateDoc(reportRef, { expenseId: expenseRef.id }));
+      }
+      updates.push(
+        updateDoc(reportRef, {
+          status: "read",
+          reviewedAt: serverTimestamp(),
+        }),
+      );
+    }
     if (report?.employeeUid) {
       updates.push(
         setDoc(
@@ -258,13 +301,19 @@ export function initManagerNotifications() {
   )
     return;
 
-  const modal = M.Modal.getInstance(modalElement) || M.Modal.init(modalElement);
+  const modal =
+    M.Modal.getInstance(modalElement) ||
+    M.Modal.init(modalElement, { dismissible: true });
   // FIX: i-store para magamit ng renderNotifications()
   managerNotificationsModal = modal;
 
   const closeButton = modalElement.querySelector(".modal-close");
   if (closeButton) {
-    closeButton.onclick = () => modal.close();
+    closeButton.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (modal.isOpen) modal.close();
+    };
   }
 
   // FIX: inilipat sa itaas ng _outsideCloseHandler para hindi na naka-reference bago ma-declare
@@ -276,30 +325,12 @@ export function initManagerNotifications() {
   const deleteModal = M.Modal.init(deleteModalElement, {
     onCloseEnd: () => {
       pendingDeleteNotificationIds = [];
+      if (reopenNotificationModalAfterDelete) {
+        reopenNotificationModalAfterDelete = false;
+        modal.open();
+      }
     },
   });
-
-  if (modalElement._outsideCloseHandler) {
-    document.removeEventListener(
-      "pointerdown",
-      modalElement._outsideCloseHandler,
-      true,
-    );
-  }
-  modalElement._outsideCloseHandler = (event) => {
-    if (
-      modal.isOpen &&
-      !deleteModal?.isOpen &&
-      !modalElement.contains(event.target)
-    ) {
-      modal.close();
-    }
-  };
-  document.addEventListener(
-    "pointerdown",
-    modalElement._outsideCloseHandler,
-    true,
-  );
 
   bell.onclick = async () => {
     const userDocId = sessionStorage.getItem("adminUserDocId");
@@ -313,20 +344,20 @@ export function initManagerNotifications() {
     modal.open();
   };
 
-  document
-    .getElementById("manager-select-all")
-    ?.addEventListener("change", (event) => {
-      document
-        .querySelectorAll(".manager-notification-select input")
-        .forEach((checkbox) => {
-          checkbox.checked = event.currentTarget.checked;
-          if (checkbox.checked) selectedNotificationIds.add(checkbox.value);
-          else selectedNotificationIds.delete(checkbox.value);
-        });
-      syncSelectionControls(
-        Array.from(document.querySelectorAll(".manager-notification")),
-      );
+  const selectAll = document.getElementById("manager-select-all");
+  if (selectAll) selectAll.onchange = (event) => {
+    const items = [...notificationsById.values()];
+    items.forEach((item) => {
+      if (event.currentTarget.checked) selectedNotificationIds.add(item.id);
+      else selectedNotificationIds.delete(item.id);
     });
+    modalElement
+      .querySelectorAll(".manager-notification-select input")
+      .forEach((checkbox) => {
+        checkbox.checked = event.currentTarget.checked;
+      });
+    syncSelectionControls(items);
+  };
 
   document
     .getElementById("mark-manager-selected-read")
@@ -346,16 +377,21 @@ export function initManagerNotifications() {
       );
     });
 
-  document
-    .getElementById("delete-manager-selected")
-    ?.addEventListener("click", () => {
+  const deleteSelected = document.getElementById("delete-manager-selected");
+  if (deleteSelected) {
+    deleteSelected.onclick = () => {
       const ids = [...selectedNotificationIds];
       if (!ids.length) return;
 
       pendingDeleteNotificationIds = ids;
       deleteMessage.textContent = `Delete ${ids.length} selected notification${ids.length > 1 ? "s" : ""}? This action cannot be undone.`;
-      deleteModal.open();
-    });
+      // Materialize's modal stack can leave the parent backdrop active. Close
+      // the list before opening its confirmation dialog.
+      reopenNotificationModalAfterDelete = true;
+      modal.close();
+      window.setTimeout(() => deleteModal.open(), 300);
+    };
+  }
 
   confirmDeleteButton.addEventListener("click", async () => {
     const ids = [...pendingDeleteNotificationIds];

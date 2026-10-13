@@ -440,6 +440,22 @@ html.dark .owner-feature-error {
   min-height: 38px;
 }
 
+#owner-notification-count {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 10px;
+  background: #e53935;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
 .owner-notifications-modal {
   width: min(92vw, 560px) !important;
   height: min(82dvh, 720px) !important;
@@ -463,6 +479,29 @@ html.dark .owner-feature-error {
 .owner-notifications-modal.open .modal-footer {
   display: flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.owner-notifications-modal .notification-selection-toolbar {
+  margin-top: 8px;
+}
+
+.owner-notifications-modal .manager-notification-select input,
+.owner-notifications-modal .notification-selection-toolbar input {
+  position: static;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  opacity: 1;
+  pointer-events: auto;
+  appearance: auto;
+  -webkit-appearance: checkbox;
+}
+
+.owner-notifications-modal .manager-notification-select > span {
+  display: none;
 }
 
 .owner-notification-note {
@@ -494,6 +533,11 @@ html.dark .owner-notifications-modal .manager-notification small,
 html.dark .owner-notifications-modal .manager-notification-empty,
 html.dark .owner-notification-note {
   color: var(--text-secondary) !important;
+}
+
+html.dark .owner-notifications-modal .notification-selection-toolbar {
+  border-color: var(--border);
+  color: var(--text-secondary);
 }
 
 /* ========================================================= Create manager account — Option 1 (clean vertical form) ========================================================= */
