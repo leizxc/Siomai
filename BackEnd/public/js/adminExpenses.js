@@ -63,9 +63,7 @@ function reinitSelect(selectEl) {
   M.FormSelect.init(selectEl);
 }
 
-// ===============================
 // REALTIME LISTENER
-// ===============================
 let unsubscribeExpenses = null;
 
 export function loadExpenses() {
@@ -95,20 +93,14 @@ export function loadExpenses() {
       let totalToday = 0;
       let totalMonth = 0;
 
-      const daysWithExpenses = new Set();
-
-      // Kung may napiling date sa filter, iyon ang gagamitin.
-      // Kung wala, current date ang default.
+      const daysWithExpenses = new Set();//   Kung may napiling date sa filter, iyon ang gagamitin. Kung wala, current date ang default.
       const selectedDate =
         currentFilterDate || new Date().toISOString().split("T")[0];
 
       const currentMonth = selectedDate.slice(0, 7);
 
       querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-
-        // Employee-submitted reports represent costs already paid. Normalize
-        // existing report records as well as new submissions.
+        const data = docSnap.data();//   Employee-submitted reports represent costs already paid. Normalize existing report records as well as new submissions.
         if (data.source === "employee_report" && data.status !== "Paid") {
           data.status = "Paid";
           updateDoc(doc(db, "expenses", docSnap.id), { status: "Paid" }).catch(
@@ -303,10 +295,7 @@ function bindExpenseButtons() {
     btn.onclick = (e) => {
       expenseToDelete = e.currentTarget.dataset.id;
 
-      const modalElem = document.getElementById("modal-delete-expense");
-
-      // Wala palang ganitong modal sa DOM — gamitin na lang ang plain
-      // confirm() para hindi mag-crash at gumana pa rin ang delete.
+      const modalElem = document.getElementById("modal-delete-expense");//   Wala palang ganitong modal sa DOM — gamitin na lang ang plain confirm() para hindi mag-crash at gumana pa rin ang delete.
       if (!modalElem) {
         const id = expenseToDelete;
         expenseToDelete = null;
@@ -513,10 +502,7 @@ function initDeleteExpenseModal() {
 
 export async function deleteExpense(id) {
   try {
-    await deleteDoc(doc(db, "expenses", id));
-
-    // Kung wala nang laman ang current page,
-    // bumalik sa previous page.
+    await deleteDoc(doc(db, "expenses", id));//   Kung wala nang laman ang current page, bumalik sa previous page.
     const totalAfterDelete = expenseListCache.length - 1;
     const totalPagesAfterDelete = Math.max(
       1,

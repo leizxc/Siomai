@@ -52,10 +52,7 @@ async function loadRoleOptions(token) {
       if ([...addRoleSelect.options].some((o) => o.value === previousValue)) {
         addRoleSelect.value = previousValue;
       }
-      M.FormSelect.init(addRoleSelect);
-
-      // Kung nabura ang currently-selected role (di na kasama sa bagong
-      // snapshot), balik dapat sa disabled ang Delete Role button.
+      M.FormSelect.init(addRoleSelect);//   Kung nabura ang currently-selected role (di na kasama sa bagong snapshot), balik dapat sa disabled ang Delete Role button.
       syncDeleteRoleButtonState();
     }
 

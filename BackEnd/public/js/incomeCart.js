@@ -80,11 +80,7 @@ function refreshEmployeeFilter() {
 
 function getOrderEmployeeKey(order) {
   const explicitKey = order.employeeUid || order.employee || order.employeeId || order.userId;
-  if (explicitKey && explicitKey !== "guest") return explicitKey;
-
-  // Older checkout records did not save the employee UID. Infer the seller
-  // only when all specifically assigned products in that cart belong to one
-  // employee; shared products are intentionally ignored here.
+  if (explicitKey && explicitKey !== "guest") return explicitKey;//   Older checkout records did not save the employee UID. Infer the seller only when all specifically assigned products in that cart belong to one employee; shared products are intentionally ignored here.
   const assignedOwners = new Set();
   (Array.isArray(order.items) ? order.items : []).forEach((item) => {
     const productId = item.id || item.productId;

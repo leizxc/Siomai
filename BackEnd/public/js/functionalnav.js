@@ -14,10 +14,7 @@ function disposeSectionModals(root) {
     // close() updates Materialize's internal open-modal counter before
     if (instance.isOpen) instance.close();
     instance.destroy();
-  });
-
-  // A previous interrupted navigation may already have detached a modal but
-  // left an overlay in this section. Remove only overlays owned by #content.
+  });//   A previous interrupted navigation may already have detached a modal but left an overlay in this section. Remove only overlays owned by #content.
   root.querySelectorAll(".modal-overlay").forEach((overlay) => overlay.remove());
 
   if (!document.querySelector(".modal.open")) {
@@ -84,10 +81,7 @@ function loadSection(page) {
       ? "/owner/ownerfeature.html"
       : `/owner/${page}`
     : page;
-
-  // Every section gets a synchronous chance to invalidate in-flight work
-  // before its root is replaced. Shell-owned listeners must not subscribe to
-  // this event; they live for the authenticated session instead.
+//  Every section gets a synchronous chance to invalidate in-flight work before its root is replaced. Shell-owned listeners must not subscribe to this event; they live for the authenticated session instead.
   window.dispatchEvent(
     new CustomEvent(isOwnerPage ? "owner:before-section-change" : "manager:before-section-change", {
       detail: { page },

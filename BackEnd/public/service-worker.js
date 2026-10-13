@@ -111,20 +111,13 @@ self.addEventListener("activate", (evt) => {
 
 //fetch event
 self.addEventListener("fetch", (evt) => {
-  const requestUrl = new URL(evt.request.url);
-
-  // Cache API only supports HTTP(S) requests. Browser extensions can make
-  // chrome-extension:// requests while DevTools is open, so let those pass
-  // through without trying to cache them.
+  const requestUrl = new URL(evt.request.url);//   Cache API only supports HTTP(S) requests. Browser extensions can make chrome-extension:// requests while DevTools is open, so let those pass through without trying to cache them.
   if (
     evt.request.method !== "GET" ||
     !["http:", "https:"].includes(requestUrl.protocol)
   ) {
     return;
-  }
-
-  // Keep application code current after deployments. Use the cache only when
-  // the network is unavailable so older shift-lock scripts cannot linger.
+  }//   Keep application code current after deployments. Use the cache only when the network is unavailable so older shift-lock scripts cannot linger.
   const isAppCode = requestUrl.origin === self.location.origin &&
     /\.(html|css|js)$/.test(requestUrl.pathname);
   if (isAppCode) {
@@ -202,10 +195,7 @@ self.addEventListener("fetch", (evt) => {
       );
     }),
   );
-});
-
-// Tapping a notification from the phone notification bar returns the user to
-// the corresponding system page instead of opening an unrelated browser tab.
+});//   Tapping a notification from the phone notification bar returns the user to the corresponding system page instead of opening an unrelated browser tab.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || "./index.html";

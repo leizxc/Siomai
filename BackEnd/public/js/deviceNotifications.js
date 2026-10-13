@@ -13,10 +13,7 @@ onMessage(messaging, (payload) => {
   });
 });
 
-/**
- * Nagre-request ng permission at kinukuha ang FCM token para i-save sa Firestore.
- * @param {string} userDocId - Ang document ID ng user sa 'users' collection.
- */
+/* Nagre-request ng permission at kinukuha ang FCM token para i-save sa Firestore. @param {string} userDocId - Ang document ID ng user sa 'users' collection. */
 export async function requestDeviceNotificationPermission(userDocId = null) {
   if (!("Notification" in window) || !("serviceWorker" in navigator)) {
     console.warn("Notifications not supported in this browser.");
@@ -52,9 +49,7 @@ export async function requestDeviceNotificationPermission(userDocId = null) {
   }
 }
 
-/**
- * Nagpapakita ng local notification via Service Worker.
- */
+/* Nagpapakita ng local notification via Service Worker. */
 export async function showDeviceNotification({ title, body, tag, url }) {
   if (
     !("Notification" in window) ||

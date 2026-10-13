@@ -15,9 +15,7 @@ function updateText(element, value) {
 function syncShiftStatus() {
   if (!pageContent?.isConnected || !isManagerAccount) return;
   let notice = pageContent.querySelector("[data-manager-shift-status]");
-
-  // Kapag active na ang shift, tuluyang tanggalin ang banner
-  // (hindi lang i-hide, para hindi manatili ang lumang text).
+//  Kapag active na ang shift, tuluyang tanggalin ang banner (hindi lang i-hide, para hindi manatili ang lumang text).
   if (latestShift.active) {
     notice?.remove();
     return;
@@ -180,8 +178,7 @@ function syncWriteActions() {
   if (!pageContent?.isConnected) return;
   syncShiftStatus();
   const lockWrites = isManagerAccount && !managerShiftActive;
-  // Restrict shift gating to actual action buttons. Generic role=button
-  // elements include cards and navigation widgets that must stay interactive.
+// Restrict shift gating to actual action buttons. Generic role=button elements include cards and navigation widgets that must stay interactive.
   const controls = new Set(
     pageContent.querySelectorAll(
       "button, a.btn, [role='button'].manager-write-locked",
@@ -214,8 +211,7 @@ export function initManagerShiftAccess() {
 
   if (pageContent && document.body) {
     contentObserver = new MutationObserver(syncWriteActions);
-    // Materialize can detach modals into document.body; observe there too so
-    // archive actions stay locked while Materialize detaches their modal.
+// Materialize can detach modals into document.body; observe there too so archive actions stay locked while Materialize detaches their modal.
     contentObserver.observe(document.body, { childList: true, subtree: true });
   }
 }

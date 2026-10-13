@@ -102,8 +102,7 @@ async function completeCheckout() {
     cart.forEach((item) => {
       if (item.isCombo && Array.isArray(item.comboComponents)) {
         item.comboComponents.forEach((component) => {
-          // Weight portions are displayed on the combo item, but the current
-          // inventory model only decrements pack products in whole pieces.
+//  Weight portions are displayed on the combo item, but the current inventory model only decrements pack products in whole pieces.
           if (String(component.unit || "").toLowerCase() === "g") return;
           recordUsage(component.productId, (Number(component.qty) || 1) * (Number(item.qty) || 0), item.name);
         });

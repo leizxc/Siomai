@@ -28,17 +28,10 @@ const auth = getAuth(app);
 let unsubscribePOS = null;
 let unsubscribeShift = null;
 let posShiftActive = false;
-let shiftControlsObserver = null;
-// Bawat pagpasok/alis sa POS ay may sariling session. Pinipigilan nito ang
-// mabagal na async load mula sa dating DOM na mag-render sa bagong section.
+let shiftControlsObserver = null;//  Bawat pagpasok/alis sa POS ay may sariling session. Pinipigilan nito ang mabagal na async load mula sa dating DOM na mag-render sa bagong section.
 let posSession = 0;
 
-let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-// NOTE: these hold the logged-in employee's role and uid so that
-// filterProducts() can enforce them as a safety net, even if allProducts
-// ever gets populated from a source that isn't already filtered (e.g. a
-// realtime listener or the offline IndexedDB path).
+let cart = JSON.parse(localStorage.getItem("cart")) || [];//   NOTE: these hold the logged-in employee's role and uid so that filterProducts() can enforce them as a safety net, even if allProducts ever gets populated from a source that isn't already filtered (e.g. a realtime listener or the offline IndexedDB path).
 let currentRole = null;
 let currentEmployeeId = null;
 
@@ -46,12 +39,7 @@ function formatQuantity(value) {
   const quantity = Number(value);
   if (!Number.isFinite(quantity)) return "0";
   return Number.isInteger(quantity) ? String(quantity) : quantity.toFixed(2);
-}
-
-// ========================================
-// LOW STOCK CHECK
-// ========================================
-// Pack products consume piece-based stock. Other units are sold per order.
+}//   LOW STOCK CHECK Pack products consume piece-based stock. Other units are sold per order.
 function isPackProduct(product) {
   return (
     String(product.unit || "")
@@ -159,9 +147,7 @@ function findComboProduct(
   );
 }
 
-function getEmployeeCombos() {
-  // allProducts is already limited to the signed-in employee's role and
-  // employee assignment by loadProducts(); only build combos from that set.
+function getEmployeeCombos() {//  allProducts is already limited to the signed-in employee's role and employee assignment by loadProducts(); only build combos from that set.
   const usableProducts = allProducts.filter(
     (product) =>
       hasUnlimitedOrder(product) ||
@@ -259,15 +245,7 @@ function getEmployeeCombos() {
     "pares",
   );
   return combos;
-}
-
-// ========================================
-// LOW STOCK MODAL
-// ========================================
-
-// Isinasara at tinatanggal ang low-stock modal. Naka-append ito sa
-// document.body (hindi sa #content), kaya kailangan itong linisin nang
-// hiwalay kapag lumipat ng section.
+}//   LOW STOCK MODAL Isinasara at tinatanggal ang low-stock modal. Naka-append ito sa document.body (hindi sa #content), kaya kailangan itong linisin nang hiwalay kapag lumipat ng section.
 function closeLowStockModal() {
   const element = document.getElementById("low-stock-confirmation-modal");
   if (element) {
@@ -324,16 +302,11 @@ async function openLowStockConfirmation(product) {
         '[data-action="confirm"]',
       );
       confirmButton.disabled = true;
-      confirmButton.textContent = "Sending...";
-
-      // Kunin bago ang await dahil nagiging null ang currentEmployeeId
-      // kapag tinawag na ang stopPosPage().
+      confirmButton.textContent = "Sending...";//   Kunin bago ang await dahil nagiging null ang currentEmployeeId kapag tinawag na ang stopPosPage().
       const employeeId = currentEmployeeId;
       const employeeUid = auth.currentUser?.uid || null;
 
-      try {
-        // Isang active alert lang bawat product para hindi mapuno ang manager bell
-        // kapag paulit-ulit itong na-click ng employee.
+      try {//  Isang active alert lang bawat product para hindi mapuno ang manager bell kapag paulit-ulit itong na-click ng employee.
         await setDoc(
           doc(db, "managerNotifications", `low-stock-${product.id}`),
           {
@@ -376,20 +349,13 @@ async function openLowStockConfirmation(product) {
 
 // INIT POS
 export async function initPOS() {
-  const session = ++posSession;
-
-  // Maaaring matawag ang initPOS nang higit sa isang beses (hal. back/forward
-  // navigation). Isara agad ang lumang listener bago gumawa ng bago.
+  const session = ++posSession;//   Maaaring matawag ang initPOS nang higit sa isang beses (hal. back/forward navigation). Isara agad ang lumang listener bago gumawa ng bago.
   if (unsubscribePOS) {
     unsubscribePOS();
     unsubscribePOS = null;
   }
 
-  cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-  // Firebase Auth restores the session asynchronously — auth.currentUser
-  // can still be null right after page load even if the person is
-  // already logged in, unless we wait for this to resolve first.
+  cart = JSON.parse(localStorage.getItem("cart")) || [];//   Firebase Auth restores the session asynchronously — auth.currentUser can still be null right after page load even if the person is already logged in, unless we wait for this to resolve first.
   const user = await new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       unsubscribe();
@@ -397,10 +363,7 @@ export async function initPOS() {
     });
   });
 
-  const authUid = user ? user.uid : null;
-
-  // Kung nakalipat na sa ibang DOM habang hinihintay ang Firebase Auth,
-  // huwag nang magpatuloy sa lumang POS page.
+  const authUid = user ? user.uid : null;//   Kung nakalipat na sa ibang DOM habang hinihintay ang Firebase Auth, huwag nang magpatuloy sa lumang POS page.
   if (session !== posSession || !document.getElementById("productList")) return;
 
   unsubscribeShift?.();
@@ -464,12 +427,7 @@ export async function initPOS() {
     setupCartEvents();
     setupProductSearch();
     return;
-  }
-
-  // loadProducts() resolves quickly (it just sets up the realtime
-  // listener) — the actual product data arrives via onSnapshot whenever
-  // Firestore pushes it, and filterProducts()/renderProducts() get
-  // called automatically from inside that listener.
+  }//   loadProducts() resolves quickly (it just sets up the realtime listener) — the actual product data arrives via onSnapshot whenever Firestore pushes it, and filterProducts()/renderProducts() get called automatically from inside that listener.
   await loadProducts(session);
   if (session !== posSession) return;
   identifyCart();
@@ -480,13 +438,7 @@ export async function initPOS() {
 
 function saveCart() {
   localStorage.setItem("cart", JSON.stringify(cart));
-}
-
-// Kunin ang role at employeeId ng naka-login na employee, hanapin sa
-// "employees" collection gamit ang Auth uid (hindi doc ID mismo).
-// IMPORTANTE: ang "employeeId" na nakalagay sa mga product ay tumutukoy
-// sa DOCUMENT ID ng employee record (snap.docs[0].id) — hindi sa Auth
-// uid mismo. Kung magkaiba pala sa Firestore mo, dito lang ito baguhin.
+}//   Kunin ang role at employeeId ng naka-login na employee, hanapin sa "employees" collection gamit ang Auth uid (hindi doc ID mismo). IMPORTANTE: ang "employeeId" na nakalagay sa mga product ay tumutukoy sa DOCUMENT ID ng employee record (snap.docs[0].id) — hindi sa Auth uid mismo. Kung magkaiba pala sa Firestore mo, dito lang ito baguhin.
 async function getCurrentEmployeeInfo() {
   const user = auth.currentUser;
   if (!user) return null;
@@ -520,42 +472,24 @@ async function loadProducts(session) {
 
   // Save these so filterProducts() can also enforce them as a safety net.
   currentRole = info.role;
-  currentEmployeeId = info.employeeId;
-
-  // Isarado muna ang dating listener (kung meron) bago mag-subscribe ng
-  // bago, para hindi dumoble ang updates kapag na-call ulit ang
-  // loadProducts() (hal. pagbabalik sa page).
+  currentEmployeeId = info.employeeId;//   Isarado muna ang dating listener (kung meron) bago mag-subscribe ng bago, para hindi dumoble ang updates kapag na-call ulit ang loadProducts() (hal. pagbabalik sa page).
   if (unsubscribePOS) {
     unsubscribePOS();
     unsubscribePOS = null;
-  }
-
-  // Ipakita lang ang mga product na naka-assign sa role na ito, o yung
-  // naka-mark na "ALL" (shared across every role). employeeId ang
-  // pangalawang gate — kailangan din itong tumugma (o "ALL") bago
-  // mapunta sa allProducts.
+  }//   Ipakita lang ang mga product na naka-assign sa role na ito, o yung naka-mark na "ALL" (shared across every role). employeeId ang pangalawang gate — kailangan din itong tumugma (o "ALL") bago mapunta sa allProducts.
   const q = query(
     collection(db, "products"),
     where("role", "in", [currentRole, "ALL"]),
-  );
-
-  // onSnapshot instead of getDocs: mag-a-update na mismo ang list kapag
-  // may nabago sa Firestore (bagong product, na-out of stock, etc.) —
-  // hindi na kailangan pa ng manual refresh ng page.
+  );//   onSnapshot instead of getDocs: mag-a-update na mismo ang list kapag may nabago sa Firestore (bagong product, na-out of stock, etc.) — hindi na kailangan pa ng manual refresh ng page.
   unsubscribePOS = onSnapshot(
     q,
-    (querySnapshot) => {
-      // Ang callback ng dating listener ay hindi dapat magbago ng DOM pagkatapos
-      // lumipat ang employee sa ibang section.
+    (querySnapshot) => {//  Ang callback ng dating listener ay hindi dapat magbago ng DOM pagkatapos lumipat ang employee sa ibang section.
       if (session !== posSession || !productGrid.isConnected) return;
 
       allProducts = [];
 
       querySnapshot.forEach((docSnap) => {
-        const product = docSnap.data();
-
-        // employeeId gate: kung may laman ito at hindi ito "ALL" o hindi
-        // tumutugma sa naka-login na employee, huwag isama.
+        const product = docSnap.data();//   employeeId gate: kung may laman ito at hindi ito "ALL" o hindi tumutugma sa naka-login na employee, huwag isama.
         const productEmployeeId = product.employeeId;
         const employeeMatch =
           !productEmployeeId ||
@@ -872,9 +806,7 @@ function setupCartEvents() {
   });
 }
 
-function restoreCartOnPageShow() {
-  // pageshow ay maaari ring tumakbo kapag naka-cache ang ibang page. POS lang
-  // ang may cart elements, kaya huwag mag-render sa ibang DOM.
+function restoreCartOnPageShow() {//  pageshow ay maaari ring tumakbo kapag naka-cache ang ibang page. POS lang ang may cart elements, kaya huwag mag-render sa ibang DOM.
   if (!document.getElementById("cartTable")) return;
   cart = JSON.parse(localStorage.getItem("cart")) || [];
   identifyCart();
@@ -898,10 +830,7 @@ export function stopPosPage() {
   if (unsubscribePOS) {
     unsubscribePOS();
     unsubscribePOS = null;
-  }
-
-  // I-reset ang mga ginalaw ng shift watcher sa #content para hindi
-  // madala sa susunod na section.
+  }//   I-reset ang mga ginalaw ng shift watcher sa #content para hindi madala sa susunod na section.
   const content = document.getElementById("content");
   if (content) {
     content.classList.remove("shift-inactive");
@@ -923,38 +852,25 @@ export function stopPosPage() {
   currentRole = null;
   currentEmployeeId = null;
   allProducts = [];
-  selectedCategory = "All";
-
-  // Kapag lumipat sa ibang employee section, ituring na cancelled ang
-  // kasalukuyang order. Hindi ito tinatawag sa Proceed to Checkout, kaya
-  // buo pa rin ang cart sa payment page.
+  selectedCategory = "All";//   Kapag lumipat sa ibang employee section, ituring na cancelled ang kasalukuyang order. Hindi ito tinatawag sa Proceed to Checkout, kaya buo pa rin ang cart sa payment page.
   cart = [];
   localStorage.removeItem("cart");
 }
 
 window.addEventListener("employee:before-section-change", stopPosPage);
 
-// ========================================
 // PRODUCT FILTER & SEARCH
-// ========================================
-
 let allProducts = [];
 let selectedCategory = "All";
 
-// ========================================
 // SET PRODUCTS
-// ========================================
-
 function setProducts(products) {
   allProducts = products;
   setupCategoryButtons();
   filterProducts();
 }
 
-// ========================================
 // CATEGORY BUTTONS
-// ========================================
-
 function setupCategoryButtons() {
   const categoriesContainer = document.querySelector(".categories");
   if (!categoriesContainer) return;
@@ -1004,10 +920,7 @@ function setupCategoryButtons() {
     categoriesContainer.appendChild(button);
   });
 }
-// ========================================
 // SEARCH PRODUCT
-// ========================================
-
 function setupProductSearch() {
   const searchInput = document.getElementById("searchProduct");
 
@@ -1024,10 +937,7 @@ function setupProductSearch() {
   });
 }
 
-// ========================================
 // FILTER PRODUCTS
-// ========================================
-
 function filterProducts() {
   const searchInput = document.getElementById("searchProduct");
 
@@ -1036,12 +946,7 @@ function filterProducts() {
   const filteredProducts = allProducts.filter((product) => {
     const stock = Number(product.pieces ?? product.stock) || 0;
 
-    if (stock <= 0 && !hasUnlimitedOrder(product)) return false;
-
-    // Safety net: enforce role AND employeeId visibility here too, in
-    // case allProducts was ever populated from a path that skipped the
-    // filtered Firestore query (e.g. setProducts() from a realtime
-    // listener, or the offline IndexedDB load).
+    if (stock <= 0 && !hasUnlimitedOrder(product)) return false;//   Safety net: enforce role AND employeeId visibility here too, in case allProducts was ever populated from a path that skipped the filtered Firestore query (e.g. setProducts() from a realtime listener, or the offline IndexedDB load).
     const productRole = product.role;
     const roleMatch =
       !currentRole ||
@@ -1077,10 +982,7 @@ function filterProducts() {
   renderProducts(filteredProducts);
 }
 
-// ========================================
 // RENDER PRODUCTS
-// ========================================
-
 function renderProducts(products) {
   const productList = document.getElementById("productList");
 

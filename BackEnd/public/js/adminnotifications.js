@@ -383,10 +383,7 @@ export function initManagerNotifications() {
       const notifications = snapshot.docs.map((entry) => ({
         id: entry.id,
         ...entry.data(),
-      }));
-
-      // The first snapshot contains old notifications, so do not replay them
-      // as phone alerts. Only genuinely new, unread notifications alert.
+      }));//   The first snapshot contains old notifications, so do not replay them as phone alerts. Only genuinely new, unread notifications alert.
       if (hasLoadedInitialNotifications) {
         snapshot
           .docChanges()

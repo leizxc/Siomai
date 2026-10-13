@@ -86,10 +86,7 @@ function getMenuAvailableStock(menuData) {
 
   const configuredLimit = getConfiguredMenuStockLimit(menuData);
   if (configuredLimit == null) return currentStock;
-
-  // Legacy menu entries started with inventory quantity in initial_stock.
-  // Preserve stock already assigned under the old behavior when applying the
-  // Product Menu limit for the first time.
+//  Legacy menu entries started with inventory quantity in initial_stock. Preserve stock already assigned under the old behavior when applying the Product Menu limit for the first time.
   const originalStock = Math.max(0, Number(menuData.initial_stock ?? currentStock) || 0);
   const previouslyConsumed = Math.max(0, originalStock - currentStock);
   return Math.max(0, Math.min(currentStock, configuredLimit - previouslyConsumed));
@@ -572,10 +569,7 @@ async function archiveDepletedMenuIfReady(menuId) {
       last_updated: serverTimestamp(),
     });
     return;
-  }
-
-  // Keep the menu record while any employee still has stock, including
-  // legacy assignment records that use `stock` instead of `pieces`.
+  }//   Keep the menu record while any employee still has stock, including legacy assignment records that use `stock` instead of `pieces`.
   const latestAssignments = await getDocs(
     query(collection(db, "products"), where("inventoryId", "==", menuId)),
   );
@@ -766,8 +760,7 @@ function bindProductFormListeners() {
       if (equivalentInput) equivalentInput.value = "";
 
       if (unit === "pack") {
-        // The form should show assignable packs from the live remaining stock,
-        // not the original recipe quantity saved when the menu was created.
+// The form should show assignable packs from the live remaining stock, not the original recipe quantity saved when the menu was created.
         const availableStockPacks = Math.floor(pieces / piecesPerPack);
         const menuPacksUsed = Math.max(0, Number(data.packs_used || 0));
         const maxAssignablePacks = Math.min(availableStockPacks, menuPacksUsed);
@@ -1747,10 +1740,7 @@ export async function loadProducts() {
                 original_stock: originalStock,
               },
               productId,
-            );
-
-            // Preserve the exhausted allocation when archiving fails so the
-            // next snapshot can retry instead of losing its history record.
+            );//   Preserve the exhausted allocation when archiving fails so the next snapshot can retry instead of losing its history record.
             if (!archived) continue;
 
             await deleteDoc(doc(db, "products", productId));

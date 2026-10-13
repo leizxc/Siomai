@@ -81,9 +81,7 @@ export function watchActiveShift(callback) {
 
       const emit = () => {
         if (!ready.today || !ready.yesterday) return;
-        const { today, yesterday } = data;
-        // A shift that started yesterday and is still open (or waiting for
-        // time-out approval) keeps counting after midnight.
+        const { today, yesterday } = data;//  A shift that started yesterday and is still open (or waiting for time-out approval) keeps counting after midnight.
         const yesterdayOpen =
           isActiveShift(yesterday) ||
           Boolean(yesterday && yesterday.status === "time_out_pending");

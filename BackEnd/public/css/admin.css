@@ -58,9 +58,7 @@ body {
   min-height: 100vh;
 }
 
-/* ============================================
-SIDEBAR
-============================================ */
+/* ============================================ SIDEBAR ============================================ */
 .sidebar {
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
@@ -179,9 +177,7 @@ SIDEBAR
   display: none;
 }
 
-/* ============================================
-HEADER
-============================================ */
+/* ============================================ HEADER ============================================ */
 .mobile-header {
   background: var(--bg-header);
   border-bottom: 1px solid var(--border);
@@ -534,9 +530,7 @@ html.dark .admin-profile-menu-action:hover {
   color: var(--text-secondary);
 }
 
-/* ============================================
-MAIN CONTENT
-============================================ */
+/* ============================================ MAIN CONTENT ============================================ */
 .main {
   background: var(--bg-body);
   margin-left: 260px;
@@ -556,9 +550,7 @@ MAIN CONTENT
   margin: 0;
 }
 
-/* ============================================
-CARDS
-============================================ */
+/* ============================================ CARDS ============================================ */
 .card,
 .dashboard-panel,
 .dashboard-kpi-card,
@@ -579,9 +571,7 @@ CARDS
   margin-bottom: 20px;
 }
 
-/* ============================================
-HEADER / TITLES
-============================================ */
+/* ============================================ HEADER / TITLES ============================================ */
 .header {
   display: flex;
   justify-content: space-between;
@@ -616,9 +606,7 @@ HEADER / TITLES
   color: var(--text-primary);
 }
 
-/* ============================================
-DASHBOARD
-============================================ */
+/* ============================================ DASHBOARD ============================================ */
 .dashboard-content {
   width: 100%;
 }
@@ -861,9 +849,7 @@ html.dark .dashboard-kpi-card:hover {
   color: var(--accent-hover);
 }
 
-/* ============================================
-TOP PRODUCTS
-============================================ */
+/* ============================================ TOP PRODUCTS ============================================ */
 .top-product-list {
   width: 100%;
 }
@@ -914,9 +900,7 @@ TOP PRODUCTS
   color: var(--text-primary);
 }
 
-/* ============================================
-INVENTORY SUMMARY
-============================================ */
+/* ============================================ INVENTORY SUMMARY ============================================ */
 .inventory-summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1058,9 +1042,7 @@ INVENTORY SUMMARY
   color: #9333ea;
 }
 
-/* ============================================
-CATEGORY PILLS
-============================================ */
+/* ============================================ CATEGORY PILLS ============================================ */
 .category-row {
   display: flex;
   align-items: center;
@@ -1127,9 +1109,7 @@ CATEGORY PILLS
   background-color: #1d4ed8;
 }
 
-/* ============================================
-INVENTORY ACTIONS
-============================================ */
+/* ============================================ INVENTORY ACTIONS ============================================ */
 .inventory-actions {
   width: 100%;
   display: flex;
@@ -1184,9 +1164,7 @@ INVENTORY ACTIONS
   color: #fff !important;
 }
 
-/* ============================================
-DELETE BUTTONS (shared)
-============================================ */
+/* ============================================ DELETE BUTTONS (shared) ============================================ */
 .inventory-actions #delete-category-btn,
 .expense-actions #btn-delete-category,
 .expense-actions .delete-outline,
@@ -1243,9 +1221,7 @@ DELETE BUTTONS (shared)
   color: #d1d5db !important;
 }
 
-/* ============================================
-INVENTORY TABLE
-============================================ */
+/* ============================================ INVENTORY TABLE ============================================ */
 .inventory-header {
   display: flex;
   justify-content: space-between;
@@ -1502,9 +1478,7 @@ INVENTORY TABLE
   outline: none !important;
 }
 
-/* ============================================
-SEARCH CATALOG
-============================================ */
+/* ============================================ SEARCH CATALOG ============================================ */
 .search-catalog-wrapper {
   display: flex;
   flex-wrap: wrap;
@@ -1642,9 +1616,7 @@ SEARCH CATALOG
   border-radius: 8px;
 }
 
-/* ============================================
-PAGINATION
-============================================ */
+/* ============================================ PAGINATION ============================================ */
 .inventory-footer,
 .productmenu-footer,
 .employee-footer {
@@ -1725,9 +1697,7 @@ PAGINATION
   color: var(--text-secondary);
 }
 
-/* ============================================
-PRODUCT MENU TABLE
-============================================ */
+/* ============================================ PRODUCT MENU TABLE ============================================ */
 #menutable {
   width: 100%;
   min-width: 0;
@@ -1807,9 +1777,7 @@ PRODUCT MENU TABLE
   gap: 5px;
 }
 
-/* ============================================
-PRODUCT TABLE (Assign Product) — match Inventory
-============================================ */
+/* ============================================ PRODUCT TABLE (Assign Product) — match Inventory ============================================ */
 #productTable {
   width: 100%;
   min-width: 0;
@@ -1992,9 +1960,7 @@ PRODUCT TABLE (Assign Product) — match Inventory
   }
 }
 
-/* ============================================
-ASSIGN PRODUCT FORM
-============================================ */
+/* ============================================ ASSIGN PRODUCT FORM ============================================ */
 .assign-product-form .row {
   display: flex;
   flex-wrap: wrap;
@@ -2076,9 +2042,7 @@ ASSIGN PRODUCT FORM
   transform: translateY(-10px);
 }
 
-/* ============================================
-PRODUCT MENU FORM
-============================================ */
+/* ============================================ PRODUCT MENU FORM ============================================ */
 .product-menu-form .row {
   display: flex;
   flex-wrap: wrap;
@@ -2199,9 +2163,7 @@ button.save-menu-btn,
   align-items: center !important;
 }
 
-/* ============================================
-EXPENSES
-============================================ */
+/* ============================================ EXPENSES ============================================ */
 .expense-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2433,9 +2395,7 @@ EXPENSES
   text-align: center;
 }
 
-/* ============================================
-EMPLOYEE
-============================================ */
+/* ============================================ EMPLOYEE ============================================ */
 .employee-summary {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2885,9 +2845,7 @@ html.dark .employee-edit-fields select {
   color: #15803d;
 }
 
-/* ============================================
-MODALS
-============================================ */
+/* ============================================ MODALS ============================================ */
 .modal {
   background: var(--bg-card) !important;
   color: var(--text-primary);
@@ -3076,9 +3034,7 @@ MODALS
   color: #16a34a;
 }
 
-/* ============================================
-ARCHIVE & PRODUCT HISTORY MODALS
-============================================ */
+/* ============================================ ARCHIVE & PRODUCT HISTORY MODALS ============================================ */
 #modal-archive-history.modal,
 #modal-product-history.modal {
   width: 92% !important;
@@ -3150,9 +3106,7 @@ ARCHIVE & PRODUCT HISTORY MODALS
   box-shadow: none !important;
 }
 
-/* ============================================
-RECOVER CONFIRM MODAL
-============================================ */
+/* ============================================ RECOVER CONFIRM MODAL ============================================ */
 #modal-recover-product.modal {
   width: 420px !important;
   max-width: 92% !important;
@@ -3244,9 +3198,7 @@ RECOVER CONFIRM MODAL
   border-color: #15803d !important;
 }
 
-/* ============================================
-TOAST
-============================================ */
+/* ============================================ TOAST ============================================ */
 .toast {
   position: fixed !important;
   top: 0 !important;
@@ -3280,9 +3232,7 @@ TOAST
   font-weight: 600;
 }
 
-/* ============================================
-THEME TOGGLE
-============================================ */
+/* ============================================ THEME TOGGLE ============================================ */
 .theme-toggle,
 .theme-toggle:focus,
 .theme-toggle:active,
@@ -3325,9 +3275,7 @@ button#theme-toggle:focus-visible {
   display: none !important;
 }
 
-/* ============================================
-SELECT INPUTS
-============================================ */
+/* ============================================ SELECT INPUTS ============================================ */
 .select-wrapper input.select-dropdown {
   height: 45px !important;
   margin: 0 !important;
@@ -3464,14 +3412,10 @@ ul.dropdown-content.select-dropdown li.selected {
   background: var(--border-soft) !important;
 }
 
-/* ============================================
-MOBILE RESPONSIVE STYLES (768px and below)
-============================================ */
+/* ============================================ MOBILE RESPONSIVE STYLES (768px and below) ============================================ */
 
 @media (max-width: 768px) {
-  /* ==========================================
-LAYOUT
-========================================== */
+  /* ========================================== LAYOUT ========================================== */
   .container {
     display: block;
   }
@@ -3488,9 +3432,7 @@ LAYOUT
     max-width: 100%;
   }
 
-  /* ==========================================
-HEADER / MOBILE HEADER
-========================================== */
+  /* ========================================== HEADER / MOBILE HEADER ========================================== */
   .mobile-header {
     position: fixed !important;
     top: 0;
@@ -3604,9 +3546,7 @@ HEADER / MOBILE HEADER
     opacity: 0.85 !important;
   }
 
-  /* ==========================================
-SIDEBAR
-========================================== */
+  /* ========================================== SIDEBAR ========================================== */
   .sidebar {
     position: fixed;
     top: 0;
@@ -3646,9 +3586,7 @@ SIDEBAR
     visibility: visible;
   }
 
-  /* ==========================================
-CARDS
-========================================== */
+  /* ========================================== CARDS ========================================== */
   .card,
   .dashboard-panel,
   .dashboard-kpi-card,
@@ -3665,9 +3603,7 @@ CARDS
     border-radius: 12px;
   }
 
-  /* ==========================================
-DASHBOARD
-========================================== */
+  /* ========================================== DASHBOARD ========================================== */
   .dashboard-content {
     padding: 0;
   }
@@ -3852,9 +3788,7 @@ DASHBOARD
     color: var(--accent-hover);
   }
 
-  /* ==========================================
-INVENTORY
-========================================== */
+  /* ========================================== INVENTORY ========================================== */
   .inventory-summary {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -4064,9 +3998,7 @@ INVENTORY
     justify-content: space-between;
   }
 
-  /* ==========================================
-SEARCH CATALOG
-========================================== */
+  /* ========================================== SEARCH CATALOG ========================================== */
   .search-catalog-wrapper {
     flex-direction: column;
     align-items: stretch;
@@ -4088,9 +4020,7 @@ SEARCH CATALOG
     gap: 8px;
   }
 
-  /* ==========================================
-PRODUCT MENU
-========================================== */
+  /* ========================================== PRODUCT MENU ========================================== */
   .product-menu-form,
   .product-list-card {
     margin: 10px 8px;
@@ -4219,9 +4149,7 @@ PRODUCT MENU
     justify-content: center;
   }
 
-  /* ==========================================
-ASSIGN PRODUCT
-========================================== */
+  /* ========================================== ASSIGN PRODUCT ========================================== */
   .assign-product-form,
   .product-list-card {
     margin: 10px 8px;
@@ -4312,9 +4240,7 @@ ASSIGN PRODUCT
     justify-content: space-between;
   }
 
-  /* ==========================================
-EXPENSES
-========================================== */
+  /* ========================================== EXPENSES ========================================== */
   .expense-summary {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -4454,9 +4380,7 @@ EXPENSES
     margin: 0;
   }
 
-  /* ==========================================
-EMPLOYEE
-========================================== */
+  /* ========================================== EMPLOYEE ========================================== */
   .employee-page .header {
     display: none;
   }
@@ -4597,9 +4521,7 @@ EMPLOYEE
     justify-content: space-between;
   }
 
-  /* ==========================================
-MODALS
-========================================== */
+  /* ========================================== MODALS ========================================== */
   .modal {
     width: 90% !important;
     max-width: 380px !important;
@@ -4632,9 +4554,7 @@ MODALS
     min-width: 640px;
   }
 
-  /* ==========================================
-DARK MODE - MOBILE OVERRIDES
-========================================== */
+  /* ========================================== DARK MODE - MOBILE OVERRIDES ========================================== */
   html.dark .mobile-header {
     background: #111 !important;
     border-bottom-color: #262626 !important;
@@ -4841,18 +4761,14 @@ DARK MODE - MOBILE OVERRIDES
   }
 }
 
-/* ============================================
-DARK MODE - DESKTOP (769px and above)
-============================================ */
+/* ============================================ DARK MODE - DESKTOP (769px and above) ============================================ */
 
 html.dark body {
   background: var(--bg-body) !important;
   color: var(--text-primary) !important;
 }
 
-/* ==========================================
-SIDEBAR
-========================================== */
+/* ========================================== SIDEBAR ========================================== */
 html.dark .sidebar {
   background: var(--bg-sidebar) !important;
   border-right: 1px solid var(--border) !important;
@@ -4876,9 +4792,7 @@ html.dark .sidebar .nav li:hover {
   background: var(--sidebar-hover) !important;
 }
 
-/* ==========================================
-HEADER
-========================================== */
+/* ========================================== HEADER ========================================== */
 html.dark .mobile-header {
   background: var(--bg-header) !important;
   border-bottom: 1px solid var(--border) !important;
@@ -4900,16 +4814,12 @@ html.dark .admin-profile > i {
   color: var(--logo) !important;
 }
 
-/* ==========================================
-MAIN CONTENT
-========================================== */
+/* ========================================== MAIN CONTENT ========================================== */
 html.dark .main {
   background: var(--bg-body) !important;
 }
 
-/* ==========================================
-CARDS
-========================================== */
+/* ========================================== CARDS ========================================== */
 html.dark .card,
 html.dark .dashboard-panel,
 html.dark .dashboard-kpi-card,
@@ -4952,17 +4862,13 @@ html.dark .subtitle {
   color: var(--text-secondary) !important;
 }
 
-/* ==========================================
-KPI ICONS
-========================================== */
+/* ========================================== KPI ICONS ========================================== */
 html.dark .kpi-icon {
   background: #0a0a0a !important;
   border: 1px solid var(--border) !important;
 }
 
-/* ==========================================
-INVENTORY STATS
-========================================== */
+/* ========================================== INVENTORY STATS ========================================== */
 html.dark .inventory-stat {
   background: #0a0a0a !important;
   border: 1px solid var(--border) !important;
@@ -4979,9 +4885,7 @@ html.dark .inventory-stat small {
   color: var(--text-secondary) !important;
 }
 
-/* ==========================================
-TABLES
-========================================== */
+/* ========================================== TABLES ========================================== */
 html.dark table,
 html.dark th,
 html.dark td {
@@ -5024,9 +4928,7 @@ html.dark .dashboard-note {
   color: var(--text-muted) !important;
 }
 
-/* ==========================================
-STATUS BADGES - DARK MODE
-========================================== */
+/* ========================================== STATUS BADGES - DARK MODE ========================================== */
 html.dark .inventory-card .status.available {
   background: #14532d !important;
   color: #86efac !important;
@@ -5052,9 +4954,7 @@ html.dark .product-list-card .status.on-selling {
   color: #a5f3fc !important;
 }
 
-/* ==========================================
-CATEGORY PILLS - DARK MODE
-========================================== */
+/* ========================================== CATEGORY PILLS - DARK MODE ========================================== */
 html.dark .category-pill {
   background: #1a1a1a !important;
   color: #f5f5f5 !important;
@@ -5071,9 +4971,7 @@ html.dark .category-pill.active {
   border-color: #2563eb !important;
 }
 
-/* ==========================================
-INPUTS & SELECTS
-========================================== */
+/* ========================================== INPUTS & SELECTS ========================================== */
 html.dark input,
 html.dark select,
 html.dark textarea,
@@ -5137,9 +5035,7 @@ html.dark ul.dropdown-content.select-dropdown li.selected:hover {
   background: #1e40af !important;
 }
 
-/* ==========================================
-LINKS
-========================================== */
+/* ========================================== LINKS ========================================== */
 html.dark .dashboard-panel-link,
 html.dark .inventory-footer a {
   color: var(--accent) !important;
@@ -5150,9 +5046,7 @@ html.dark .inventory-footer a:hover {
   color: var(--accent-hover) !important;
 }
 
-/* ==========================================
-MODALS
-========================================== */
+/* ========================================== MODALS ========================================== */
 html.dark .modal {
   background: var(--bg-card) !important;
   color: var(--text-primary) !important;
@@ -5263,9 +5157,7 @@ html.dark #modal-recover-product #confirm-recover-product {
   color: #fff !important;
 }
 
-/* ==========================================
-TOP PRODUCTS - DARK MODE
-========================================== */
+/* ========================================== TOP PRODUCTS - DARK MODE ========================================== */
 html.dark .top-products-panel,
 html.dark .top-products-panel * {
   color: var(--text-primary);
@@ -5306,9 +5198,7 @@ html.dark .top-product {
   border-bottom-color: var(--border) !important;
 }
 
-/* ==========================================
-INVENTORY SUMMARY ICONS - DARK MODE
-========================================== */
+/* ========================================== INVENTORY SUMMARY ICONS - DARK MODE ========================================== */
 html.dark .inventory-summary .summary-icon {
   background: #0a0a0a !important;
   border: 1px solid #262626 !important;
@@ -5327,9 +5217,7 @@ html.dark .inventory-summary .icon-purple i {
   color: #9333ea !important;
 }
 
-/* ==========================================
-EXPENSES - DARK MODE
-========================================== */
+/* ========================================== EXPENSES - DARK MODE ========================================== */
 html.dark .expense-summary .summary-card,
 html.dark .expenses-page .summary-card {
   background: #141414 !important;
@@ -5456,9 +5344,7 @@ html.dark .expenses-page .header p {
   color: #a3a3a3 !important;
 }
 
-/* ==========================================
-EMPLOYEE - DARK MODE
-========================================== */
+/* ========================================== EMPLOYEE - DARK MODE ========================================== */
 html.dark .employee-summary .summary-box {
   background: #141414 !important;
   border: 1px solid #262626 !important;
@@ -5617,9 +5503,7 @@ html.dark .employee-page .header p {
   color: #a3a3a3 !important;
 }
 
-/* ==========================================
-IMAGE UPLOAD - DARK MODE
-========================================== */
+/* ========================================== IMAGE UPLOAD - DARK MODE ========================================== */
 html.dark .image-upload {
   background: #0a0a0a !important;
   border: 2px dashed #333 !important;
@@ -5647,9 +5531,7 @@ html.dark .image-upload:hover .material-icons {
   color: #3b82f6 !important;
 }
 
-/* ==========================================
-DELETE BUTTONS - DARK MODE (ENABLED)
-========================================== */
+/* ========================================== DELETE BUTTONS - DARK MODE (ENABLED) ========================================== */
 html.dark .inventory-actions #delete-category-btn:not(:disabled),
 html.dark .expense-actions #btn-delete-category:not(:disabled),
 html.dark .expense-actions .delete-outline:not(:disabled),
@@ -5700,9 +5582,7 @@ html.dark .employee-actions #btn-delete-role:not(:disabled):hover i {
   color: #f5f5f5 !important;
 }
 
-/* ==========================================
-INVENTORY BUTTONS - DARK MODE
-========================================== */
+/* ========================================== INVENTORY BUTTONS - DARK MODE ========================================== */
 html.dark .inventory-actions #btn-add-product {
   background: #2563eb !important;
   color: #fff !important;
@@ -5724,9 +5604,7 @@ html.dark .inventory-actions #btn-add-categories:hover i {
   color: #fff !important;
 }
 
-/* ==========================================
-PAGINATION - DARK MODE
-========================================== */
+/* ========================================== PAGINATION - DARK MODE ========================================== */
 html.dark .inventory-footer,
 html.dark .productmenu-footer,
 html.dark .employee-footer {
@@ -5759,9 +5637,7 @@ html.dark #menu-info {
   color: #a3a3a3 !important;
 }
 
-/* ==========================================
-SEARCH INPUTS - DARK MODE
-========================================== */
+/* ========================================== SEARCH INPUTS - DARK MODE ========================================== */
 html.dark .search-input-wrapper {
   background: #0a0a0a !important;
   border: 2px solid #333 !important;
@@ -5808,9 +5684,7 @@ html.dark .filter-category-wrapper select option {
   color: #f5f5f5 !important;
 }
 
-/* ==========================================
-DATE INPUT - DARK MODE
-========================================== */
+/* ========================================== DATE INPUT - DARK MODE ========================================== */
 html.dark .inventory-card .filter-group input[type="date"],
 html.dark .inventory-card #filter-date {
   background: #0a0a0a !important;
@@ -5829,16 +5703,12 @@ html.dark .inventory-card .filter-group > label {
   color: #a3a3a3 !important;
 }
 
-/* ==========================================
-GENERATED ID - DARK MODE
-========================================== */
+/* ========================================== GENERATED ID - DARK MODE ========================================== */
 html.dark .GeneratedId {
   color: #a3a3a3 !important;
 }
 
-/* ==========================================
-PRODUCT MENU FORM - DARK MODE
-========================================== */
+/* ========================================== PRODUCT MENU FORM - DARK MODE ========================================== */
 html.dark .product-menu-form,
 html.dark .product-list-card {
   background: #141414 !important;
@@ -5850,9 +5720,7 @@ html.dark .product-list-card h4 {
   color: #f5f5f5 !important;
 }
 
-/* ==========================================
-ASSIGN PRODUCT FORM - DARK MODE
-========================================== */
+/* ========================================== ASSIGN PRODUCT FORM - DARK MODE ========================================== */
 html.dark .assign-product-form {
   background: #141414 !important;
   border: 1px solid #262626 !important;
@@ -6442,8 +6310,7 @@ html.dark
     background: var(--bg-card) !important;
   }
 
-  /* Materialize's .striped class shades alternating rows. Disable it for
-mobile cards so no row appears selected or highlighted. */
+  /* Materialize's .striped class shades alternating rows. Disable it for mobile cards so no row appears selected or highlighted. */
   #content table.data-table.striped > tbody > tr:nth-child(odd),
   #content table.data-table.striped > tbody > tr:hover {
     background-color: var(--bg-card) !important;
@@ -6958,10 +6825,7 @@ html.dark .dashboard-action-counts a {
   }
 }
 
-/* =========================================================
-MOBILE TABLES — Card layout with data-label
-(replaces the old force-table + horizontal-scroll rules)
-========================================================= */
+/* ========================================================= MOBILE TABLES — Card layout with data-label (replaces the old force-table + horizontal-scroll rules) ========================================================= */
 @media (max-width: 768px) {
   /* Containers stay fluid, no sideways page scroll */
   #content .table-container,
@@ -7325,9 +7189,7 @@ MOBILE TABLES — Card layout with data-label
     line-height: 1.25 !important;
   }
 
-  /* ==========================================
-ARCHIVE / PRODUCT HISTORY — modern mobile
-========================================== */
+  /* ========================================== ARCHIVE / PRODUCT HISTORY — modern mobile ========================================== */
   #modal-archive-history.modal,
   #modal-product-history.modal,
   #modal-product-history-assign.modal {

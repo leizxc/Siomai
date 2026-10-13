@@ -16,10 +16,7 @@ const verboseLog = (...args) => {
   if (!isProduction) console.log(...args);
 };
 
-// ============================================================
 // FIREBASE ADMIN INITIALIZATION
-// ============================================================
-
 let serviceAccount;
 let firebaseReady = false;
 let firebaseInitStatus = "not_initialized";
@@ -91,28 +88,19 @@ try {
   console.error("Firebase Admin Initialization Failed:", error.message);
 }
 
-// ============================================================
 // EXPRESS APP
-// ============================================================
-
 const app = express();
 
 app.set("trust proxy", 1);
 
-// ============================================================
 // SECURITY
-// ============================================================
-
 app.use(
   helmet({
     contentSecurityPolicy: false,
   }),
 );
 
-// ============================================================
 // CORS CONFIGURATION
-// ============================================================
-
 const allowedOrigins = new Set(
   [
     "https://siomai-b3afe.web.app",
@@ -139,10 +127,7 @@ const getRequestOrigin = (req) => {
   return `${publicProtocol}://${publicHost}`.replace(/\/$/, "");
 };
 
-// ============================================================
 // CORS MIDDLEWARE
-// ============================================================
-
 app.use((req, res, next) => {
   const origin = req.get("Origin");
 
@@ -156,10 +141,7 @@ app.use((req, res, next) => {
   const isAllowedOrigin =
     normalizedOrigin && (isSameOrigin || allowedOrigins.has(normalizedOrigin));
 
-  // ----------------------------------------------------------
   // OPTIONS / PREFLIGHT REQUEST
-  // ----------------------------------------------------------
-
   if (req.method === "OPTIONS") {
     if (!normalizedOrigin || isAllowedOrigin) {
       if (normalizedOrigin) {
@@ -186,10 +168,7 @@ app.use((req, res, next) => {
     });
   }
 
-  // ----------------------------------------------------------
   // NORMAL REQUEST
-  // ----------------------------------------------------------
-
   if (normalizedOrigin) {
     if (!isAllowedOrigin) {
       return res.status(403).json({
@@ -213,10 +192,7 @@ app.use((req, res, next) => {
   return next();
 });
 
-// ============================================================
 // EMAIL CONFIGURATION
-// ============================================================
-
 const adminEmails = new Set(
   (process.env.ADMIN_EMAILS || "")
     .split(",")
@@ -231,10 +207,7 @@ const ownerEmails = new Set(
     .filter(Boolean),
 );
 
-// ============================================================
 // RATE LIMITERS
-// ============================================================
-
 const accountLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -249,45 +222,30 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// ============================================================
 // ROUTE RATE LIMITING
-// ============================================================
-
 app.use(
   ["/createAuthUser", "/updateAuthPassword", "/deleteAuthUser"],
   accountLimiter,
 );
 
-// ============================================================
 // BODY PARSER
-// ============================================================
-
 app.use(
   express.json({
     limit: "100kb",
   }),
 );
 
-// ============================================================
 // STATIC FILES
-// ============================================================
-
 app.use("/owner", express.static(path.join(__dirname, "owner")));
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// ============================================================
 // ROOT
-// ============================================================
-
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ============================================================
 // HEALTH CHECK
-// ============================================================
-
 app.get("/health", (req, res) => {
   res.status(firebaseReady ? 200 : 503).json({
     success: firebaseReady,
@@ -296,10 +254,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-// ============================================================
 // AUTH HELPERS
-// ============================================================
-
 function getBearerToken(req) {
   const [scheme, token] = (req.get("Authorization") || "").split(" ");
 
@@ -330,10 +285,7 @@ async function getStoredAccountRole(uid) {
         .toLowerCase();
 }
 
-// ============================================================
 // ADMIN AUTHORIZATION
-// ============================================================
-
 async function requireAdmin(req, res, next) {
   if (!firebaseReady) {
     return res.status(503).json({
@@ -392,10 +344,7 @@ async function requireAdmin(req, res, next) {
   }
 }
 
-// ============================================================
 // AUDIT LOG
-// ============================================================
-
 async function writeAudit(actor, action, target) {
   await admin
     .firestore()
@@ -410,10 +359,7 @@ async function writeAudit(actor, action, target) {
     });
 }
 
-// ============================================================
 // CREATE AUTH USER
-// ============================================================
-
 app.post("/createAuthUser", requireAdmin, async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -503,10 +449,7 @@ app.post("/createAuthUser", requireAdmin, async (req, res) => {
   }
 });
 
-// ============================================================
 // UPDATE AUTH PASSWORD
-// ============================================================
-
 app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
   try {
     const { uid, password, fname, lname } = req.body;
@@ -637,10 +580,7 @@ app.post("/updateAuthPassword", requireAdmin, async (req, res) => {
   }
 });
 
-// ============================================================
 // DELETE AUTH USER
-// ============================================================
-
 app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
   try {
     const { uid } = req.body;
@@ -702,10 +642,7 @@ app.post("/deleteAuthUser", requireAdmin, async (req, res) => {
   }
 });
 
-// ============================================================
 // TEST FIREBASE CONNECTION
-// ============================================================
-
 app.get("/testFirebase", generalLimiter, requireAdmin, async (req, res) => {
   try {
     const users = await admin.auth().listUsers(1);
@@ -725,10 +662,7 @@ app.get("/testFirebase", generalLimiter, requireAdmin, async (req, res) => {
   }
 });
 
-// ============================================================
 // START SERVER - LOCAL ONLY
-// ============================================================
-
 const PORT = process.env.PORT || 4000;
 
 if (require.main === module) {
@@ -737,8 +671,5 @@ if (require.main === module) {
   });
 }
 
-// ============================================================
 // EXPORT EXPRESS APP FOR VERCEL
-// ============================================================
-
 module.exports = app;

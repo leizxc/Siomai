@@ -1,8 +1,4 @@
-/*!
- * Materialize v1.0.0 (http://materializecss.com)
- * Copyright 2014-2017 Materialize
- * MIT License (https://raw.githubusercontent.com/Dogfalo/materialize/master/LICENSE)
- */
+/* ! Materialize v1.0.0 (http://materializecss.com) Copyright 2014-2017 Materialize MIT License (https://raw.githubusercontent.com/Dogfalo/materialize/master/LICENSE) */
 .materialize-red {
   background-color: #e51c23 !important;
 }
@@ -2139,7 +2135,7 @@
   color: rgba(0, 0, 0, 0) !important;
 }
 
-/*! normalize.css v7.0.0 | MIT License | github.com/necolas/normalize.css */
+/* ! normalize.css v7.0.0 | MIT License | github.com/necolas/normalize.css */
 html {
   line-height: 1.15;
   -ms-text-size-adjust: 100%;
@@ -5736,14 +5732,7 @@ body.keyboard-focused .dropdown-content li:focus {
   cursor: pointer;
 }
 
-/*!
- * Waves v0.6.0
- * http://fian.my.id/Waves
- *
- * Copyright 2014 Alfiana E. Sibuea and other contributors
- * Released under the MIT license
- * https://github.com/fians/Waves/blob/master/LICENSE
- */
+/* ! Waves v0.6.0 http://fian.my.id/Waves Copyright 2014 Alfiana E. Sibuea and other contributors Released under the MIT license https://github.com/fians/Waves/blob/master/LICENSE */
 .waves-effect {
   position: relative;
   cursor: pointer;

@@ -6,7 +6,9 @@
     <script>
       (function () {
         const savedTheme = localStorage.getItem("theme");
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        const prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
         if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
           document.documentElement.classList.add("dark");
         }
@@ -41,52 +43,52 @@
 
           <!-- FORM -->
           <form id="login-form">
-          <div class="input-field">
-            <i class="material-icons prefix">person</i>
-            <input
-              id="username"
-              type="text"
-              placeholder="Username or Email"
-              autocomplete="username"
-              required
-            />
-          </div>
+            <div class="input-field">
+              <i class="material-icons prefix">person</i>
+              <input
+                id="username"
+                type="text"
+                placeholder="Username or Email"
+                autocomplete="username"
+                required
+              />
+            </div>
 
-          <div class="input-field">
-            <i class="material-icons prefix">lock</i>
-            <input
-              id="password"
-              type="password"
-              placeholder="Password"
-              autocomplete="current-password"
-              required
-            />
-            <label for="password">Password</label>
-            <span
-              class="material-icons toggle-password"
-              onclick="togglePassword()"
-              >visibility</span
+            <div class="input-field">
+              <i class="material-icons prefix">lock</i>
+              <input
+                id="password"
+                type="password"
+                placeholder="Password"
+                autocomplete="current-password"
+                required
+              />
+              <label for="password">Password</label>
+              <span
+                class="material-icons toggle-password"
+                onclick="togglePassword()"
+                >visibility</span
+              >
+            </div>
+
+            <p class="remember-me">
+              <label>
+                <input type="checkbox" />
+                <span>Remember Me</span>
+              </label>
+            </p>
+
+            <button
+              id="login-button"
+              type="submit"
+              class="btn btn-login waves-effect waves-light"
             >
-          </div>
-
-          <p class="remember-me">
-            <label>
-              <input type="checkbox" />
-              <span>Remember Me</span>
-            </label>
-          </p>
-
-          <button
-            id="login-button"
-            type="submit"
-            class="btn btn-login waves-effect waves-light"
-          >
-            <span class="login-button-label">Log In</span>
-            <span class="login-button-loading" aria-hidden="true">
-              <span class="login-spinner"></span>
-              Logging in...
-            </span>
-          </button>
+              <span class="login-button-label">Log In</span>
+              <span class="login-button-loading" aria-hidden="true">
+                <span class="login-spinner"></span>
+                Logging in...
+              </span>
+            </button>
           </form>
 
           <button
@@ -117,7 +119,7 @@
       where,
       getDocs,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import {
+    import {
       syncUsersFromFirebase,
       offlineLogin,
       SyncProductFromFirebase,
@@ -165,13 +167,13 @@
 
           //online login(firebase)
           const userCollection = collection(db, "users");
-          const lookupField = loginIdentifier.includes("@") ? "email" : "username";
+          const lookupField = loginIdentifier.includes("@")
+            ? "email"
+            : "username";
           let snapshot = await getDocs(
             query(userCollection, where(lookupField, "==", loginIdentifier)),
           );
-
-          // Keep username as the primary identifier, but accept the account's
-          // saved email as an alternative when the user has forgotten it.
+          //   Keep username as the primary identifier, but accept the account's saved email as an alternative when the user has forgotten it.
           if (snapshot.empty && lookupField === "username") {
             snapshot = await getDocs(
               query(userCollection, where("email", "==", loginIdentifier)),
@@ -203,10 +205,7 @@
               window.location.href = "/owner/owner.html";
             } else {
               await requestDeviceNotificationPermission(userDocSnap.id);
-
-              // Bawat non-admin/manager role (siomai, pares, at anumang bagong cart sa
-              // hinaharap) ay dumadaan na lang sa IISANG POS page. Ang role
-              // mismo ang nagpapaiba sa nakikita, hindi ang URL/folder.
+              //   Bawat non-admin/manager role (siomai, pares, at anumang bagong cart sa hinaharap) ay dumadaan na lang sa IISANG POS page. Ang role mismo ang nagpapaiba sa nakikita, hindi ang URL/folder.
               sessionStorage.setItem("employeeRole", role);
               sessionStorage.setItem("employeeUid", userCredential.user.uid);
               sessionStorage.setItem(

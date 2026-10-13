@@ -63,10 +63,7 @@ function getNotificationPage(item) {
   }
   if (item.type === "expense_report_read") return "report.html";
   return null;
-}
-
-// FIX 1: alamin kung anong section ang kasalukuyang nakabukas.
-// Subukan ang mga posibleng pinagkukunan. PALITAN mo ito ng tamang gamit ng navemployee mo.
+}//   FIX 1: alamin kung anong section ang kasalukuyang nakabukas. Subukan ang mga posibleng pinagkukunan. PALITAN mo ito ng tamang gamit ng navemployee mo.
 function getCurrentSection() {
   return (
     window.currentSection ||
@@ -74,10 +71,7 @@ function getCurrentSection() {
     lastLoadedPage ||
     null
   );
-}
-
-// hintayin munang matapos ang close animation ng modal bago palitan ang section,
-// para hindi maiwan ang .modal-overlay at ang "overflow: hidden" sa body.
+}//   hintayin munang matapos ang close animation ng modal bago palitan ang section, para hindi maiwan ang .modal-overlay at ang "overflow: hidden" sa body.
 function closeModalAndWait(modal, timeout = 600) {
   if (!modal?.isOpen) return Promise.resolve();
   return new Promise((resolve) => {
@@ -98,10 +92,7 @@ function closeModalAndWait(modal, timeout = 600) {
     setTimeout(finish, timeout);
     modal.close();
   });
-}
-
-// FIX 3: mas matibay na safety net. Inaalis ang naiwang overlay, ibinabalik ang scroll,
-// at nire-reset ang internal counter ng Materialize kapag wala nang bukas na modal.
+}//   FIX 3: mas matibay na safety net. Inaalis ang naiwang overlay, ibinabalik ang scroll, at nire-reset ang internal counter ng Materialize kapag wala nang bukas na modal.
 function cleanupStuckModalOverlay() {
   if (document.querySelector(".modal.open")) return;
   document
@@ -202,9 +193,7 @@ function renderNotifications() {
             document.querySelector("#employee-notifications-modal"),
           );
           const targetPage = getNotificationPage(notification);
-          if (getCurrentSection() === targetPage) {
-            // Nasa page na tayo: walang section swap, kaya isara agad ang modal
-            // at huwag nang maghintay sa animation bago i-mark as read.
+          if (getCurrentSection() === targetPage) {//  Nasa page na tayo: walang section swap, kaya isara agad ang modal at huwag nang maghintay sa animation bago i-mark as read.
             modal?.close();
           } else {
             // Ibang page: isara muna at hintayin bago palitan ang section.

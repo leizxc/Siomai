@@ -496,9 +496,7 @@ html.dark .owner-notification-note {
   color: var(--text-secondary) !important;
 }
 
-/* =========================================================
-   Create manager account — Option 1 (clean vertical form)
-   ========================================================= */
+/* ========================================================= Create manager account — Option 1 (clean vertical form) ========================================================= */
 .owner-manager-create-card {
   padding: 28px;
   border: 1px solid var(--border, #e7ebf2);
@@ -719,8 +717,7 @@ html.dark .owner-manager-create-form .owner-manager-password-toggle {
 .owner-manager-action-btn:disabled { opacity: 0.6; cursor: wait; transform: none; }
 .owner-manager-no-actions { color: var(--text-muted, #777); font-size: 0.85rem; }
 
-/* The owner capital route reuses the manager expense workflow. Keep the
-   borrowed page inside the owner shell's available width at every breakpoint. */
+/* The owner capital route reuses the manager expense workflow. Keep the borrowed page inside the owner shell's available width at every breakpoint. */
 .owner-capital-content {
   display: block !important;
   width: 100%;

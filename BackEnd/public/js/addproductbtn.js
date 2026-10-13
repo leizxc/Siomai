@@ -18,9 +18,7 @@ export async function initProductModal() {
   const productNameSelect = document.getElementById("productName");
 
   if (!roleSelect || !employeeSelect || !productNameSelect) return;
-
-  // Keep this list aligned with product.html. filter(Boolean) prevents a
-  // missing optional field from crashing the form during page navigation.
+//  Keep this list aligned with product.html. filter(Boolean) prevents a missing optional field from crashing the form during page navigation.
   const inputs = [
     productNameSelect,
     document.getElementById("productPrice"),
@@ -52,10 +50,7 @@ export async function initProductModal() {
 
     // productName is Materialize-managed, so resync its wrapper too,
     resyncSelectWrapper(productNameSelect);
-  }
-
-  // Tumataas ito kada bagong loadEmployeesByRole() call
-  //  Populate employee dropdown based on selected role
+  }//   Tumataas ito kada bagong loadEmployeesByRole() call Populate employee dropdown based on selected role
   async function loadEmployeesByRole(selectedRole) {
     const myRoleToken = token;
 

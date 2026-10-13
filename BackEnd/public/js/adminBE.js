@@ -31,10 +31,7 @@ let inventoryRowsCache = [];
 
 function toUpper(value) {
   return (value || "").trim().toUpperCase();
-}
-
-// Low-stock status is only relevant for products whose stock is counted in
-// pieces. Bulk units and the Drinks/Rice categories do not use this limit.
+}//   Low-stock status is only relevant for products whose stock is counted in pieces. Bulk units and the Drinks/Rice categories do not use this limit.
 function isPieceBasedUnit(unit) {
   return ["piece", "pieces", "pcs", "pc", "pack"].includes(
     String(unit || "").trim().toLowerCase(),
@@ -49,11 +46,7 @@ function isLowStockExempt(unit, category) {
     ["kaban", "kilogram", "kg", "packs"].includes(normalizedUnit) ||
     ["drinks", "rice"].includes(normalizedCategory)
   );
-}
-
-// M.Modal.init() does not replace an existing instance by itself. Recreating
-// one without destroying the old instance leaves duplicate listeners and
-// overlays behind after several opens.
+}//   M.Modal.init() does not replace an existing instance by itself. Recreating one without destroying the old instance leaves duplicate listeners and overlays behind after several opens.
 function replaceModalInstance(element, options) {
   const existing = M.Modal.getInstance(element);
   if (existing) {
@@ -181,9 +174,7 @@ export function loadInventory() {
       let totalProducts = 0;
       let totalStocks = 0;
       let totalValue = 0;
-      const categories = new Set();
-      // FIXED: idinagdag ang "packs" at "kaban" buckets — dati napupunta
-      // lang ito sa "other", kaya mali yung "All Categories" summary.
+      const categories = new Set();//  FIXED: idinagdag ang "packs" at "kaban" buckets — dati napupunta lang ito sa "other", kaya mali yung "All Categories" summary.
       const unitTotals = {
         pack: 0,
         kg: 0,
@@ -244,10 +235,7 @@ export function loadInventory() {
         totalProducts++;
         totalStocks += data.stock_quantity;
         totalValue += data.total_value;
-        categories.add(data.category);
-
-        // FIXED: gamit na ng array includes() para hindi na mapunta ang
-        // "packs"/"kaban" sa "other" bucket.
+        categories.add(data.category);//   FIXED: gamit na ng array includes() para hindi na mapunta ang "packs"/"kaban" sa "other" bucket.
         const bucket = ["pack", "kg", "kilogram", "liter", "packs", "kaban"].includes(
           data.unit_type,
         )
@@ -275,9 +263,7 @@ export function loadInventory() {
         } else if (data.unit_type === "packs") {
           totalLabel = "Total Packs";
           totalDisplay = `${data.quantity} packs`;
-        } else if (data.unit_type === "kaban") {
-          // FIXED: tinanggal ang dead ternary — parehas lang naman
-          // ang dalawang branch dati, kaya sinimplify na lang.
+        } else if (data.unit_type === "kaban") {//  FIXED: tinanggal ang dead ternary — parehas lang naman ang dalawang branch dati, kaya sinimplify na lang.
           totalLabel = "Total Weight";
           totalDisplay = `${data.stock_quantity} kg`;
         } else if (data.unit_type === "kg" || data.unit_type === "kilogram") {
@@ -363,9 +349,7 @@ export function loadInventory() {
         const parts = [];
         if (unitTotals.pack) parts.push(`${unitTotals.pack} pcs`);
         if (unitTotals.kg || unitTotals.kilogram) parts.push(`${unitTotals.kg + unitTotals.kilogram} kg`);
-        if (unitTotals.liter) parts.push(`${unitTotals.liter} L`);
-        // NEW: packs at kaban totals — dati wala ito, kaya nawawala sa
-        // "All Categories" summary.
+        if (unitTotals.liter) parts.push(`${unitTotals.liter} L`);//  NEW: packs at kaban totals — dati wala ito, kaya nawawala sa "All Categories" summary.
         if (unitTotals.packs) parts.push(`${unitTotals.packs} packs`);
         if (unitTotals.kaban) parts.push(`${unitTotals.kaban} kg (kaban)`);
         if (unitTotals.other) parts.push(`${unitTotals.other} qty`);
@@ -543,11 +527,7 @@ function bindInventoryRowButtons() {
       if (editPlasticColorInput) {
         editPlasticColorInput.value = productDataForEdit.plasticColor || "";
         bindLiveUppercase(editPlasticColorInput);
-      }
-
-      // NEW: optional "Weight per Kaban" field in the Edit modal.
-      // Kung wala ka pang idinagdag na field na ito sa HTML, hindi ito
-      // gagana pero hindi rin masisira ang ibang bahagi (defensive check).
+      }//   NEW: optional "Weight per Kaban" field in the Edit modal. Kung wala ka pang idinagdag na field na ito sa HTML, hindi ito gagana pero hindi rin masisira ang ibang bahagi (defensive check).
       const editWeightPerKabanField = document.getElementById(
         "edit-weight-per-kaban-field",
       );
@@ -634,11 +614,7 @@ function bindInventoryRowButtons() {
         );
         const categoryData = categoryDoc.data();
         const unitType = categoryData.unit_type;
-        const piecesPerPack = categoryData.pieces_per_pack || 1;
-
-        // FIXED: KABAN was missing here entirely — dati, ang bilang ng
-        // KABAN mismo ang na-save bilang stock_quantity (kg), hindi
-        // na-multiply sa weight_per_kaban.
+        const piecesPerPack = categoryData.pieces_per_pack || 1;//   FIXED: KABAN was missing here entirely — dati, ang bilang ng KABAN mismo ang na-save bilang stock_quantity (kg), hindi na-multiply sa weight_per_kaban.
         let weightPerKaban = Number(productDataForEdit.weight_per_kaban || 0);
         if (unitType === "kaban") {
           const editWeightInput = document.getElementById(
@@ -663,10 +639,7 @@ function bindInventoryRowButtons() {
           newStock = newQuantity * weightPerKaban;
         } else {
           newStock = newQuantity;
-        }
-        // Kaban prices are per kaban, not per kilogram.  Keep `newStock`
-        // in kg for inventory tracking, but calculate its monetary value
-        // from the number of kaban entered.
+        }//  Kaban prices are per kaban, not per kilogram.  Keep `newStock` in kg for inventory tracking, but calculate its monetary value from the number of kaban entered.
         const newTotalValue =
           unitType === "kaban" ? newQuantity * newPrice : newStock * newPrice;
 
@@ -787,9 +760,7 @@ export async function addProduct(
   else if (unitType === "packs") {
     stockQty = quantity;
     totalValue = quantity * unitPrice;
-  }
-  // KABAN → kg (quantity × weight per kaban) for stock tracking.
-  // Its unit price remains per kaban, so value uses the original quantity.
+  }//  KABAN → kg (quantity × weight per kaban) for stock tracking. Its unit price remains per kaban, so value uses the original quantity.
   else if (unitType === "kaban") {
     const weightPerKaban = Number(extraFields.weight_per_kaban || 0);
     if (weightPerKaban <= 0) {
@@ -1014,10 +985,7 @@ async function renderCategoryPills(container, snapshot) {
     selectedCategoryFilter = "all";
     syncDeleteCategoryButtonState();
     return;
-  }
-
-  // On initial entry, choose a category that has inventory so the page does
-  // not open on an empty category.
+  }//   On initial entry, choose a category that has inventory so the page does not open on an empty category.
   let firstCategoryWithInventory = null;
   try {
     const inventorySnapshot = await getDocs(collection(db, "inventory"));
@@ -1059,10 +1027,7 @@ async function renderCategoryPills(container, snapshot) {
     container.appendChild(pill);
   });
 
-  syncDeleteCategoryButtonState();
-
-  // Wait for the category snapshot before loading inventory. This prevents
-  // the initial Summary card from briefly rendering the combined “All” data.
+  syncDeleteCategoryButtonState();//   Wait for the category snapshot before loading inventory. This prevents the initial Summary card from briefly rendering the combined “All” data.
   if (selectionChanged || shouldLoadInventoryAfterCategories) {
     shouldLoadInventoryAfterCategories = false;
     currentPage = 1;
@@ -1569,10 +1534,7 @@ export function loadArchiveHistory() {
               month: "short",
               day: "numeric",
             })
-          : "-";
-
-        // NEW: packs/kaban branches — dati napupunta lang sa generic
-        // fallback (walang unit label sa display).
+          : "-";//   NEW: packs/kaban branches — dati napupunta lang sa generic fallback (walang unit label sa display).
         let totalDisplay = "";
         if (data.unit_type === "pack") {
           totalDisplay = `${data.stock_quantity} pcs`;
@@ -1902,10 +1864,7 @@ export async function initInventoryPage() {
   processExpiredArchives().catch(console.error);
 
   // Load categories first para malaman ang unang category
-  loadCategories();
-
-  // loadInventory() is started by renderCategoryPills() only after a real
-  // category has been selected, so the first summary is never "All".
+  loadCategories();//   loadInventory() is started by renderCategoryPills() only after a real category has been selected, so the first summary is never "All".
 
   bindInventoryPageButtons();
 

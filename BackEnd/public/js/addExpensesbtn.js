@@ -30,10 +30,7 @@ function refreshSelects(root) {
     M.FormSelect.getInstance(select)?.destroy();
     M.FormSelect.init(select);
   });
-}
-
-// Para sa ibang select ng page na hindi pa na-init (hindi ginagalaw ang
-// mga naka-init na).
+}//   Para sa ibang select ng page na hindi pa na-init (hindi ginagalaw ang mga naka-init na).
 function initPendingSelects(root) {
   root?.querySelectorAll("select").forEach((select) => {
     if (select.classList.contains("browser-default")) return;
@@ -131,9 +128,7 @@ function updateSelect(select, placeholder, value, preserveCurrent) {
   M.FormSelect.init(select);
 }
 
-/* ============================================================
-   ADD EXPENSE MODAL
-============================================================ */
+/* ============================================================ ADD EXPENSE MODAL ============================================================ */
 
 export function initExpensesModal() {
   stopExpensesModal();
@@ -143,11 +138,7 @@ export function initExpensesModal() {
   if (!modalElem) {
     console.log("Expenses modal not found");
     return;
-  }
-
-  // The navigator initializes page modals first. Reuse that instance instead
-  // of registering another set of Materialize handlers every time this page
-  // is loaded.
+  }//   The navigator initializes page modals first. Reuse that instance instead of registering another set of Materialize handlers every time this page is loaded.
   const modalInstance =
     M.Modal.getInstance(modalElem) || M.Modal.init(modalElem);
   bindExpenseModalClose(modalElem, modalInstance);
@@ -166,10 +157,7 @@ export function initExpensesModal() {
   };
   // onchange (hindi addEventListener) para hindi dumoble ang handler kapag na-init ulit
   if (categorySelect) categorySelect.onchange = syncOtherCategory;
-  syncOtherCategory();
-
-  // Ang mga select sa loob ng modal ay hinahawakan ng refreshSelects; dito,
-  // ang ibang select lang ng page na hindi pa na-init ang sinisigurado.
+  syncOtherCategory();//   Ang mga select sa loob ng modal ay hinahawakan ng refreshSelects; dito, ang ibang select lang ng page na hindi pa na-init ang sinisigurado.
   expenseSelectTimer = setTimeout(() => {
     if (token !== expenseModalSession || !modalElem.isConnected) return;
     initPendingSelects(document.getElementById("content") || document);
@@ -246,10 +234,7 @@ export function initExpensesModal() {
 
       if (!beginButtonLoading(saveBtn, "Saving expense...")) return;
       try {
-        await addExpense(date, category, description, amount, status);
-
-        // Lumipat na ng section habang nagsa-save: naisulat na ang expense,
-        // pero huwag nang galawin ang DOM ng ibang page.
+        await addExpense(date, category, description, amount, status);//   Lumipat na ng section habang nagsa-save: naisulat na ang expense, pero huwag nang galawin ang DOM ng ibang page.
         if (token !== expenseModalSession || !modalElem.isConnected) return;
 
         document.getElementById("expenses-date").value = "";
@@ -295,8 +280,5 @@ export function stopExpensesModal() {
   expenseModalSession += 1;
   clearTimeout(expenseSelectTimer);
   expenseSelectTimer = null;
-  selectedExpenseCategory = "all";
-
-  // functionalnav disposes page-owned Materialize modal instances and overlays
-  // immediately after this page cleanup runs.
+  selectedExpenseCategory = "all";//   functionalnav disposes page-owned Materialize modal instances and overlays immediately after this page cleanup runs.
 }

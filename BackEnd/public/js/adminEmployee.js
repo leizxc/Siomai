@@ -23,10 +23,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 const auth = getAuth();
 
 const SESSION_EXPIRED_MESSAGE =
-  "Your session has expired. Please sign in again.";
-
-// Hintayin muna ang auth na mag-restore ng session bago kunin ang token.
-// Ibinabalik ang null kung talagang walang naka-login.
+  "Your session has expired. Please sign in again.";//   Hintayin muna ang auth na mag-restore ng session bago kunin ang token. Ibinabalik ang null kung talagang walang naka-login.
 async function getAuthToken() {
   try {
     await auth.authStateReady?.();
@@ -288,10 +285,7 @@ function bindRowButtons() {
       const id = e.currentTarget.dataset.id;
       const target = latestEmployeeDocs.find((item) => item.id === id);
       if (managerEmployeeView && isManagerEmployeeRecord(target?.data)) return;
-      const row = e.currentTarget.closest("tr");
-
-      // Ang mga orihinal na value bago mag-edit — gagamitin sa pag-check
-      // kung talagang may binago bago pumayag mag-submit ng update.
+      const row = e.currentTarget.closest("tr");//   Ang mga orihinal na value bago mag-edit — gagamitin sa pag-check kung talagang may binago bago pumayag mag-submit ng update.
       const originalFname = row.children[0].textContent;
       const originalLname = row.children[1].textContent;
       const originalEmail = row.children[2].textContent;
@@ -632,11 +626,7 @@ export async function addEmployee(
     });
     return true;
   } catch (error) {
-    console.error("Error adding employee:", error);
-
-    // Rollback: kung nagawa na ang Auth account pero pumalya ang Firestore,
-    // alisin ang naiwang dokumento at Auth user para hindi maging "email exists"
-    // ang susunod na subok.
+    console.error("Error adding employee:", error);//   Rollback: kung nagawa na ang Auth account pero pumalya ang Firestore, alisin ang naiwang dokumento at Auth user para hindi maging "email exists" ang susunod na subok.
     if (createdUid) {
       if (employeeRef) {
         try {
@@ -663,11 +653,7 @@ export async function addEmployee(
     M.toast({ html: "Failed to add employee.", classes: "red rounded" });
     return false;
   }
-}
-
-//delete role
-// Delete role — only if no user is currently assigned to it, and only
-// after the user confirms via the shared modal-delete-category dialog.
+}//   delete role Delete role — only if no user is currently assigned to it, and only after the user confirms via the shared modal-delete-category dialog.
 export async function deleteRole() {
   const roleSelect = document.getElementById("role");
   const roleName = roleSelect ? roleSelect.value : "";
@@ -706,11 +692,7 @@ export async function deleteRole() {
 
   await deleteDoc(roleDoc.docs[0].ref);
   M.toast({ html: "Role deleted", classes: "green rounded" });
-}
-
-// I-disable ang Delete Role button hangga't walang napiling role sa
-// #role select. Tawagin ito isang beses sa initEmployee() (o kung saan
-// pinopopulate ang #role select) para maka-bind ang change listener.
+}//   I-disable ang Delete Role button hangga't walang napiling role sa #role select. Tawagin ito isang beses sa initEmployee() (o kung saan pinopopulate ang #role select) para maka-bind ang change listener.
 export function bindDeleteRoleButton() {
   const deleteRoleBtn = document.getElementById("btn-delete-role");
   const roleSelect = document.getElementById("role");

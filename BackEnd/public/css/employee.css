@@ -166,7 +166,7 @@ body {
   font-size: 0.9rem;
 }
 
-/* PRODUCT  */
+/* PRODUCT */
 
 .product-card {
   transition: 0.25s;
@@ -3204,10 +3204,7 @@ html.dark .assigned-summary-icon {
   animation: employee-bell-pulse 1.5s ease-in-out infinite;
 }
 
-/* ============================================
-   DARK MODE â€“ SHARED EMPLOYEE THEME
-   (same tokens as admin)
-   ============================================ */
+/* ============================================ DARK MODE â€“ SHARED EMPLOYEE THEME (same tokens as admin) ============================================ */
 
 html.dark body,
 html.dark .main,
@@ -6106,10 +6103,7 @@ html.dark .employee-notification-empty {
     padding-block: 7px;
   }
 }
-/* ============================================================
-   TABLET POS – KEEP SIDE CART (improved proportions)
-   Target: 769px – 1200px (covers most tablets landscape/portrait)
-   ============================================================ */
+/* ============================================================ TABLET POS – KEEP SIDE CART (improved proportions) Target: 769px – 1200px (covers most tablets landscape/portrait) ============================================================ */
 @media (min-width: 769px) and (max-width: 1200px) {
   body:has(.product-list) .main {
     padding: 88px 18px 30px !important;
@@ -6218,10 +6212,7 @@ body:has(.product-list) .cart-section table:empty {
   min-height: 120px;
 }
 
-/* ============================================================
-   TABLET POS FIX – huwag mag-dikit ang search sa cart
-   (769px – 1200px)
-   ============================================================ */
+/* ============================================================ TABLET POS FIX – huwag mag-dikit ang search sa cart (769px – 1200px) ============================================================ */
 @media (min-width: 769px) and (max-width: 1200px) {
   /* Main spacing */
   body:has(.product-list) .main {
@@ -6313,9 +6304,7 @@ body:has(.product-list) .cart-section table:empty {
     min-height: 46px !important;
   }
 }
-/* ============================================================
-   TABLET ONLY – search-section width sakto (hindi dikit sa cart)
-   ============================================================ */
+/* ============================================================ TABLET ONLY – search-section width sakto (hindi dikit sa cart) ============================================================ */
 @media (min-width: 769px) and (max-width: 1100px) {
   /* Product side (search + categories + products) */
   body:has(.product-list) .search-section,
@@ -6536,10 +6525,7 @@ body:has(.product-list) .categories .category {
   text-transform: uppercase;
 }
 
-/* =========================================================
-   MOBILE TABLES — Card layout with data-label
-   (stock / assigned-stock / cart)
-   ========================================================= */
+/* ========================================================= MOBILE TABLES — Card layout with data-label (stock / assigned-stock / cart) ========================================================= */
 .cart-card,
 .stock-page .table-card,
 .assigned-stock-table-card {
@@ -6710,8 +6696,7 @@ body:has(.product-list) .categories .category {
     white-space: nowrap;
   }
 }
-/* Manager attendance is loaded into the admin shell. Keep its shared sidebar
-   fixed and non-scrollable like the rest of the manager pages. */
+/* Manager attendance is loaded into the admin shell. Keep its shared sidebar fixed and non-scrollable like the rest of the manager pages. */
 body.manager-attendance-view .sidebar {
   top: 0 !important;
   height: 100vh !important;

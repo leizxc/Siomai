@@ -8,11 +8,7 @@ let isNavigating = false;
 let currentCleanup = null;
 let employeeShiftActive = false;
 const auth = getAuth(app);
-const db = getFirestore(app);
-
-// Sections are replaced with innerHTML.  A Materialize modal keeps its
-// overlay and keyboard/focus listeners outside that markup, so dispose every
-// section modal first to prevent a stale overlay from blocking future clicks.
+const db = getFirestore(app);//   Sections are replaced with innerHTML.  A Materialize modal keeps its overlay and keyboard/focus listeners outside that markup, so dispose every section modal first to prevent a stale overlay from blocking future clicks.
 function disposeSectionModals(root) {
   if (typeof M === "undefined" || !root) return;
 
@@ -32,11 +28,7 @@ function disposeSectionModals(root) {
       M.Modal._modalsOpen = 0;
     }
   }
-}
-
-// The notification bell lives in the persistent employee header while its
-// modal is supplied by userpanel.html. Keep that modal outside #content so a
-// section change cannot leave the bell pointing to a detached modal instance.
+}//   The notification bell lives in the persistent employee header while its modal is supplied by userpanel.html. Keep that modal outside #content so a section change cannot leave the bell pointing to a detached modal instance.
 function preserveEmployeeNotificationModal(root) {
   const notificationModal = root?.querySelector(
     "#employee-notifications-modal",
@@ -81,11 +73,7 @@ async function loadEmployeeProfile() {
 }
 
 async function loadSection(page) {
-  isNavigating = true;
-
-  // Ang unang POS load ay ini-init mula sa userpanel.html, kaya wala pa itong
-  // currentCleanup sa navigator. Ipaalam din sa POS module na papalitan na ang
-  // DOM para maisara nito ang realtime product listener.
+  isNavigating = true;//   Ang unang POS load ay ini-init mula sa userpanel.html, kaya wala pa itong currentCleanup sa navigator. Ipaalam din sa POS module na papalitan na ang DOM para maisara nito ang realtime product listener.
   window.dispatchEvent(new Event("employee:before-section-change"));
 
   if (currentCleanup) {
@@ -117,9 +105,7 @@ async function loadSection(page) {
 
     const pageContent = parsedPage.querySelector("#content");
 
-    preserveEmployeeNotificationModal(main);
-    // userpanel.html includes the original markup as well. The persistent
-    // instance above is the only notification modal that should remain.
+    preserveEmployeeNotificationModal(main);//  userpanel.html includes the original markup as well. The persistent instance above is the only notification modal that should remain.
     parsedPage.querySelector("#employee-notifications-modal")?.remove();
     disposeSectionModals(main);
 
@@ -127,12 +113,8 @@ async function loadSection(page) {
       main.innerHTML = pageContent.innerHTML;
     } else {
       main.innerHTML = parsedPage.body.innerHTML;
-    }
-    // #content survives section swaps, so clear the POS-only lock before
-    // rendering Attendance and its Time In control.
-    main.classList.remove("shift-inactive");
-    // POS sets inert on #content while a shift is inactive. The element
-    // survives section swaps, so clear that lock before showing Attendance.
+    }//  #content survives section swaps, so clear the POS-only lock before rendering Attendance and its Time In control.
+    main.classList.remove("shift-inactive");//  POS sets inert on #content while a shift is inactive. The element survives section swaps, so clear that lock before showing Attendance.
     main.inert = false;
 
     const title = document.getElementById("mobile-title");
