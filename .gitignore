@@ -1,31 +1,30 @@
-# dependencies
+# Dependencies
 node_modules/
-BackEnd/node_modules/
 
-# environment variables
+# Environment variables and local-only settings
 .env
 **/.env
-serviceAccountKey.json
-node_modules/
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
+*.local
 
-# firebase / secrets
-BackEnd/*.json
-BackEnd/*.key
-!BackEnd/package.json
-!BackEnd/package-lock.json
-!BackEnd/vercel.json
+# Private credentials and keys
+**/serviceAccount*.json
+**/*firebase-adminsdk*.json
+**/*.pem
+**/*.key
 
-# Firebase Hosting
+# Firebase local cache and backup
 .firebase/
-.firebaserc
-firebase.json
+firebase.backup.json
 
-# OS junk
-.DS_Store
-Thumbs.db
-
-# Firebase configs
+# Local Firebase client configuration files
 BackEnd/public/js/firebase.js
 BackEnd/public/js/frontfirebase.js
 
-BackEnd/public/package-lock.json
+# OS files
+.DS_Store
+Thumbs.db
+node_modules

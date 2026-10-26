@@ -11,6 +11,9 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 
 const isProduction = process.env.NODE_ENV === "production";
+const isFirebaseFunctions = Boolean(
+  process.env.K_SERVICE || process.env.FUNCTION_TARGET,
+);
 
 const verboseLog = (...args) => {
   if (!isProduction) console.log(...args);
@@ -51,10 +54,10 @@ try {
 
     // Correct private keys pasted with literal backslash-n sequences.
     serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
-  } else if (isProduction) {
+  } else if (isProduction && !isFirebaseFunctions) {
     firebaseInitStatus = "missing_service_account_environment_variable";
     throw new Error("FIREBASE_SERVICE_ACCOUNT is required in production");
-  } else {
+  } else if (!isFirebaseFunctions) {
     const localKeyPath = [
       path.join(__dirname, "serviceAccountKey.json"),
       path.join(__dirname, "serviceAccountKey.json.json"),
@@ -73,9 +76,14 @@ try {
     serviceAccount = require(localKeyPath);
   }
 
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+  if (serviceAccount) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+  } else {
+    // Cloud Functions provides Application Default Credentials automatically.
+    admin.initializeApp();
+  }
 
   firebaseReady = true;
   firebaseInitStatus = "ready";
