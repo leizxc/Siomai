@@ -230,6 +230,8 @@ export function initSalesPage() {
   const paymentFilter = document.getElementById("sales-payment-filter");
   if (!dateFilter || !employeeFilter || !paymentFilter) return;
   currentPage = 1;
+  // Default the Manager Sales Orders view to today's orders on each visit.
+  dateFilter.value = localDateKey(new Date());
   dateFilter.onchange = () => {
     currentPage = 1;
     renderSales();

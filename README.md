@@ -1,17 +1,15 @@
-# Queen Cassy
+# Queen Cassy Management System
 
-An Executive Information System for managing Queen Cassy's daily business operations.
+A system for managing Queen Cassy's daily business operations.
 
 ## Features
 
-- Sales orders and income monitoring
-- Product and inventory management
-- Expense and capital tracking
-- Employee accounts and management
-- Attendance and payroll
-- Manager dashboard, alerts, and reports
-- Role-based access using Firebase Authentication and Cloud Firestore
-
+- View business activity from the manager dashboard
+- Manage products, inventory, and product assignments
+- Track sales orders, income, expenses, and capital
+- Manage employee accounts and monitor attendance
+- Handle payroll and attendance requests
+- Receive notifications and view business reports
 
 ## Authors
 
