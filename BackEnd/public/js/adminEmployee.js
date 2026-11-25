@@ -107,7 +107,10 @@ export async function loadEmployees() {
   );
 
   unsubscribeEmployeeAttendance = onSnapshot(
-    collection(db, "attendance"),
+    query(
+      collection(db, "attendance"),
+      where("status", "in", ["active", "time_out_pending"]),
+    ),
     (querySnapshot) => {
       if (token !== employeePageSession || !tbody.isConnected) return;
       latestAttendanceDocs = querySnapshot.docs.map((docSnap) => ({

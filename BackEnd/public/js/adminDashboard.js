@@ -2,6 +2,8 @@ import { db } from "/js/firebase.js";
 import {
   collection,
   onSnapshot,
+  query,
+  where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const money = (value) =>
@@ -291,10 +293,13 @@ function drawIncomeChart() {
       .join("");
 }
 
-function subscribe(collectionName, key, map) {
+function subscribe(collectionName, key, map, constraints = []) {
+  const source = constraints.length
+    ? query(collection(db, collectionName), ...constraints)
+    : collection(db, collectionName);
   unsubscribers.push(
     onSnapshot(
-      collection(db, collectionName),
+      source,
       (snapshot) => {
         if (
           !dashboardActive ||
@@ -312,9 +317,23 @@ function subscribe(collectionName, key, map) {
   );
 }
 
-subscribe("orders", "orders");
+const dashboardStart = new Date();
+dashboardStart.setHours(0, 0, 0, 0);
+dashboardStart.setDate(dashboardStart.getDate() - 6);
+const dashboardEnd = new Date();
+dashboardEnd.setHours(0, 0, 0, 0);
+dashboardEnd.setDate(dashboardEnd.getDate() + 1);
+
+// The dashboard only plots the last seven days, so older orders do not need a live listener here.
+subscribe("orders", "orders", undefined, [
+  where("created_at", ">=", dashboardStart),
+  where("created_at", "<", dashboardEnd),
+]);
 subscribe("expenses", "expenses");
-subscribe("attendance", "attendance");
+// Historical attendance is not needed for the dashboard queue; only pending requests are shown.
+subscribe("attendance", "attendance", undefined, [
+  where("status", "in", ["pending", "time_out_pending"]),
+]);
 subscribe("inventory", "inventory");
 window.addEventListener("resize", drawIncomeChart);
 document

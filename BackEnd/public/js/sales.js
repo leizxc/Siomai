@@ -1,10 +1,18 @@
 import { db } from "/js/firebase.js";
-import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  collection,
+  onSnapshot,
+  query,
+  where,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 let unsubscribeOrders = null;
+let unsubscribeLegacyOrders = null;
 let unsubscribeEmployees = null;
 let unsubscribeProducts = null;
 let orders = [];
+let currentDateOrders = new Map();
+let legacyDateOrders = new Map();
 let employees = [];
 let productOwners = new Map();
 let currentPage = 1;
@@ -27,6 +35,72 @@ function asDate(value) {
 
 function localDateKey(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function localDayBounds(dateKey) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return {
+    start: new Date(year, month - 1, day),
+    end: new Date(year, month - 1, day + 1),
+  };
+}
+
+function stopOrderListeners() {
+  unsubscribeOrders?.();
+  unsubscribeLegacyOrders?.();
+  unsubscribeOrders = null;
+  unsubscribeLegacyOrders = null;
+  currentDateOrders.clear();
+  legacyDateOrders.clear();
+  orders = [];
+}
+
+function subscribeOrdersForDate(dateKey) {
+  stopOrderListeners();
+  if (!dateKey) {
+    renderSales();
+    return;
+  }
+
+  const { start, end } = localDayBounds(dateKey);
+  const refreshOrders = () => {
+    const combined = new Map(currentDateOrders);
+    legacyDateOrders.forEach((order, id) => {
+      if (!combined.has(id)) combined.set(id, order);
+    });
+    orders = [...combined.values()];
+    renderSales();
+  };
+
+  // Keep the legacy field query so older orders remain available in reports.
+  unsubscribeOrders = onSnapshot(
+    query(
+      collection(db, "orders"),
+      where("created_at", ">=", start),
+      where("created_at", "<", end),
+    ),
+    (snapshot) => {
+      currentDateOrders = new Map(
+        snapshot.docs.map((item) => [item.id, { ...item.data(), id: item.id }]),
+      );
+      refreshOrders();
+    },
+    (error) => console.error("Unable to load sales orders:", error),
+  );
+  unsubscribeLegacyOrders = onSnapshot(
+    query(
+      collection(db, "orders"),
+      where("createdAt", ">=", start),
+      where("createdAt", "<", end),
+    ),
+    (snapshot) => {
+      legacyDateOrders = new Map(
+        snapshot.docs.map((item) => [item.id, { ...item.data(), id: item.id }]),
+      );
+      refreshOrders();
+    },
+    (error) => console.error("Unable to load legacy sales orders:", error),
+  );
 }
 
 function escapeHtml(value) {
@@ -233,8 +307,9 @@ export function initSalesPage() {
   // Default the Manager Sales Orders view to today's orders on each visit.
   dateFilter.value = localDateKey(new Date());
   dateFilter.onchange = () => {
+    if (!dateFilter.value) dateFilter.value = localDateKey(new Date());
     currentPage = 1;
-    renderSales();
+    subscribeOrdersForDate(dateFilter.value);
   };
   employeeFilter.onchange = () => {
     currentPage = 1;
@@ -251,10 +326,7 @@ export function initSalesPage() {
     renderSales();
   }, (error) => console.error("Unable to load sales employees:", error));
 
-  unsubscribeOrders = onSnapshot(collection(db, "orders"), (snapshot) => {
-    orders = snapshot.docs.map((item) => ({ ...item.data(), id: item.id }));
-    renderSales();
-  }, (error) => console.error("Unable to load sales orders:", error));
+  subscribeOrdersForDate(dateFilter.value);
 
   unsubscribeProducts = onSnapshot(collection(db, "products"), (snapshot) => {
     productOwners = new Map(
@@ -265,10 +337,9 @@ export function initSalesPage() {
 }
 
 export function cleanupSalesPage() {
-  unsubscribeOrders?.();
+  stopOrderListeners();
   unsubscribeEmployees?.();
   unsubscribeProducts?.();
-  unsubscribeOrders = null;
   unsubscribeEmployees = null;
   unsubscribeProducts = null;
   const dateFilter = document.getElementById("sales-date-filter");
@@ -282,6 +353,8 @@ export function cleanupSalesPage() {
   if (prevButton) prevButton.onclick = null;
   if (nextButton) nextButton.onclick = null;
   orders = [];
+  currentDateOrders = new Map();
+  legacyDateOrders = new Map();
   employees = [];
   productOwners = new Map();
   currentPage = 1;
